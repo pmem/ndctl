@@ -1,0 +1,13 @@
+LIBNDCTL_1 {
+global:
+        ndctl_get_userdata;
+        ndctl_set_userdata;
+        ndctl_ref;
+        ndctl_get_log_priority;
+        ndctl_set_log_fn;
+        ndctl_unref;
+        ndctl_set_log_priority;
+        ndctl_new;
+local:
+        *;
+};
