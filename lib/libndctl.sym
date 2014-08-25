@@ -11,3 +11,26 @@ global:
 local:
         *;
 };
+
+LIBNDCTL_3 {
+global:
+	ndctl_bus_get_first;
+	ndctl_bus_get_next;
+	ndctl_bus_get_ctx;
+	ndctl_bus_get_major;
+	ndctl_bus_get_minor;
+	ndctl_bus_get_format;
+	ndctl_bus_get_revision;
+	ndctl_bus_get_id;
+	ndctl_bus_get_provider;
+	ndctl_dimm_get_first;
+	ndctl_dimm_get_next;
+	ndctl_dimm_get_handle;
+	ndctl_dimm_get_node;
+	ndctl_dimm_get_socket;
+	ndctl_dimm_get_imc;
+	ndctl_dimm_get_channel;
+	ndctl_dimm_get_dimm;
+	ndctl_dimm_get_bus;
+	ndctl_dimm_get_ctx;
+} LIBNDCTL_1;
