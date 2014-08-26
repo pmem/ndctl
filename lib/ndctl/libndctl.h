@@ -83,6 +83,54 @@ unsigned int ndctl_dimm_get_channel(struct ndctl_dimm *dimm);
 unsigned int ndctl_dimm_get_dimm(struct ndctl_dimm *dimm);
 struct ndctl_bus *ndctl_dimm_get_bus(struct ndctl_dimm *dimm);
 struct ndctl_ctx *ndctl_dimm_get_ctx(struct ndctl_dimm *dimm);
+struct ndctl_dimm *ndctl_dimm_get_by_handle(struct ndctl_bus *bus,
+		unsigned int handle);
+
+/*
+ * ndctl_region
+ *
+ * access the list of regions
+ */
+struct ndctl_region;
+struct ndctl_region *ndctl_region_get_first(struct ndctl_bus *bus);
+struct ndctl_region *ndctl_region_get_next(struct ndctl_region *region);
+#define ndctl_region_foreach(bus, region) \
+        for (region = ndctl_region_get_first(bus); \
+             region != NULL; \
+             region = ndctl_region_get_next(region))
+unsigned int ndctl_region_get_id(struct ndctl_region *region);
+unsigned int ndctl_region_get_interleave_ways(struct ndctl_region *region);
+unsigned int ndctl_region_get_mappings(struct ndctl_region *region);
+unsigned long long ndctl_region_get_size(struct ndctl_region *region);
+const char *ndctl_region_get_type(struct ndctl_region *region);
+struct ndctl_bus *ndctl_region_get_bus(struct ndctl_region *region);
+struct ndctl_ctx *ndctl_region_get_ctx(struct ndctl_region *region);
+struct ndctl_dimm *ndctl_region_get_first_dimm(struct ndctl_region *region);
+struct ndctl_dimm *ndctl_region_get_next_dimm(struct ndctl_region *region,
+		struct ndctl_dimm *dimm);
+#define ndctl_dimm_foreach_in_region(region, dimm) \
+        for (dimm = ndctl_region_get_first_dimm(region); \
+             dimm != NULL; \
+             dimm = ndctl_region_get_next_dimm(region, dimm))
+
+/*
+ * ndctl_mapping
+ *
+ * access the list of mappings
+ */
+struct ndctl_mapping;
+struct ndctl_mapping *ndctl_mapping_get_first(struct ndctl_region *region);
+struct ndctl_mapping *ndctl_mapping_get_next(struct ndctl_mapping *mapping);
+#define ndctl_mapping_foreach(region, mapping) \
+        for (mapping = ndctl_mapping_get_first(region); \
+             mapping != NULL; \
+             mapping = ndctl_mapping_get_next(mapping))
+struct ndctl_dimm *ndctl_mapping_get_dimm(struct ndctl_mapping *mapping);
+struct ndctl_ctx *ndctl_mapping_get_ctx(struct ndctl_mapping *mapping);
+struct ndctl_bus *ndctl_mapping_get_bus(struct ndctl_mapping *mapping);
+struct ndctl_region *ndctl_mapping_get_region(struct ndctl_mapping *mapping);
+unsigned long long ndctl_mapping_get_offset(struct ndctl_mapping *mapping);
+unsigned long long ndctl_mapping_get_length(struct ndctl_mapping *mapping);
 
 #ifdef __cplusplus
 } /* extern "C" */
