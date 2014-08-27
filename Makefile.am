@@ -53,7 +53,8 @@ libccan_a_SOURCES = \
 	ccan/list/list.c \
 	ccan/container_of/container_of.h \
 	ccan/check_type/check_type.h \
-	ccan/build_assert/build_assert.h
+	ccan/build_assert/build_assert.h \
+	ccan/array_size/array_size.h
 
 EXTRA_DIST += lib/libndctl.sym
 
@@ -71,4 +72,5 @@ TESTS = lib/test-libndctl
 
 check_PROGRAMS = lib/test-libndctl
 lib_test_libndctl_SOURCES = lib/test-libndctl.c
-lib_test_libndctl_LDADD = lib/libndctl.la
+lib_test_libndctl_LDADD = lib/libndctl.la \
+	-lkmod
