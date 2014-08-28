@@ -79,6 +79,19 @@ static unsigned int dimms[] = {
 	DIMM_HANDLE(0, 0, 1, 0, 1),
 };
 
+static struct region {
+	unsigned int id;
+	unsigned int interleave_ways;
+	char *type;
+} regions[] = {
+	{ 0, 2, "pm" },
+	{ 1, 4, "pm" },
+	{ 2, 1, "block" },
+	{ 3, 1, "block" },
+	{ 4, 1, "block" },
+	{ 5, 1, "block" },
+};
+
 static struct ndctl_bus *get_bus_by_provider(struct ndctl_ctx *ctx,
 		const char *provider)
 {
@@ -102,19 +115,54 @@ static struct ndctl_dimm *get_dimm_by_handle(struct ndctl_bus *bus, unsigned int
 	return NULL;
 }
 
+static struct ndctl_region *get_region_by_id(struct ndctl_bus *bus,
+		unsigned int id)
+{
+	struct ndctl_region *region;
+
+	ndctl_region_foreach(bus, region)
+		if (ndctl_region_get_id(region) == id)
+			return region;
+
+	return NULL;
+}
+
+
+
 static int do_test(struct ndctl_ctx *ctx)
 {
 	struct ndctl_bus *bus = get_bus_by_provider(ctx, NFIT_PROVIDER);
-	struct ndctl_dimm *dimm;
 	unsigned int i;
 
 	if (!bus)
 		return -ENXIO;
 
 	for (i = 0; i < ARRAY_SIZE(dimms); i++) {
-		dimm = get_dimm_by_handle(bus, dimms[i]);
+		struct ndctl_dimm *dimm = get_dimm_by_handle(bus, dimms[i]);
+
 		if (!dimm) {
 			fprintf(stderr, "failed to find dimm: %d\n", dimms[i]);
+			return -ENXIO;
+		}
+	}
+
+	for (i = 0; i < ARRAY_SIZE(regions); i++) {
+		struct ndctl_region *region;
+
+		region = get_region_by_id(bus, regions[i].id);
+		if (!region) {
+			fprintf(stderr, "failed to find region: %d\n", regions[i].id);
+			return -ENXIO;
+		}
+		if (strcmp(ndctl_region_get_type(region), regions[i].type) != 0) {
+			fprintf(stderr, "region expected type: %s got: %s\n",
+				ndctl_region_get_type(region), regions[i].type);
+			return -ENXIO;
+		}
+		if (ndctl_region_get_interleave_ways(region) != regions[i].interleave_ways) {
+			fprintf(stderr, "region expected interleave_ways: %d got: %d\n",
+					ndctl_region_get_interleave_ways(region),
+					regions[i].interleave_ways);
 			return -ENXIO;
 		}
 	}

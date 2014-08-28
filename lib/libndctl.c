@@ -396,6 +396,8 @@ static int add_bus(struct ndctl_ctx *ctx, int id, const char *ctl_base)
 	if (!bus->bus_path)
 		goto err_dev_path;
 	list_add(&ctx->busses, &bus->list);
+	dbg(ctx, "bus%d provider: %s format: %d revision: %d\n",
+		bus->id, bus->provider, bus->format, bus->revision);
 
 	rc = 0;
 	goto out;
@@ -506,6 +508,7 @@ struct ndctl_ctx *ndctl_bus_get_ctx(struct ndctl_bus *bus)
 static int add_dimm(struct ndctl_bus *bus, unsigned int node, unsigned int sicd)
 {
 	struct ndctl_dimm *dimm = calloc(1, sizeof(*dimm));
+	struct ndctl_ctx *ctx = bus->ctx;
 	
 	if (!dimm)
 		return -ENOMEM;
@@ -513,6 +516,7 @@ static int add_dimm(struct ndctl_bus *bus, unsigned int node, unsigned int sicd)
 	dimm->bus = bus;
 	dimm->nfit_handle = node << 16 | sicd;
 	list_add(&bus->dimms, &dimm->list);
+	dbg(ctx, "dimm-%.3x:%.4x\n", node, sicd);
 	return 0;
 }
 
@@ -660,6 +664,7 @@ static int add_region(struct ndctl_bus *bus, int spa_id, const char *region_base
 	if (!region->region_path)
 		goto err_region_path;
 	list_add(&bus->regions, &region->list);
+	dbg(ctx, "region%d type: %s\n", region->id, region->type);
 
 	rc = 0;
 	goto out;
