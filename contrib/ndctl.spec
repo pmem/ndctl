@@ -7,7 +7,7 @@
 %global __requires_exclude pkg-config
 
 Name:           ndctl
-Version:        1
+Version:        14
 Release:        1%{?gitcommit:.git%{gitcommit}}%{?dist}
 Summary:	Manage "nd" subsystem devices (Non-volatile Memory)
 License:        LGPLv2.1 and BSD and MIT
