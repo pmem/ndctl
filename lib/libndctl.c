@@ -30,7 +30,25 @@
 #include <ndctl/libndctl.h>
 #include "libndctl-private.h"
 
+/**
+ * DOC: General note, the structure layouts are privately defined.
+ * Access struct member fields with ndctl_<object>_get_<property>.
+ */
+
 struct ndctl_ctx;
+/**
+ * struct ndctl_bus - a nfit table instance
+ * @major: control character device major number
+ * @minor: control character device minor number
+ * @format: format-interface-code number (see NFIT spec)
+ * @revision: NFIT table revision number
+ * @provider: identifier for the source of the NFIT table
+ *
+ * The expectation is one NFIT/nd bus per system provided by platform
+ * firmware (for example @provider == "ACPI.NFIT").  However, the
+ * nfit_test module provides multiple test busses with provider names of
+ * the format "nfit_test.N"
+ */
 struct ndctl_bus {
 	struct ndctl_ctx *ctx;
 	int id, major, minor, format, revision;
@@ -43,13 +61,31 @@ struct ndctl_bus {
 	char *bus_path;
 };
 
+/**
+ * struct ndctl_dimm - memory device as identified by NFIT
+ * @handle: NFIT-handle value to be used for ioctl calls
+ * @node: system node-id
+ * @socket: socket-id in the node
+ * @imc: memory-controller-id in the socket
+ * @channel: channel-id in the memory-controller
+ * @dimm: dimm-id in the channel
+ */
 struct ndctl_dimm {
 	struct ndctl_bus *bus;
-	unsigned int nfit_handle;
+	unsigned int handle;
 	int id;
 	struct list_node list;
 };
 
+/**
+ * struct ndctl_mapping - dimm extent relative to a region
+ * @dimm: backing dimm for the mapping
+ * @offset: dimm relative offset
+ * @length: span of the extent
+ *
+ * This data can be used to identify the dimm ranges contributing to a
+ * region / interleave-set and identify how regions alias each other.
+ */
 struct ndctl_mapping {
 	struct ndctl_region *region;
 	struct ndctl_dimm *dimm;
@@ -57,6 +93,18 @@ struct ndctl_mapping {
 	struct list_node list;
 };
 
+/**
+ * struct ndctl_region - container for 'pmem' or 'block' capacity
+ * @interleave_ways: number of dimms in region
+ * @mappings: number of extent ranges contributing to the region
+ * @size: total capacity of the region before resolving aliasing
+ * @type: integer nd-bus device-type
+ * @type_name: 'pmem' or 'block'
+ *
+ * A region may alias between pmem and block-window access methods.  The
+ * region driver is tasked with parsing the label (if their is one) and
+ * coordinating configuration with peer regions.
+ */
 struct ndctl_region {
 	struct ndctl_bus *bus;
 	int id, interleave_ways, num_mappings, type;
@@ -69,6 +117,14 @@ struct ndctl_region {
 	struct list_node list;
 };
 
+/**
+ * struct ndctl_namespace - device claimed by the nd_blk or nd_pmem driver
+ * @type: integer nd-bus device-type
+ * @type_name: 'namespace_io', 'namespace_pmem', or 'namespace_block'
+ *
+ * A 'namespace' is the resulting device after region-aliasing and
+ * label-parsing is resolved.
+ */
 struct ndctl_namespace {
 	struct ndctl_region *region;
 	struct list_node list;
@@ -76,17 +132,11 @@ struct ndctl_namespace {
 };
 
 /**
- * SECTION:libndctl
- * @short_description: libndctl context
+ * struct ndctl_ctx - library user context to find "nd_bus" instances
  *
- * The context contains the default values for the library user,
- * and is passed to all library operations.
- */
-
-/**
- * ndctl_ctx:
- *
- * Opaque object representing the library context.
+ * Instantiate with ndctl_new(), which takes an initial reference.  Free
+ * the context by dropping the reference count to zero with
+ * ndctrl_unref(), or take additional references with ndctl_ref()
  */
 struct ndctl_ctx {
 	int refcount;
@@ -119,14 +169,12 @@ static void log_stderr(struct ndctl_ctx *ctx,
 }
 
 /**
- * ndctl_get_userdata:
+ * ndctl_get_userdata - retrieve stored data pointer from library context 
  * @ctx: ndctl library context
  *
- * Retrieve stored data pointer from library context. This might be useful
- * to access from callbacks like a custom logging function.
- *
- * Returns: stored userdata
- **/
+ * This might be useful to access from callbacks like a custom logging
+ * function.
+ */
 NDCTL_EXPORT void *ndctl_get_userdata(struct ndctl_ctx *ctx)
 {
 	if (ctx == NULL)
@@ -135,12 +183,10 @@ NDCTL_EXPORT void *ndctl_get_userdata(struct ndctl_ctx *ctx)
 }
 
 /**
- * ndctl_set_userdata:
+ * ndctl_set_userdata - store custom @userdata in the library context
  * @ctx: ndctl library context
  * @userdata: data pointer
- *
- * Store custom @userdata in the library context.
- **/
+ */
 NDCTL_EXPORT void ndctl_set_userdata(struct ndctl_ctx *ctx, void *userdata)
 {
 	if (ctx == NULL)
@@ -165,13 +211,6 @@ static int log_priority(const char *priority)
 	return 0;
 }
 
-/**
- * ndctl_new: create a ndctl library context
- * @ctx: context to establish
- *
- * The initial refcount is 1, and needs to be decremented to release the
- * resources of the ndctl library context.
- */
 NDCTL_EXPORT int ndctl_new(struct ndctl_ctx **ctx)
 {
 	struct ndctl_ctx *c;
@@ -197,14 +236,6 @@ NDCTL_EXPORT int ndctl_new(struct ndctl_ctx **ctx)
 	return 0;
 }
 
-/**
- * ndctl_ref:
- * @ctx: ndctl library context
- *
- * Take a reference of the ndctl library context.
- *
- * Returns: the passed ndctl library context
- **/
 NDCTL_EXPORT struct ndctl_ctx *ndctl_ref(struct ndctl_ctx *ctx)
 {
 	if (ctx == NULL)
@@ -258,13 +289,6 @@ static void free_context(struct ndctl_ctx *ctx)
 	free(ctx);
 }
 
-/**
- * ndctl_unref:
- * @ctx: ndctl library context
- *
- * Drop a reference of the ndctl library context.
- *
- **/
 NDCTL_EXPORT struct ndctl_ctx *ndctl_unref(struct ndctl_ctx *ctx)
 {
 	if (ctx == NULL)
@@ -278,15 +302,14 @@ NDCTL_EXPORT struct ndctl_ctx *ndctl_unref(struct ndctl_ctx *ctx)
 }
 
 /**
- * ndctl_set_log_fn:
+ * ndctl_set_log_fn - override default log routine
  * @ctx: ndctl library context
  * @log_fn: function to be called for logging messages
  *
- * The built-in logging writes to stderr. It can be
- * overridden by a custom function, to plug log messages
- * into the user's logging functionality.
- *
- **/
+ * The built-in logging writes to stderr. It can be overridden by a
+ * custom function, to plug log messages into the user's logging
+ * functionality.
+ */
 NDCTL_EXPORT void ndctl_set_log_fn(struct ndctl_ctx *ctx,
 		void (*log_fn)(struct ndctl_ctx *ctx,
 			int priority, const char *file,
@@ -297,25 +320,17 @@ NDCTL_EXPORT void ndctl_set_log_fn(struct ndctl_ctx *ctx,
 	info(ctx, "custom logging function %p registered\n", log_fn);
 }
 
-/**
- * ndctl_get_log_priority:
- * @ctx: ndctl library context
- *
- * Returns: the current logging priority
- **/
 NDCTL_EXPORT int ndctl_get_log_priority(struct ndctl_ctx *ctx)
 {
 	return ctx->log_priority;
 }
 
 /**
- * ndctl_set_log_priority:
- * @ctx: ndctl library context
- * @priority: the new logging priority
+ * ndctl_set_log_priority - set log verbosity
+ * @priority: from syslog.h, LOG_ERR, LOG_INFO, LOG_DEBUG
  *
- * Set the current logging priority. The value controls which messages
- * are logged.
- **/
+ * Note: LOG_DEBUG requires library be built with "configure --enable-debug"
+ */
 NDCTL_EXPORT void ndctl_set_log_priority(struct ndctl_ctx *ctx, int priority)
 {
 	ctx->log_priority = priority;
@@ -481,10 +496,6 @@ static void busses_init(struct ndctl_ctx *ctx)
 	device_parse(ctx, "/sys/class/nd_bus", "ndctl", ctx, add_bus);
 }
 
-/**
- * ndctl_bus_get_first: [initialize bus list] retrieve first bus
- * @ctx: ndctl ctx context
- */
 NDCTL_EXPORT struct ndctl_bus *ndctl_bus_get_first(struct ndctl_ctx *ctx)
 {
 	busses_init(ctx);
@@ -558,7 +569,7 @@ static int add_dimm(void *parent, int id, const char *dimm_base)
 
 	dimm->bus = bus;
 	dimm->id = id;
-	dimm->nfit_handle = strtoul(buf, NULL, 0);
+	dimm->handle = strtoul(buf, NULL, 0);
 	list_add(&bus->dimms, &dimm->list);
 	free(path);
 
@@ -580,10 +591,6 @@ static void dimms_init(struct ndctl_bus *bus)
 	device_parse(bus->ctx, bus->bus_path, "dimm", bus, add_dimm);
 }
 
-/**
- * ndctl_dimm_get_first: [initialize dimm list] retrieve first dimm
- * @bus: ndctl bus context
- */
 NDCTL_EXPORT struct ndctl_dimm *ndctl_dimm_get_first(struct ndctl_bus *bus)
 {
 	dimms_init(bus);
@@ -600,32 +607,32 @@ NDCTL_EXPORT struct ndctl_dimm *ndctl_dimm_get_next(struct ndctl_dimm *dimm)
 
 NDCTL_EXPORT unsigned int ndctl_dimm_get_handle(struct ndctl_dimm *dimm)
 {
-	return dimm->nfit_handle;
+	return dimm->handle;
 }
 
 NDCTL_EXPORT unsigned int ndctl_dimm_get_node(struct ndctl_dimm *dimm)
 {
-	return dimm->nfit_handle >> 16 & 0xfff;
+	return dimm->handle >> 16 & 0xfff;
 }
 
 NDCTL_EXPORT unsigned int ndctl_dimm_get_socket(struct ndctl_dimm *dimm)
 {
-	return dimm->nfit_handle >> 12 & 0xf;
+	return dimm->handle >> 12 & 0xf;
 }
 
 NDCTL_EXPORT unsigned int ndctl_dimm_get_imc(struct ndctl_dimm *dimm)
 {
-	return dimm->nfit_handle >> 8 & 0xf;
+	return dimm->handle >> 8 & 0xf;
 }
 
 NDCTL_EXPORT unsigned int ndctl_dimm_get_channel(struct ndctl_dimm *dimm)
 {
-	return dimm->nfit_handle >> 4 & 0xf;
+	return dimm->handle >> 4 & 0xf;
 }
 
 NDCTL_EXPORT unsigned int ndctl_dimm_get_dimm(struct ndctl_dimm *dimm)
 {
-	return dimm->nfit_handle & 0xf;
+	return dimm->handle & 0xf;
 }
 
 NDCTL_EXPORT struct ndctl_bus *ndctl_dimm_get_bus(struct ndctl_dimm *dimm)
@@ -644,7 +651,7 @@ NDCTL_EXPORT struct ndctl_dimm *ndctl_dimm_get_by_handle(struct ndctl_bus *bus,
 	struct ndctl_dimm *dimm;
 
 	ndctl_dimm_foreach(bus, dimm)
-		if (dimm->nfit_handle == handle)
+		if (dimm->handle == handle)
 			return dimm;
 
 	return NULL;
@@ -716,10 +723,6 @@ static void regions_init(struct ndctl_bus *bus)
 	device_parse(bus->ctx, bus->bus_path, "region", bus, add_region);
 }
 
-/**
- * ndctl_region_get_first: [initialize region list] retrieve first region
- * @bus: ndctl bus context
- */
 NDCTL_EXPORT struct ndctl_region *ndctl_region_get_first(struct ndctl_bus *bus)
 {
 	regions_init(bus);
@@ -817,6 +820,13 @@ NDCTL_EXPORT struct ndctl_dimm *ndctl_region_get_next_dimm(struct ndctl_region *
 	return NULL;
 }
 
+/**
+ * ndctl_region_wait_probe - flush region driver initiated async probing
+ * @region: region to sync
+ *
+ * Upon return this region's namespace devices are registered and any
+ * aliasing with other regions will have been resolved.
+ */
 NDCTL_EXPORT int ndctl_region_wait_probe(struct ndctl_region *region)
 {
 	struct ndctl_ctx *ctx = region->bus->ctx;
@@ -895,10 +905,6 @@ static void mappings_init(struct ndctl_region *region)
 	}
 }
 
-/**
- * ndctl_mapping_get_first: [initialize mapping list] retrieve first mapping
- * @region: ndctl region context
- */
 NDCTL_EXPORT struct ndctl_mapping *ndctl_mapping_get_first(struct ndctl_region *region)
 {
 	mappings_init(region);

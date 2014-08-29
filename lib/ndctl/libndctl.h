@@ -18,16 +18,53 @@
 
 #include <stdarg.h>
 
+/*
+ *          "nd/ndctl" device/object hierarchy and kernel modules
+ *
+ * +-----------+-----------+-----------+------------------+-----------+
+ * | DEVICE    |    BUS    |  REGION   |    NAMESPACE     |   BLOCK   |
+ * | CLASSES:  | PROVIDERS |  DEVICES  |     DEVICES      |  DEVICES  |
+ * +-----------+-----------+-----------+------------------+-----------+
+ * | MODULES:  |  nd_core  |  nd_core  |    nd_region     |  nd_pmem  |
+ * |           |  nd_acpi  | nd_region |                  |  nd_blk   |
+ * |           | nfit_test |           |                  |    btt    |
+ * +-----------v-----------v-----------v------------------v-----------v
+ *               +-----+
+ *               | CTX |
+ *               +--+--+    +---------+   +--------------+   +-------+
+ *                  |     +-> REGION0 +---> NAMESPACE0.0 +---> PMEM3 |
+ * +-------+     +--+---+ | +---------+   +--------------+   +-------+
+ * | DIMM0 <-----+ BUS0 +---> REGION1 +---> NAMESPACE1.0 +---> PMEM2 |
+ * +-------+     +--+---+ | +---------+   +--------------+   +-------+
+ *                  |     +-> REGION2 +---> NAMESPACE2.0 +---> PMEM1 |
+ *                  |       +---------+   + ------------ +   +-------+
+ *                  |
+ * +-------+        |       +---------+   +--------------+   +-------+
+ * | DIMM1 <---+ +--+---+ +-> REGION3 +---> NAMESPACE3.0 +---> PMEM0 |
+ * +-------+   +-+ BUS1 +-+ +---------+   +--------------+   +-------+
+ * | DIMM2 <---+ +--+---+ +-> REGION4 +---> NAMESPACE4.0 +--->  ND0  |
+ * +-------+        |       + ------- +   +--------------+   +-------+
+ *                  |
+ * +-------+        |                     +--------------+   +-------+
+ * | DIMM3 <---+    |                   +-> NAMESPACE5.0 +--->  ND2  |
+ * +-------+   | +--+---+   +---------+ | +--------------+   +---------------+
+ * | DIMM4 <-----+ BUS2 +---> REGION5 +---> NAMESPACE5.1 +--->  BTT1 |  ND1  |
+ * +-------+   | +------+   +---------+ | +--------------+   +---------------+
+ * | DIMM5 <---+                        +-> NAMESPACE5.2 +--->  BTT0 |  ND0  |
+ * +-------+                              +--------------+   +-------+-------+
+ *
+ * Notes:
+ * 1/ The object ids are not guaranteed to be stable from boot to boot
+ * 2/ While regions and busses are numbered in sequential/bus-discovery
+ *    order, the resulting block devices may appear to have random ids.
+ *    Use static attributes of the devices/device-path to generate a
+ *    persistent name.
+ */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/*
- * ndctl_ctx
- *
- * library user context - reads the config and system
- * environment, user variables, allows custom logging
- */
 struct ndctl_ctx;
 struct ndctl_ctx *ndctl_ref(struct ndctl_ctx *ctx);
 struct ndctl_ctx *ndctl_unref(struct ndctl_ctx *ctx);
@@ -38,16 +75,9 @@ void ndctl_set_log_fn(struct ndctl_ctx *ctx,
                                  const char *format, va_list args));
 int ndctl_get_log_priority(struct ndctl_ctx *ctx);
 void ndctl_set_log_priority(struct ndctl_ctx *ctx, int priority);
-void *ndctl_get_userdata(struct ndctl_ctx *ctx);
 void ndctl_set_userdata(struct ndctl_ctx *ctx, void *userdata);
+void *ndctl_get_userdata(struct ndctl_ctx *ctx);
 
-/*
- * ndctl_bus
- *
- * Access the list of busses in the system.  Usually only one provided
- * by "ACPI.NFIT".  The nfit_test module provides one or more test
- * busses with provider names of the format "nfit_test.N"
- */
 struct ndctl_bus;
 struct ndctl_bus *ndctl_bus_get_first(struct ndctl_ctx *ctx);
 struct ndctl_bus *ndctl_bus_get_next(struct ndctl_bus *bus);
@@ -63,11 +93,6 @@ unsigned int ndctl_bus_get_revision(struct ndctl_bus *bus);
 unsigned int ndctl_bus_get_id(struct ndctl_bus *bus);
 const char *ndctl_bus_get_provider(struct ndctl_bus *bus);
 
-/*
- * ndctl_dimm
- *
- * access the list of dimms
- */
 struct ndctl_dimm;
 struct ndctl_dimm *ndctl_dimm_get_first(struct ndctl_bus *bus);
 struct ndctl_dimm *ndctl_dimm_get_next(struct ndctl_dimm *dimm);
@@ -86,11 +111,6 @@ struct ndctl_ctx *ndctl_dimm_get_ctx(struct ndctl_dimm *dimm);
 struct ndctl_dimm *ndctl_dimm_get_by_handle(struct ndctl_bus *bus,
 		unsigned int handle);
 
-/*
- * ndctl_region
- *
- * access the list of regions
- */
 struct ndctl_region;
 struct ndctl_region *ndctl_region_get_first(struct ndctl_bus *bus);
 struct ndctl_region *ndctl_region_get_next(struct ndctl_region *region);
@@ -104,22 +124,17 @@ unsigned int ndctl_region_get_mappings(struct ndctl_region *region);
 unsigned long long ndctl_region_get_size(struct ndctl_region *region);
 unsigned int ndctl_region_get_type(struct ndctl_region *region);
 const char *ndctl_region_get_type_name(struct ndctl_region *region);
+int ndctl_region_wait_probe(struct ndctl_region *region);
 struct ndctl_bus *ndctl_region_get_bus(struct ndctl_region *region);
 struct ndctl_ctx *ndctl_region_get_ctx(struct ndctl_region *region);
 struct ndctl_dimm *ndctl_region_get_first_dimm(struct ndctl_region *region);
 struct ndctl_dimm *ndctl_region_get_next_dimm(struct ndctl_region *region,
 		struct ndctl_dimm *dimm);
-int ndctl_region_wait_probe(struct ndctl_region *region);
 #define ndctl_dimm_foreach_in_region(region, dimm) \
         for (dimm = ndctl_region_get_first_dimm(region); \
              dimm != NULL; \
              dimm = ndctl_region_get_next_dimm(region, dimm))
 
-/*
- * ndctl_mapping
- *
- * access the list of mappings
- */
 struct ndctl_mapping;
 struct ndctl_mapping *ndctl_mapping_get_first(struct ndctl_region *region);
 struct ndctl_mapping *ndctl_mapping_get_next(struct ndctl_mapping *mapping);
@@ -134,11 +149,6 @@ struct ndctl_region *ndctl_mapping_get_region(struct ndctl_mapping *mapping);
 unsigned long long ndctl_mapping_get_offset(struct ndctl_mapping *mapping);
 unsigned long long ndctl_mapping_get_length(struct ndctl_mapping *mapping);
 
-/*
- * ndctl_namespace
- *
- * access the list of namespaces
- */
 struct ndctl_namespace;
 struct ndctl_namespace *ndctl_namespace_get_first(struct ndctl_region *region);
 struct ndctl_namespace *ndctl_namespace_get_next(struct ndctl_namespace *ndns);
