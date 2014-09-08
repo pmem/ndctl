@@ -84,8 +84,8 @@ static struct region {
 	unsigned int interleave_ways;
 	char *type;
 } regions[] = {
-	{ 0, 2, "pm" },
-	{ 1, 4, "pm" },
+	{ 0, 2, "pmem" },
+	{ 1, 4, "pmem" },
 	{ 2, 1, "block" },
 	{ 3, 1, "block" },
 	{ 4, 1, "block" },
@@ -154,9 +154,9 @@ static int do_test(struct ndctl_ctx *ctx)
 			fprintf(stderr, "failed to find region: %d\n", regions[i].id);
 			return -ENXIO;
 		}
-		if (strcmp(ndctl_region_get_type(region), regions[i].type) != 0) {
+		if (strcmp(ndctl_region_get_type_name(region), regions[i].type) != 0) {
 			fprintf(stderr, "region expected type: %s got: %s\n",
-				ndctl_region_get_type(region), regions[i].type);
+				ndctl_region_get_type_name(region), regions[i].type);
 			return -ENXIO;
 		}
 		if (ndctl_region_get_interleave_ways(region) != regions[i].interleave_ways) {

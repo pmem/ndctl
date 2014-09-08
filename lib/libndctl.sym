@@ -41,6 +41,7 @@ global:
 	ndctl_region_get_mappings;
 	ndctl_region_get_size;
 	ndctl_region_get_type;
+	ndctl_region_get_type_name;
 	ndctl_region_get_bus;
 	ndctl_region_get_ctx;
 	ndctl_region_get_first_dimm;

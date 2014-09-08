@@ -46,6 +46,7 @@ struct ndctl_bus {
 struct ndctl_dimm {
 	struct ndctl_bus *bus;
 	unsigned int nfit_handle;
+	int id;
 	struct list_node list;
 };
 
@@ -58,10 +59,9 @@ struct ndctl_mapping {
 
 struct ndctl_region {
 	struct ndctl_bus *bus;
-	int id, interleave_ways, num_mappings;
+	int id, interleave_ways, num_mappings, type;
 	int mappings_init;
 	unsigned long long size;
-	char *type;
 	char *region_path;
 	struct list_head mappings;
 	struct list_node list;
@@ -216,7 +216,6 @@ static void free_region(struct ndctl_region *region)
 	}
 	list_del_from(&bus->regions, &region->list);
 	free(region->region_path);
-	free(region->type);
 	free(region);
 }
 
@@ -350,11 +349,59 @@ static char *parent_dev_path(char *type, int major, int minor)
         return __dev_path(type, major, minor, 1);
 }
 
-static int add_bus(struct ndctl_ctx *ctx, int id, const char *ctl_base)
+typedef int (*add_dev_fn)(void *parent, int id, const char *dev_path);
+
+static int device_parse(struct ndctl_ctx *ctx, const char *base_path,
+		const char *dev_name, void *parent, add_dev_fn add_dev)
+{
+	int add_errors = 0;
+	struct dirent *de;
+	DIR *dir;
+
+	dir = opendir(base_path);
+	if (!dir) {
+		dbg(ctx, "no \"%s\" devices found\n", dev_name);
+		return -ENODEV;
+	}
+
+	while ((de = readdir(dir)) != NULL) {
+		char *dev_path;
+		char fmt[20];
+		int id, rc;
+
+		sprintf(fmt, "%s%%d", dev_name);
+		if (de->d_ino == 0)
+			continue;
+		if (sscanf(de->d_name, fmt, &id) != 1)
+			continue;
+		if (asprintf(&dev_path, "%s/%s", base_path, de->d_name) < 0) {
+			err(ctx, "%s%d: path allocation failure\n",
+					dev_name, id);
+			continue;
+		}
+
+		rc = add_dev(parent, id, dev_path);
+		free(dev_path);
+		if (rc) {
+			add_errors++;
+			err(ctx, "%s%d: add_dev() failed: %d\n",
+					dev_name, id, rc);
+		} else {
+			dbg(ctx, "%s%d: added\n", dev_name, id);
+		}
+	}
+	closedir(dir);
+
+	return add_errors;
+}
+
+
+static int add_bus(void *parent, int id, const char *ctl_base)
 {
 	int rc = -ENOMEM;
 	struct ndctl_bus *bus;
 	char buf[SYSFS_ATTR_SIZE];
+	struct ndctl_ctx *ctx = parent;
 	char *path = calloc(1, strlen(ctl_base) + 20);
 
 	if (!path)
@@ -375,8 +422,9 @@ static int add_bus(struct ndctl_ctx *ctx, int id, const char *ctl_base)
 
 	sprintf(path, "%s/format", ctl_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
-		goto err_read;
-	bus->format = strtoul(buf, NULL, 0);
+		bus->format = -1;
+	else
+		bus->format = strtoul(buf, NULL, 0);
 
 	sprintf(path, "%s/revision", ctl_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
@@ -396,8 +444,6 @@ static int add_bus(struct ndctl_ctx *ctx, int id, const char *ctl_base)
 	if (!bus->bus_path)
 		goto err_dev_path;
 	list_add(&ctx->busses, &bus->list);
-	dbg(ctx, "bus%d provider: %s format: %d revision: %d\n",
-		bus->id, bus->provider, bus->format, bus->revision);
 
 	rc = 0;
 	goto out;
@@ -415,41 +461,11 @@ static int add_bus(struct ndctl_ctx *ctx, int id, const char *ctl_base)
 
 static void busses_init(struct ndctl_ctx *ctx)
 {
-	const char *class_path = "/sys/class/nd_bus";
-	struct dirent *de;
-	DIR *dir;
-
 	if (ctx->busses_init)
 		return;
 	ctx->busses_init = 1;
 
-	dir = opendir(class_path);
-	if (!dir) {
-		info(ctx, "no busses found\n");
-		return;
-	}
-
-	while ((de = readdir(dir)) != NULL) {
-		char *ctl_path;
-		int id, rc;
-
-		if (de->d_ino == 0)
-			continue;
-		if (sscanf(de->d_name, "ndctl%d", &id) != 1)
-			continue;
-		if (asprintf(&ctl_path, "%s/%s", class_path, de->d_name) < 0) {
-			err(ctx, "allocation failure\n");
-			continue;
-		}
-
-		rc = add_bus(ctx, id, ctl_path);
-		free(ctl_path);
-		if (rc) {
-			err(ctx, "failed to add bus: %d\n", rc);
-			continue;
-		}
-	}
-	closedir(dir);
+	device_parse(ctx, "/sys/class/nd_bus", "ndctl", ctx, add_bus);
 }
 
 /**
@@ -505,48 +521,50 @@ struct ndctl_ctx *ndctl_bus_get_ctx(struct ndctl_bus *bus)
 	return bus->ctx;
 }
 
-static int add_dimm(struct ndctl_bus *bus, unsigned int node, unsigned int sicd)
+static int add_dimm(void *parent, int id, const char *dimm_base)
 {
-	struct ndctl_dimm *dimm = calloc(1, sizeof(*dimm));
+	int rc = -ENOMEM;
+	struct ndctl_dimm *dimm;
+	char buf[SYSFS_ATTR_SIZE];
+	struct ndctl_bus *bus = parent;
 	struct ndctl_ctx *ctx = bus->ctx;
-	
-	if (!dimm)
+	char *path = calloc(1, strlen(dimm_base) + 20);
+
+	if (!path)
 		return -ENOMEM;
 
+	dimm = calloc(1, sizeof(*dimm));
+	if (!dimm)
+		goto err_dimm;
+
+	sprintf(path, "%s/handle", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0) {
+		rc = -ENXIO;
+		goto err_handle;
+	}
+
 	dimm->bus = bus;
-	dimm->nfit_handle = node << 16 | sicd;
+	dimm->id = id;
+	dimm->nfit_handle = strtoul(buf, NULL, 0);
 	list_add(&bus->dimms, &dimm->list);
-	dbg(ctx, "dimm-%.3x:%.4x\n", node, sicd);
+	free(path);
+
 	return 0;
+
+ err_handle:
+	free(dimm);
+ err_dimm:
+	free(path);
+	return rc;
 }
 
 static void dimms_init(struct ndctl_bus *bus)
 {
-	struct ndctl_ctx *ctx = bus->ctx;
-	struct dirent *de;
-	DIR *dir;
-
 	if (bus->dimms_init)
 		return;
 	bus->dimms_init = 1;
 
-	dir = opendir(bus->bus_path);
-	if (!dir) {
-		err(ctx, "failed to open bus%d\n", bus->id);
-		return;
-	}
-
-	while ((de = readdir(dir)) != NULL) {
-		unsigned int node, sicd;
-
-		if (de->d_ino == 0)
-			continue;
-		if (sscanf(de->d_name, "dimm-%x:%x", &node, &sicd) != 2)
-			continue;
-		if (add_dimm(bus, node, sicd))
-			err(ctx, "add_dimm: allocation failure\n");
-	}
-	closedir(dir);
+	device_parse(bus->ctx, bus->bus_path, "dimm", bus, add_dimm);
 }
 
 /**
@@ -619,11 +637,12 @@ NDCTL_EXPORT struct ndctl_dimm *ndctl_dimm_get_by_handle(struct ndctl_bus *bus,
 	return NULL;
 }
 
-static int add_region(struct ndctl_bus *bus, int spa_id, const char *region_base)
+static int add_region(void *parent, int id, const char *region_base)
 {
 	int rc = -ENOMEM;
 	char buf[SYSFS_ATTR_SIZE];
 	struct ndctl_region *region;
+	struct ndctl_bus *bus = parent;
 	struct ndctl_ctx *ctx = bus->ctx;
 	char *path = calloc(1, strlen(region_base) + 20);
 
@@ -635,7 +654,7 @@ static int add_region(struct ndctl_bus *bus, int spa_id, const char *region_base
 		goto err_region;
 	list_head_init(&region->mappings);
 	region->bus = bus;
-	region->id = spa_id;
+	region->id = id;
 
 	rc = -EINVAL;
 	sprintf(path, "%s/size", region_base);
@@ -656,24 +675,18 @@ static int add_region(struct ndctl_bus *bus, int spa_id, const char *region_base
 	sprintf(path, "%s/type", region_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		goto err_read;
-	region->type = strdup(buf);
-	if (!region->type)
-		goto err_read;
+	region->type = strtoul(buf, NULL, 0);
 
 	region->region_path = strdup(region_base);
 	if (!region->region_path)
-		goto err_region_path;
+		goto err_read;
 	list_add(&bus->regions, &region->list);
-	dbg(ctx, "region%d type: %s\n", region->id, region->type);
 
-	rc = 0;
-	goto out;
+	free(path);
+	return 0;
 
- err_region_path:
-	free(region->type);
  err_read:
 	free(region);
- out:
  err_region:
 	free(path);
 
@@ -682,41 +695,11 @@ static int add_region(struct ndctl_bus *bus, int spa_id, const char *region_base
 
 static void regions_init(struct ndctl_bus *bus)
 {
-	struct ndctl_ctx *ctx = bus->ctx;
-	struct dirent *de;
-	DIR *dir;
-
 	if (bus->regions_init)
 		return;
 	bus->regions_init = 1;
 
-	dir = opendir(bus->bus_path);
-	if (!dir) {
-		err(ctx, "failed to open bus%d\n", bus->id);
-		return;
-	}
-	while ((de = readdir(dir)) != NULL) {
-		unsigned int bus_id, spa_id;
-		char *region_path;
-		int rc;
-
-		if (de->d_ino == 0)
-			continue;
-		if (sscanf(de->d_name, "region%d-%d", &bus_id, &spa_id) != 2)
-			continue;
-		if (asprintf(&region_path, "%s/%s", bus->bus_path, de->d_name) < 0) {
-			err(ctx, "allocation failure\n");
-			continue;
-		}
-
-		rc = add_region(bus, spa_id, region_path);
-		free(region_path);
-		if (rc) {
-			err(ctx, "failed to add region: %d\n", rc);
-			continue;
-		}
-	}
-	closedir(dir);
+	device_parse(bus->ctx, bus->bus_path, "region", bus, add_region);
 }
 
 /**
@@ -757,9 +740,27 @@ NDCTL_EXPORT unsigned long long ndctl_region_get_size(struct ndctl_region *regio
 	return region->size;
 }
 
-NDCTL_EXPORT const char *ndctl_region_get_type(struct ndctl_region *region)
+NDCTL_EXPORT unsigned int ndctl_region_get_type(struct ndctl_region *region)
 {
 	return region->type;
+}
+
+static const char *ndctl_device_type_name(int type)
+{
+	switch (type) {
+	case 1:  return "dimm";
+	case 2:  return "pmem";
+	case 3:  return "block";
+	case 4:  return "namespace_io";
+	case 5:  return "namespace_pmem";
+	case 6:  return "namespace_block";
+	default: return "unknown";
+	}
+}
+
+NDCTL_EXPORT const char *ndctl_region_get_type_name(struct ndctl_region *region)
+{
+	return ndctl_device_type_name(region->type);
 }
 
 NDCTL_EXPORT struct ndctl_bus *ndctl_region_get_bus(struct ndctl_region *region)
