@@ -61,10 +61,18 @@ struct ndctl_region {
 	struct ndctl_bus *bus;
 	int id, interleave_ways, num_mappings, type;
 	int mappings_init;
+	int namespaces_init;
 	unsigned long long size;
 	char *region_path;
 	struct list_head mappings;
+	struct list_head namespaces;
 	struct list_node list;
+};
+
+struct ndctl_namespace {
+	struct ndctl_region *region;
+	struct list_node list;
+	int type, id;
 };
 
 /**
@@ -209,10 +217,15 @@ static void free_region(struct ndctl_region *region)
 {
 	struct ndctl_bus *bus = region->bus;
 	struct ndctl_mapping *mapping, *_m;
+	struct ndctl_namespace *ndns, *_n;
 
 	list_for_each_safe(&region->mappings, mapping, _m, list) {
 		list_del_from(&region->mappings, &mapping->list);
 		free(mapping);
+	}
+	list_for_each_safe(&region->namespaces, ndns, _n, list) {
+		list_del_from(&region->namespaces, &ndns->list);
+		free(ndns);
 	}
 	list_del_from(&bus->regions, &region->list);
 	free(region->region_path);
@@ -653,6 +666,7 @@ static int add_region(void *parent, int id, const char *region_base)
 	if (!region)
 		goto err_region;
 	list_head_init(&region->mappings);
+	list_head_init(&region->namespaces);
 	region->bus = bus;
 	region->id = id;
 
@@ -803,6 +817,23 @@ NDCTL_EXPORT struct ndctl_dimm *ndctl_region_get_next_dimm(struct ndctl_region *
 	return NULL;
 }
 
+NDCTL_EXPORT int ndctl_region_wait_probe(struct ndctl_region *region)
+{
+	struct ndctl_ctx *ctx = region->bus->ctx;
+	char *path, buf[SYSFS_ATTR_SIZE];
+	int rc;
+
+	if (asprintf(&path, "%s/driver/module/parameters/wait_probe",
+				region->region_path) < 0) {
+		dbg(ctx, "region%d: allocation failure\n", region->id);
+		return -ENOMEM;
+	}
+
+	rc = sysfs_read_attr(ctx, path, buf);
+	free(path);
+	return rc < 0 ? -ENXIO : 0;
+}
+
 static void mappings_init(struct ndctl_region *region)
 {
 	char *mapping_path, buf[SYSFS_ATTR_SIZE];
@@ -895,4 +926,98 @@ NDCTL_EXPORT unsigned long long ndctl_mapping_get_offset(struct ndctl_mapping *m
 NDCTL_EXPORT unsigned long long ndctl_mapping_get_length(struct ndctl_mapping *mapping)
 {
 	return mapping->length;
+}
+
+static int add_namespace(void *parent, int id, const char *ndns_base)
+{
+	char *path = calloc(1, strlen(ndns_base) + 20);
+	struct ndctl_region *region = parent;
+	struct ndctl_bus *bus = region->bus;
+	struct ndctl_ctx *ctx = bus->ctx;
+	struct ndctl_namespace *ndns;
+	char buf[SYSFS_ATTR_SIZE];
+	int rc = -ENOMEM;
+
+	if (!path)
+		return -ENOMEM;
+
+	ndns = calloc(1, sizeof(*ndns));
+	if (!ndns)
+		goto err_namespace;
+	ndns->id = id;
+	ndns->region = region;
+
+	sprintf(path, "%s/type", ndns_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		goto err_read;
+	ndns->type = strtoul(buf, NULL, 0);
+
+	list_add(&region->namespaces, &ndns->list);
+	free(path);
+	return 0;
+
+ err_read:
+	free(ndns);
+ err_namespace:
+	free(path);
+	return rc;
+}
+
+static void namespaces_init(struct ndctl_region *region)
+{
+	struct ndctl_bus *bus = region->bus;
+	struct ndctl_ctx *ctx = bus->ctx;
+	char ndns_fmt[20];
+
+	if (region->namespaces_init)
+		return;
+	region->namespaces_init = 1;
+
+	ndctl_region_wait_probe(region);
+	sprintf(ndns_fmt, "namespace%d.", region->id);
+	device_parse(ctx, region->region_path, ndns_fmt, region, add_namespace);
+}
+
+NDCTL_EXPORT struct ndctl_namespace *ndctl_namespace_get_first(struct ndctl_region *region)
+{
+	namespaces_init(region);
+
+	return list_top(&region->namespaces, struct ndctl_namespace, list);
+}
+
+NDCTL_EXPORT struct ndctl_namespace *ndctl_namespace_get_next(struct ndctl_namespace *ndns)
+{
+	struct ndctl_region *region = ndns->region;
+
+	return list_next(&region->namespaces, ndns, list);
+}
+
+NDCTL_EXPORT unsigned int ndctl_namespace_get_id(struct ndctl_namespace *ndns)
+{
+	return ndns->id;
+}
+
+NDCTL_EXPORT unsigned int ndctl_namespace_get_type(struct ndctl_namespace *ndns)
+{
+	return ndns->type;
+}
+
+NDCTL_EXPORT const char *ndctl_namespace_get_type_name(struct ndctl_namespace *ndns)
+{
+	return ndctl_device_type_name(ndns->type);
+}
+
+NDCTL_EXPORT struct ndctl_region *ndctl_namespace_get_region(struct ndctl_namespace *ndns)
+{
+	return ndns->region;
+}
+
+NDCTL_EXPORT struct ndctl_bus *ndctl_namespace_get_bus(struct ndctl_namespace *ndns)
+{
+	return ndns->region->bus;
+}
+
+NDCTL_EXPORT struct ndctl_ctx *ndctl_namespace_get_ctx(struct ndctl_namespace *ndns)
+{
+	return ndns->region->bus->ctx;
 }

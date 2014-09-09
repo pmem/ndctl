@@ -65,10 +65,23 @@
  *     participate in REGION1 are instantiated as blk4.0 and blk5.0, but note
  *     that those block namespaces also incorporate the unused portion of
  *     REGION1 (starting at offregion (b)) in those dimms respectively.
+ *
+ * Kernel provider "nfit_test.1" produces an NFIT with the following attributes:
+ *
+ * region2
+ * +---------------------+
+ * |---------------------|
+ * ||       pm2.0       ||
+ * |---------------------|
+ * +---------------------+
+ *
+ * *) Describes a simple system-physical-address range with no backing
+ *    dimm or interleave description.
  */
 
 static const char *NFIT_TEST_MODULE = "nfit_test";
-static const char *NFIT_PROVIDER = "nfit_test.0";
+static const char *NFIT_PROVIDER0 = "nfit_test.0";
+static const char *NFIT_PROVIDER1 = "nfit_test.1";
 #define DIMM_HANDLE(n, s, i, c, d) \
 	(((n & 0xfff) << 16) | ((s & 0xf) << 12) | ((i & 0xf) << 8) \
 	 | ((c & 0xf) << 4) | (d & 0xf))
@@ -79,11 +92,18 @@ static unsigned int dimms[] = {
 	DIMM_HANDLE(0, 0, 1, 0, 1),
 };
 
-static struct region {
+struct region {
 	unsigned int id;
 	unsigned int interleave_ways;
 	char *type;
-} regions[] = {
+};
+
+struct namespace {
+	unsigned int id;
+	char *type;
+};
+
+static struct region regions0[] = {
 	{ 0, 2, "pmem" },
 	{ 1, 4, "pmem" },
 	{ 2, 1, "block" },
@@ -92,13 +112,21 @@ static struct region {
 	{ 5, 1, "block" },
 };
 
+static struct region regions1[] = {
+	{ 6, 0, "pmem" },
+};
+
+static struct namespace namespaces1[] = {
+	{ 0, "namespace_io" },
+};
+
 static struct ndctl_bus *get_bus_by_provider(struct ndctl_ctx *ctx,
 		const char *provider)
 {
 	struct ndctl_bus *bus;
 
         ndctl_bus_foreach(ctx, bus)
-		if (strcmp(NFIT_PROVIDER, ndctl_bus_get_provider(bus)) == 0)
+		if (strcmp(provider, ndctl_bus_get_provider(bus)) == 0)
 			return bus;
 
 	return NULL;
@@ -127,11 +155,78 @@ static struct ndctl_region *get_region_by_id(struct ndctl_bus *bus,
 	return NULL;
 }
 
-
-
-static int do_test(struct ndctl_ctx *ctx)
+static struct ndctl_namespace *get_namespace_by_id(struct ndctl_region *region,
+		unsigned int id)
 {
-	struct ndctl_bus *bus = get_bus_by_provider(ctx, NFIT_PROVIDER);
+	struct ndctl_namespace *ndns;
+
+	ndctl_namespace_foreach(region, ndns)
+		if (ndctl_namespace_get_id(ndns) == id)
+			return ndns;
+
+	return NULL;
+}
+
+static int check_regions(struct ndctl_bus *bus, struct region *regions, int n)
+{
+	int i;
+
+	for (i = 0; i < n; i++) {
+		struct ndctl_region *region;
+
+		region = get_region_by_id(bus, regions[i].id);
+		if (!region) {
+			fprintf(stderr, "failed to find region: %d\n", regions[i].id);
+			return -ENXIO;
+		}
+		if (strcmp(ndctl_region_get_type_name(region), regions[i].type) != 0) {
+			fprintf(stderr, "region expected type: %s got: %s\n",
+				regions[i].type, ndctl_region_get_type_name(region));
+			return -ENXIO;
+		}
+		if (ndctl_region_get_interleave_ways(region) != regions[i].interleave_ways) {
+			fprintf(stderr, "region expected interleave_ways: %d got: %d\n",
+					regions[i].interleave_ways,
+					ndctl_region_get_interleave_ways(region));
+			return -ENXIO;
+		}
+	}
+
+	return 0;
+}
+
+static int check_namespaces(struct ndctl_region *region,
+		struct namespace *namespaces, int n)
+{
+	int i;
+
+	if (!region)
+		return -ENXIO;
+
+	for (i = 0; i < n; i++) {
+		struct ndctl_namespace *ndns;
+
+		ndns = get_namespace_by_id(region, namespaces[i].id);
+		if (!ndns) {
+			fprintf(stderr, "failed to find namespace: %d\n",
+					namespaces[i].id);
+			return -ENXIO;
+		}
+		if (strcmp(ndctl_namespace_get_type_name(ndns),
+					namespaces[i].type) != 0) {
+			fprintf(stderr, "namespace expected type: %s got: %s\n",
+					ndctl_namespace_get_type_name(ndns),
+					namespaces[i].type);
+			return -ENXIO;
+		}
+	}
+
+	return 0;
+}
+
+static int do_test0(struct ndctl_ctx *ctx)
+{
+	struct ndctl_bus *bus = get_bus_by_provider(ctx, NFIT_PROVIDER0);
 	unsigned int i;
 
 	if (!bus)
@@ -146,32 +241,36 @@ static int do_test(struct ndctl_ctx *ctx)
 		}
 	}
 
-	for (i = 0; i < ARRAY_SIZE(regions); i++) {
-		struct ndctl_region *region;
-
-		region = get_region_by_id(bus, regions[i].id);
-		if (!region) {
-			fprintf(stderr, "failed to find region: %d\n", regions[i].id);
-			return -ENXIO;
-		}
-		if (strcmp(ndctl_region_get_type_name(region), regions[i].type) != 0) {
-			fprintf(stderr, "region expected type: %s got: %s\n",
-				ndctl_region_get_type_name(region), regions[i].type);
-			return -ENXIO;
-		}
-		if (ndctl_region_get_interleave_ways(region) != regions[i].interleave_ways) {
-			fprintf(stderr, "region expected interleave_ways: %d got: %d\n",
-					ndctl_region_get_interleave_ways(region),
-					regions[i].interleave_ways);
-			return -ENXIO;
-		}
-	}
-
-	return 0;
+	return check_regions(bus, regions0, ARRAY_SIZE(regions0));
 }
+
+static int do_test1(struct ndctl_ctx *ctx)
+{
+	struct ndctl_bus *bus = get_bus_by_provider(ctx, NFIT_PROVIDER1);
+	struct ndctl_region *region;
+	int rc;
+
+	if (!bus)
+		return -ENXIO;
+
+	rc = check_regions(bus, regions1, ARRAY_SIZE(regions1));
+	if (rc)
+		return rc;
+
+	region = get_region_by_id(bus, regions1[0].id);
+
+	return check_namespaces(region, namespaces1, ARRAY_SIZE(namespaces1));
+}
+
+typedef int (*do_test_fn)(struct ndctl_ctx *ctx);
+static do_test_fn do_test[] = {
+	do_test0,
+	do_test1,
+};
 
 int main(int argc, char *argv[])
 {
+	unsigned int i;
 	struct ndctl_ctx *ctx;
 	struct kmod_module *mod;
 	struct kmod_ctx *kmod_ctx;
@@ -197,10 +296,15 @@ int main(int argc, char *argv[])
 	if (err < 0)
 		goto err_module;
 
-	err = do_test(ctx);
-	if (err < 0)
-		fprintf(stderr, "ndctl-test failed: %d\n", err);
-	else
+	for (i = 0; i < ARRAY_SIZE(do_test); i++) {
+		err = do_test[i](ctx);
+		if (err < 0) {
+			fprintf(stderr, "ndctl-test%d failed: %d\n", i, err);
+			break;
+		}
+	}
+
+	if (i >= ARRAY_SIZE(do_test))
 		result = EXIT_SUCCESS;
 	kmod_module_remove_module(mod, 0);
 

@@ -54,4 +54,12 @@ global:
 	ndctl_mapping_get_region;
 	ndctl_mapping_get_offset;
 	ndctl_mapping_get_length;
+	ndctl_namespace_get_first;
+	ndctl_namespace_get_next;
+	ndctl_namespace_get_ctx;
+	ndctl_namespace_get_bus;
+	ndctl_namespace_get_region;
+	ndctl_namespace_get_id;
+	ndctl_namespace_get_type;
+	ndctl_namespace_get_type_name;
 } LIBNDCTL_1;

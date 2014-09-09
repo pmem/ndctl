@@ -109,6 +109,7 @@ struct ndctl_ctx *ndctl_region_get_ctx(struct ndctl_region *region);
 struct ndctl_dimm *ndctl_region_get_first_dimm(struct ndctl_region *region);
 struct ndctl_dimm *ndctl_region_get_next_dimm(struct ndctl_region *region,
 		struct ndctl_dimm *dimm);
+int ndctl_region_wait_probe(struct ndctl_region *region);
 #define ndctl_dimm_foreach_in_region(region, dimm) \
         for (dimm = ndctl_region_get_first_dimm(region); \
              dimm != NULL; \
@@ -132,6 +133,25 @@ struct ndctl_bus *ndctl_mapping_get_bus(struct ndctl_mapping *mapping);
 struct ndctl_region *ndctl_mapping_get_region(struct ndctl_mapping *mapping);
 unsigned long long ndctl_mapping_get_offset(struct ndctl_mapping *mapping);
 unsigned long long ndctl_mapping_get_length(struct ndctl_mapping *mapping);
+
+/*
+ * ndctl_namespace
+ *
+ * access the list of namespaces
+ */
+struct ndctl_namespace;
+struct ndctl_namespace *ndctl_namespace_get_first(struct ndctl_region *region);
+struct ndctl_namespace *ndctl_namespace_get_next(struct ndctl_namespace *ndns);
+#define ndctl_namespace_foreach(region, ndns) \
+        for (ndns = ndctl_namespace_get_first(region); \
+             ndns != NULL; \
+             ndns = ndctl_namespace_get_next(ndns))
+struct ndctl_ctx *ndctl_namespace_get_ctx(struct ndctl_namespace *ndns);
+struct ndctl_bus *ndctl_namespace_get_bus(struct ndctl_namespace *ndns);
+struct ndctl_region *ndctl_namespace_get_region(struct ndctl_namespace *ndns);
+unsigned int ndctl_namespace_get_id(struct ndctl_namespace *ndns);
+unsigned int ndctl_namespace_get_type(struct ndctl_namespace *ndns);
+const char *ndctl_namespace_get_type_name(struct ndctl_namespace *ndns);
 
 #ifdef __cplusplus
 } /* extern "C" */
