@@ -610,27 +610,27 @@ NDCTL_EXPORT unsigned int ndctl_dimm_get_handle(struct ndctl_dimm *dimm)
 	return dimm->handle;
 }
 
-NDCTL_EXPORT unsigned int ndctl_dimm_get_node(struct ndctl_dimm *dimm)
+NDCTL_EXPORT unsigned int ndctl_dimm_handle_get_node(struct ndctl_dimm *dimm)
 {
 	return dimm->handle >> 16 & 0xfff;
 }
 
-NDCTL_EXPORT unsigned int ndctl_dimm_get_socket(struct ndctl_dimm *dimm)
+NDCTL_EXPORT unsigned int ndctl_dimm_handle_get_socket(struct ndctl_dimm *dimm)
 {
 	return dimm->handle >> 12 & 0xf;
 }
 
-NDCTL_EXPORT unsigned int ndctl_dimm_get_imc(struct ndctl_dimm *dimm)
+NDCTL_EXPORT unsigned int ndctl_dimm_handle_get_imc(struct ndctl_dimm *dimm)
 {
 	return dimm->handle >> 8 & 0xf;
 }
 
-NDCTL_EXPORT unsigned int ndctl_dimm_get_channel(struct ndctl_dimm *dimm)
+NDCTL_EXPORT unsigned int ndctl_dimm_handle_get_channel(struct ndctl_dimm *dimm)
 {
 	return dimm->handle >> 4 & 0xf;
 }
 
-NDCTL_EXPORT unsigned int ndctl_dimm_get_dimm(struct ndctl_dimm *dimm)
+NDCTL_EXPORT unsigned int ndctl_dimm_handle_get_dimm(struct ndctl_dimm *dimm)
 {
 	return dimm->handle & 0xf;
 }

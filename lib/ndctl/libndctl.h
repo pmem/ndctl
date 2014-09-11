@@ -101,11 +101,11 @@ struct ndctl_dimm *ndctl_dimm_get_next(struct ndctl_dimm *dimm);
              dimm != NULL; \
              dimm = ndctl_dimm_get_next(dimm))
 unsigned int ndctl_dimm_get_handle(struct ndctl_dimm *dimm);
-unsigned int ndctl_dimm_get_node(struct ndctl_dimm *dimm);
-unsigned int ndctl_dimm_get_socket(struct ndctl_dimm *dimm);
-unsigned int ndctl_dimm_get_imc(struct ndctl_dimm *dimm);
-unsigned int ndctl_dimm_get_channel(struct ndctl_dimm *dimm);
-unsigned int ndctl_dimm_get_dimm(struct ndctl_dimm *dimm);
+unsigned int ndctl_dimm_handle_get_node(struct ndctl_dimm *dimm);
+unsigned int ndctl_dimm_handle_get_socket(struct ndctl_dimm *dimm);
+unsigned int ndctl_dimm_handle_get_imc(struct ndctl_dimm *dimm);
+unsigned int ndctl_dimm_handle_get_channel(struct ndctl_dimm *dimm);
+unsigned int ndctl_dimm_handle_get_dimm(struct ndctl_dimm *dimm);
 struct ndctl_bus *ndctl_dimm_get_bus(struct ndctl_dimm *dimm);
 struct ndctl_ctx *ndctl_dimm_get_ctx(struct ndctl_dimm *dimm);
 struct ndctl_dimm *ndctl_dimm_get_by_handle(struct ndctl_bus *bus,
