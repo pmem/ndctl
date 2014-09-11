@@ -59,4 +59,10 @@ void ndctl_log(struct ndctl_ctx *ctx,
 		const char *format, ...)
 	__attribute__((format(printf, 6, 7)));
 
+#define ND_DEVICE_DIMM 1            /* dimm (no driver, informational) */
+#define ND_DEVICE_REGION_PMEM 2     /* region (parent of pmem namespaces) */
+#define ND_DEVICE_REGION_BLOCK 3    /* region (parent of block namespaces) */
+#define ND_DEVICE_NAMESPACE_IO 4    /* legacy persistent memory */
+#define ND_DEVICE_NAMESPACE_PMEM 5  /* persistent memory namespace (may alias) */
+#define ND_DEVICE_NAMESPACE_BLOCK 6 /* block-data-window namespace (may alias) */
 #endif

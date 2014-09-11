@@ -94,6 +94,7 @@ static unsigned int dimms[] = {
 
 struct region {
 	unsigned int id;
+	unsigned int spa_index;
 	unsigned int interleave_ways;
 	char *type;
 };
@@ -104,16 +105,16 @@ struct namespace {
 };
 
 static struct region regions0[] = {
-	{ 0, 2, "pmem" },
-	{ 1, 4, "pmem" },
-	{ 2, 1, "block" },
-	{ 3, 1, "block" },
-	{ 4, 1, "block" },
-	{ 5, 1, "block" },
+	{ 0, 1, 2, "pmem" },
+	{ 1, 2, 4, "pmem" },
+	{ 2, 0, 1, "block" },
+	{ 3, 0, 1, "block" },
+	{ 4, 0, 1, "block" },
+	{ 5, 0, 1, "block" },
 };
 
 static struct region regions1[] = {
-	{ 6, 0, "pmem" },
+	{ 6, 1, 0, "pmem" },
 };
 
 static struct namespace namespaces1[] = {
@@ -180,14 +181,21 @@ static int check_regions(struct ndctl_bus *bus, struct region *regions, int n)
 			return -ENXIO;
 		}
 		if (strcmp(ndctl_region_get_type_name(region), regions[i].type) != 0) {
-			fprintf(stderr, "region expected type: %s got: %s\n",
-				regions[i].type, ndctl_region_get_type_name(region));
+			fprintf(stderr, "region%d expected type: %s got: %s\n",
+					regions[i].id, regions[i].type,
+					ndctl_region_get_type_name(region));
 			return -ENXIO;
 		}
 		if (ndctl_region_get_interleave_ways(region) != regions[i].interleave_ways) {
-			fprintf(stderr, "region expected interleave_ways: %d got: %d\n",
-					regions[i].interleave_ways,
+			fprintf(stderr, "region%d expected interleave_ways: %d got: %d\n",
+					regions[i].id, regions[i].interleave_ways,
 					ndctl_region_get_interleave_ways(region));
+			return -ENXIO;
+		}
+		if (ndctl_region_get_spa_index(region) != regions[i].spa_index) {
+			fprintf(stderr, "region%d expected spa_index: %d got: %d\n",
+					regions[i].id, regions[i].spa_index,
+					ndctl_region_get_spa_index(region));
 			return -ENXIO;
 		}
 	}

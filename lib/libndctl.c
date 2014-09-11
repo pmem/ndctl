@@ -107,7 +107,7 @@ struct ndctl_mapping {
  */
 struct ndctl_region {
 	struct ndctl_bus *bus;
-	int id, interleave_ways, num_mappings, type;
+	int id, interleave_ways, num_mappings, type, spa_index;
 	int mappings_init;
 	int namespaces_init;
 	unsigned long long size;
@@ -169,7 +169,7 @@ static void log_stderr(struct ndctl_ctx *ctx,
 }
 
 /**
- * ndctl_get_userdata - retrieve stored data pointer from library context 
+ * ndctl_get_userdata - retrieve stored data pointer from library context
  * @ctx: ndctl library context
  *
  * This might be useful to access from callbacks like a custom logging
@@ -698,6 +698,14 @@ static int add_region(void *parent, int id, const char *region_base)
 		goto err_read;
 	region->type = strtoul(buf, NULL, 0);
 
+	sprintf(path, "%s/spa_index", region_base);
+	if (region->type == ND_DEVICE_REGION_PMEM) {
+		if (sysfs_read_attr(ctx, path, buf) < 0)
+			goto err_read;
+		region->spa_index = strtoul(buf, NULL, 0);
+	} else
+		/* zero is already an invalid spa index, pass */;
+
 	region->region_path = strdup(region_base);
 	if (!region->region_path)
 		goto err_read;
@@ -757,6 +765,11 @@ NDCTL_EXPORT unsigned long long ndctl_region_get_size(struct ndctl_region *regio
 	return region->size;
 }
 
+NDCTL_EXPORT unsigned int ndctl_region_get_spa_index(struct ndctl_region *region)
+{
+	return region->spa_index;
+}
+
 NDCTL_EXPORT unsigned int ndctl_region_get_type(struct ndctl_region *region)
 {
 	return region->type;
@@ -765,13 +778,13 @@ NDCTL_EXPORT unsigned int ndctl_region_get_type(struct ndctl_region *region)
 static const char *ndctl_device_type_name(int type)
 {
 	switch (type) {
-	case 1:  return "dimm";
-	case 2:  return "pmem";
-	case 3:  return "block";
-	case 4:  return "namespace_io";
-	case 5:  return "namespace_pmem";
-	case 6:  return "namespace_block";
-	default: return "unknown";
+	case ND_DEVICE_DIMM:            return "dimm";
+	case ND_DEVICE_REGION_PMEM:     return "pmem";
+	case ND_DEVICE_REGION_BLOCK:    return "block";
+	case ND_DEVICE_NAMESPACE_IO:    return "namespace_io";
+	case ND_DEVICE_NAMESPACE_PMEM:  return "namespace_pmem";
+	case ND_DEVICE_NAMESPACE_BLOCK: return "namespace_block";
+	default:                        return "unknown";
 	}
 }
 

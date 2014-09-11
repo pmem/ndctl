@@ -38,6 +38,7 @@ global:
 	ndctl_region_get_next;
 	ndctl_region_get_id;
 	ndctl_region_get_interleave_ways;
+	ndctl_region_get_spa_index;
 	ndctl_region_get_mappings;
 	ndctl_region_get_size;
 	ndctl_region_get_type;

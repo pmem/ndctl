@@ -122,6 +122,7 @@ unsigned int ndctl_region_get_id(struct ndctl_region *region);
 unsigned int ndctl_region_get_interleave_ways(struct ndctl_region *region);
 unsigned int ndctl_region_get_mappings(struct ndctl_region *region);
 unsigned long long ndctl_region_get_size(struct ndctl_region *region);
+unsigned int ndctl_region_get_spa_index(struct ndctl_region *region);
 unsigned int ndctl_region_get_type(struct ndctl_region *region);
 const char *ndctl_region_get_type_name(struct ndctl_region *region);
 int ndctl_region_wait_probe(struct ndctl_region *region);
