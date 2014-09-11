@@ -82,14 +82,20 @@
 static const char *NFIT_TEST_MODULE = "nfit_test";
 static const char *NFIT_PROVIDER0 = "nfit_test.0";
 static const char *NFIT_PROVIDER1 = "nfit_test.1";
+
+struct dimm {
+	unsigned int handle;
+	unsigned int phys_id;
+};
+
 #define DIMM_HANDLE(n, s, i, c, d) \
 	(((n & 0xfff) << 16) | ((s & 0xf) << 12) | ((i & 0xf) << 8) \
 	 | ((c & 0xf) << 4) | (d & 0xf))
-static unsigned int dimms[] = {
-	DIMM_HANDLE(0, 0, 0, 0, 0),
-	DIMM_HANDLE(0, 0, 0, 0, 1),
-	DIMM_HANDLE(0, 0, 1, 0, 0),
-	DIMM_HANDLE(0, 0, 1, 0, 1),
+static struct dimm dimms[] = {
+	{ DIMM_HANDLE(0, 0, 0, 0, 0), 0, },
+	{ DIMM_HANDLE(0, 0, 0, 0, 1), 1, },
+	{ DIMM_HANDLE(0, 0, 1, 0, 0), 2, },
+	{ DIMM_HANDLE(0, 0, 1, 0, 1), 3, },
 };
 
 struct region {
@@ -241,10 +247,17 @@ static int do_test0(struct ndctl_ctx *ctx)
 		return -ENXIO;
 
 	for (i = 0; i < ARRAY_SIZE(dimms); i++) {
-		struct ndctl_dimm *dimm = get_dimm_by_handle(bus, dimms[i]);
+		struct ndctl_dimm *dimm = get_dimm_by_handle(bus, dimms[i].handle);
 
 		if (!dimm) {
-			fprintf(stderr, "failed to find dimm: %d\n", dimms[i]);
+			fprintf(stderr, "failed to find dimm: %d\n", dimms[i].phys_id);
+			return -ENXIO;
+		}
+
+		if (ndctl_dimm_get_phys_id(dimm) != dimms[i].phys_id) {
+			fprintf(stderr, "dimm%d expected phys_id: %d got: %d\n",
+					i, dimms[i].phys_id,
+					ndctl_dimm_get_phys_id(dimm));
 			return -ENXIO;
 		}
 	}

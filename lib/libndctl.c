@@ -64,6 +64,7 @@ struct ndctl_bus {
 /**
  * struct ndctl_dimm - memory device as identified by NFIT
  * @handle: NFIT-handle value to be used for ioctl calls
+ * @phys_id: SMBIOS physical id
  * @node: system node-id
  * @socket: socket-id in the node
  * @imc: memory-controller-id in the socket
@@ -72,7 +73,7 @@ struct ndctl_bus {
  */
 struct ndctl_dimm {
 	struct ndctl_bus *bus;
-	unsigned int handle;
+	unsigned int handle, phys_id;
 	int id;
 	struct list_node list;
 };
@@ -560,22 +561,26 @@ static int add_dimm(void *parent, int id, const char *dimm_base)
 	dimm = calloc(1, sizeof(*dimm));
 	if (!dimm)
 		goto err_dimm;
-
-	sprintf(path, "%s/handle", dimm_base);
-	if (sysfs_read_attr(ctx, path, buf) < 0) {
-		rc = -ENXIO;
-		goto err_handle;
-	}
-
 	dimm->bus = bus;
 	dimm->id = id;
+
+	rc = -ENXIO;
+	sprintf(path, "%s/handle", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		goto err_read;
 	dimm->handle = strtoul(buf, NULL, 0);
+
+	sprintf(path, "%s/phys_id", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		goto err_read;
+	dimm->phys_id= strtoul(buf, NULL, 0);
+
 	list_add(&bus->dimms, &dimm->list);
 	free(path);
 
 	return 0;
 
- err_handle:
+ err_read:
 	free(dimm);
  err_dimm:
 	free(path);
@@ -608,6 +613,11 @@ NDCTL_EXPORT struct ndctl_dimm *ndctl_dimm_get_next(struct ndctl_dimm *dimm)
 NDCTL_EXPORT unsigned int ndctl_dimm_get_handle(struct ndctl_dimm *dimm)
 {
 	return dimm->handle;
+}
+
+NDCTL_EXPORT unsigned int ndctl_dimm_get_phys_id(struct ndctl_dimm *dimm)
+{
+	return dimm->phys_id;
 }
 
 NDCTL_EXPORT unsigned int ndctl_dimm_handle_get_node(struct ndctl_dimm *dimm)

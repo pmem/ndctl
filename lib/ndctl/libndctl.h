@@ -101,6 +101,7 @@ struct ndctl_dimm *ndctl_dimm_get_next(struct ndctl_dimm *dimm);
              dimm != NULL; \
              dimm = ndctl_dimm_get_next(dimm))
 unsigned int ndctl_dimm_get_handle(struct ndctl_dimm *dimm);
+unsigned int ndctl_dimm_get_phys_id(struct ndctl_dimm *dimm);
 unsigned int ndctl_dimm_handle_get_node(struct ndctl_dimm *dimm);
 unsigned int ndctl_dimm_handle_get_socket(struct ndctl_dimm *dimm);
 unsigned int ndctl_dimm_handle_get_imc(struct ndctl_dimm *dimm);
