@@ -88,7 +88,7 @@ struct ndctl_bus *ndctl_bus_get_next(struct ndctl_bus *bus);
 struct ndctl_ctx *ndctl_bus_get_ctx(struct ndctl_bus *bus);
 unsigned int ndctl_bus_get_major(struct ndctl_bus *bus);
 unsigned int ndctl_bus_get_minor(struct ndctl_bus *bus);
-unsigned int ndctl_bus_get_format(struct ndctl_bus *bus);
+unsigned short ndctl_bus_get_format(struct ndctl_bus *bus);
 unsigned int ndctl_bus_get_revision(struct ndctl_bus *bus);
 unsigned int ndctl_bus_get_id(struct ndctl_bus *bus);
 const char *ndctl_bus_get_provider(struct ndctl_bus *bus);
@@ -101,7 +101,7 @@ struct ndctl_dimm *ndctl_dimm_get_next(struct ndctl_dimm *dimm);
              dimm != NULL; \
              dimm = ndctl_dimm_get_next(dimm))
 unsigned int ndctl_dimm_get_handle(struct ndctl_dimm *dimm);
-unsigned int ndctl_dimm_get_phys_id(struct ndctl_dimm *dimm);
+unsigned short ndctl_dimm_get_phys_id(struct ndctl_dimm *dimm);
 unsigned short ndctl_dimm_get_vendor(struct ndctl_dimm *dimm);
 unsigned short ndctl_dimm_get_device(struct ndctl_dimm *dimm);
 unsigned short ndctl_dimm_get_revision(struct ndctl_dimm *dimm);

@@ -51,7 +51,8 @@ struct ndctl_ctx;
  */
 struct ndctl_bus {
 	struct ndctl_ctx *ctx;
-	int id, major, minor, format, revision;
+	int id, major, minor, revision;
+	short format;
 	char *provider;
 	struct list_head dimms;
 	struct list_head regions;
@@ -77,7 +78,8 @@ struct ndctl_bus {
  */
 struct ndctl_dimm {
 	struct ndctl_bus *bus;
-	unsigned int handle, phys_id;
+	unsigned int handle;
+	unsigned short phys_id;
 	unsigned short vendor_id;
 	unsigned short device_id;
 	unsigned short revision_id;
@@ -529,7 +531,7 @@ NDCTL_EXPORT unsigned int ndctl_bus_get_minor(struct ndctl_bus *bus)
 	return bus->minor;
 }
 
-NDCTL_EXPORT unsigned int ndctl_bus_get_format(struct ndctl_bus *bus)
+NDCTL_EXPORT unsigned short ndctl_bus_get_format(struct ndctl_bus *bus)
 {
 	return bus->format;
 }
@@ -581,7 +583,7 @@ static int add_dimm(void *parent, int id, const char *dimm_base)
 	sprintf(path, "%s/phys_id", dimm_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		goto err_read;
-	dimm->phys_id= strtoul(buf, NULL, 0);
+	dimm->phys_id = strtoul(buf, NULL, 0);
 
 	sprintf(path, "%s/vendor", dimm_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
@@ -647,7 +649,7 @@ NDCTL_EXPORT unsigned int ndctl_dimm_get_handle(struct ndctl_dimm *dimm)
 	return dimm->handle;
 }
 
-NDCTL_EXPORT unsigned int ndctl_dimm_get_phys_id(struct ndctl_dimm *dimm)
+NDCTL_EXPORT unsigned short ndctl_dimm_get_phys_id(struct ndctl_dimm *dimm)
 {
 	return dimm->phys_id;
 }
