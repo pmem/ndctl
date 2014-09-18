@@ -30,41 +30,46 @@
 /*
  * Kernel provider "nfit_test.0" produces an NFIT with the following attributes:
  *
- *                                 (a)                 (b)       DIMM   BLK-REGION
- *            +-------------------+--------+--------+--------+
- *  +------+  |       pm0.0       | blk2.0 | pm1.0  | blk2.1 | 000:0000  region2
- *  | imc0 +--+- - - region0- - - +--------+        +--------+
- *  +--+---+  |       pm0.0       | blk3.0 | pm1.0  | blk3.1 | 000:0001  region3
- *     |      +-------------------+--------v        v--------+
- *  +--+---+                               |                 |
- *  | cpu0 |                                     region1
- *  +--+---+                               |                 |
- *     |      +----------------------------^        ^--------+
- *  +--+---+  |           blk4.0           | pm1.0  | blk4.0 | 000:0100  region4
- *  | imc1 +--+----------------------------|        +--------+
- *  +------+  |           blk5.0           | pm1.0  | blk5.0 | 000:0101  region5
- *            +----------------------------+--------+--------+
+ *                              (a)               (b)           DIMM   BLK-REGION
+ *           +-------------------+--------+--------+--------+
+ * +------+  |       pm0.0       | blk2.0 | pm1.0  | blk2.1 |    0      region2
+ * | imc0 +--+- - - region0- - - +--------+        +--------+
+ * +--+---+  |       pm0.0       | blk3.0 | pm1.0  | blk3.1 |    1      region3
+ *    |      +-------------------+--------v        v--------+
+ * +--+---+                               |                 |
+ * | cpu0 |                                     region1
+ * +--+---+                               |                 |
+ *    |      +----------------------------^        ^--------+
+ * +--+---+  |           blk4.0           | pm1.0  | blk4.0 |    2      region4
+ * | imc1 +--+----------------------------|        +--------+
+ * +------+  |           blk5.0           | pm1.0  | blk5.0 |    3      region5
+ *           +----------------------------+--------+--------+
  *
- *  *) In this layout we have four dimms and two memory controllers in one
- *     socket.  Each block-accessible range on each dimm is allocated a
- *     "region" index and each interleave set (cross dimm span) is allocated a
- *     "region" index.
+ * *) In this layout we have four dimms and two memory controllers in one
+ *    socket.  Each unique interface ("block" or "pmem") to DPA space
+ *    is identified by a region device with a dynamically assigned id.
  *
- *  *) The first portion of dimm-000:0000 and dimm-000:0001 are
- *     interleaved as REGION0.  Some of that interleave set is reclaimed as
- *     block space starting at offregion (a) into each dimm.  In that reclaimed
- *     space we create two block-mode-namespaces from the dimms'
- *     control-regions/block-data-windows blk2.0 and blk3.0 respectively.
+ * *) The first portion of dimm0 and dimm1 are interleaved as REGION0.
+ *    A single "pmem" namespace is created in the REGION0-"spa"-range
+ *    that spans dimm0 and dimm1 with a user-specified name of "pm0.0".
+ *    Some of that interleaved "spa" range is reclaimed as "bdw"
+ *    accessed space starting at offset (a) into each dimm.  In that
+ *    reclaimed space we create two "bdw" "namespaces" from REGION2 and
+ *    REGION3 where "blk2.0" and "blk3.0" are just human readable names
+ *    that could be set to any user-desired name in the label.
  *
- *  *) In the last portion of dimm-000:0000 and dimm-000:0001 we have an
- *     interleave set, REGION1, that spans those two dimms as well as
- *     dimm-000:0100 and dimm-000:0101.  Some of REGION1 is reclaimed as block
- *     space and the remainder is instantiated as namespace blk1.0.
+ * *) In the last portion of dimm0 and dimm1 we have an interleaved
+ *    "spa" range, REGION1, that spans those two dimms as well as dimm2
+ *    and dimm3.  Some of REGION1 allocated to a "pmem" namespace named
+ *    "pm1.0" the rest is reclaimed in 4 "bdw" namespaces (for each
+ *    dimm in the interleave set), "blk2.1", "blk3.1", "blk4.0", and
+ *    "blk5.0".
  *
- *  *) The portion of dimm-000:0100 and dimm-000:0101 that do not
- *     participate in REGION1 are instantiated as blk4.0 and blk5.0, but note
- *     that those block namespaces also incorporate the unused portion of
- *     REGION1 (starting at offregion (b)) in those dimms respectively.
+ * *) The portion of dimm2 and dimm3 that do not participate in the
+ *    REGION1 interleaved "spa" range (i.e. the DPA address below
+ *    offset (b) are also included in the "blk4.0" and "blk5.0"
+ *    namespaces.  Note, that this example shows that "bdw" namespaces
+ *    don't need to be contiguous in DPA-space.
  *
  * Kernel provider "nfit_test.1" produces an NFIT with the following attributes:
  *
