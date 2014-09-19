@@ -116,7 +116,7 @@ struct ndctl_mapping {
  */
 struct ndctl_region {
 	struct ndctl_bus *bus;
-	int id, interleave_ways, num_mappings, type, spa_index;
+	int id, interleave_ways, num_mappings, nstype, spa_index;
 	int mappings_init;
 	int namespaces_init;
 	unsigned long long size;
@@ -755,13 +755,13 @@ static int add_region(void *parent, int id, const char *region_base)
 		goto err_read;
 	region->interleave_ways = strtoul(buf, NULL, 0);
 
-	sprintf(path, "%s/type", region_base);
+	sprintf(path, "%s/nstype", region_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		goto err_read;
-	region->type = strtoul(buf, NULL, 0);
+	region->nstype = strtoul(buf, NULL, 0);
 
 	sprintf(path, "%s/spa_index", region_base);
-	if (region->type == ND_DEVICE_REGION_PMEM) {
+	if (region->nstype != ND_DEVICE_NAMESPACE_BLOCK) {
 		if (sysfs_read_attr(ctx, path, buf) < 0)
 			goto err_read;
 		region->spa_index = strtoul(buf, NULL, 0);
@@ -834,7 +834,13 @@ NDCTL_EXPORT unsigned int ndctl_region_get_spa_index(struct ndctl_region *region
 
 NDCTL_EXPORT unsigned int ndctl_region_get_type(struct ndctl_region *region)
 {
-	return region->type;
+	switch (region->nstype) {
+	case ND_DEVICE_NAMESPACE_IO:
+	case ND_DEVICE_NAMESPACE_PMEM:
+		return ND_DEVICE_REGION_PMEM;
+	default:
+		return ND_DEVICE_REGION_BLOCK;
+	}
 }
 
 static const char *ndctl_device_type_name(int type)
@@ -852,7 +858,7 @@ static const char *ndctl_device_type_name(int type)
 
 NDCTL_EXPORT const char *ndctl_region_get_type_name(struct ndctl_region *region)
 {
-	return ndctl_device_type_name(region->type);
+	return ndctl_device_type_name(ndctl_region_get_type(region));
 }
 
 NDCTL_EXPORT struct ndctl_bus *ndctl_region_get_bus(struct ndctl_region *region)
