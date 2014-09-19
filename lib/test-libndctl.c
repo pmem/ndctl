@@ -118,10 +118,10 @@ struct namespace {
 static struct region regions0[] = {
 	{ 0, 1, 2, "pmem" },
 	{ 1, 2, 4, "pmem" },
-	{ 2, 0, 1, "block" },
-	{ 3, 0, 1, "block" },
-	{ 4, 0, 1, "block" },
-	{ 5, 0, 1, "block" },
+	{ 2, -1, 1, "block" },
+	{ 3, -1, 1, "block" },
+	{ 4, -1, 1, "block" },
+	{ 5, -1, 1, "block" },
 };
 
 static struct region regions1[] = {

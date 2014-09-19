@@ -766,7 +766,7 @@ static int add_region(void *parent, int id, const char *region_base)
 			goto err_read;
 		region->spa_index = strtoul(buf, NULL, 0);
 	} else
-		/* zero is already an invalid spa index, pass */;
+		region->spa_index = -1;
 
 	region->region_path = strdup(region_base);
 	if (!region->region_path)
