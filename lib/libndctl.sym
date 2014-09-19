@@ -27,6 +27,10 @@ global:
 	ndctl_dimm_get_next;
 	ndctl_dimm_get_handle;
 	ndctl_dimm_get_phys_id;
+	ndctl_dimm_get_vendor;
+	ndctl_dimm_get_device;
+	ndctl_dimm_get_revision;
+	ndctl_dimm_get_format;
 	ndctl_dimm_handle_get_node;
 	ndctl_dimm_handle_get_socket;
 	ndctl_dimm_handle_get_imc;

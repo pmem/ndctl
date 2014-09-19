@@ -65,6 +65,10 @@ struct ndctl_bus {
  * struct ndctl_dimm - memory device as identified by NFIT
  * @handle: NFIT-handle value to be used for ioctl calls
  * @phys_id: SMBIOS physical id
+ * @vendor_id: hardware component vendor
+ * @device_id: hardware device id
+ * @revision_id: hardware revision id
+ * @format_id: format interface code number
  * @node: system node-id
  * @socket: socket-id in the node
  * @imc: memory-controller-id in the socket
@@ -74,6 +78,10 @@ struct ndctl_bus {
 struct ndctl_dimm {
 	struct ndctl_bus *bus;
 	unsigned int handle, phys_id;
+	unsigned short vendor_id;
+	unsigned short device_id;
+	unsigned short revision_id;
+	unsigned short format_id;
 	int id;
 	struct list_node list;
 };
@@ -575,6 +583,30 @@ static int add_dimm(void *parent, int id, const char *dimm_base)
 		goto err_read;
 	dimm->phys_id= strtoul(buf, NULL, 0);
 
+	sprintf(path, "%s/vendor", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		dimm->vendor_id = -1;
+	else
+		dimm->vendor_id = strtoul(buf, NULL, 0);
+
+	sprintf(path, "%s/device", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		dimm->device_id = -1;
+	else
+		dimm->device_id = strtoul(buf, NULL, 0);
+
+	sprintf(path, "%s/revision", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		dimm->revision_id = -1;
+	else
+		dimm->revision_id = strtoul(buf, NULL, 0);
+
+	sprintf(path, "%s/format", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		dimm->format_id = -1;
+	else
+		dimm->format_id = strtoul(buf, NULL, 0);
+
 	list_add(&bus->dimms, &dimm->list);
 	free(path);
 
@@ -618,6 +650,26 @@ NDCTL_EXPORT unsigned int ndctl_dimm_get_handle(struct ndctl_dimm *dimm)
 NDCTL_EXPORT unsigned int ndctl_dimm_get_phys_id(struct ndctl_dimm *dimm)
 {
 	return dimm->phys_id;
+}
+
+NDCTL_EXPORT unsigned short ndctl_dimm_get_vendor(struct ndctl_dimm *dimm)
+{
+	return dimm->vendor_id;
+}
+
+NDCTL_EXPORT unsigned short ndctl_dimm_get_device(struct ndctl_dimm *dimm)
+{
+	return dimm->device_id;
+}
+
+NDCTL_EXPORT unsigned short ndctl_dimm_get_revision(struct ndctl_dimm *dimm)
+{
+	return dimm->revision_id;
+}
+
+NDCTL_EXPORT unsigned short ndctl_dimm_get_format(struct ndctl_dimm *dimm)
+{
+	return dimm->format_id;
 }
 
 NDCTL_EXPORT unsigned int ndctl_dimm_handle_get_node(struct ndctl_dimm *dimm)
