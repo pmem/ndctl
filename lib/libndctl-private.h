@@ -106,4 +106,75 @@ static inline int udev_queue_get_queue_is_empty(struct udev_queue *udev_queue)
 }
 #endif
 
+#ifdef HAVE_LIBKMOD
+#include <libkmod.h>
+static inline int check_kmod(struct kmod_ctx *kmod_ctx)
+{
+	return kmod_ctx ? 0 : -ENXIO;
+}
+
+#else
+struct kmod_ctx;
+struct kmod_list;
+struct kmod_module;
+
+enum {
+	KMOD_PROBE_APPLY_BLACKLIST,
+};
+
+static inline int check_kmod(struct kmod_ctx *kmod_cts)
+{
+	return 0;
+}
+
+static inline struct kmod_ctx *kmod_new(const char *dirname,
+		const char * const *config_paths)
+{
+	return NULL;
+}
+
+static inline struct kmod_ctx *kmod_unref(struct kmod_ctx *ctx)
+{
+	return NULL;
+}
+
+static inline struct kmod_module *kmod_module_unref(struct kmod_module *mod)
+{
+	return NULL;
+}
+
+static inline int kmod_module_new_from_lookup(struct kmod_ctx *ctx, const char *alias,
+						struct kmod_list **list)
+{
+	return -ENOTTY;
+}
+
+static inline struct kmod_module *kmod_module_get_module(const struct kmod_list *entry)
+{
+	return NULL;
+}
+
+static inline const char *kmod_module_get_name(const struct kmod_module *mod)
+{
+	return "unknown";
+}
+
+static inline int kmod_module_unref_list(struct kmod_list *list)
+{
+	return -ENOTTY;
+}
+
+static inline int kmod_module_probe_insert_module(struct kmod_module *mod,
+			unsigned int flags, const char *extra_options,
+			int (*run_install)(struct kmod_module *m,
+						const char *cmdline, void *data),
+			const void *data,
+			void (*print_action)(struct kmod_module *m, bool install,
+						const char *options))
+{
+	return -ENOTTY;
+}
+
+#endif
+
 #endif /* _LIBNDCTL_PRIVATE_H_ */

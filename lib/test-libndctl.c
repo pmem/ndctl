@@ -224,18 +224,39 @@ static int check_namespaces(struct ndctl_region *region,
 
 	for (i = 0; i < n; i++) {
 		struct ndctl_namespace *ndns;
+		char devname[50];
 
+		snprintf(devname, sizeof(devname), "namespace%d.%d",
+				ndctl_region_get_id(region), namespaces[i].id);
 		ndns = get_namespace_by_id(region, namespaces[i].id);
 		if (!ndns) {
-			fprintf(stderr, "failed to find namespace: %d\n",
-					namespaces[i].id);
+			fprintf(stderr, "%s: failed to find namespace\n",
+					devname);
 			return -ENXIO;
 		}
+
 		if (strcmp(ndctl_namespace_get_type_name(ndns),
 					namespaces[i].type) != 0) {
-			fprintf(stderr, "namespace expected type: %s got: %s\n",
+			fprintf(stderr, "%s: expected type: %s got: %s\n",
+					devname,
 					ndctl_namespace_get_type_name(ndns),
 					namespaces[i].type);
+			return -ENXIO;
+		}
+
+		if (!ndctl_namespace_is_enabled(ndns)) {
+			fprintf(stderr, "%s: expected enabled by default\n",
+					devname);
+			return -ENXIO;
+		}
+
+		if (ndctl_namespace_disable(ndns) < 0) {
+			fprintf(stderr, "%s: failed to disable\n", devname);
+			return -ENXIO;
+		}
+
+		if (ndctl_namespace_enable(ndns) < 0) {
+			fprintf(stderr, "%s: failed to enable\n", devname);
 			return -ENXIO;
 		}
 	}

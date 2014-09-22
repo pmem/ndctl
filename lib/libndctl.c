@@ -130,16 +130,21 @@ struct ndctl_region {
 
 /**
  * struct ndctl_namespace - device claimed by the nd_blk or nd_pmem driver
+ * @module: kernel module
  * @type: integer nd-bus device-type
  * @type_name: 'namespace_io', 'namespace_pmem', or 'namespace_block'
+ * @namespace_path: devpath for namespace device
  *
  * A 'namespace' is the resulting device after region-aliasing and
  * label-parsing is resolved.
  */
 struct ndctl_namespace {
+	struct kmod_module *module;
 	struct ndctl_region *region;
 	struct list_node list;
-	int type, id;
+	char *ndns_path;
+	char *ndns_buf;
+	int type, id, buf_len;
 };
 
 /**
@@ -160,6 +165,7 @@ struct ndctl_ctx {
 	int busses_init;
 	struct udev *udev;
 	struct udev_queue *udev_queue;
+	struct kmod_ctx *kmod_ctx;
 };
 
 void ndctl_log(struct ndctl_ctx *ctx,
@@ -226,6 +232,8 @@ static int log_priority(const char *priority)
 
 NDCTL_EXPORT int ndctl_new(struct ndctl_ctx **ctx)
 {
+	struct kmod_ctx *kmod_ctx;
+	const char *cfg = NULL;
 	struct ndctl_ctx *c;
 	struct udev *udev;
 	const char *env;
@@ -234,6 +242,12 @@ NDCTL_EXPORT int ndctl_new(struct ndctl_ctx **ctx)
 	udev = udev_new();
 	if (check_udev(udev) != 0)
 		return -ENXIO;
+
+	kmod_ctx = kmod_new(NULL, &cfg);
+	if (check_kmod(kmod_ctx) != 0) {
+		rc = -ENXIO;
+		goto err_kmod;
+	}
 
 	c = calloc(1, sizeof(struct ndctl_ctx));
 	if (!c) {
@@ -263,8 +277,12 @@ NDCTL_EXPORT int ndctl_new(struct ndctl_ctx **ctx)
 			err(c, "failed to retrieve udev queue\n");
 	}
 
+	c->kmod_ctx = kmod_ctx;
+
 	return 0;
  err_ctx:
+	kmod_unref(kmod_ctx);
+ err_kmod:
 	udev_unref(udev);
 	return rc;
 }
@@ -275,6 +293,14 @@ NDCTL_EXPORT struct ndctl_ctx *ndctl_ref(struct ndctl_ctx *ctx)
 		return NULL;
 	ctx->refcount++;
 	return ctx;
+}
+
+static void free_namespace(struct ndctl_namespace *ndns)
+{
+	free(ndns->ndns_path);
+	free(ndns->ndns_buf);
+	kmod_module_unref(ndns->module);
+	free(ndns);
 }
 
 static void free_region(struct ndctl_region *region)
@@ -289,7 +315,7 @@ static void free_region(struct ndctl_region *region)
 	}
 	list_for_each_safe(&region->namespaces, ndns, _n, list) {
 		list_del_from(&region->namespaces, &ndns->list);
-		free(ndns);
+		free_namespace(ndns);
 	}
 	list_del_from(&bus->regions, &region->list);
 	free(region->region_path);
@@ -391,6 +417,24 @@ static int sysfs_read_attr(struct ndctl_ctx *ctx, char *path, char *buf)
 	buf[n] = 0;
 	if (n && buf[n-1] == '\n')
 		buf[n-1] = 0;
+	return 0;
+}
+
+static int sysfs_write_attr(struct ndctl_ctx *ctx, char *path, const char *buf)
+{
+	int fd = open(path, O_WRONLY);
+	int n, len = strlen(buf) + 1;
+
+	if (fd < 0) {
+		dbg(ctx, "failed to open %s: %s\n", path, strerror(errno));
+		return -1;
+	}
+	n = write(fd, buf, len);
+	close(fd);
+	if (n < len) {
+		dbg(ctx, "failed to write %s: %s\n", path, strerror(errno));
+		return -1;
+	}
 	return 0;
 }
 
@@ -1056,6 +1100,25 @@ NDCTL_EXPORT unsigned long long ndctl_mapping_get_length(struct ndctl_mapping *m
 	return mapping->length;
 }
 
+static struct kmod_module *to_module(struct ndctl_ctx *ctx, const char *alias)
+{
+	struct kmod_module *mod;
+	struct kmod_list *list;
+	int rc;
+
+	if (!ctx->kmod_ctx)
+		return NULL;
+
+	rc = kmod_module_new_from_lookup(ctx->kmod_ctx, alias, &list);
+	if (rc < 0 || !list)
+		return NULL;
+	mod = kmod_module_get_module(list);
+	dbg(ctx, "alias: %s module: %s\n", alias, kmod_module_get_name(mod));
+	kmod_module_unref_list(list);
+
+	return mod;
+}
+
 static int add_namespace(void *parent, int id, const char *ndns_base)
 {
 	char *path = calloc(1, strlen(ndns_base) + 20);
@@ -1080,11 +1143,27 @@ static int add_namespace(void *parent, int id, const char *ndns_base)
 		goto err_read;
 	ndns->type = strtoul(buf, NULL, 0);
 
+	ndns->ndns_path = strdup(ndns_base);
+	if (!ndns->ndns_path)
+		goto err_read;
+
+	ndns->ndns_buf = calloc(1, strlen(ndns_base) + 50);
+	if (!ndns->ndns_buf)
+		goto err_read;
+	ndns->buf_len = strlen(ndns_base) + 50;
+
+	sprintf(path, "%s/modalias", ndns_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		goto err_read;
+
+	ndns->module = to_module(ctx, buf);
+
 	list_add(&region->namespaces, &ndns->list);
 	free(path);
 	return 0;
 
  err_read:
+	free(ndns->ndns_path);
 	free(ndns);
  err_namespace:
 	free(path);
@@ -1148,4 +1227,136 @@ NDCTL_EXPORT struct ndctl_bus *ndctl_namespace_get_bus(struct ndctl_namespace *n
 NDCTL_EXPORT struct ndctl_ctx *ndctl_namespace_get_ctx(struct ndctl_namespace *ndns)
 {
 	return ndns->region->bus->ctx;
+}
+
+static const char *devpath_to_devname(const char *devpath)
+{
+	return strrchr(devpath, '/') + 1;
+}
+
+static const char *ndctl_namespace_devname(struct ndctl_namespace *ndns)
+{
+	return devpath_to_devname(ndns->ndns_path);
+}
+
+NDCTL_EXPORT int ndctl_namespace_is_enabled(struct ndctl_namespace *ndns)
+{
+	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
+	char *path = ndns->ndns_buf;
+	int len = ndns->buf_len;
+	struct stat st;
+
+	if (snprintf(path, len, "%s/driver", ndns->ndns_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_namespace_devname(ndns));
+		return 0;
+	}
+
+	if (lstat(path, &st) < 0 || !S_ISLNK(st.st_mode))
+		return 0;
+	else
+		return 1;
+}
+
+static int ndctl_bind(struct ndctl_ctx *ctx, struct kmod_module *module,
+		const char *devname)
+{
+	struct dirent *de;
+	int rc = -ENXIO;
+	char path[200];
+	DIR *dir;
+	const int len = sizeof(path);
+
+	if (!module || !devname || kmod_module_probe_insert_module(module,
+				KMOD_PROBE_APPLY_BLACKLIST,
+				NULL, NULL, NULL, NULL) < 0)
+		return -EINVAL;
+
+	if (snprintf(path, len, "/sys/module/%s/drivers",
+				kmod_module_get_name(module)) >= len) {
+		err(ctx, "%s: buffer too small!\n", devname);
+		return -ENXIO;
+	}
+
+	dir = opendir(path);
+	if (!dir) {
+		err(ctx, "%s: opendir(\"%s\") failed\n", devname, path);
+		return -ENXIO;
+	}
+
+	while ((de = readdir(dir)) != NULL) {
+		char *drv_path;
+
+		if (de->d_ino == 0)
+			continue;
+		if (de->d_name[0] == '.')
+			continue;
+		if (asprintf(&drv_path, "%s/%s/bind", path, de->d_name) < 0) {
+			err(ctx, "%s: path allocation failure\n", devname);
+			continue;
+		}
+
+		if (sysfs_write_attr(ctx, drv_path, devname) == 0)
+			rc = 0;
+		free(drv_path);
+		if (rc == 0)
+			break;
+	}
+	closedir(dir);
+
+	if (rc)
+		err(ctx, "%s: bind failed\n", devname);
+	return rc;
+}
+
+static int ndctl_unbind(struct ndctl_ctx *ctx, const char *devpath)
+{
+	const char *devname = devpath_to_devname(devpath);
+	char path[200];
+	const int len = sizeof(path);
+
+	if (snprintf(path, len, "%s/driver/unbind", devpath) >= len) {
+		err(ctx, "%s: buffer too small!\n", devname);
+		return -ENXIO;
+	}
+
+	return sysfs_write_attr(ctx, path, devname);
+}
+
+NDCTL_EXPORT int ndctl_namespace_enable(struct ndctl_namespace *ndns)
+{
+	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
+	const char *devname = ndctl_namespace_devname(ndns);
+
+	if (ndctl_namespace_is_enabled(ndns))
+		return 0;
+
+	ndctl_bind(ctx, ndns->module, devname);
+
+	if (!ndctl_namespace_is_enabled(ndns)) {
+		err(ctx, "%s: failed to enable\n", devname);
+		return -ENXIO;
+	}
+
+	dbg(ctx, "%s: enabled\n", devname);
+	return 0;
+}
+
+NDCTL_EXPORT int ndctl_namespace_disable(struct ndctl_namespace *ndns)
+{
+	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
+	const char *devname = ndctl_namespace_devname(ndns);
+
+	if (!ndctl_namespace_is_enabled(ndns))
+		return 0;
+
+	ndctl_unbind(ctx, ndns->ndns_path);
+
+	if (ndctl_namespace_is_enabled(ndns)) {
+		err(ctx, "%s: failed to disable\n", devname);
+		return -EBUSY;
+	}
+
+	dbg(ctx, "%s: disabled\n", devname);
+	return 0;
 }

@@ -69,4 +69,7 @@ global:
 	ndctl_namespace_get_id;
 	ndctl_namespace_get_type;
 	ndctl_namespace_get_type_name;
+	ndctl_namespace_is_enabled;
+	ndctl_namespace_enable;
+	ndctl_namespace_disable;
 } LIBNDCTL_1;

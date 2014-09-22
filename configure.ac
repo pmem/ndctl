@@ -59,6 +59,20 @@ AS_IF([test "x$with_udev" != "xno"],
 	]
 )
 
+AC_ARG_WITH([kmod], [AS_HELP_STRING([--without-kmod], [disable support for kmod])],
+			[], [with_kmod=yes])
+
+LIBKMOD=
+AS_IF([test "x$with_kmod" != "xno"],
+	[AC_CHECK_LIB([kmod], [main],
+		[AC_SUBST([LIBKMOD], ["-lkmod"])
+			AC_DEFINE([HAVE_LIBKMOD], [1], [Define if you have libkmod])
+		],
+		[AC_MSG_FAILURE([kmod test failed (--without-kmod to disable)])], [])
+	]
+)
+
+
 AC_CHECK_FUNCS([ \
 	__secure_getenv \
 	secure_getenv\

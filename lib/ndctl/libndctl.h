@@ -169,6 +169,9 @@ struct ndctl_region *ndctl_namespace_get_region(struct ndctl_namespace *ndns);
 unsigned int ndctl_namespace_get_id(struct ndctl_namespace *ndns);
 unsigned int ndctl_namespace_get_type(struct ndctl_namespace *ndns);
 const char *ndctl_namespace_get_type_name(struct ndctl_namespace *ndns);
+int ndctl_namespace_is_enabled(struct ndctl_namespace *ndns);
+int ndctl_namespace_enable(struct ndctl_namespace *ndns);
+int ndctl_namespace_disable(struct ndctl_namespace *ndns);
 
 #ifdef __cplusplus
 } /* extern "C" */
