@@ -39,6 +39,13 @@ The %{name}-devel package contains libraries and header files for
 developing applications that use %{name}.
 
 
+%package        libs
+Summary:        %{name} libraries
+
+%description    libs
+Libraries for %{name}
+
+
 %prep
 %setup -q %{?gitcommit:-n %{name}-git%{gitcommit}}
 

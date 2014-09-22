@@ -65,4 +65,45 @@ void ndctl_log(struct ndctl_ctx *ctx,
 #define ND_DEVICE_NAMESPACE_IO 4    /* legacy persistent memory */
 #define ND_DEVICE_NAMESPACE_PMEM 5  /* persistent memory namespace (may alias) */
 #define ND_DEVICE_NAMESPACE_BLOCK 6 /* block-data-window namespace (may alias) */
+
+#ifdef HAVE_LIBUDEV
+#include <libudev.h>
+
+static inline int check_udev(struct udev *udev)
+{
+	return udev ? 0 : -ENXIO;
+}
+#else
+struct udev;
+struct udev_queue;
+
+static inline struct udev *udev_new(void)
+{
+	return NULL;
+}
+
+static inline void udev_unref(struct udev *udev)
+{
+}
+
+static inline int check_udev(struct udev *udev)
+{
+	return 0;
+}
+
+static inline struct udev_queue *udev_queue_new(struct udev *udev)
+{
+	return NULL;
+}
+
+static inline void udev_queue_unref(struct udev_queue *udev_queue)
+{
+}
+
+static inline int udev_queue_get_queue_is_empty(struct udev_queue *udev_queue)
+{
+	return 0;
+}
 #endif
+
+#endif /* _LIBNDCTL_PRIVATE_H_ */

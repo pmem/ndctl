@@ -158,6 +158,8 @@ struct ndctl_ctx {
 	int log_priority;
 	struct list_head busses;
 	int busses_init;
+	struct udev *udev;
+	struct udev_queue *udev_queue;
 };
 
 void ndctl_log(struct ndctl_ctx *ctx,
@@ -225,15 +227,24 @@ static int log_priority(const char *priority)
 NDCTL_EXPORT int ndctl_new(struct ndctl_ctx **ctx)
 {
 	struct ndctl_ctx *c;
+	struct udev *udev;
 	const char *env;
+	int rc = 0;
+
+	udev = udev_new();
+	if (check_udev(udev) != 0)
+		return -ENXIO;
 
 	c = calloc(1, sizeof(struct ndctl_ctx));
-	if (!c)
-		return -ENOMEM;
+	if (!c) {
+		rc = -ENOMEM;
+		goto err_ctx;
+	}
 
 	c->refcount = 1;
 	c->log_fn = log_stderr;
 	c->log_priority = LOG_ERR;
+	c->udev = udev;
 	list_head_init(&c->busses);
 
 	/* environment overwrites config */
@@ -244,7 +255,18 @@ NDCTL_EXPORT int ndctl_new(struct ndctl_ctx **ctx)
 	info(c, "ctx %p created\n", c);
 	dbg(c, "log_priority=%d\n", c->log_priority);
 	*ctx = c;
+
+	if (udev) {
+		c->udev = udev;
+		c->udev_queue = udev_queue_new(udev);
+		if (!c->udev_queue)
+			err(c, "failed to retrieve udev queue\n");
+	}
+
 	return 0;
+ err_ctx:
+	udev_unref(udev);
+	return rc;
 }
 
 NDCTL_EXPORT struct ndctl_ctx *ndctl_ref(struct ndctl_ctx *ctx)
@@ -307,6 +329,8 @@ NDCTL_EXPORT struct ndctl_ctx *ndctl_unref(struct ndctl_ctx *ctx)
 	ctx->refcount--;
 	if (ctx->refcount > 0)
 		return NULL;
+	udev_queue_unref(ctx->udev_queue);
+	udev_unref(ctx->udev);
 	info(ctx, "context %p released\n", ctx);
 	free_context(ctx);
 	return NULL;
@@ -906,11 +930,13 @@ NDCTL_EXPORT struct ndctl_dimm *ndctl_region_get_next_dimm(struct ndctl_region *
 /**
  * ndctl_region_wait_probe - flush region driver initiated async probing
  * @region: region to sync
+ * @tmo: timeout (in seconds) to wait for probing to complete
  *
  * Upon return this region's namespace devices are registered and any
  * aliasing with other regions will have been resolved.
  */
-NDCTL_EXPORT int ndctl_region_wait_probe(struct ndctl_region *region)
+NDCTL_EXPORT int ndctl_region_wait_probe_timeout(struct ndctl_region *region,
+		unsigned int tmo)
 {
 	struct ndctl_ctx *ctx = region->bus->ctx;
 	char *path, buf[SYSFS_ATTR_SIZE];
@@ -922,7 +948,20 @@ NDCTL_EXPORT int ndctl_region_wait_probe(struct ndctl_region *region)
 		return -ENOMEM;
 	}
 
-	rc = sysfs_read_attr(ctx, path, buf);
+	do {
+		int skip_sleep = 0;
+
+		rc = sysfs_read_attr(ctx, path, buf);
+		if (rc == 0)
+			break;
+		if (ctx->udev_queue)
+			skip_sleep = udev_queue_get_queue_is_empty(ctx->udev_queue);
+		if (!skip_sleep) {
+			dbg(ctx, "waiting for %s...\n", path);
+			sleep(1);
+		}
+	} while (tmo-- != 0);
+
 	free(path);
 	return rc < 0 ? -ENXIO : 0;
 }

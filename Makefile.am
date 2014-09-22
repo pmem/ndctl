@@ -42,6 +42,7 @@ lib_LTLIBRARIES = lib/libndctl.la
 lib_libndctl_la_SOURCES =\
 	lib/libndctl-private.h \
 	lib/libndctl.c
+lib_libndctl_la_LIBADD = $(LIBUDEV)
 
 noinst_LIBRARIES = libccan.a
 libccan_a_SOURCES = \

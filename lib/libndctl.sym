@@ -52,6 +52,7 @@ global:
 	ndctl_region_get_ctx;
 	ndctl_region_get_first_dimm;
 	ndctl_region_get_next_dimm;
+	ndctl_region_wait_probe_timeout;
 	ndctl_mapping_get_first;
 	ndctl_mapping_get_next;
 	ndctl_mapping_get_dimm;
