@@ -401,7 +401,7 @@ NDCTL_EXPORT void ndctl_set_log_priority(struct ndctl_ctx *ctx, int priority)
 
 static int sysfs_read_attr(struct ndctl_ctx *ctx, char *path, char *buf)
 {
-	int fd = open(path, O_RDONLY);
+	int fd = open(path, O_RDONLY|O_CLOEXEC);
 	int n;
 
 	if (fd < 0) {
@@ -422,7 +422,7 @@ static int sysfs_read_attr(struct ndctl_ctx *ctx, char *path, char *buf)
 
 static int sysfs_write_attr(struct ndctl_ctx *ctx, char *path, const char *buf)
 {
-	int fd = open(path, O_WRONLY);
+	int fd = open(path, O_WRONLY|O_CLOEXEC);
 	int n, len = strlen(buf) + 1;
 
 	if (fd < 0) {
