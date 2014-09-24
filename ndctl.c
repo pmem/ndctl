@@ -38,6 +38,7 @@ int cmd_create_nfit(int argc, const char **argv);
 
 static struct cmd_struct commands[] = {
 	{ "version", cmd_version },
+	{ "create-nfit", cmd_create_nfit },
 };
 
 /* place holder until help system is implemented */

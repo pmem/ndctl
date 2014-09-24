@@ -47,6 +47,7 @@ lib_libndctl_la_LIBADD = $(LIBUDEV) $(LIBKMOD)
 bin_PROGRAMS = ndctl
 
 ndctl_SOURCES = ndctl.c \
+		builtin-create-nfit.c \
 		util/parse-options.c \
 		util/parse-options.h \
 		util/usage.c \
