@@ -44,6 +44,16 @@ lib_libndctl_la_SOURCES =\
 	lib/libndctl.c
 lib_libndctl_la_LIBADD = $(LIBUDEV) $(LIBKMOD)
 
+bin_PROGRAMS = ndctl
+
+ndctl_SOURCES = ndctl.c \
+		util/parse-options.c \
+		util/parse-options.h \
+		util/usage.c \
+		util/strbuf.c \
+		util/strbuf.h \
+		util/wrapper.c
+
 noinst_LIBRARIES = libccan.a
 libccan_a_SOURCES = \
 	ccan/str/str.h \

@@ -10,7 +10,7 @@ Name:           ndctl
 Version:
 Release:        1%{?gitcommit:.git%{gitcommit}}%{?dist}
 Summary:	Manage "nd" subsystem devices (Non-volatile Memory)
-License:        LGPLv2.1 and BSD and MIT
+License:        GPLv2
 URL:            http://01.org/linux-nvdimm/
 
 %if %{defined gitcommit}
@@ -32,6 +32,7 @@ Firmware Interface Table) defined devices.
 
 %package        devel
 Summary:        Development files for %{name}
+License:        LGPLv2.1 and BSD and MIT
 Requires:       %{name}%{?_isa} = %{version}-%{release}
 
 %description    devel
@@ -41,6 +42,7 @@ developing applications that use %{name}.
 
 %package        libs
 Summary:        %{name} libraries
+License:        LGPLv2.1 and BSD and MIT
 
 %description    libs
 Libraries for %{name}
@@ -64,13 +66,15 @@ rm -rf $RPM_BUILD_ROOT
 find $RPM_BUILD_ROOT -name '*.la' -exec rm -f {} ';'
 
 
-%post -p /sbin/ldconfig
+%post libs -p /sbin/ldconfig
 
-%postun -p /sbin/ldconfig
-
+%postun libs -p /sbin/ldconfig
 
 %files
 %doc
+%{_bindir}/ndctl
+
+%files libs
 %{_libdir}/*.so.*
 
 %files devel
