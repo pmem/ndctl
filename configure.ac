@@ -72,6 +72,11 @@ AS_IF([test "x$with_kmod" != "xno"],
 	]
 )
 
+AC_CHECK_HEADER([linux/ndctl.h],
+		[AC_DEFINE([HAVE_NDCTL_H], [1],
+			[Define to 1 if you have <linux/ndctl.h>.])],
+		[AC_MSG_ERROR([linux headers missing ndctl.h])])
+
 
 AC_CHECK_FUNCS([ \
 	__secure_getenv \

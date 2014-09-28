@@ -18,7 +18,7 @@
 
 #include <stdbool.h>
 #include <syslog.h>
-
+#include <linux/ndctl.h>
 #include <ndctl/libndctl.h>
 
 static inline void __attribute__((always_inline, format(printf, 2, 3)))
@@ -58,13 +58,6 @@ void ndctl_log(struct ndctl_ctx *ctx,
 		int priority, const char *file, int line, const char *fn,
 		const char *format, ...)
 	__attribute__((format(printf, 6, 7)));
-
-#define ND_DEVICE_DIMM 1            /* dimm (no driver, informational) */
-#define ND_DEVICE_REGION_PMEM 2     /* region (parent of pmem namespaces) */
-#define ND_DEVICE_REGION_BLOCK 3    /* region (parent of block namespaces) */
-#define ND_DEVICE_NAMESPACE_IO 4    /* legacy persistent memory */
-#define ND_DEVICE_NAMESPACE_PMEM 5  /* persistent memory namespace (may alias) */
-#define ND_DEVICE_NAMESPACE_BLOCK 6 /* block-data-window namespace (may alias) */
 
 #ifdef HAVE_LIBUDEV
 #include <libudev.h>
