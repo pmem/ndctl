@@ -164,8 +164,6 @@ struct ndctl_ctx {
 	int log_priority;
 	struct list_head busses;
 	int busses_init;
-	struct udev *udev;
-	struct udev_queue *udev_queue;
 	struct kmod_ctx *kmod_ctx;
 };
 
@@ -236,19 +234,12 @@ NDCTL_EXPORT int ndctl_new(struct ndctl_ctx **ctx)
 	struct kmod_ctx *kmod_ctx;
 	const char *cfg = NULL;
 	struct ndctl_ctx *c;
-	struct udev *udev;
 	const char *env;
 	int rc = 0;
 
-	udev = udev_new();
-	if (check_udev(udev) != 0)
-		return -ENXIO;
-
 	kmod_ctx = kmod_new(NULL, &cfg);
-	if (check_kmod(kmod_ctx) != 0) {
-		rc = -ENXIO;
-		goto err_kmod;
-	}
+	if (check_kmod(kmod_ctx) != 0)
+		return -ENXIO;
 
 	c = calloc(1, sizeof(struct ndctl_ctx));
 	if (!c) {
@@ -259,7 +250,6 @@ NDCTL_EXPORT int ndctl_new(struct ndctl_ctx **ctx)
 	c->refcount = 1;
 	c->log_fn = log_stderr;
 	c->log_priority = LOG_ERR;
-	c->udev = udev;
 	list_head_init(&c->busses);
 
 	/* environment overwrites config */
@@ -271,20 +261,11 @@ NDCTL_EXPORT int ndctl_new(struct ndctl_ctx **ctx)
 	dbg(c, "log_priority=%d\n", c->log_priority);
 	*ctx = c;
 
-	if (udev) {
-		c->udev = udev;
-		c->udev_queue = udev_queue_new(udev);
-		if (!c->udev_queue)
-			err(c, "failed to retrieve udev queue\n");
-	}
-
 	c->kmod_ctx = kmod_ctx;
 
 	return 0;
  err_ctx:
 	kmod_unref(kmod_ctx);
- err_kmod:
-	udev_unref(udev);
 	return rc;
 }
 
@@ -357,8 +338,6 @@ NDCTL_EXPORT struct ndctl_ctx *ndctl_unref(struct ndctl_ctx *ctx)
 	ctx->refcount--;
 	if (ctx->refcount > 0)
 		return NULL;
-	udev_queue_unref(ctx->udev_queue);
-	udev_unref(ctx->udev);
 	info(ctx, "context %p released\n", ctx);
 	free_context(ctx);
 	return NULL;
