@@ -23,6 +23,7 @@ global:
 	ndctl_bus_get_revision;
 	ndctl_bus_get_id;
 	ndctl_bus_get_provider;
+	ndctl_bus_wait_probe;
 	ndctl_dimm_get_first;
 	ndctl_dimm_get_next;
 	ndctl_dimm_get_handle;
@@ -52,7 +53,6 @@ global:
 	ndctl_region_get_ctx;
 	ndctl_region_get_first_dimm;
 	ndctl_region_get_next_dimm;
-	ndctl_region_wait_probe_timeout;
 	ndctl_mapping_get_first;
 	ndctl_mapping_get_next;
 	ndctl_mapping_get_dimm;

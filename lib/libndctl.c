@@ -60,6 +60,7 @@ struct ndctl_bus {
 	int dimms_init;
 	int regions_init;
 	char *bus_path;
+	char *wait_probe_path;
 };
 
 /**
@@ -336,6 +337,7 @@ static void free_bus(struct ndctl_bus *bus)
 	list_del_from(&bus->ctx->busses, &bus->list);
 	free(bus->provider);
 	free(bus->bus_path);
+	free(bus->wait_probe_path);
 	free(bus);
 }
 
@@ -547,6 +549,11 @@ static int add_bus(void *parent, int id, const char *ctl_base)
 	if (!bus->provider)
 		goto err_read;
 
+	sprintf(path, "%s/wait_probe", ctl_base);
+	bus->wait_probe_path = strdup(path);
+	if (!bus->wait_probe_path)
+		goto err_read;
+
 	bus->bus_path = parent_dev_path("char", bus->major, bus->minor);
 	if (!bus->bus_path)
 		goto err_dev_path;
@@ -556,8 +563,8 @@ static int add_bus(void *parent, int id, const char *ctl_base)
 	goto out;
 
  err_dev_path:
-	free(bus->provider);
  err_read:
+	free(bus->provider);
 	free(bus);
  out:
  err_bus:
@@ -622,6 +629,21 @@ NDCTL_EXPORT const char *ndctl_bus_get_provider(struct ndctl_bus *bus)
 struct ndctl_ctx *ndctl_bus_get_ctx(struct ndctl_bus *bus)
 {
 	return bus->ctx;
+}
+
+/**
+ * ndctl_bus_wait_probe - flush bus async probing
+ * @bus: bus to sync
+ *
+ * Upon return this bus's dimm and region devices are probed and the
+ * region child namespace devices are registered
+ */
+NDCTL_EXPORT int ndctl_bus_wait_probe(struct ndctl_bus *bus)
+{
+	char buf[SYSFS_ATTR_SIZE];
+	int rc = sysfs_read_attr(bus->ctx, bus->wait_probe_path, buf);
+
+	return rc < 0 ? -ENXIO : 0;
 }
 
 static int add_dimm(void *parent, int id, const char *dimm_base)
@@ -971,45 +993,6 @@ NDCTL_EXPORT struct ndctl_dimm *ndctl_region_get_next_dimm(struct ndctl_region *
 	return NULL;
 }
 
-/**
- * ndctl_region_wait_probe - flush region driver initiated async probing
- * @region: region to sync
- * @tmo: timeout (in seconds) to wait for probing to complete
- *
- * Upon return this region's namespace devices are registered and any
- * aliasing with other regions will have been resolved.
- */
-NDCTL_EXPORT int ndctl_region_wait_probe_timeout(struct ndctl_region *region,
-		unsigned int tmo)
-{
-	struct ndctl_ctx *ctx = region->bus->ctx;
-	char *path, buf[SYSFS_ATTR_SIZE];
-	int rc;
-
-	if (asprintf(&path, "%s/driver/module/parameters/wait_probe",
-				region->region_path) < 0) {
-		dbg(ctx, "region%d: allocation failure\n", region->id);
-		return -ENOMEM;
-	}
-
-	do {
-		int skip_sleep = 0;
-
-		rc = sysfs_read_attr(ctx, path, buf);
-		if (rc == 0)
-			break;
-		if (ctx->udev_queue)
-			skip_sleep = udev_queue_get_queue_is_empty(ctx->udev_queue);
-		if (!skip_sleep) {
-			dbg(ctx, "waiting for %s...\n", path);
-			sleep(1);
-		}
-	} while (tmo-- != 0);
-
-	free(path);
-	return rc < 0 ? -ENXIO : 0;
-}
-
 static void mappings_init(struct ndctl_region *region)
 {
 	char *mapping_path, buf[SYSFS_ATTR_SIZE];
@@ -1180,7 +1163,7 @@ static void namespaces_init(struct ndctl_region *region)
 		return;
 	region->namespaces_init = 1;
 
-	ndctl_region_wait_probe(region);
+	ndctl_bus_wait_probe(bus);
 	sprintf(ndns_fmt, "namespace%d.", region->id);
 	device_parse(ctx, region->region_path, ndns_fmt, region, add_namespace);
 }

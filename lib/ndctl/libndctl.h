@@ -92,6 +92,7 @@ unsigned short ndctl_bus_get_format(struct ndctl_bus *bus);
 unsigned int ndctl_bus_get_revision(struct ndctl_bus *bus);
 unsigned int ndctl_bus_get_id(struct ndctl_bus *bus);
 const char *ndctl_bus_get_provider(struct ndctl_bus *bus);
+int ndctl_bus_wait_probe(struct ndctl_bus *bus);
 
 struct ndctl_dimm;
 struct ndctl_dimm *ndctl_dimm_get_first(struct ndctl_bus *bus);
@@ -130,8 +131,6 @@ unsigned long long ndctl_region_get_size(struct ndctl_region *region);
 unsigned int ndctl_region_get_spa_index(struct ndctl_region *region);
 unsigned int ndctl_region_get_type(struct ndctl_region *region);
 const char *ndctl_region_get_type_name(struct ndctl_region *region);
-int ndctl_region_wait_probe_timeout(struct ndctl_region *region, unsigned int tmo);
-#define ndctl_region_wait_probe(r) ndctl_region_wait_probe_timeout((r), 5)
 struct ndctl_bus *ndctl_region_get_bus(struct ndctl_region *region);
 struct ndctl_ctx *ndctl_region_get_ctx(struct ndctl_region *region);
 struct ndctl_dimm *ndctl_region_get_first_dimm(struct ndctl_region *region);
