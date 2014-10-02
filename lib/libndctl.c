@@ -107,25 +107,37 @@ struct ndctl_mapping {
 
 /**
  * struct ndctl_region - container for 'pmem' or 'block' capacity
+ * @module: kernel module
  * @interleave_ways: number of dimms in region
  * @mappings: number of extent ranges contributing to the region
  * @size: total capacity of the region before resolving aliasing
  * @type: integer nd-bus device-type
  * @type_name: 'pmem' or 'block'
+ * @generation: incremented everytime the region is disabled
  *
  * A region may alias between pmem and block-window access methods.  The
  * region driver is tasked with parsing the label (if their is one) and
  * coordinating configuration with peer regions.
+ *
+ * When a region is disabled a client may have pending references to
+ * namespaces.  After a disable event the client can
+ * ndctl_region_cleanup() to clean up invalid objects, or it can
+ * specify the cleanup flag to ndctl_region_disable().
  */
 struct ndctl_region {
+	struct kmod_module *module;
 	struct ndctl_bus *bus;
 	int id, interleave_ways, num_mappings, nstype, spa_index;
 	int mappings_init;
 	int namespaces_init;
 	unsigned long long size;
 	char *region_path;
+	char *region_buf;
+	int buf_len;
+	int generation;
 	struct list_head mappings;
 	struct list_head namespaces;
+	struct list_head stale_namespaces;
 	struct list_node list;
 };
 
@@ -146,6 +158,7 @@ struct ndctl_namespace {
 	char *ndns_path;
 	char *ndns_buf;
 	int type, id, buf_len;
+	int generation;
 };
 
 /**
@@ -277,29 +290,33 @@ NDCTL_EXPORT struct ndctl_ctx *ndctl_ref(struct ndctl_ctx *ctx)
 	return ctx;
 }
 
-static void free_namespace(struct ndctl_namespace *ndns)
+static void free_namespaces(struct ndctl_region *region, struct list_head *head)
 {
-	free(ndns->ndns_path);
-	free(ndns->ndns_buf);
-	kmod_module_unref(ndns->module);
-	free(ndns);
+	struct ndctl_namespace *ndns, *_n;
+
+	list_for_each_safe(head, ndns, _n, list) {
+		list_del_from(head, &ndns->list);
+		free(ndns->ndns_path);
+		free(ndns->ndns_buf);
+		kmod_module_unref(ndns->module);
+		free(ndns);
+	}
 }
 
 static void free_region(struct ndctl_region *region)
 {
 	struct ndctl_bus *bus = region->bus;
 	struct ndctl_mapping *mapping, *_m;
-	struct ndctl_namespace *ndns, *_n;
 
 	list_for_each_safe(&region->mappings, mapping, _m, list) {
 		list_del_from(&region->mappings, &mapping->list);
 		free(mapping);
 	}
-	list_for_each_safe(&region->namespaces, ndns, _n, list) {
-		list_del_from(&region->namespaces, &ndns->list);
-		free_namespace(ndns);
-	}
+	free_namespaces(region, &region->namespaces);
+	free_namespaces(region, &region->stale_namespaces);
 	list_del_from(&bus->regions, &region->list);
+	kmod_module_unref(region->module);
+	free(region->region_buf);
 	free(region->region_path);
 	free(region);
 }
@@ -807,6 +824,7 @@ static int add_region(void *parent, int id, const char *region_base)
 		goto err_region;
 	list_head_init(&region->mappings);
 	list_head_init(&region->namespaces);
+	list_head_init(&region->stale_namespaces);
 	region->bus = bus;
 	region->id = id;
 
@@ -839,15 +857,27 @@ static int add_region(void *parent, int id, const char *region_base)
 	} else
 		region->spa_index = -1;
 
+	sprintf(path, "%s/modalias", region_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		goto err_read;
+	region->module = to_module(ctx, buf);
+
+        region->region_buf = calloc(1, strlen(region_base) + 50);
+        if (!region->region_buf)
+                goto err_read;
+        region->buf_len = strlen(region_base) + 50;
+
 	region->region_path = strdup(region_base);
 	if (!region->region_path)
 		goto err_read;
+
 	list_add(&bus->regions, &region->list);
 
 	free(path);
 	return 0;
 
  err_read:
+	free(region->region_buf);
 	free(region);
  err_region:
 	free(path);
@@ -970,6 +1000,78 @@ NDCTL_EXPORT struct ndctl_dimm *ndctl_region_get_next_dimm(struct ndctl_region *
 	}
 
 	return NULL;
+}
+
+static const char *ndctl_region_devname(struct ndctl_region *region)
+{
+	return devpath_to_devname(region->region_path);
+}
+
+NDCTL_EXPORT int ndctl_region_is_enabled(struct ndctl_region *region)
+{
+	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
+	char *path = region->region_buf;
+	int len = region->buf_len;
+	struct stat st;
+
+	if (snprintf(path, len, "%s/driver", region->region_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_region_devname(region));
+		return 0;
+	}
+
+	if (lstat(path, &st) < 0 || !S_ISLNK(st.st_mode))
+		return 0;
+	else
+		return 1;
+}
+
+NDCTL_EXPORT int ndctl_region_enable(struct ndctl_region *region)
+{
+	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
+	const char *devname = ndctl_region_devname(region);
+
+	if (ndctl_region_is_enabled(region))
+		return 0;
+
+	ndctl_bind(ctx, region->module, devname);
+
+	if (!ndctl_region_is_enabled(region)) {
+		err(ctx, "%s: failed to enable\n", devname);
+		return -ENXIO;
+	}
+
+	dbg(ctx, "%s: enabled\n", devname);
+	return 0;
+}
+
+NDCTL_EXPORT void ndctl_region_cleanup(struct ndctl_region *region)
+{
+	free_namespaces(region, &region->stale_namespaces);
+}
+
+NDCTL_EXPORT int ndctl_region_disable(struct ndctl_region *region, int cleanup)
+{
+	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
+	const char *devname = ndctl_region_devname(region);
+
+	if (!ndctl_region_is_enabled(region))
+		return 0;
+
+	ndctl_unbind(ctx, region->region_path);
+
+	if (ndctl_region_is_enabled(region)) {
+		err(ctx, "%s: failed to disable\n", devname);
+		return -EBUSY;
+	}
+	region->namespaces_init = 0;
+	list_append_list(&region->stale_namespaces, &region->namespaces);
+	region->generation++;
+	if (cleanup)
+		ndctl_region_cleanup(region);
+
+	dbg(ctx, "%s: disabled\n", devname);
+	return 0;
 }
 
 static void mappings_init(struct ndctl_region *region)
@@ -1099,6 +1201,7 @@ static int add_namespace(void *parent, int id, const char *ndns_base)
 		goto err_namespace;
 	ndns->id = id;
 	ndns->region = region;
+	ndns->generation = region->generation;
 
 	sprintf(path, "%s/type", ndns_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
@@ -1117,7 +1220,6 @@ static int add_namespace(void *parent, int id, const char *ndns_base)
 	sprintf(path, "%s/modalias", ndns_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		goto err_read;
-
 	ndns->module = to_module(ctx, buf);
 
 	list_add(&region->namespaces, &ndns->list);
@@ -1125,6 +1227,7 @@ static int add_namespace(void *parent, int id, const char *ndns_base)
 	return 0;
 
  err_read:
+	free(ndns->ndns_buf);
 	free(ndns->ndns_path);
 	free(ndns);
  err_namespace:
@@ -1191,14 +1294,16 @@ NDCTL_EXPORT struct ndctl_ctx *ndctl_namespace_get_ctx(struct ndctl_namespace *n
 	return ndns->region->bus->ctx;
 }
 
-static const char *devpath_to_devname(const char *devpath)
-{
-	return strrchr(devpath, '/') + 1;
-}
-
 static const char *ndctl_namespace_devname(struct ndctl_namespace *ndns)
 {
 	return devpath_to_devname(ndns->ndns_path);
+}
+
+NDCTL_EXPORT int ndctl_namespace_is_valid(struct ndctl_namespace *ndns)
+{
+	struct ndctl_region *region = ndctl_namespace_get_region(ndns);
+
+	return ndns->generation == region->generation;
 }
 
 NDCTL_EXPORT int ndctl_namespace_is_enabled(struct ndctl_namespace *ndns)

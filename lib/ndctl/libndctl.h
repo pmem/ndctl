@@ -140,6 +140,10 @@ struct ndctl_dimm *ndctl_region_get_next_dimm(struct ndctl_region *region,
         for (dimm = ndctl_region_get_first_dimm(region); \
              dimm != NULL; \
              dimm = ndctl_region_get_next_dimm(region, dimm))
+int ndctl_region_is_enabled(struct ndctl_region *region);
+int ndctl_region_enable(struct ndctl_region *region);
+int ndctl_region_disable(struct ndctl_region *region, int cleanup);
+void ndctl_region_cleanup(struct ndctl_region *region);
 
 struct ndctl_mapping;
 struct ndctl_mapping *ndctl_mapping_get_first(struct ndctl_region *region);
@@ -171,6 +175,7 @@ const char *ndctl_namespace_get_type_name(struct ndctl_namespace *ndns);
 int ndctl_namespace_is_enabled(struct ndctl_namespace *ndns);
 int ndctl_namespace_enable(struct ndctl_namespace *ndns);
 int ndctl_namespace_disable(struct ndctl_namespace *ndns);
+int ndctl_namespace_is_valid(struct ndctl_namespace *ndns);
 
 #ifdef __cplusplus
 } /* extern "C" */

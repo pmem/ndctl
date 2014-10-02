@@ -53,6 +53,10 @@ global:
 	ndctl_region_get_ctx;
 	ndctl_region_get_first_dimm;
 	ndctl_region_get_next_dimm;
+	ndctl_region_is_enabled;
+	ndctl_region_enable;
+	ndctl_region_disable;
+	ndctl_region_cleanup;
 	ndctl_mapping_get_first;
 	ndctl_mapping_get_next;
 	ndctl_mapping_get_dimm;
@@ -72,4 +76,5 @@ global:
 	ndctl_namespace_is_enabled;
 	ndctl_namespace_enable;
 	ndctl_namespace_disable;
+	ndctl_namespace_is_valid;
 } LIBNDCTL_1;

@@ -107,6 +107,7 @@ struct region {
 	unsigned int id;
 	unsigned int spa_index;
 	unsigned int interleave_ways;
+	int enabled;
 	char *type;
 };
 
@@ -116,16 +117,16 @@ struct namespace {
 };
 
 static struct region regions0[] = {
-	{ 0, 1, 2, "pmem" },
-	{ 1, 2, 4, "pmem" },
-	{ 2, -1, 1, "block" },
-	{ 3, -1, 1, "block" },
-	{ 4, -1, 1, "block" },
-	{ 5, -1, 1, "block" },
+	{ 0, 1, 2, 0, "pmem" },
+	{ 1, 2, 4, 0, "pmem" },
+	{ 2, -1, 1, 0, "block" },
+	{ 3, -1, 1, 0, "block" },
+	{ 4, -1, 1, 0, "block" },
+	{ 5, -1, 1, 0, "block" },
 };
 
 static struct region regions1[] = {
-	{ 6, 1, 0, "pmem" },
+	{ 6, 1, 0, 1, "pmem" },
 };
 
 static struct namespace namespaces1[] = {
@@ -185,28 +186,43 @@ static int check_regions(struct ndctl_bus *bus, struct region *regions, int n)
 
 	for (i = 0; i < n; i++) {
 		struct ndctl_region *region;
+		char devname[50];
 
+		snprintf(devname, sizeof(devname), "region%d", regions[i].id);
 		region = get_region_by_id(bus, regions[i].id);
 		if (!region) {
-			fprintf(stderr, "failed to find region: %d\n", regions[i].id);
+			fprintf(stderr, "%s: failed to find region\n", devname);
 			return -ENXIO;
 		}
 		if (strcmp(ndctl_region_get_type_name(region), regions[i].type) != 0) {
-			fprintf(stderr, "region%d expected type: %s got: %s\n",
-					regions[i].id, regions[i].type,
+			fprintf(stderr, "%s: expected type: %s got: %s\n",
+					devname, regions[i].type,
 					ndctl_region_get_type_name(region));
 			return -ENXIO;
 		}
 		if (ndctl_region_get_interleave_ways(region) != regions[i].interleave_ways) {
-			fprintf(stderr, "region%d expected interleave_ways: %d got: %d\n",
-					regions[i].id, regions[i].interleave_ways,
+			fprintf(stderr, "%s: expected interleave_ways: %d got: %d\n",
+					devname, regions[i].interleave_ways,
 					ndctl_region_get_interleave_ways(region));
 			return -ENXIO;
 		}
 		if (ndctl_region_get_spa_index(region) != regions[i].spa_index) {
-			fprintf(stderr, "region%d expected spa_index: %d got: %d\n",
-					regions[i].id, regions[i].spa_index,
+			fprintf(stderr, "%s: expected spa_index: %d got: %d\n",
+					devname, regions[i].spa_index,
 					ndctl_region_get_spa_index(region));
+			return -ENXIO;
+		}
+		if (regions[i].enabled && !ndctl_region_is_enabled(region)) {
+			fprintf(stderr, "%s: expected enabled by default\n",
+					devname);
+			return -ENXIO;
+		}
+		if (ndctl_region_disable(region, 1) < 0) {
+			fprintf(stderr, "%s: failed to disable\n", devname);
+			return -ENXIO;
+		}
+		if (regions[i].enabled && ndctl_region_enable(region) < 0) {
+			fprintf(stderr, "%s: failed to enable\n", devname);
 			return -ENXIO;
 		}
 	}
@@ -217,10 +233,16 @@ static int check_regions(struct ndctl_bus *bus, struct region *regions, int n)
 static int check_namespaces(struct ndctl_region *region,
 		struct namespace *namespaces, int n)
 {
+	struct ndctl_namespace **ndns_save;
 	int i;
 
 	if (!region)
 		return -ENXIO;
+
+	ndns_save = calloc(n, sizeof(struct ndctl_namespace *));
+	if (!ndns_save)
+		return -ENXIO;
+
 
 	for (i = 0; i < n; i++) {
 		struct ndctl_namespace *ndns;
@@ -232,7 +254,7 @@ static int check_namespaces(struct ndctl_region *region,
 		if (!ndns) {
 			fprintf(stderr, "%s: failed to find namespace\n",
 					devname);
-			return -ENXIO;
+			break;
 		}
 
 		if (strcmp(ndctl_namespace_get_type_name(ndns),
@@ -241,25 +263,46 @@ static int check_namespaces(struct ndctl_region *region,
 					devname,
 					ndctl_namespace_get_type_name(ndns),
 					namespaces[i].type);
-			return -ENXIO;
+			break;
 		}
 
 		if (!ndctl_namespace_is_enabled(ndns)) {
 			fprintf(stderr, "%s: expected enabled by default\n",
 					devname);
-			return -ENXIO;
+			break;
 		}
 
 		if (ndctl_namespace_disable(ndns) < 0) {
 			fprintf(stderr, "%s: failed to disable\n", devname);
-			return -ENXIO;
+			break;
 		}
 
 		if (ndctl_namespace_enable(ndns) < 0) {
 			fprintf(stderr, "%s: failed to enable\n", devname);
-			return -ENXIO;
+			break;
+		}
+		ndns_save[i] = ndns;
+	}
+	if (i < n || ndctl_region_disable(region, 0) != 0) {
+		free(ndns_save);
+		if (i >= n)
+			fprintf(stderr, "failed to disable region%d\n",
+					ndctl_region_get_id(region));
+		return -ENXIO;
+	}
+
+	for (i = 0; i < n; i++) {
+		char devname[50];
+
+		snprintf(devname, sizeof(devname), "namespace%d.%d",
+				ndctl_region_get_id(region), namespaces[i].id);
+		if (ndctl_namespace_is_valid(ndns_save[i])) {
+			fprintf(stderr, "%s: failed to invalidate\n", devname);
+			break;
 		}
 	}
+	ndctl_region_cleanup(region);
+	free(ndns_save);
 
 	return 0;
 }

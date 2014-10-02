@@ -59,6 +59,11 @@ void ndctl_log(struct ndctl_ctx *ctx,
 		const char *format, ...)
 	__attribute__((format(printf, 6, 7)));
 
+static inline const char *devpath_to_devname(const char *devpath)
+{
+	return strrchr(devpath, '/') + 1;
+}
+
 #ifdef HAVE_LIBKMOD
 #include <libkmod.h>
 static inline int check_kmod(struct kmod_ctx *kmod_ctx)
@@ -129,5 +134,10 @@ static inline int kmod_module_probe_insert_module(struct kmod_module *mod,
 }
 
 #endif
+
+static int ndctl_bind(struct ndctl_ctx *ctx, struct kmod_module *module,
+		const char *devname);
+static int ndctl_unbind(struct ndctl_ctx *ctx, const char *devpath);
+static struct kmod_module *to_module(struct ndctl_ctx *ctx, const char *alias);
 
 #endif /* _LIBNDCTL_PRIVATE_H_ */
