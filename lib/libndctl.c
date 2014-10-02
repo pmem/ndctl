@@ -1064,8 +1064,8 @@ NDCTL_EXPORT unsigned long long ndctl_mapping_get_length(struct ndctl_mapping *m
 
 static struct kmod_module *to_module(struct ndctl_ctx *ctx, const char *alias)
 {
+	struct kmod_list *list = NULL;
 	struct kmod_module *mod;
-	struct kmod_list *list;
 	int rc;
 
 	if (!ctx->kmod_ctx)
