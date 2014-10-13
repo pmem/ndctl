@@ -37,12 +37,16 @@ static int cmd_help(int argc, const char **argv)
 int cmd_create_nfit(int argc, const char **argv);
 int cmd_enable_namespace(int argc, const char **argv);
 int cmd_disable_namespace(int argc, const char **argv);
+int cmd_enable_region(int argc, const char **argv);
+int cmd_disable_region(int argc, const char **argv);
 
 static struct cmd_struct commands[] = {
 	{ "version", cmd_version },
 	{ "create-nfit", cmd_create_nfit },
 	{ "enable-namespace", cmd_enable_namespace },
 	{ "disable-namespace", cmd_disable_namespace },
+	{ "enable-region", cmd_enable_region },
+	{ "disable-region", cmd_disable_region },
 };
 
 /* place holder until help system is implemented */
