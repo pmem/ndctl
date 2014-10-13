@@ -125,6 +125,7 @@ struct ndctl_region *ndctl_region_get_next(struct ndctl_region *region);
              region != NULL; \
              region = ndctl_region_get_next(region))
 unsigned int ndctl_region_get_id(struct ndctl_region *region);
+const char *ndctl_region_get_devname(struct ndctl_region *region);
 unsigned int ndctl_region_get_interleave_ways(struct ndctl_region *region);
 unsigned int ndctl_region_get_mappings(struct ndctl_region *region);
 unsigned long long ndctl_region_get_size(struct ndctl_region *region);
@@ -170,6 +171,7 @@ struct ndctl_ctx *ndctl_namespace_get_ctx(struct ndctl_namespace *ndns);
 struct ndctl_bus *ndctl_namespace_get_bus(struct ndctl_namespace *ndns);
 struct ndctl_region *ndctl_namespace_get_region(struct ndctl_namespace *ndns);
 unsigned int ndctl_namespace_get_id(struct ndctl_namespace *ndns);
+const char *ndctl_namespace_get_devname(struct ndctl_namespace *ndns);
 unsigned int ndctl_namespace_get_type(struct ndctl_namespace *ndns);
 const char *ndctl_namespace_get_type_name(struct ndctl_namespace *ndns);
 int ndctl_namespace_is_enabled(struct ndctl_namespace *ndns);

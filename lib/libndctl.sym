@@ -43,6 +43,7 @@ global:
 	ndctl_region_get_first;
 	ndctl_region_get_next;
 	ndctl_region_get_id;
+	ndctl_region_get_devname;
 	ndctl_region_get_interleave_ways;
 	ndctl_region_get_spa_index;
 	ndctl_region_get_mappings;
@@ -71,6 +72,7 @@ global:
 	ndctl_namespace_get_bus;
 	ndctl_namespace_get_region;
 	ndctl_namespace_get_id;
+	ndctl_namespace_get_devname;
 	ndctl_namespace_get_type;
 	ndctl_namespace_get_type_name;
 	ndctl_namespace_is_enabled;

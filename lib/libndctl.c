@@ -1002,7 +1002,7 @@ NDCTL_EXPORT struct ndctl_dimm *ndctl_region_get_next_dimm(struct ndctl_region *
 	return NULL;
 }
 
-static const char *ndctl_region_devname(struct ndctl_region *region)
+NDCTL_EXPORT const char *ndctl_region_get_devname(struct ndctl_region *region)
 {
 	return devpath_to_devname(region->region_path);
 }
@@ -1016,7 +1016,7 @@ NDCTL_EXPORT int ndctl_region_is_enabled(struct ndctl_region *region)
 
 	if (snprintf(path, len, "%s/driver", region->region_path) >= len) {
 		err(ctx, "%s: buffer too small!\n",
-				ndctl_region_devname(region));
+				ndctl_region_get_devname(region));
 		return 0;
 	}
 
@@ -1029,7 +1029,7 @@ NDCTL_EXPORT int ndctl_region_is_enabled(struct ndctl_region *region)
 NDCTL_EXPORT int ndctl_region_enable(struct ndctl_region *region)
 {
 	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
-	const char *devname = ndctl_region_devname(region);
+	const char *devname = ndctl_region_get_devname(region);
 
 	if (ndctl_region_is_enabled(region))
 		return 0;
@@ -1053,7 +1053,7 @@ NDCTL_EXPORT void ndctl_region_cleanup(struct ndctl_region *region)
 NDCTL_EXPORT int ndctl_region_disable(struct ndctl_region *region, int cleanup)
 {
 	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
-	const char *devname = ndctl_region_devname(region);
+	const char *devname = ndctl_region_get_devname(region);
 
 	if (!ndctl_region_is_enabled(region))
 		return 0;
@@ -1294,7 +1294,7 @@ NDCTL_EXPORT struct ndctl_ctx *ndctl_namespace_get_ctx(struct ndctl_namespace *n
 	return ndns->region->bus->ctx;
 }
 
-static const char *ndctl_namespace_devname(struct ndctl_namespace *ndns)
+NDCTL_EXPORT const char *ndctl_namespace_get_devname(struct ndctl_namespace *ndns)
 {
 	return devpath_to_devname(ndns->ndns_path);
 }
@@ -1315,7 +1315,7 @@ NDCTL_EXPORT int ndctl_namespace_is_enabled(struct ndctl_namespace *ndns)
 
 	if (snprintf(path, len, "%s/driver", ndns->ndns_path) >= len) {
 		err(ctx, "%s: buffer too small!\n",
-				ndctl_namespace_devname(ndns));
+				ndctl_namespace_get_devname(ndns));
 		return 0;
 	}
 
@@ -1393,7 +1393,7 @@ static int ndctl_unbind(struct ndctl_ctx *ctx, const char *devpath)
 NDCTL_EXPORT int ndctl_namespace_enable(struct ndctl_namespace *ndns)
 {
 	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
-	const char *devname = ndctl_namespace_devname(ndns);
+	const char *devname = ndctl_namespace_get_devname(ndns);
 
 	if (ndctl_namespace_is_enabled(ndns))
 		return 0;
@@ -1412,7 +1412,7 @@ NDCTL_EXPORT int ndctl_namespace_enable(struct ndctl_namespace *ndns)
 NDCTL_EXPORT int ndctl_namespace_disable(struct ndctl_namespace *ndns)
 {
 	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
-	const char *devname = ndctl_namespace_devname(ndns);
+	const char *devname = ndctl_namespace_get_devname(ndns);
 
 	if (!ndctl_namespace_is_enabled(ndns))
 		return 0;
