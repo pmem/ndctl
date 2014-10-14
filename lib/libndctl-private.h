@@ -175,6 +175,15 @@ static inline int kmod_module_probe_insert_module(struct kmod_module *mod,
 
 #endif
 
+#ifdef HAVE_LIBUUID
+#include <uuid/uuid.h>
+#else
+static inline int uuid_parse(const char *in, uuid_t uu)
+{
+	return -1;
+}
+#endif
+
 static int ndctl_bind(struct ndctl_ctx *ctx, struct kmod_module *module,
 		const char *devname);
 static int ndctl_unbind(struct ndctl_ctx *ctx, const char *devpath);

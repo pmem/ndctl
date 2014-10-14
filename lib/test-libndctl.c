@@ -21,8 +21,10 @@
 #include <ctype.h>
 #include <errno.h>
 #include <unistd.h>
+#include <limits.h>
 #include <syslog.h>
 #include <libkmod.h>
+#include <uuid/uuid.h>
 
 #include <ccan/array_size/array_size.h>
 #include <ndctl/libndctl.h>
@@ -116,6 +118,16 @@ struct namespace {
 	char *type;
 };
 
+struct btt {
+	int id;
+	int enabled;
+	uuid_t uuid;
+	char *backing_dev;
+	int num_sector_sizes;
+	unsigned int sector_size;
+	unsigned int sector_sizes[4];
+};
+
 static struct region regions0[] = {
 	{ 0, 1, 2, 0, "pmem" },
 	{ 1, 2, 4, 0, "pmem" },
@@ -131,6 +143,15 @@ static struct region regions1[] = {
 
 static struct namespace namespaces1[] = {
 	{ 0, "namespace_io" },
+};
+
+static struct btt btts0[] = {
+	{ 0, 0, { 0, }, "", 1, UINT_MAX, { 512, },
+	},
+};
+
+static struct btt btts1[] = {
+	{ 1, 0, { 0, }, "", 1, UINT_MAX, { 512, }, }
 };
 
 static struct ndctl_bus *get_bus_by_provider(struct ndctl_ctx *ctx,
@@ -164,6 +185,18 @@ static struct ndctl_region *get_region_by_id(struct ndctl_bus *bus,
 	ndctl_region_foreach(bus, region)
 		if (ndctl_region_get_id(region) == id)
 			return region;
+
+	return NULL;
+}
+
+static struct ndctl_btt *get_btt_by_id(struct ndctl_bus *bus,
+		unsigned int id)
+{
+	struct ndctl_btt *btt;
+
+	ndctl_btt_foreach(bus, btt)
+		if (ndctl_btt_get_id(btt) == id)
+			return btt;
 
 	return NULL;
 }
@@ -307,10 +340,90 @@ static int check_namespaces(struct ndctl_region *region,
 	return 0;
 }
 
+static int check_btt_supported_sectors(struct ndctl_btt *btt, struct btt *expect_btt)
+{
+	int s, t;
+	char devname[50];
+
+	snprintf(devname, sizeof(devname), "btt%d", expect_btt->id);
+	for (s = 0; s < expect_btt->num_sector_sizes; s++) {
+		for (t = 0; t < expect_btt->num_sector_sizes; t++) {
+			if (ndctl_btt_get_supported_sector_size(btt, t)
+					== expect_btt->sector_sizes[s])
+				break;
+		}
+		if (t >= expect_btt->num_sector_sizes) {
+			fprintf(stderr, "%s: expected sector_size: %d to be supported\n",
+					devname, expect_btt->sector_sizes[s]);
+			return -ENXIO;
+		}
+	}
+
+	return 0;
+}
+
+static int check_btts(struct ndctl_bus *bus, struct btt *btts, int n)
+{
+	int i;
+
+	for (i = 0; i < n; i++) {
+		struct ndctl_btt *btt;
+		char devname[50];
+		uuid_t btt_uuid;
+		int rc;
+
+		snprintf(devname, sizeof(devname), "btt%d", btts[i].id);
+		btt = get_btt_by_id(bus, btts[i].id);
+		if (!btt) {
+			fprintf(stderr, "%s: failed to find btt\n", devname);
+			return -ENXIO;
+		}
+		if (strcmp(ndctl_btt_get_backing_dev(btt), btts[i].backing_dev) != 0) {
+			fprintf(stderr, "%s: expected backing_dev: %s got: %s\n",
+					devname, btts[i].backing_dev,
+					ndctl_btt_get_backing_dev(btt));
+			return -ENXIO;
+		}
+		if (ndctl_btt_get_sector_size(btt) != btts[i].sector_size) {
+			fprintf(stderr, "%s: expected sector_size: %d got: %d\n",
+					devname, btts[i].sector_size,
+					ndctl_btt_get_sector_size(btt));
+			return -ENXIO;
+		}
+		ndctl_btt_get_uuid(btt, btt_uuid);
+		if (uuid_compare(btt_uuid, btts[i].uuid) != 0) {
+			char expect[40], actual[40];
+
+			uuid_unparse(btt_uuid, actual);
+			uuid_unparse(btts[i].uuid, expect);
+			fprintf(stderr, "%s: expected uuid: %s got: %s\n",
+					devname, expect, actual);
+			return -ENXIO;
+		}
+		if (ndctl_btt_get_num_sector_sizes(btt) != btts[i].num_sector_sizes) {
+			fprintf(stderr, "%s: expected num_sector_sizes: %d got: %d\n",
+					devname, btts[i].num_sector_sizes,
+					ndctl_btt_get_num_sector_sizes(btt));
+		}
+		rc = check_btt_supported_sectors(btt, &btts[i]);
+		if (rc)
+			return rc;
+		if (btts[i].enabled && ndctl_btt_is_enabled(btt)) {
+			fprintf(stderr, "%s: expected disabled by default\n",
+					devname);
+			return -ENXIO;
+		}
+	}
+
+	return 0;
+}
+
+
 static int do_test0(struct ndctl_ctx *ctx)
 {
 	struct ndctl_bus *bus = get_bus_by_provider(ctx, NFIT_PROVIDER0);
 	unsigned int i;
+	int rc;
 
 	if (!bus)
 		return -ENXIO;
@@ -331,7 +444,11 @@ static int do_test0(struct ndctl_ctx *ctx)
 		}
 	}
 
-	return check_regions(bus, regions0, ARRAY_SIZE(regions0));
+	rc = check_regions(bus, regions0, ARRAY_SIZE(regions0));
+	if (rc)
+		return rc;
+
+	return check_btts(bus, btts0, ARRAY_SIZE(btts0));
 }
 
 static int do_test1(struct ndctl_ctx *ctx)
@@ -349,7 +466,11 @@ static int do_test1(struct ndctl_ctx *ctx)
 
 	region = get_region_by_id(bus, regions1[0].id);
 
-	return check_namespaces(region, namespaces1, ARRAY_SIZE(namespaces1));
+	rc = check_namespaces(region, namespaces1, ARRAY_SIZE(namespaces1));
+	if (rc)
+		return rc;
+
+	return check_btts(bus, btts1, ARRAY_SIZE(btts1));
 }
 
 typedef int (*do_test_fn)(struct ndctl_ctx *ctx);

@@ -79,4 +79,16 @@ global:
 	ndctl_namespace_enable;
 	ndctl_namespace_disable;
 	ndctl_namespace_is_valid;
+	ndctl_btt_get_first;
+	ndctl_btt_get_next;
+	ndctl_btt_get_ctx;
+	ndctl_btt_get_bus;
+	ndctl_btt_get_id;
+	ndctl_btt_get_supported_sector_size;
+	ndctl_btt_get_sector_size;
+	ndctl_btt_get_num_sector_sizes;
+	ndctl_btt_get_backing_dev;
+	ndctl_btt_get_uuid;
+	ndctl_btt_is_enabled;
+	ndctl_btt_get_devname;
 } LIBNDCTL_1;

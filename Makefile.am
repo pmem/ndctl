@@ -42,7 +42,7 @@ lib_LTLIBRARIES = lib/libndctl.la
 lib_libndctl_la_SOURCES =\
 	lib/libndctl-private.h \
 	lib/libndctl.c
-lib_libndctl_la_LIBADD = $(LIBUDEV) $(LIBKMOD)
+lib_libndctl_la_LIBADD = $(LIBUDEV) $(LIBUUID) $(LIBKMOD)
 
 bin_PROGRAMS = ndctl
 
@@ -88,4 +88,4 @@ TESTS = lib/test-libndctl
 check_PROGRAMS = lib/test-libndctl
 lib_test_libndctl_SOURCES = lib/test-libndctl.c
 lib_test_libndctl_LDADD = lib/libndctl.la \
-	-lkmod
+	$(LIBUUID) $(LIBKMOD)

@@ -18,6 +18,12 @@
 
 #include <stdarg.h>
 
+#ifdef HAVE_LIBUUID
+#include <uuid/uuid.h>
+#else
+typedef unsigned char uuid_t[16];
+#endif
+
 /*
  *          "nd/ndctl" device/object hierarchy and kernel modules
  *
@@ -178,6 +184,23 @@ int ndctl_namespace_is_enabled(struct ndctl_namespace *ndns);
 int ndctl_namespace_enable(struct ndctl_namespace *ndns);
 int ndctl_namespace_disable(struct ndctl_namespace *ndns);
 int ndctl_namespace_is_valid(struct ndctl_namespace *ndns);
+struct ndctl_btt;
+struct ndctl_btt *ndctl_btt_get_first(struct ndctl_bus *bus);
+struct ndctl_btt *ndctl_btt_get_next(struct ndctl_btt *btt);
+#define ndctl_btt_foreach(bus, btt) \
+        for (btt = ndctl_btt_get_first(bus); \
+             btt != NULL; \
+             btt = ndctl_btt_get_next(btt))
+struct ndctl_ctx *ndctl_btt_get_ctx(struct ndctl_btt *btt);
+struct ndctl_bus *ndctl_btt_get_bus(struct ndctl_btt *btt);
+unsigned int ndctl_btt_get_id(struct ndctl_btt *btt);
+unsigned int ndctl_btt_get_supported_sector_size(struct ndctl_btt *btt, int i);
+unsigned int ndctl_btt_get_sector_size(struct ndctl_btt *btt);
+int ndctl_btt_get_num_sector_sizes(struct ndctl_btt *btt);
+const char *ndctl_btt_get_backing_dev(struct ndctl_btt *btt);
+void ndctl_btt_get_uuid(struct ndctl_btt *btt, uuid_t uu);
+int ndctl_btt_is_enabled(struct ndctl_btt *btt);
+const char *ndctl_btt_get_devname(struct ndctl_btt *btt);
 
 #ifdef __cplusplus
 } /* extern "C" */

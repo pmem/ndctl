@@ -72,6 +72,19 @@ AS_IF([test "x$with_kmod" != "xno"],
 	]
 )
 
+AC_ARG_WITH([uuid], [AS_HELP_STRING([--without-uuid], [disable support for uuid])],
+			[], [with_uuid=yes])
+
+LIBUUID=
+AS_IF([test "x$with_uuid" != "xno"],
+	[AC_CHECK_LIB([uuid], [main],
+		[AC_SUBST([LIBUUID], ["-luuid"])
+			AC_DEFINE([HAVE_LIBUUID], [1], [Define if you have libuuid])
+		],
+		[AC_MSG_FAILURE([uuid test failed (--without-uuid to disable)])], [])
+	]
+)
+
 AC_CHECK_HEADER([linux/ndctl.h],
 		[AC_DEFINE([HAVE_NDCTL_H], [1],
 			[Define to 1 if you have <linux/ndctl.h>.])],
