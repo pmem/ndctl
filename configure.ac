@@ -46,6 +46,19 @@ AS_IF([test "x$enable_debug" = "xyes"], [
         AC_DEFINE(ENABLE_DEBUG, [1], [Debug messages.])
 ])
 
+AC_ARG_WITH([udev], [AS_HELP_STRING([--without-udev], [disable support for udev])],
+			[], [with_udev=yes])
+
+LIBUDEV=
+AS_IF([test "x$with_udev" != "xno"],
+	[AC_CHECK_LIB([udev], [main],
+		[AC_SUBST([LIBUDEV], ["-ludev"])
+			AC_DEFINE([HAVE_LIBUDEV], [1], [Define if you have libudev])
+		],
+		[AC_MSG_FAILURE([udev test failed (--without-udev to disable)])], [])
+	]
+)
+
 AC_ARG_WITH([kmod], [AS_HELP_STRING([--without-kmod], [disable support for kmod])],
 			[], [with_kmod=yes])
 
