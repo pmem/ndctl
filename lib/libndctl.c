@@ -167,6 +167,7 @@ struct ndctl_namespace {
  * Instantiate with ndctl_new(), which takes an initial reference.  Free
  * the context by dropping the reference count to zero with
  * ndctrl_unref(), or take additional references with ndctl_ref()
+ * @timeout: default library timeout
  */
 struct ndctl_ctx {
 	int refcount;
@@ -180,6 +181,7 @@ struct ndctl_ctx {
 	struct udev *udev;
 	struct udev_queue *udev_queue;
 	struct kmod_ctx *kmod_ctx;
+	unsigned long timeout;
 };
 
 void ndctl_log(struct ndctl_ctx *ctx,
@@ -273,16 +275,27 @@ NDCTL_EXPORT int ndctl_new(struct ndctl_ctx **ctx)
 	c->log_fn = log_stderr;
 	c->log_priority = LOG_ERR;
 	c->udev = udev;
+	c->timeout = 5;
 	list_head_init(&c->busses);
 
 	/* environment overwrites config */
 	env = secure_getenv("NDCTL_LOG");
 	if (env != NULL)
 		ndctl_set_log_priority(c, log_priority(env));
-
 	info(c, "ctx %p created\n", c);
 	dbg(c, "log_priority=%d\n", c->log_priority);
 	*ctx = c;
+
+	env = secure_getenv("NDCTL_TIMEOUT");
+	if (env != NULL) {
+		unsigned long tmo;
+		char *end;
+
+		tmo = strtoul(env, &end, 0);
+		if (tmo < ULONG_MAX && !end)
+			c->timeout = tmo;
+		dbg(c, "timeout = %ld\n", tmo);
+	}
 
 	if (udev) {
 		c->udev = udev;
@@ -652,13 +665,26 @@ struct ndctl_ctx *ndctl_bus_get_ctx(struct ndctl_bus *bus)
  * ndctl_bus_wait_probe - flush bus async probing
  * @bus: bus to sync
  *
- * Upon return this bus's dimm and region devices are probed and the
- * region child namespace devices are registered
+ * Upon return this bus's dimm and region devices are probed, the region
+ * child namespace devices are registered, and drivers for namespaces
+ * and btts are loaded (if module policy allows)
  */
 NDCTL_EXPORT int ndctl_bus_wait_probe(struct ndctl_bus *bus)
 {
+	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
+	unsigned long tmo = ctx->timeout;
 	char buf[SYSFS_ATTR_SIZE];
-	int rc = sysfs_read_attr(bus->ctx, bus->wait_probe_path, buf);
+	int rc;
+
+	do {
+		if (!ctx->udev_queue)
+			break;
+		if (udev_queue_get_queue_is_empty(ctx->udev_queue))
+			break;
+		dbg(ctx, "waiting for bus%d...\n", ndctl_bus_get_id(bus));
+		sleep(1);
+	} while (ctx->timeout == 0 || tmo-- != 0);
+	rc = sysfs_read_attr(bus->ctx, bus->wait_probe_path, buf);
 
 	return rc < 0 ? -ENXIO : 0;
 }
@@ -1028,12 +1054,22 @@ NDCTL_EXPORT const char *ndctl_region_get_devname(struct ndctl_region *region)
 	return devpath_to_devname(region->region_path);
 }
 
+static int is_enabled(struct ndctl_bus *bus, const char *drvpath)
+{
+	struct stat st;
+
+	ndctl_bus_wait_probe(bus);
+	if (lstat(drvpath, &st) < 0 || !S_ISLNK(st.st_mode))
+		return 0;
+	else
+		return 1;
+}
+
 NDCTL_EXPORT int ndctl_region_is_enabled(struct ndctl_region *region)
 {
 	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
 	char *path = region->region_buf;
 	int len = region->buf_len;
-	struct stat st;
 
 	if (snprintf(path, len, "%s/driver", region->region_path) >= len) {
 		err(ctx, "%s: buffer too small!\n",
@@ -1041,10 +1077,7 @@ NDCTL_EXPORT int ndctl_region_is_enabled(struct ndctl_region *region)
 		return 0;
 	}
 
-	if (lstat(path, &st) < 0 || !S_ISLNK(st.st_mode))
-		return 0;
-	else
-		return 1;
+	return is_enabled(ndctl_region_get_bus(region), path);
 }
 
 NDCTL_EXPORT int ndctl_region_enable(struct ndctl_region *region)
@@ -1332,7 +1365,6 @@ NDCTL_EXPORT int ndctl_namespace_is_enabled(struct ndctl_namespace *ndns)
 	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
 	char *path = ndns->ndns_buf;
 	int len = ndns->buf_len;
-	struct stat st;
 
 	if (snprintf(path, len, "%s/driver", ndns->ndns_path) >= len) {
 		err(ctx, "%s: buffer too small!\n",
@@ -1340,10 +1372,7 @@ NDCTL_EXPORT int ndctl_namespace_is_enabled(struct ndctl_namespace *ndns)
 		return 0;
 	}
 
-	if (lstat(path, &st) < 0 || !S_ISLNK(st.st_mode))
-		return 0;
-	else
-		return 1;
+	return is_enabled(ndctl_namespace_get_bus(ndns), path);
 }
 
 static int ndctl_bind(struct ndctl_ctx *ctx, struct kmod_module *module,
