@@ -180,6 +180,7 @@ unsigned int ndctl_namespace_get_id(struct ndctl_namespace *ndns);
 const char *ndctl_namespace_get_devname(struct ndctl_namespace *ndns);
 unsigned int ndctl_namespace_get_type(struct ndctl_namespace *ndns);
 const char *ndctl_namespace_get_type_name(struct ndctl_namespace *ndns);
+const char *ndctl_namespace_get_block_device(struct ndctl_namespace *ndns);
 int ndctl_namespace_is_enabled(struct ndctl_namespace *ndns);
 int ndctl_namespace_enable(struct ndctl_namespace *ndns);
 int ndctl_namespace_disable(struct ndctl_namespace *ndns);
@@ -201,6 +202,7 @@ const char *ndctl_btt_get_backing_dev(struct ndctl_btt *btt);
 void ndctl_btt_get_uuid(struct ndctl_btt *btt, uuid_t uu);
 int ndctl_btt_is_enabled(struct ndctl_btt *btt);
 const char *ndctl_btt_get_devname(struct ndctl_btt *btt);
+const char *ndctl_btt_get_block_device(struct ndctl_btt *btt);
 
 #ifdef __cplusplus
 } /* extern "C" */

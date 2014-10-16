@@ -149,6 +149,7 @@ struct ndctl_region {
  * @type: integer nd-bus device-type
  * @type_name: 'namespace_io', 'namespace_pmem', or 'namespace_block'
  * @namespace_path: devpath for namespace device
+ * @bdev: associated block_device of a namespace
  *
  * A 'namespace' is the resulting device after region-aliasing and
  * label-parsing is resolved.
@@ -159,6 +160,7 @@ struct ndctl_namespace {
 	struct list_node list;
 	char *ndns_path;
 	char *ndns_buf;
+	char *bdev;
 	int type, id, buf_len;
 	int generation;
 };
@@ -184,6 +186,7 @@ struct ndctl_lbasize {
  * @btt_path: btt devpath
  * @uuid: unique identifier for a btt instance
  * @btt_buf: space to print paths for bind/unbind operations
+ * @bdev: block device associated with a btt
  */
 struct ndctl_btt {
 	struct kmod_module *module;
@@ -193,6 +196,7 @@ struct ndctl_btt {
 	char *backing_dev;
 	char *btt_path;
 	char *btt_buf;
+	char *bdev;
 	int buf_len;
 	uuid_t uuid;
 	int id;
@@ -367,6 +371,7 @@ static void free_namespaces(struct ndctl_region *region, struct list_head *head)
 		list_del_from(head, &ndns->list);
 		free(ndns->ndns_path);
 		free(ndns->ndns_buf);
+		free(ndns->bdev);
 		kmod_module_unref(ndns->module);
 		free(ndns);
 	}
@@ -1291,6 +1296,35 @@ static struct kmod_module *to_module(struct ndctl_ctx *ctx, const char *alias)
 	return mod;
 }
 
+static char *get_block_device(struct ndctl_ctx *ctx, const char *block_path)
+{
+	char *bdev_name = NULL;
+	struct dirent *de;
+	DIR *dir;
+
+	dir = opendir(block_path);
+	if (!dir) {
+		dbg(ctx, "no block device found: %s\n", block_path);
+		return NULL;
+	}
+
+	while ((de = readdir(dir)) != NULL) {
+		if (de->d_ino == 0 || de->d_name[0] == '.')
+			continue;
+		if (bdev_name) {
+			dbg(ctx, "invalid block_path format: %s\n",
+					block_path);
+			free(bdev_name);
+			bdev_name = NULL;
+			break;
+		}
+		bdev_name = strdup(de->d_name);
+	}
+	closedir(dir);
+
+	return bdev_name;
+}
+
 static int add_namespace(void *parent, int id, const char *ndns_base)
 {
 	char *path = calloc(1, strlen(ndns_base) + 20);
@@ -1407,6 +1441,27 @@ NDCTL_EXPORT const char *ndctl_namespace_get_devname(struct ndctl_namespace *ndn
 	return devpath_to_devname(ndns->ndns_path);
 }
 
+NDCTL_EXPORT const char *ndctl_namespace_get_block_device(struct ndctl_namespace *ndns)
+{
+	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
+	struct ndctl_bus *bus = ndctl_namespace_get_bus(ndns);
+	char *path = ndns->ndns_buf;
+	int len = ndns->buf_len;
+
+	if (ndns->bdev)
+		return ndns->bdev;
+
+	if (snprintf(path, len, "%s/block", ndns->ndns_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_namespace_get_devname(ndns));
+		return "";
+	}
+
+	ndctl_bus_wait_probe(bus);
+	ndns->bdev = get_block_device(ctx, path);
+	return ndns->bdev ? ndns->bdev : "";
+}
+
 NDCTL_EXPORT int ndctl_namespace_is_valid(struct ndctl_namespace *ndns)
 {
 	struct ndctl_region *region = ndctl_namespace_get_region(ndns);
@@ -1510,6 +1565,7 @@ NDCTL_EXPORT int ndctl_namespace_enable(struct ndctl_namespace *ndns)
 	}
 
 	dbg(ctx, "%s: enabled\n", devname);
+
 	return 0;
 }
 
@@ -1527,6 +1583,9 @@ NDCTL_EXPORT int ndctl_namespace_disable(struct ndctl_namespace *ndns)
 		err(ctx, "%s: failed to disable\n", devname);
 		return -EBUSY;
 	}
+
+	free(ndns->bdev);
+	ndns->bdev = NULL;
 
 	dbg(ctx, "%s: disabled\n", devname);
 	return 0;
@@ -1630,6 +1689,9 @@ static int add_btt(void *parent, int id, const char *btt_base)
 	if (!btt->backing_dev)
 		goto err_read;
 
+	sprintf(path, "%s/block", btt_base);
+	btt->bdev = get_block_device(ctx, path);
+
 	list_add(&bus->btts, &btt->list);
 	free(path);
 	return 0;
@@ -1715,6 +1777,11 @@ NDCTL_EXPORT struct ndctl_ctx *ndctl_btt_get_ctx(struct ndctl_btt *btt)
 NDCTL_EXPORT const char *ndctl_btt_get_devname(struct ndctl_btt *btt)
 {
 	return devpath_to_devname(btt->btt_path);
+}
+
+NDCTL_EXPORT const char *ndctl_btt_get_block_device(struct ndctl_btt *btt)
+{
+	return btt->bdev ? btt->bdev : "";
 }
 
 NDCTL_EXPORT int ndctl_btt_is_enabled(struct ndctl_btt *btt)

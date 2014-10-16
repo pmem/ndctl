@@ -116,12 +116,14 @@ struct region {
 struct namespace {
 	unsigned int id;
 	char *type;
+	char *bdev;
 };
 
 struct btt {
 	int id;
 	int enabled;
 	uuid_t uuid;
+	char *bdev;
 	char *backing_dev;
 	int num_sector_sizes;
 	unsigned int sector_size;
@@ -142,16 +144,15 @@ static struct region regions1[] = {
 };
 
 static struct namespace namespaces1[] = {
-	{ 0, "namespace_io" },
+	{ 0, "namespace_io", "pmem0" },
 };
 
 static struct btt btts0[] = {
-	{ 0, 0, { 0, }, "", 1, UINT_MAX, { 512, },
-	},
+	{ 0, 0, { 0, }, "", "", 1, UINT_MAX, { 512, }, },
 };
 
 static struct btt btts1[] = {
-	{ 1, 0, { 0, }, "", 1, UINT_MAX, { 512, }, }
+	{ 1, 0, { 0, }, "", "", 1, UINT_MAX, { 512, }, }
 };
 
 static struct ndctl_bus *get_bus_by_provider(struct ndctl_ctx *ctx,
@@ -266,6 +267,7 @@ static int check_regions(struct ndctl_bus *bus, struct region *regions, int n)
 static int check_namespaces(struct ndctl_region *region,
 		struct namespace *namespaces, int n)
 {
+	struct ndctl_bus *bus = ndctl_region_get_bus(region);
 	struct ndctl_namespace **ndns_save;
 	int i;
 
@@ -302,6 +304,14 @@ static int check_namespaces(struct ndctl_region *region,
 		if (!ndctl_namespace_is_enabled(ndns)) {
 			fprintf(stderr, "%s: expected enabled by default\n",
 					devname);
+			break;
+		}
+
+		if (strcmp(ndctl_namespace_get_block_device(ndns),
+					namespaces[i].bdev) != 0) {
+			fprintf(stderr, "%s: expected block_device: %s got %s\n",
+					devname, namespaces[i].bdev,
+					ndctl_namespace_get_block_device(ndns));
 			break;
 		}
 
@@ -411,6 +421,13 @@ static int check_btts(struct ndctl_bus *bus, struct btt *btts, int n)
 		if (btts[i].enabled && ndctl_btt_is_enabled(btt)) {
 			fprintf(stderr, "%s: expected disabled by default\n",
 					devname);
+			return -ENXIO;
+		}
+
+		if (strcmp(ndctl_btt_get_block_device(btt), btts[i].bdev) != 0) {
+			fprintf(stderr, "%s: expected block_device: %s got %s\n",
+					devname, btts[i].bdev,
+					ndctl_btt_get_block_device(btt));
 			return -ENXIO;
 		}
 	}

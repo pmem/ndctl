@@ -73,6 +73,7 @@ global:
 	ndctl_namespace_get_region;
 	ndctl_namespace_get_id;
 	ndctl_namespace_get_devname;
+	ndctl_namespace_get_block_device;
 	ndctl_namespace_get_type;
 	ndctl_namespace_get_type_name;
 	ndctl_namespace_is_enabled;
@@ -91,4 +92,5 @@ global:
 	ndctl_btt_get_uuid;
 	ndctl_btt_is_enabled;
 	ndctl_btt_get_devname;
+	ndctl_btt_get_block_device;
 } LIBNDCTL_1;
