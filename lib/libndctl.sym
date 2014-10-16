@@ -93,4 +93,9 @@ global:
 	ndctl_btt_is_enabled;
 	ndctl_btt_get_devname;
 	ndctl_btt_get_block_device;
+	ndctl_btt_set_uuid;
+	ndctl_btt_set_sector_size;
+	ndctl_btt_set_backing_dev;
+	ndctl_btt_enable;
+	ndctl_btt_disable;
 } LIBNDCTL_1;

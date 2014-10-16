@@ -522,7 +522,8 @@ static int sysfs_write_attr(struct ndctl_ctx *ctx, char *path, const char *buf)
 	n = write(fd, buf, len);
 	close(fd);
 	if (n < len) {
-		dbg(ctx, "failed to write %s: %s\n", path, strerror(errno));
+		dbg(ctx, "failed to write %s to %s: %s\n", buf, path,
+				strerror(errno));
 		return -1;
 	}
 	return 0;
@@ -1689,9 +1690,6 @@ static int add_btt(void *parent, int id, const char *btt_base)
 	if (!btt->backing_dev)
 		goto err_read;
 
-	sprintf(path, "%s/block", btt_base);
-	btt->bdev = get_block_device(ctx, path);
-
 	list_add(&bus->btts, &btt->list);
 	free(path);
 	return 0;
@@ -1764,6 +1762,73 @@ NDCTL_EXPORT void ndctl_btt_get_uuid(struct ndctl_btt *btt, uuid_t uu)
 	memcpy(uu, btt->uuid, sizeof(uuid_t));
 }
 
+NDCTL_EXPORT int ndctl_btt_set_uuid(struct ndctl_btt *btt, uuid_t uu)
+{
+	struct ndctl_ctx *ctx = ndctl_btt_get_ctx(btt);
+	char *path = btt->btt_buf;
+	int len = btt->buf_len;
+	char uuid[40];
+
+	if (snprintf(path, len, "%s/uuid", btt->btt_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_btt_get_devname(btt));
+		return -ENXIO;
+	}
+
+	uuid_unparse(uu, uuid);
+	if (sysfs_write_attr(ctx, path, uuid) != 0)
+		return -ENXIO;
+	memcpy(btt->uuid, uu, sizeof(uuid_t));
+	return 0;
+}
+
+NDCTL_EXPORT int ndctl_btt_set_sector_size(struct ndctl_btt *btt,
+		unsigned int sector_size)
+{
+	struct ndctl_ctx *ctx = ndctl_btt_get_ctx(btt);
+	char *path = btt->btt_buf;
+	int len = btt->buf_len;
+	char sector_str[40];
+	int i;
+
+	if (snprintf(path, len, "%s/sector_size", btt->btt_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_btt_get_devname(btt));
+		return -ENXIO;
+	}
+
+	sprintf(sector_str, "%d\n", sector_size);
+	if (sysfs_write_attr(ctx, path, sector_str) != 0)
+		return -ENXIO;
+
+	for (i = 0; i < btt->lbasize.num; i++)
+		if (btt->lbasize.supported[i] == sector_size)
+			btt->lbasize.select = i;
+	return 0;
+}
+
+NDCTL_EXPORT int ndctl_btt_set_backing_dev(struct ndctl_btt *btt,
+		const char *backing_dev)
+{
+	struct ndctl_ctx *ctx = ndctl_btt_get_ctx(btt);
+	char *path = btt->btt_buf;
+	int len = btt->buf_len;
+
+	if (snprintf(path, len, "%s/backing_dev", btt->btt_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_btt_get_devname(btt));
+		return -ENXIO;
+	}
+
+	if (sysfs_write_attr(ctx, path, backing_dev) != 0)
+		return -ENXIO;
+
+	free(btt->backing_dev);
+	btt->backing_dev = strdup(backing_dev);
+
+	return 0;
+}
+
 NDCTL_EXPORT struct ndctl_bus *ndctl_btt_get_bus(struct ndctl_btt *btt)
 {
 	return btt->bus;
@@ -1781,6 +1846,22 @@ NDCTL_EXPORT const char *ndctl_btt_get_devname(struct ndctl_btt *btt)
 
 NDCTL_EXPORT const char *ndctl_btt_get_block_device(struct ndctl_btt *btt)
 {
+	struct ndctl_ctx *ctx = ndctl_btt_get_ctx(btt);
+	struct ndctl_bus *bus = ndctl_btt_get_bus(btt);
+	char *path = btt->btt_buf;
+	int len = btt->buf_len;
+
+	if (btt->bdev)
+		return btt->bdev;
+
+	if (snprintf(path, len, "%s/block", btt->btt_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_btt_get_devname(btt));
+		return "";
+	}
+
+	ndctl_bus_wait_probe(bus);
+	btt->bdev = get_block_device(ctx, path);
 	return btt->bdev ? btt->bdev : "";
 }
 
@@ -1789,7 +1870,6 @@ NDCTL_EXPORT int ndctl_btt_is_enabled(struct ndctl_btt *btt)
 	struct ndctl_ctx *ctx = ndctl_btt_get_ctx(btt);
 	char *path = btt->btt_buf;
 	int len = btt->buf_len;
-	struct stat st;
 
 	if (snprintf(path, len, "%s/driver", btt->btt_path) >= len) {
 		err(ctx, "%s: buffer too small!\n",
@@ -1797,8 +1877,56 @@ NDCTL_EXPORT int ndctl_btt_is_enabled(struct ndctl_btt *btt)
 		return 0;
 	}
 
-	if (lstat(path, &st) < 0 || !S_ISLNK(st.st_mode))
+	return is_enabled(ndctl_btt_get_bus(btt), path);
+}
+
+NDCTL_EXPORT int ndctl_btt_enable(struct ndctl_btt *btt)
+{
+	struct ndctl_ctx *ctx = ndctl_btt_get_ctx(btt);
+	const char *devname = ndctl_btt_get_devname(btt);
+	char *path = btt->btt_buf;
+	int len = btt->buf_len;
+
+	if (ndctl_btt_is_enabled(btt))
 		return 0;
-	else
-		return 1;
+
+	ndctl_bind(ctx, btt->module, devname);
+
+	if (!ndctl_btt_is_enabled(btt)) {
+		err(ctx, "%s: failed to enable\n", devname);
+		return -ENXIO;
+	}
+
+	dbg(ctx, "%s: enabled\n", devname);
+
+	if (snprintf(path, len, "%s/block", btt->btt_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_btt_get_devname(btt));
+	} else {
+		btt->bdev = get_block_device(ctx, path);
+	}
+
+	return 0;
+}
+
+NDCTL_EXPORT int ndctl_btt_disable(struct ndctl_btt *btt)
+{
+	struct ndctl_ctx *ctx = ndctl_btt_get_ctx(btt);
+	const char *devname = ndctl_btt_get_devname(btt);
+
+	if (!ndctl_btt_is_enabled(btt))
+		return 0;
+
+	ndctl_unbind(ctx, btt->btt_path);
+
+	if (ndctl_btt_is_enabled(btt)) {
+		err(ctx, "%s: failed to disable\n", devname);
+		return -EBUSY;
+	}
+
+	free(btt->bdev);
+	btt->bdev = NULL;
+
+	dbg(ctx, "%s: disabled\n", devname);
+	return 0;
 }

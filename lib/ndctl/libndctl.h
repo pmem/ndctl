@@ -203,6 +203,11 @@ void ndctl_btt_get_uuid(struct ndctl_btt *btt, uuid_t uu);
 int ndctl_btt_is_enabled(struct ndctl_btt *btt);
 const char *ndctl_btt_get_devname(struct ndctl_btt *btt);
 const char *ndctl_btt_get_block_device(struct ndctl_btt *btt);
+int ndctl_btt_set_uuid(struct ndctl_btt *btt, uuid_t uu);
+int ndctl_btt_set_sector_size(struct ndctl_btt *btt, unsigned int sector_size);
+int ndctl_btt_set_backing_dev(struct ndctl_btt *btt, const char *backing_dev);
+int ndctl_btt_enable(struct ndctl_btt *btt);
+int ndctl_btt_disable(struct ndctl_btt *btt);
 
 #ifdef __cplusplus
 } /* extern "C" */
