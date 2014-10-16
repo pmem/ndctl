@@ -269,7 +269,8 @@ static int check_namespaces(struct ndctl_region *region,
 {
 	struct ndctl_bus *bus = ndctl_region_get_bus(region);
 	struct ndctl_namespace **ndns_save;
-	int i;
+	void *buf = NULL;
+	int i, rc = -ENXIO;
 
 	if (!region)
 		return -ENXIO;
@@ -278,10 +279,14 @@ static int check_namespaces(struct ndctl_region *region,
 	if (!ndns_save)
 		return -ENXIO;
 
+	if (posix_memalign(&buf, 4096, 4096) != 0)
+		goto out;
 
 	for (i = 0; i < n; i++) {
 		struct ndctl_namespace *ndns;
 		char devname[50];
+		char bdevpath[50];
+		int fd;
 
 		snprintf(devname, sizeof(devname), "namespace%d.%d",
 				ndctl_region_get_id(region), namespaces[i].id);
@@ -315,6 +320,27 @@ static int check_namespaces(struct ndctl_region *region,
 			break;
 		}
 
+		sprintf(bdevpath, "/dev/%s", ndctl_namespace_get_block_device(ndns));
+		fd = open(bdevpath, O_RDWR|O_DIRECT);
+		if (fd < 0) {
+			fprintf(stderr, "%s: failed to open %s\n",
+					devname, bdevpath);
+			break;
+		}
+		if (read(fd, buf, 4096) < 4096) {
+			fprintf(stderr, "%s: failed to read %s\n",
+					devname, bdevpath);
+			close(fd);
+			break;
+		}
+		if (write(fd, buf, 4096) < 4096) {
+			fprintf(stderr, "%s: failed to write %s\n",
+					devname, bdevpath);
+			close(fd);
+			break;
+		}
+		close(fd);
+
 		if (ndctl_namespace_disable(ndns) < 0) {
 			fprintf(stderr, "%s: failed to disable\n", devname);
 			break;
@@ -327,13 +353,13 @@ static int check_namespaces(struct ndctl_region *region,
 		ndns_save[i] = ndns;
 	}
 	if (i < n || ndctl_region_disable(region, 0) != 0) {
-		free(ndns_save);
 		if (i >= n)
 			fprintf(stderr, "failed to disable region%d\n",
 					ndctl_region_get_id(region));
-		return -ENXIO;
+		goto out;
 	}
 
+	rc = 0;
 	for (i = 0; i < n; i++) {
 		char devname[50];
 
@@ -341,13 +367,16 @@ static int check_namespaces(struct ndctl_region *region,
 				ndctl_region_get_id(region), namespaces[i].id);
 		if (ndctl_namespace_is_valid(ndns_save[i])) {
 			fprintf(stderr, "%s: failed to invalidate\n", devname);
+			rc = -ENXIO;
 			break;
 		}
 	}
 	ndctl_region_cleanup(region);
+ out:
 	free(ndns_save);
+	free(buf);
 
-	return 0;
+	return rc;
 }
 
 static int check_btt_supported_sectors(struct ndctl_btt *btt, struct btt *expect_btt)
