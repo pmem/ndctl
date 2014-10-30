@@ -125,6 +125,21 @@ struct ndctl_ctx *ndctl_dimm_get_ctx(struct ndctl_dimm *dimm);
 struct ndctl_dimm *ndctl_dimm_get_by_handle(struct ndctl_bus *bus,
 		unsigned int handle);
 
+struct ndctl_cmd;
+struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_size(struct ndctl_dimm *dimm);
+struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_read(struct ndctl_cmd *cfg_size);
+struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_write(struct ndctl_cmd *cfg_read);
+unsigned int ndctl_cmd_cfg_size_get_size(struct ndctl_cmd *cfg_size);
+ssize_t ndctl_cmd_cfg_read_get_data(struct ndctl_cmd *cfg_read, void *buf,
+		unsigned int len);
+ssize_t ndctl_cmd_cfg_write_set_data(struct ndctl_cmd *cfg_write, void *buf,
+		unsigned int len);
+void ndctl_cmd_unref(struct ndctl_cmd *cmd);
+void ndctl_cmd_ref(struct ndctl_cmd *cmd);
+int ndctl_cmd_get_type(struct ndctl_cmd *cmd);
+int ndctl_cmd_get_status(struct ndctl_cmd *cmd);
+int ndctl_cmd_submit(struct ndctl_cmd *cmd);
+
 struct ndctl_region;
 struct ndctl_region *ndctl_region_get_first(struct ndctl_bus *bus);
 struct ndctl_region *ndctl_region_get_next(struct ndctl_region *region);
