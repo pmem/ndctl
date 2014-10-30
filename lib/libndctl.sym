@@ -19,7 +19,8 @@ global:
 	ndctl_bus_get_ctx;
 	ndctl_bus_get_major;
 	ndctl_bus_get_minor;
-	ndctl_bus_get_format;
+	ndctl_bus_get_cmd_name;
+	ndctl_bus_is_cmd_supported;
 	ndctl_bus_get_revision;
 	ndctl_bus_get_id;
 	ndctl_bus_get_provider;

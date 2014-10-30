@@ -40,7 +40,6 @@ struct ndctl_ctx;
  * struct ndctl_bus - a nfit table instance
  * @major: control character device major number
  * @minor: control character device minor number
- * @format: format-interface-code number (see NFIT spec)
  * @revision: NFIT table revision number
  * @provider: identifier for the source of the NFIT table
  *
@@ -52,7 +51,6 @@ struct ndctl_ctx;
 struct ndctl_bus {
 	struct ndctl_ctx *ctx;
 	int id, major, minor, revision;
-	short format;
 	char *provider;
 	struct list_head btts;
 	struct list_head dimms;
@@ -63,6 +61,7 @@ struct ndctl_bus {
 	int regions_init;
 	char *bus_path;
 	char *wait_probe_path;
+	unsigned long dsm_mask;
 };
 
 /**
@@ -593,6 +592,15 @@ static int device_parse(struct ndctl_ctx *ctx, const char *base_path,
 	return add_errors;
 }
 
+static int to_dsm_index(const char *name)
+{
+	int i;
+
+	for (i = NFIT_CMD_SMART; i <= NFIT_CMD_SMART_THRESHOLD; i++)
+		if (strcmp(name, nfit_cmd_name(i)) == 0)
+			return i;
+	return 0;
+}
 
 static int add_bus(void *parent, int id, const char *ctl_base)
 {
@@ -601,6 +609,7 @@ static int add_bus(void *parent, int id, const char *ctl_base)
 	char buf[SYSFS_ATTR_SIZE];
 	struct ndctl_ctx *ctx = parent;
 	char *path = calloc(1, strlen(ctl_base) + 20);
+	char *start, *end;
 
 	if (!path)
 		return -ENOMEM;
@@ -619,11 +628,19 @@ static int add_bus(void *parent, int id, const char *ctl_base)
 			|| sscanf(buf, "%d:%d", &bus->major, &bus->minor) != 2)
 		goto err_read;
 
-	sprintf(path, "%s/format", ctl_base);
+	sprintf(path, "%s/commands", ctl_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
-		bus->format = -1;
-	else
-		bus->format = strtoul(buf, NULL, 0);
+		goto err_read;
+	start = buf;
+	while ((end = strchr(start, ' '))) {
+		int cmd;
+
+		*end = '\0';
+		cmd = to_dsm_index(start);
+		if (cmd)
+			bus->dsm_mask |= 1 << cmd;
+		start = end + 1;
+	}
 
 	sprintf(path, "%s/revision", ctl_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
@@ -696,9 +713,15 @@ NDCTL_EXPORT unsigned int ndctl_bus_get_minor(struct ndctl_bus *bus)
 	return bus->minor;
 }
 
-NDCTL_EXPORT unsigned short ndctl_bus_get_format(struct ndctl_bus *bus)
+NDCTL_EXPORT const char *ndctl_bus_get_cmd_name(struct ndctl_bus *bus, int cmd)
 {
-	return bus->format;
+	return nfit_cmd_name(cmd);
+}
+
+NDCTL_EXPORT int ndctl_bus_is_cmd_supported(struct ndctl_bus *bus,
+		int cmd)
+{
+	return !!(bus->dsm_mask & (1ULL << cmd));
 }
 
 NDCTL_EXPORT unsigned int ndctl_bus_get_revision(struct ndctl_bus *bus)

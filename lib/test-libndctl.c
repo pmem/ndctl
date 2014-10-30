@@ -28,6 +28,7 @@
 
 #include <ccan/array_size/array_size.h>
 #include <ndctl/libndctl.h>
+#include <linux/ndctl.h>
 
 /*
  * Kernel provider "nfit_test.0" produces an NFIT with the following attributes:
@@ -169,6 +170,10 @@ static struct btt create_btt1 = {
 static struct namespace namespaces1[] = {
 	{ 0, "namespace_io", "pmem0", &create_btt1, },
 };
+
+static unsigned long commands0 = 1UL << NFIT_CMD_GET_CONFIG_SIZE
+		| 1UL << NFIT_CMD_GET_CONFIG_DATA
+		| 1UL << NFIT_CMD_SET_CONFIG_DATA;
 
 static struct ndctl_bus *get_bus_by_provider(struct ndctl_ctx *ctx,
 		const char *provider)
@@ -538,6 +543,24 @@ static int check_btts(struct ndctl_bus *bus, struct btt *btts, int n)
 	return 0;
 }
 
+#define BITS_PER_LONG 32
+static int check_commands(struct ndctl_bus *bus, unsigned long commands)
+{
+	int i;
+
+	for (i = 0; i < BITS_PER_LONG; i++) {
+		if ((commands & (1UL << i)) == 0)
+			continue;
+		if (!ndctl_bus_is_cmd_supported(bus, i)) {
+			fprintf(stderr, "bus: %s expected cmd: %d (%s) supported\n",
+					ndctl_bus_get_provider(bus), i,
+					ndctl_bus_get_cmd_name(bus, i));
+			return -ENXIO;
+		}
+	}
+
+	return 0;
+}
 
 static int do_test0(struct ndctl_ctx *ctx)
 {
@@ -563,6 +586,10 @@ static int do_test0(struct ndctl_ctx *ctx)
 			return -ENXIO;
 		}
 	}
+
+	rc = check_commands(bus, commands0);
+	if (rc)
+		return rc;
 
 	rc = check_regions(bus, regions0, ARRAY_SIZE(regions0));
 	if (rc)
