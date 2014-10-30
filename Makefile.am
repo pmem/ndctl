@@ -84,9 +84,13 @@ pkgconfig_DATA = lib/libndctl.pc
 EXTRA_DIST += lib/libndctl.pc.in
 CLEANFILES += lib/libndctl.pc
 
-TESTS = lib/test-libndctl
+TESTS = lib/test-libndctl lib/test-nd-dsm
 
-check_PROGRAMS = lib/test-libndctl
+check_PROGRAMS = lib/test-libndctl lib/test-nd-dsm
 lib_test_libndctl_SOURCES = lib/test-libndctl.c
 lib_test_libndctl_LDADD = lib/libndctl.la \
 	$(LIBUUID) $(LIBKMOD)
+
+lib_test_nd_dsm_SOURCES = lib/nd_ioctl.c
+lib_test_nd_dsm_LDADD = lib/libndctl.la \
+	$(LIBKMOD)
