@@ -1477,12 +1477,27 @@ static void mappings_init(struct ndctl_region *region)
 
 	for (i = 0; i < region->num_mappings; i++) {
 		struct ndctl_mapping *mapping;
-		unsigned int node, sicd;
-		char *pos, *end;
+		unsigned long long offset, length;
+		struct ndctl_dimm *dimm;
+		unsigned int handle;
 
 		sprintf(mapping_path, "%s/mapping%d", region->region_path, i);
 		if (sysfs_read_attr(ctx, mapping_path, buf) < 0) {
 			err(ctx, "bus%d region%d: failed to read mapping%d\n",
+					bus->id, region->id, i);
+			continue;
+		}
+
+		if (sscanf(buf, "%x,%llu,%llu", &handle, &offset,
+					&length) != 3) {
+			err(ctx, "bus%d mapping parse failure\n",
+					ndctl_bus_get_id(bus));
+			continue;
+		}
+
+		dimm = ndctl_dimm_get_by_handle(bus, handle);
+		if (!dimm) {
+			err(ctx, "bus%d region%d mapping%d: dimm lookup failure\n",
 					bus->id, region->id, i);
 			continue;
 		}
@@ -1495,25 +1510,9 @@ static void mappings_init(struct ndctl_region *region)
 		}
 
 		mapping->region = region;
-		pos = buf;
-		end = strchr(pos, ',');
-		*end = '\0';
-		if (sscanf(pos, "%x:%x", &node, &sicd) != 2
-				|| !(mapping->dimm = ndctl_dimm_get_by_handle(bus,
-						node << 16 | sicd))) {
-			err(ctx, "bus%d region%d mapping%d: dimm lookup failure\n",
-					bus->id, region->id, i);
-			free(mapping);
-			continue;
-		}
-
-		pos = end + 1;
-		end = strchr(pos, ',');
-		*end = '\0';
-		mapping->offset = strtoull(pos, NULL, 0);
-
-		pos = end + 1;
-		mapping->length = strtoull(pos, NULL, 0);
+		mapping->offset = offset;
+		mapping->length = length;
+		mapping->dimm = dimm;
 		list_add(&region->mappings, &mapping->list);
 	}
 }
