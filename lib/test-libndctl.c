@@ -631,7 +631,6 @@ int main(int argc, char *argv[])
 	struct kmod_module *mod;
 	struct kmod_ctx *kmod_ctx;
 	int err, result = EXIT_FAILURE;
-	const char *null_config = NULL;
 
 	err = ndctl_new(&ctx);
 	if (err < 0)
@@ -639,7 +638,7 @@ int main(int argc, char *argv[])
 
 	ndctl_set_log_priority(ctx, LOG_DEBUG);
 
-	kmod_ctx = kmod_new(NULL, &null_config);
+	kmod_ctx = kmod_new(NULL, NULL);
 	if (!kmod_ctx)
 		goto err_kmod;
 

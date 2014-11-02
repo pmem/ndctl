@@ -320,7 +320,6 @@ static int log_priority(const char *priority)
 NDCTL_EXPORT int ndctl_new(struct ndctl_ctx **ctx)
 {
 	struct kmod_ctx *kmod_ctx;
-	const char *cfg = NULL;
 	struct ndctl_ctx *c;
 	struct udev *udev;
 	const char *env;
@@ -330,7 +329,7 @@ NDCTL_EXPORT int ndctl_new(struct ndctl_ctx **ctx)
 	if (check_udev(udev) != 0)
 		return -ENXIO;
 
-	kmod_ctx = kmod_new(NULL, &cfg);
+	kmod_ctx = kmod_new(NULL, NULL);
 	if (check_kmod(kmod_ctx) != 0) {
 		rc = -ENXIO;
 		goto err_kmod;
