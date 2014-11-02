@@ -1,5 +1,5 @@
 /*
- * NVDIMM Firmware Interface Table (v0.8s)
+ * NVDIMM Firmware Interface Table (v0.8s8)
  *
  * Copyright(c) 2013-2014 Intel Corporation. All rights reserved.
  *
@@ -48,9 +48,9 @@ struct nfit_spa {
 	uint16_t type;
 	uint16_t length;
 	uint16_t spa_type;
+	uint16_t mem_attr;
 	uint16_t spa_index;
-	uint8_t flags;
-	uint8_t reserved[3];
+	uint16_t flags;
 	uint32_t proximity_domain;
 	uint64_t spa_base;
 	uint64_t spa_length;
