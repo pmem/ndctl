@@ -790,6 +790,9 @@ NDCTL_EXPORT int ndctl_bus_wait_probe(struct ndctl_bus *bus)
 	int rc;
 
 	do {
+		rc = sysfs_read_attr(bus->ctx, bus->wait_probe_path, buf);
+		if (rc < 0)
+			break;
 		if (!ctx->udev_queue)
 			break;
 		if (udev_queue_get_queue_is_empty(ctx->udev_queue))
@@ -797,7 +800,6 @@ NDCTL_EXPORT int ndctl_bus_wait_probe(struct ndctl_bus *bus)
 		dbg(ctx, "waiting for bus%d...\n", ndctl_bus_get_id(bus));
 		sleep(1);
 	} while (ctx->timeout == 0 || tmo-- != 0);
-	rc = sysfs_read_attr(bus->ctx, bus->wait_probe_path, buf);
 
 	return rc < 0 ? -ENXIO : 0;
 }
