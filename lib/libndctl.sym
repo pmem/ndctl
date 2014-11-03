@@ -41,6 +41,9 @@ global:
 	ndctl_dimm_get_bus;
 	ndctl_dimm_get_ctx;
 	ndctl_dimm_get_by_handle;
+	ndctl_dimm_cmd_new_cfg_size;
+	ndctl_dimm_cmd_new_cfg_read;
+	ndctl_dimm_cmd_new_cfg_write;
 	ndctl_region_get_first;
 	ndctl_region_get_next;
 	ndctl_region_get_id;
@@ -99,4 +102,12 @@ global:
 	ndctl_btt_set_backing_dev;
 	ndctl_btt_enable;
 	ndctl_btt_disable;
+	ndctl_cmd_cfg_size_get_size;
+	ndctl_cmd_cfg_read_get_data;
+	ndctl_cmd_cfg_write_set_data;
+	ndctl_cmd_unref;
+	ndctl_cmd_ref;
+	ndctl_cmd_get_type;
+	ndctl_cmd_get_status;
+	ndctl_cmd_submit;
 } LIBNDCTL_1;

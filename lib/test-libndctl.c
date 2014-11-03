@@ -90,6 +90,7 @@
 static const char *NFIT_TEST_MODULE = "nfit_test";
 static const char *NFIT_PROVIDER0 = "nfit_test.0";
 static const char *NFIT_PROVIDER1 = "nfit_test.1";
+#define SZ_128K 0x00020000
 
 struct dimm {
 	unsigned int handle;
@@ -99,7 +100,7 @@ struct dimm {
 #define DIMM_HANDLE(n, s, i, c, d) \
 	(((n & 0xfff) << 16) | ((s & 0xf) << 12) | ((i & 0xf) << 8) \
 	 | ((c & 0xf) << 4) | (d & 0xf))
-static struct dimm dimms[] = {
+static struct dimm dimms0[] = {
 	{ DIMM_HANDLE(0, 0, 0, 0, 0), 0, },
 	{ DIMM_HANDLE(0, 0, 0, 0, 1), 1, },
 	{ DIMM_HANDLE(0, 0, 1, 0, 0), 2, },
@@ -541,35 +542,132 @@ static int check_btts(struct ndctl_bus *bus, struct btt *btts, int n)
 	return 0;
 }
 
-#define BITS_PER_LONG 32
-static int check_commands(struct ndctl_bus *bus, unsigned long commands)
+static int check_get_config_size(struct ndctl_dimm *dimm, struct ndctl_cmd **cmd)
 {
-	int i;
+	struct ndctl_cmd *_cmd;
+	int rc;
+
+	if ((*cmd) != NULL) {
+		fprintf(stderr, "%s: dimm: %#x expected a NULL command, by default\n",
+				__func__, ndctl_dimm_get_handle(dimm));
+		return -ENXIO;
+	}
+
+	_cmd = ndctl_dimm_cmd_new_cfg_size(dimm);
+	if (!_cmd) {
+		fprintf(stderr, "%s: dimm: %#x failed to create cmd\n",
+				__func__, ndctl_dimm_get_handle(dimm));
+		return -ENOTTY;
+	}
+
+	rc = ndctl_cmd_submit(_cmd);
+	if (rc) {
+		fprintf(stderr, "%s: dimm: %#x failed to submit cmd: %d\n",
+			__func__, ndctl_dimm_get_handle(dimm), rc);
+		ndctl_cmd_unref(_cmd);
+		return rc;
+	}
+
+	if (ndctl_cmd_cfg_size_get_size(_cmd) != SZ_128K) {
+		fprintf(stderr, "%s: dimm: %#x expect size: %d got: %d\n",
+				__func__, ndctl_dimm_get_handle(dimm), SZ_128K,
+				ndctl_cmd_cfg_size_get_size(_cmd));
+		ndctl_cmd_unref(_cmd);
+		return -ENXIO;
+	}
+
+	*cmd = _cmd;
+	return 0;
+}
+
+static int check_get_config_data(struct ndctl_dimm *dimm, struct ndctl_cmd **cmd)
+{
+	struct ndctl_cmd *_cmd = ndctl_dimm_cmd_new_cfg_read(*cmd);
+	static char buf[SZ_128K];
+	ssize_t rc;
+
+	ndctl_cmd_unref(*cmd);
+	*cmd = NULL;
+	if (!_cmd) {
+		fprintf(stderr, "%s: dimm: %#x failed to create cmd\n",
+				__func__, ndctl_dimm_get_handle(dimm));
+		return -ENOTTY;
+	}
+
+	rc = ndctl_cmd_submit(_cmd);
+	if (rc) {
+		fprintf(stderr, "%s: dimm: %#x failed to submit cmd: %zd\n",
+			__func__, ndctl_dimm_get_handle(dimm), rc);
+		ndctl_cmd_unref(_cmd);
+		return rc;
+	}
+
+	rc = ndctl_cmd_cfg_read_get_data(_cmd, buf, SZ_128K);
+	if (rc != SZ_128K) {
+		fprintf(stderr, "%s: dimm: %#x expected read %d bytes, got: %zd\n",
+			__func__, ndctl_dimm_get_handle(dimm), SZ_128K, rc);
+		ndctl_cmd_unref(_cmd);
+		return -ENXIO;
+	}
+
+	*cmd = _cmd;
+	return 0;
+}
+
+struct check_cmd {
+	int (*check_fn)(struct ndctl_dimm *dimm, struct ndctl_cmd **cmd);
+};
+
+/*
+ * For now, by coincidence, these are indexed in test execution order
+ * such that check_get_config_data can assume that check_get_config_size
+ * has updated **cmd and check_set_config_data can assume that both
+ * check_get_config_size and check_get_config_data have run
+ */
+static struct check_cmd check_cmds[] = {
+	[NFIT_CMD_GET_CONFIG_SIZE] = { check_get_config_size },
+	[NFIT_CMD_GET_CONFIG_DATA] = { check_get_config_data },
+	//[NFIT_CMD_SET_CONFIG_DATA] = { check_set_config_data },
+	[NFIT_CMD_SMART_THRESHOLD] = { NULL, },
+};
+
+#define BITS_PER_LONG 32
+static int check_commands(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
+		unsigned long commands)
+{
+	struct ndctl_cmd *cmd = NULL;
+	int i, rc;
 
 	for (i = 0; i < BITS_PER_LONG; i++) {
 		if ((commands & (1UL << i)) == 0)
 			continue;
 		if (!ndctl_bus_is_cmd_supported(bus, i)) {
-			fprintf(stderr, "bus: %s expected cmd: %d (%s) supported\n",
+			fprintf(stderr, "%s: bus: %s expected cmd: %d (%s) supported\n",
+					__func__,
 					ndctl_bus_get_provider(bus), i,
 					ndctl_bus_get_cmd_name(bus, i));
 			return -ENXIO;
+		}
+
+		if (!check_cmds[i].check_fn)
+			continue;
+		rc = check_cmds[i].check_fn(dimm, &cmd);
+		if (rc) {
+			if (cmd)
+				ndctl_cmd_unref(cmd);
+			return rc;
 		}
 	}
 
 	return 0;
 }
 
-static int do_test0(struct ndctl_ctx *ctx)
+static int check_dimms(struct ndctl_bus *bus, struct dimm *dimms, int n,
+		unsigned long commands)
 {
-	struct ndctl_bus *bus = get_bus_by_provider(ctx, NFIT_PROVIDER0);
-	unsigned int i;
-	int rc;
+	int i, rc;
 
-	if (!bus)
-		return -ENXIO;
-
-	for (i = 0; i < ARRAY_SIZE(dimms); i++) {
+	for (i = 0; i < n; i++) {
 		struct ndctl_dimm *dimm = get_dimm_by_handle(bus, dimms[i].handle);
 
 		if (!dimm) {
@@ -583,9 +681,24 @@ static int do_test0(struct ndctl_ctx *ctx)
 					ndctl_dimm_get_phys_id(dimm));
 			return -ENXIO;
 		}
+
+		rc = check_commands(bus, dimm, commands);
+		if (rc)
+			return rc;
 	}
 
-	rc = check_commands(bus, commands0);
+	return 0;
+}
+
+static int do_test0(struct ndctl_ctx *ctx)
+{
+	struct ndctl_bus *bus = get_bus_by_provider(ctx, NFIT_PROVIDER0);
+	int rc;
+
+	if (!bus)
+		return -ENXIO;
+
+	rc = check_dimms(bus, dimms0, ARRAY_SIZE(dimms0), commands0);
 	if (rc)
 		return rc;
 

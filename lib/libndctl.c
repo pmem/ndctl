@@ -1352,7 +1352,7 @@ NDCTL_EXPORT int ndctl_cmd_submit(struct ndctl_cmd *cmd)
 		goto out;
 	}
 
-	if (snprintf(path, len, "/dev/ndclt%u", bus->id) >= len) {
+	if (snprintf(path, len, "/dev/ndctl%u", bus->id) >= len) {
 		rc = -EINVAL;
 		goto out;
 	}
