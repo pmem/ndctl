@@ -71,6 +71,10 @@ typedef unsigned char uuid_t[16];
 extern "C" {
 #endif
 
+size_t ndctl_min_namespace_size(void);
+size_t ndctl_sizeof_namespace_index(void);
+size_t ndctl_sizeof_namespace_label(void);
+
 struct ndctl_ctx;
 struct ndctl_ctx *ndctl_ref(struct ndctl_ctx *ctx);
 struct ndctl_ctx *ndctl_unref(struct ndctl_ctx *ctx);

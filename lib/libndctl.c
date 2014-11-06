@@ -38,6 +38,21 @@
  * Access struct member fields with ndctl_<object>_get_<property>.
  */
 
+NDCTL_EXPORT size_t ndctl_sizeof_namespace_index(void)
+{
+	return sizeof_namespace_index();
+}
+
+NDCTL_EXPORT size_t ndctl_min_namespace_size(void)
+{
+	return NSLABEL_NAMESPACE_MIN_SIZE;
+}
+
+NDCTL_EXPORT size_t ndctl_sizeof_namespace_label(void)
+{
+	return sizeof(struct namespace_label);
+}
+
 struct ndctl_ctx;
 /**
  * struct ndctl_bus - a nfit table instance
