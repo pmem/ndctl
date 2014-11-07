@@ -70,7 +70,9 @@ libccan_a_SOURCES = \
 	ccan/check_type/check_type.h \
 	ccan/build_assert/build_assert.h \
 	ccan/array_size/array_size.h \
-	ccan/minmax/minmax.h
+	ccan/minmax/minmax.h \
+	ccan/short_types/short_types.h \
+	ccan/endian/endian.h
 
 EXTRA_DIST += lib/libndctl.sym
 
