@@ -19,7 +19,6 @@
 #include <stdbool.h>
 #include <syslog.h>
 #include <linux/ndctl.h>
-#include <linux/kernel.h>
 #include <ndctl/libndctl.h>
 #include <ccan/endian/endian.h>
 #include <ccan/short_types/short_types.h>
@@ -79,7 +78,11 @@ struct namespace_index {
 
 static inline size_t sizeof_namespace_index(void)
 {
-	return __ALIGN_KERNEL(sizeof(struct namespace_index), NSINDEX_ALIGN);
+	size_t size = sizeof(struct namespace_index);
+
+	size += NSINDEX_ALIGN;
+	size &= ~(NSINDEX_ALIGN - 1);
+	return size;
 }
 
 /**
