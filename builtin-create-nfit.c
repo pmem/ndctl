@@ -179,6 +179,7 @@ static struct nfit *create_nfit(struct list_head *spa_list)
 static int write_nfit(struct nfit *nfit, const char *file, int force)
 {
 	int fd;
+	ssize_t rc;
 	mode_t mode = S_IRUSR|S_IRGRP|S_IWUSR|S_IWGRP;
 
 	fd = open(file, O_RDWR|O_CREAT|O_EXCL, mode);
@@ -194,7 +195,9 @@ static int write_nfit(struct nfit *nfit, const char *file, int force)
 		return -errno;
 	}
 
-	return write(fd, nfit, le32toh(nfit->length));
+	rc = write(fd, nfit, le32toh(nfit->length));
+	close(fd);
+	return rc;
 }
 
 int cmd_create_nfit(int argc, const char **argv)
