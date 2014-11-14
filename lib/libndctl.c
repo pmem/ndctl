@@ -127,7 +127,6 @@ struct ndctl_mapping {
 /**
  * struct ndctl_region - container for 'pmem' or 'block' capacity
  * @module: kernel module
- * @interleave_ways: number of dimms in region
  * @mappings: number of extent ranges contributing to the region
  * @size: total capacity of the region before resolving aliasing
  * @type: integer nd-bus device-type
@@ -146,7 +145,7 @@ struct ndctl_mapping {
 struct ndctl_region {
 	struct kmod_module *module;
 	struct ndctl_bus *bus;
-	int id, interleave_ways, num_mappings, nstype, spa_index;
+	int id, num_mappings, nstype, spa_index;
 	int mappings_init;
 	int namespaces_init;
 	unsigned long long size;
@@ -1016,11 +1015,6 @@ static int add_region(void *parent, int id, const char *region_base)
 		goto err_read;
 	region->num_mappings = strtoul(buf, NULL, 0);
 
-	sprintf(path, "%s/interleave_ways", region_base);
-	if (sysfs_read_attr(ctx, path, buf) < 0)
-		goto err_read;
-	region->interleave_ways = strtoul(buf, NULL, 0);
-
 	sprintf(path, "%s/nstype", region_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		goto err_read;
@@ -1092,7 +1086,7 @@ NDCTL_EXPORT unsigned int ndctl_region_get_id(struct ndctl_region *region)
 
 NDCTL_EXPORT unsigned int ndctl_region_get_interleave_ways(struct ndctl_region *region)
 {
-	return region->interleave_ways;
+	return ndctl_region_get_mappings(region);
 }
 
 NDCTL_EXPORT unsigned int ndctl_region_get_mappings(struct ndctl_region *region)
