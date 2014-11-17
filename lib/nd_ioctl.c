@@ -1,39 +1,336 @@
-#include <linux/ioctl.h>
-#include <sys/ioctl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <pthread.h>
-#include <string.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/mman.h>
 #include <asm/types.h>
+#include <ccan/array_size/array_size.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <libkmod.h>
+#include <linux/ioctl.h>
 #include <linux/ndctl.h>
 #include <ndctl/libndctl.h>
-#include <libkmod.h>
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/ioctl.h>
 #include <syslog.h>
+#include <sys/mman.h>
+#include <unistd.h>
+
 #include "cr_ioctl.h"
-#include <errno.h>
 
-struct identify_dimm_cmd {
-	__u32 nfit_handle;
-	__u32 in_length; 			// 8
-	struct {
-		__u8 data_format_revision; 	// 1
-		__u8 opcode;		   	// 1
-		__u8 sub_opcode;		// 0
-		__u8 flags;			// 0
-		__u32 reserved;
-		__u8 in_buf[0];
-	} in;
+#define CR_CMD(NAME, IN_LEN, OUT_LEN)                                         \
+struct NAME {                                                                 \
+	__u32 nfit_handle;                                                    \
+	__u32 in_length;                                                      \
+	struct {                                                              \
+		__u8 data_format_revision;                                    \
+		__u8 opcode;                                                  \
+		__u8 sub_opcode;                                              \
+		__u8 flags;                                                   \
+		__u32 reserved;                                               \
+		__u8 in_buf[IN_LEN];                                          \
+	} in;                                                                 \
+                                                                              \
+	__u32 status;                                                         \
+	__u32 out_length;                                                     \
+	__u8  out_buf[OUT_LEN];                                               \
+}
 
-	__u32 status;
-	__u32 out_length; 			// 128
-	__u8  out_buf[128];
-};
+#define FNV_BIOS_INPUT(NAME, IN_LEN)                                          \
+struct NAME {                                                                 \
+	__u32 size;                                                           \
+	__u32 offset;                                                         \
+	__u8  buffer[IN_LEN];                                                 \
+}
+
+static int write_string(int fd)
+{
+	const int size = 128;
+	FNV_BIOS_INPUT(bios_input, size);
+	CR_CMD(fnv_write_large_payload, sizeof(struct bios_input), 0);
+	struct fnv_write_large_payload cmd;
+	struct bios_input *bios_cmd = (struct bios_input *)cmd.in.in_buf;
+	int ret;
+
+	memset(&cmd, 0, sizeof(cmd));
+
+	cmd.in_length = sizeof(cmd.in);
+	cmd.in.data_format_revision 	= 1;
+	cmd.in.opcode 			= FNV_BIOS_OPCODE;
+	cmd.in.sub_opcode 		= FNV_BIOS_SUBOP_WRITE_INPUT;
+	cmd.in.flags	 		= FNV_BIOS_FLAG;
+
+	strcpy((char*)bios_cmd->buffer, "0123456789");
+
+	bios_cmd->offset = 0;
+
+	cmd.out_length = sizeof(cmd.out_buf);
+
+	ret = ioctl(fd, NFIT_IOCTL_VENDOR, &cmd);
+	if (ret) {
+		perror(__func__);
+		return -EINVAL;
+	}
+
+	bios_cmd->offset = 10;
+	strcpy((char*)bios_cmd->buffer, "abcdefghij");
+	ret = ioctl(fd, NFIT_IOCTL_VENDOR, &cmd);
+
+	if (ret) {
+		perror(__func__);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static int read_string(int fd)
+{
+	const int size = 128;
+	FNV_BIOS_INPUT(bios_input, 0);
+	CR_CMD(fnv_write_large_payload, sizeof(struct bios_input), size);
+	struct fnv_write_large_payload cmd;
+	struct bios_input *bios_cmd = (struct bios_input *)cmd.in.in_buf;
+	int ret;
+
+	memset(&cmd, 0, sizeof(cmd));
+
+	cmd.in_length = sizeof(cmd.in);
+	cmd.in.data_format_revision 	= 1;
+	cmd.in.opcode 			= FNV_BIOS_OPCODE;
+	cmd.in.sub_opcode 		= FNV_BIOS_SUBOP_READ_INPUT;
+	cmd.in.flags	 		= FNV_BIOS_FLAG;
+
+	cmd.out_length = sizeof(cmd.out_buf);
+
+	// compare first substring
+	bios_cmd->offset = 0;
+
+	ret = ioctl(fd, NFIT_IOCTL_VENDOR, &cmd);
+	if (ret) {
+		perror(__func__);
+		return -EINVAL;
+	}
+
+	if (memcmp(cmd.out_buf, "0123456", 7)) {
+		fprintf(stderr, "nd_ioctl %s: compare 1 failed\n", __func__);
+		return -EINVAL;
+	}
+
+	// compare second substring
+	bios_cmd->offset = 7;
+
+	ret = ioctl(fd, NFIT_IOCTL_VENDOR, &cmd);
+	if (ret) {
+		perror(__func__);
+		return -EINVAL;
+	}
+
+	if (memcmp(cmd.out_buf, "789abcd", 7)) {
+		fprintf(stderr, "nd_ioctl %s: compare 2 failed\n", __func__);
+		return -EINVAL;
+	}
+
+	// compare third substring
+	bios_cmd->offset = 14;
+
+	ret = ioctl(fd, NFIT_IOCTL_VENDOR, &cmd);
+	if (ret) {
+		perror(__func__);
+		return -EINVAL;
+	}
+
+	if (memcmp(cmd.out_buf, "efghij", 6)) {
+		fprintf(stderr, "nd_ioctl %s: compare 3 failed\n", __func__);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static int read_large_input_payload(int fd)
+{
+	const int one_mb = (1<<20) - 1024;
+	FNV_BIOS_INPUT(bios_input, 0);
+	CR_CMD(fnv_write_large_payload, sizeof(struct bios_input), one_mb);
+	struct fnv_write_large_payload cmd;
+	struct bios_input *bios_cmd = (struct bios_input *)cmd.in.in_buf;
+	int ret;
+
+	memset(&cmd, 0, sizeof(cmd));
+
+	cmd.in_length = sizeof(cmd.in);
+	cmd.in.data_format_revision 	= 1;
+	cmd.in.opcode 			= FNV_BIOS_OPCODE;
+	cmd.in.sub_opcode 		= FNV_BIOS_SUBOP_READ_INPUT;
+	cmd.in.flags	 		= FNV_BIOS_FLAG;
+
+	bios_cmd->offset = 1024;
+
+	cmd.out_length = sizeof(cmd.out_buf);
+
+	ret = ioctl(fd, NFIT_IOCTL_VENDOR, &cmd);
+	if (ret) {
+		perror(__func__);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static int read_large_output_payload(int fd)
+{
+	const int one_mb = (1<<20);
+	FNV_BIOS_INPUT(bios_input, 0);
+	CR_CMD(fnv_write_large_payload, sizeof(struct bios_input), one_mb);
+	struct fnv_write_large_payload cmd;
+	struct bios_input *bios_cmd = (struct bios_input *)cmd.in.in_buf;
+	int ret;
+
+	memset(&cmd, 0, sizeof(cmd));
+
+	cmd.in_length = sizeof(cmd.in);
+	cmd.in.data_format_revision 	= 1;
+	cmd.in.opcode 			= FNV_BIOS_OPCODE;
+	cmd.in.sub_opcode 		= FNV_BIOS_SUBOP_READ_OUTPUT;
+	cmd.in.flags	 		= FNV_BIOS_FLAG;
+
+	bios_cmd->offset = 0;
+
+	cmd.out_length = sizeof(cmd.out_buf);
+
+	ret = ioctl(fd, NFIT_IOCTL_VENDOR, &cmd);
+	if (ret) {
+		perror(__func__);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static int write_large_payload(int fd)
+{
+	const int one_mb = (1<<20);
+	FNV_BIOS_INPUT(bios_input, one_mb);
+	CR_CMD(fnv_write_large_payload, sizeof(struct bios_input), 0);
+	struct fnv_write_large_payload cmd;
+	struct bios_input *bios_cmd = (struct bios_input *)cmd.in.in_buf;
+	int ret;
+
+	memset(&cmd, 0, sizeof(cmd));
+
+	cmd.in_length = sizeof(cmd.in);
+	cmd.in.data_format_revision 	= 1;
+	cmd.in.opcode 			= FNV_BIOS_OPCODE;
+	cmd.in.sub_opcode 		= FNV_BIOS_SUBOP_WRITE_INPUT;
+	cmd.in.flags	 		= FNV_BIOS_FLAG;
+
+	bios_cmd->offset = 0;
+
+	cmd.out_length = sizeof(cmd.out_buf);
+
+	ret = ioctl(fd, NFIT_IOCTL_VENDOR, &cmd);
+	if (ret) {
+		perror(__func__);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static int send_get_payload_size(int fd)
+{
+	CR_CMD(get_payload_size, 0, sizeof(struct fnv_bios_get_size));
+	struct get_payload_size cmd;
+	int ret;
+	const unsigned int one_mb = (1<<20);
+
+	memset(&cmd, 0, sizeof(cmd));
+
+	cmd.in_length = sizeof(cmd.in);
+	cmd.in.data_format_revision 	= 1;
+	cmd.in.opcode 			= FNV_BIOS_OPCODE;
+	cmd.in.sub_opcode 		= FNV_BIOS_SUBOP_GET_SIZE;
+	cmd.in.flags	 		= FNV_BIOS_FLAG;
+
+	cmd.out_length = sizeof(cmd.out_buf);
+
+	ret = ioctl(fd, NFIT_IOCTL_VENDOR, &cmd);
+	if (ret) {
+		perror(__func__);
+		return -EINVAL;
+	}
+
+	struct fnv_bios_get_size *get_size = (struct fnv_bios_get_size *) &cmd.out_buf;
+
+	if (get_size->input_size  != one_mb ||
+	    get_size->output_size != one_mb ||
+	    get_size->rw_size     != one_mb ) {
+		printf("bad payload sizes reported - input:%d output:%d rw:%d\n",
+				get_size->input_size, get_size->output_size,
+				get_size->rw_size);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static int send_bad_opcode(int fd)
+{
+	CR_CMD(identify_dimm_cmd, 0, 128);
+	struct identify_dimm_cmd cmd;
+	int ret;
+
+	memset(&cmd, 0, sizeof(cmd));
+
+	cmd.in_length = sizeof(cmd.in);
+	cmd.in.data_format_revision 	= 1;
+	cmd.in.opcode 			= 100;
+	cmd.in.sub_opcode 		= 0;
+	cmd.in.flags	 		= 0;
+
+	cmd.out_length = sizeof(cmd.out_buf);
+
+	ret = ioctl(fd, NFIT_IOCTL_VENDOR, &cmd);
+
+	/* 0x40004 means "extended status, bad opcode" */
+	if (ret || cmd.status != 0x40004) {
+		fprintf(stderr, "nd_ioctl %s: unexpected status %x\n",
+				__func__, cmd.status);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static int send_too_large(int fd)
+{
+	CR_CMD(double_payload_cmd, 0, 256); // meant to cause an error
+	struct double_payload_cmd cmd;
+	int ret;
+
+	memset(&cmd, 0, sizeof(cmd));
+
+	cmd.in_length = sizeof(cmd.in);
+	cmd.in.data_format_revision 	= 1;
+	cmd.in.opcode 			= 1;
+	cmd.in.sub_opcode 		= 0;
+	cmd.in.flags	 		= 0;
+
+	cmd.out_length = sizeof(cmd.out_buf);
+
+	ret = ioctl(fd, NFIT_IOCTL_VENDOR, &cmd);
+	if (!ret || errno != EINVAL) {
+		fprintf(stderr, "nd_ioctl %s: unexpected errno %d\n",
+				__func__, errno);
+		return -EINVAL;
+	}
+
+	return 0;
+}
 
 static int send_id_dimm(int fd)
 {
+	CR_CMD(identify_dimm_cmd, 0, 128);
 	struct identify_dimm_cmd cmd;
 	struct cr_pt_payload_identify_dimm dimm_id_payload;
 	int ret;
@@ -46,57 +343,24 @@ static int send_id_dimm(int fd)
 	cmd.in.sub_opcode 		= 0;
 	cmd.in.flags	 		= 0;
 
-	cmd.out_length = 128;
+	cmd.out_length = sizeof(cmd.out_buf);
 
 	ret = ioctl(fd, NFIT_IOCTL_VENDOR, &cmd);
 	if (ret) {
-		perror("ioctl");
-		exit(errno);
+		perror(__func__);
+		return -EINVAL;
 	}
 
 	memcpy(&dimm_id_payload, cmd.out_buf, sizeof(dimm_id_payload));
-	/*
-	printf("Identify DIMM\n"
-		"VendorID: %#hx\n"
-		"DeviceID: %#hx\n"
-		"RevisionID: %#hx\n"
-		"InterfaceCode: %#hx\n"
-		"FirmwareRevision(BCD): %c%c%c%c%c\n"
-		"API Version(BCD): %#hhx\n"
-		"Feature SW Mask: %#hhx\n"
-		"NumberBlockWindows: %#hx\n"
-		"NumberWFAs: %#hhx\n"
-		"BlockCTRL_Offset: %#x\n"
-		"RawCapacity: %llu GB\n"
-		"Manufacturer: %s\n"
-		"Serial Number: %s\n"
-		"Model Number: %s\n",
-		dimm_id_payload.vendor_id,
-		dimm_id_payload.device_id,
-		dimm_id_payload.revision_id,
-		dimm_id_payload.ifc,
-		dimm_id_payload.fwr[0],
-		dimm_id_payload.fwr[1],
-		dimm_id_payload.fwr[2],
-		dimm_id_payload.fwr[3],
-		dimm_id_payload.fwr[4],
-		dimm_id_payload.api_ver,
-		dimm_id_payload.fswr,
-		dimm_id_payload.nbw,
-		dimm_id_payload.nwfa,
-		dimm_id_payload.obmcr,
-		dimm_id_payload.rc >> 18,
-		(char *)dimm_id_payload.mf,
-		(char *)dimm_id_payload.sn,
-		(char *)dimm_id_payload.mn);
-	*/
 
 	// check some values to make sure things look sane
 	if (dimm_id_payload.vendor_id != 0x8086 	||
 	    dimm_id_payload.device_id != 0x2017 	||
 	    dimm_id_payload.revision_id != 0xabcd 	||
-	    dimm_id_payload.ifc != 0x1)
-		return EIO;
+	    dimm_id_payload.ifc != 0x1) {
+		fprintf(stderr, "nd_ioctl %s: bad payload\n", __func__);
+		return -EINVAL;
+	}
 
 	return 0;
 }
@@ -111,9 +375,23 @@ static struct ndctl_bus *get_acpi_nfit_bus(struct ndctl_ctx *ctx)
 	return NULL;
 }
 
+typedef int (*do_test_fn)(int fd);
+static do_test_fn do_test[] = {
+	send_id_dimm,
+	send_bad_opcode,
+	send_too_large,
+	send_get_payload_size,
+	write_large_payload,
+	read_large_output_payload,
+	read_large_input_payload,
+	write_string,
+	read_string,
+};
+
 int main(int argc, char *argv[])
 {
-	int rc = -ENXIO, fd;
+	int rc = -ENXIO, fd, err;
+	unsigned int i;
 	struct ndctl_ctx *ctx;
 	struct ndctl_bus *bus;
 	struct kmod_module *mod;
@@ -162,7 +440,16 @@ int main(int argc, char *argv[])
 		goto err_bus;
 	}
 
-	rc = send_id_dimm(fd);
+        for (i = 0; i < ARRAY_SIZE(do_test); i++) {
+                err = do_test[i](fd);
+                if (err < 0) {
+                        fprintf(stderr, "ND IOCTL test %d failed: %d\n", i, err);
+                        break;
+                }
+        }
+
+	if (i == ARRAY_SIZE(do_test))
+		rc = EXIT_SUCCESS;
 
 	close(fd);
  err_bus:
