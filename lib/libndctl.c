@@ -68,7 +68,7 @@ struct ndctl_ctx;
  */
 struct ndctl_bus {
 	struct ndctl_ctx *ctx;
-	int id, major, minor, revision;
+	unsigned int id, major, minor, revision;
 	char *provider;
 	struct list_head btts;
 	struct list_head dimms;
@@ -665,6 +665,7 @@ static int add_bus(void *parent, int id, const char *ctl_base)
 	list_head_init(&bus->dimms);
 	list_head_init(&bus->regions);
 	bus->ctx = ctx;
+	bus->id = id;
 
 	rc = -EINVAL;
 	sprintf(path, "%s/dev", ctl_base);
@@ -1351,6 +1352,7 @@ static int to_ioctl_cmd(int cmd)
 NDCTL_EXPORT int ndctl_cmd_submit(struct ndctl_cmd *cmd)
 {
 	char path[20];
+	struct stat st;
 	int rc = 0, fd, len = sizeof(path);
 	int ioctl_cmd = to_ioctl_cmd(cmd->type);
 	struct ndctl_bus *bus = cmd_to_bus(cmd);
@@ -1373,7 +1375,15 @@ NDCTL_EXPORT int ndctl_cmd_submit(struct ndctl_cmd *cmd)
 		goto out;
 	}
 
-	rc = ioctl(fd, ioctl_cmd, cmd->cmd_buf);
+	if (fstat(fd, &st) >= 0 && S_ISCHR(st.st_mode)
+			&& major(st.st_rdev) == bus->major
+			&& minor(st.st_rdev) == bus->minor) {
+		rc = ioctl(fd, ioctl_cmd, cmd->cmd_buf);
+	} else {
+		err(ctx, "failed to validate %s as a control node for bus%d\n",
+				path, bus->id);
+		rc = -ENXIO;
+	}
 	close(fd);
  out:
 	dbg(ctx, "bus: %d dimm: %#x cmd: %s status: %d\n", bus->id,
