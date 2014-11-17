@@ -1531,6 +1531,7 @@ static void mappings_init(struct ndctl_region *region)
 		mapping->dimm = dimm;
 		list_add(&region->mappings, &mapping->list);
 	}
+	free(mapping_path);
 }
 
 NDCTL_EXPORT struct ndctl_mapping *ndctl_mapping_get_first(struct ndctl_region *region)
