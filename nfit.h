@@ -48,12 +48,13 @@ struct nfit_spa {
 	uint16_t type;
 	uint16_t length;
 	uint16_t spa_type;
-	uint16_t mem_attr;
 	uint16_t spa_index;
 	uint16_t flags;
+	uint16_t reserved;
 	uint32_t proximity_domain;
 	uint64_t spa_base;
 	uint64_t spa_length;
+	uint64_t mem_attr;
 } __attribute__((packed));
 
 #endif /* __NFIT_H__ */
