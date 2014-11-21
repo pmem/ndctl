@@ -54,6 +54,12 @@ AS_IF([test "x$enable_debug" = "xyes"], [
         AC_DEFINE(ENABLE_DEBUG, [1], [Debug messages.])
 ])
 
+AC_ARG_ENABLE([test],
+        AS_HELP_STRING([--enable-test], [enable ndctl test command @<:@default=disabled@:>@]),
+        [], [enable_test=no])
+AS_IF([test "x$enable_test" = "xyes"],
+	[AC_DEFINE([ENABLE_TEST], [1], [ndctl test support])])
+
 AC_ARG_WITH([udev], [AS_HELP_STRING([--without-udev], [disable support for udev])],
 			[], [with_udev=yes])
 
