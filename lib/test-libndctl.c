@@ -29,6 +29,7 @@
 #include <ccan/array_size/array_size.h>
 #include <ndctl/libndctl.h>
 #include <linux/ndctl.h>
+#include <test-libndctl.h>
 
 /*
  * Kernel provider "nfit_test.0" produces an NFIT with the following attributes:
@@ -737,7 +738,7 @@ static do_test_fn do_test[] = {
 	do_test1,
 };
 
-int main(int argc, char *argv[])
+int test_libndctl(int loglevel)
 {
 	unsigned int i;
 	struct ndctl_ctx *ctx;
@@ -749,7 +750,7 @@ int main(int argc, char *argv[])
 	if (err < 0)
 		exit(EXIT_FAILURE);
 
-	ndctl_set_log_priority(ctx, LOG_DEBUG);
+	ndctl_set_log_priority(ctx, loglevel);
 
 	kmod_ctx = kmod_new(NULL, NULL);
 	if (!kmod_ctx)
@@ -781,4 +782,9 @@ int main(int argc, char *argv[])
  err_kmod:
 	ndctl_unref(ctx);
 	return result;
+}
+
+int __attribute__((weak)) main(int argc, char *argv[])
+{
+	return test_libndctl(LOG_DEBUG);
 }

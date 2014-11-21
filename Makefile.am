@@ -50,13 +50,15 @@ ndctl_SOURCES = ndctl.c \
 		builtin-create-nfit.c \
 		builtin-xable-namespace.c \
 		builtin-xable-region.c \
+		builtin-test.c \
+		lib/test-libndctl.c \
 		util/parse-options.c \
 		util/parse-options.h \
 		util/usage.c \
 		util/strbuf.c \
 		util/strbuf.h \
 		util/wrapper.c
-ndctl_LDADD = lib/libndctl.la
+ndctl_LDADD = lib/libndctl.la $(LIBUUID) $(LIBKMOD)
 
 noinst_LIBRARIES = libccan.a
 libccan_a_SOURCES = \
