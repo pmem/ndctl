@@ -65,6 +65,14 @@ global:
 	ndctl_region_enable;
 	ndctl_region_disable;
 	ndctl_region_cleanup;
+	ndctl_region_get_interleave_set;
+	ndctl_interleave_set_get_first;
+	ndctl_interleave_set_get_next;
+	ndctl_interleave_set_is_active;
+	ndctl_interleave_set_get_cookie;
+	ndctl_interleave_set_get_region;
+	ndctl_interleave_set_get_first_dimm;
+	ndctl_interleave_set_get_next_dimm;
 	ndctl_mapping_get_first;
 	ndctl_mapping_get_next;
 	ndctl_mapping_get_dimm;

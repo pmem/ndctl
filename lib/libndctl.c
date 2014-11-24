@@ -132,6 +132,7 @@ struct ndctl_mapping {
  * @type: integer nd-bus device-type
  * @type_name: 'pmem' or 'block'
  * @generation: incremented everytime the region is disabled
+ * @nstype: the resulting type of namespace this region produces
  *
  * A region may alias between pmem and block-window access methods.  The
  * region driver is tasked with parsing the label (if their is one) and
@@ -157,6 +158,15 @@ struct ndctl_region {
 	struct list_head namespaces;
 	struct list_head stale_namespaces;
 	struct list_node list;
+	/**
+	 * struct ndctl_interleave_set - extra info for interleave sets
+	 * @state: are any interleave set members active or all idle
+	 * @cookie: summary cookie identifying the NFIT config for the set
+	 */
+	struct ndctl_interleave_set {
+		int state;
+		unsigned long long cookie;
+	} iset;
 };
 
 /**
@@ -1029,6 +1039,15 @@ static int add_region(void *parent, int id, const char *region_base)
 	} else
 		region->spa_index = -1;
 
+	sprintf(path, "%s/set_cookie", region_base);
+	if (region->nstype == ND_DEVICE_NAMESPACE_PMEM) {
+		if (sysfs_read_attr(ctx, path, buf) < 0)
+			goto err_read;
+		region->iset.cookie = strtoull(buf, NULL, 0);
+		dbg(ctx, "region%d: iset-%#.16llx added\n", id,
+				region->iset.cookie);
+	}
+
 	sprintf(path, "%s/modalias", region_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		goto err_read;
@@ -1103,6 +1122,11 @@ NDCTL_EXPORT unsigned long long ndctl_region_get_size(struct ndctl_region *regio
 NDCTL_EXPORT unsigned int ndctl_region_get_spa_index(struct ndctl_region *region)
 {
 	return region->spa_index;
+}
+
+NDCTL_EXPORT unsigned int ndctl_region_get_nstype(struct ndctl_region *region)
+{
+	return region->nstype;
 }
 
 NDCTL_EXPORT unsigned int ndctl_region_get_type(struct ndctl_region *region)
@@ -1475,6 +1499,102 @@ NDCTL_EXPORT int ndctl_region_disable(struct ndctl_region *region, int cleanup)
 
 	dbg(ctx, "%s: disabled\n", devname);
 	return 0;
+}
+
+NDCTL_EXPORT struct ndctl_interleave_set *ndctl_region_get_interleave_set(
+	struct ndctl_region *region)
+{
+	unsigned int nstype = ndctl_region_get_nstype(region);
+
+	if (nstype == ND_DEVICE_NAMESPACE_PMEM)
+		return &region->iset;
+
+	return NULL;
+}
+
+NDCTL_EXPORT struct ndctl_region *ndctl_interleave_set_get_region(
+		struct ndctl_interleave_set *iset)
+{
+	return container_of(iset, struct ndctl_region, iset);
+}
+
+NDCTL_EXPORT struct ndctl_interleave_set *ndctl_interleave_set_get_first(
+		struct ndctl_bus *bus)
+{
+	struct ndctl_region *region;
+
+	ndctl_region_foreach(bus, region) {
+		struct ndctl_interleave_set *iset;
+
+		iset = ndctl_region_get_interleave_set(region);
+		if (iset)
+			return iset;
+	}
+
+	return NULL;
+}
+
+NDCTL_EXPORT struct ndctl_interleave_set *ndctl_interleave_set_get_next(
+		struct ndctl_interleave_set *iset)
+{
+	struct ndctl_region *region = ndctl_interleave_set_get_region(iset);
+
+	iset = NULL;
+	do {
+		region = ndctl_region_get_next(region);
+		if (!region)
+			break;
+		iset = ndctl_region_get_interleave_set(region);
+		if (iset)
+			break;
+	} while (1);
+
+	return iset;
+}
+
+NDCTL_EXPORT int ndctl_interleave_set_is_active(
+		struct ndctl_interleave_set *iset)
+{
+	struct ndctl_region *region = ndctl_interleave_set_get_region(iset);
+	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
+	char *path = region->region_buf;
+	int len = region->buf_len;
+	char buf[20];
+
+	if (snprintf(path, len, "%s/set_state", region->region_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_region_get_devname(region));
+		return -ENOMEM;
+	}
+
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		return -ENXIO;
+
+	if (strcmp(buf, "active") == 0)
+		return 1;
+	return 0;
+}
+
+NDCTL_EXPORT unsigned long long ndctl_interleave_set_get_cookie(
+		struct ndctl_interleave_set *iset)
+{
+	return iset->cookie;
+}
+
+NDCTL_EXPORT struct ndctl_dimm *ndctl_interleave_set_get_first_dimm(
+	struct ndctl_interleave_set *iset)
+{
+	struct ndctl_region *region = ndctl_interleave_set_get_region(iset);
+
+	return ndctl_region_get_first_dimm(region);
+}
+
+NDCTL_EXPORT struct ndctl_dimm *ndctl_interleave_set_get_next_dimm(
+	struct ndctl_interleave_set *iset, struct ndctl_dimm *dimm)
+{
+	struct ndctl_region *region = ndctl_interleave_set_get_region(iset);
+
+	return ndctl_region_get_next_dimm(region, dimm);
 }
 
 static void mappings_init(struct ndctl_region *region)

@@ -116,6 +116,10 @@ struct region {
 	unsigned int interleave_ways;
 	int enabled;
 	char *type;
+	struct set {
+		unsigned long long cookie;
+		int active;
+	} iset;
 };
 
 struct btt;
@@ -134,8 +138,8 @@ struct btt {
 };
 
 static struct region regions0[] = {
-	{ { 1 }, 2, 0, "pmem" },
-	{ { 2 }, 4, 0, "pmem" },
+	{ { 1 }, 2, 0, "pmem", { 0xfe50000200000000ULL, 1 }, },
+	{ { 2 }, 4, 0, "pmem", { 0x0850020500000000ULL, 1 }, },
 	{ { DIMM_HANDLE(0, 0, 0, 0, 0) }, 1, 0, "block" },
 	{ { DIMM_HANDLE(0, 0, 0, 0, 1) }, 1, 0, "block" },
 	{ { DIMM_HANDLE(0, 0, 1, 0, 0) }, 1, 0, "block" },
@@ -252,11 +256,24 @@ static struct ndctl_region *get_blk_region_by_dimm_handle(struct ndctl_bus *bus,
 	return NULL;
 }
 
+static struct ndctl_interleave_set *get_interleave_set_by_cookie(
+		struct ndctl_bus *bus, unsigned long long cookie)
+{
+	struct ndctl_interleave_set *iset;
+
+	ndctl_interleave_set_foreach(bus, iset)
+		if (ndctl_interleave_set_get_cookie(iset) == cookie)
+			return iset;
+
+	return NULL;
+}
+
 static int check_regions(struct ndctl_bus *bus, struct region *regions, int n)
 {
 	int i;
 
 	for (i = 0; i < n; i++) {
+		struct ndctl_interleave_set *iset;
 		struct ndctl_region *region;
 		char devname[50];
 
@@ -290,6 +307,30 @@ static int check_regions(struct ndctl_bus *bus, struct region *regions, int n)
 					devname);
 			return -ENXIO;
 		}
+
+		iset = ndctl_region_get_interleave_set(region);
+		if (regions[i].iset.active
+				&& !(iset && ndctl_interleave_set_is_active(iset) > 0)) {
+			fprintf(stderr, "%s: expected interleave set active by default\n",
+					devname);
+			return -ENXIO;
+		} else if (regions[i].iset.active == 0 && iset) {
+			fprintf(stderr, "%s: expected no interleave set\n",
+					devname);
+			return -ENXIO;
+		}
+
+		if (regions[i].iset.cookie) {
+			unsigned long long cookie = regions[i].iset.cookie;
+
+			iset = get_interleave_set_by_cookie(bus, cookie);
+			if (!iset) {
+				fprintf(stderr, "%s: expected iset-%#llx\n",
+						devname, cookie);
+				return -ENXIO;
+			}
+		}
+
 		if (ndctl_region_disable(region, 1) < 0) {
 			fprintf(stderr, "%s: failed to disable\n", devname);
 			return -ENXIO;
