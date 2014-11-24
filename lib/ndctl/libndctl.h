@@ -232,6 +232,7 @@ int ndctl_namespace_is_enabled(struct ndctl_namespace *ndns);
 int ndctl_namespace_enable(struct ndctl_namespace *ndns);
 int ndctl_namespace_disable(struct ndctl_namespace *ndns);
 int ndctl_namespace_is_valid(struct ndctl_namespace *ndns);
+
 struct ndctl_btt;
 struct ndctl_btt *ndctl_btt_get_first(struct ndctl_bus *bus);
 struct ndctl_btt *ndctl_btt_get_next(struct ndctl_btt *btt);
@@ -255,6 +256,7 @@ int ndctl_btt_set_sector_size(struct ndctl_btt *btt, unsigned int sector_size);
 int ndctl_btt_set_backing_dev(struct ndctl_btt *btt, const char *backing_dev);
 int ndctl_btt_enable(struct ndctl_btt *btt);
 int ndctl_btt_disable(struct ndctl_btt *btt);
+int ndctl_btt_is_configured(struct ndctl_btt *btt);
 
 #ifdef __cplusplus
 } /* extern "C" */
