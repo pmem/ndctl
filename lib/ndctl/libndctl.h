@@ -156,6 +156,7 @@ const char *ndctl_region_get_devname(struct ndctl_region *region);
 unsigned int ndctl_region_get_interleave_ways(struct ndctl_region *region);
 unsigned int ndctl_region_get_mappings(struct ndctl_region *region);
 unsigned long long ndctl_region_get_size(struct ndctl_region *region);
+unsigned long long ndctl_region_get_available_size(struct ndctl_region *region);
 unsigned int ndctl_region_get_spa_index(struct ndctl_region *region);
 unsigned int ndctl_region_get_type(struct ndctl_region *region);
 unsigned int ndctl_region_get_nstype(struct ndctl_region *region);
@@ -232,6 +233,15 @@ int ndctl_namespace_is_enabled(struct ndctl_namespace *ndns);
 int ndctl_namespace_enable(struct ndctl_namespace *ndns);
 int ndctl_namespace_disable(struct ndctl_namespace *ndns);
 int ndctl_namespace_is_valid(struct ndctl_namespace *ndns);
+int ndctl_namespace_is_configured(struct ndctl_namespace *ndns);
+int ndctl_namespace_set_uuid(struct ndctl_namespace *ndns, uuid_t uu);
+void ndctl_namespace_get_uuid(struct ndctl_namespace *ndns, uuid_t uu);
+const char *ndctl_namespace_get_alt_name(struct ndctl_namespace *ndns);
+int ndctl_namespace_set_alt_name(struct ndctl_namespace *ndns,
+		const char *alt_name);
+unsigned long long ndctl_namespace_get_size(struct ndctl_namespace *ndns);
+int ndctl_namespace_set_size(struct ndctl_namespace *ndns,
+		unsigned long long size);
 
 struct ndctl_btt;
 struct ndctl_btt *ndctl_btt_get_first(struct ndctl_bus *bus);

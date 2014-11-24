@@ -55,6 +55,7 @@ global:
 	ndctl_region_get_spa_index;
 	ndctl_region_get_mappings;
 	ndctl_region_get_size;
+	ndctl_region_get_available_size;
 	ndctl_region_get_type;
 	ndctl_region_get_type_name;
 	ndctl_region_get_bus;
@@ -95,6 +96,13 @@ global:
 	ndctl_namespace_enable;
 	ndctl_namespace_disable;
 	ndctl_namespace_is_valid;
+	ndctl_namespace_is_configured;
+	ndctl_namespace_set_uuid;
+	ndctl_namespace_get_uuid;
+	ndctl_namespace_get_alt_name;
+	ndctl_namespace_set_alt_name;
+	ndctl_namespace_get_size;
+	ndctl_namespace_set_size;
 	ndctl_btt_get_first;
 	ndctl_btt_get_next;
 	ndctl_btt_get_ctx;

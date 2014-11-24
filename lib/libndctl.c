@@ -33,6 +33,8 @@
 #include <ndctl/libndctl.h>
 #include "libndctl-private.h"
 
+static uuid_t null_uuid;
+
 /**
  * DOC: General note, the structure layouts are privately defined.
  * Access struct member fields with ndctl_<object>_get_<property>.
@@ -129,6 +131,7 @@ struct ndctl_mapping {
  * @module: kernel module
  * @mappings: number of extent ranges contributing to the region
  * @size: total capacity of the region before resolving aliasing
+ * @available_size: capacity available for namespace creation
  * @type: integer nd-bus device-type
  * @type_name: 'pmem' or 'block'
  * @generation: incremented everytime the region is disabled
@@ -149,6 +152,7 @@ struct ndctl_region {
 	int id, num_mappings, nstype, spa_index;
 	int mappings_init;
 	int namespaces_init;
+	unsigned long long available_size;
 	unsigned long long size;
 	char *region_path;
 	char *region_buf;
@@ -176,6 +180,7 @@ struct ndctl_region {
  * @type_name: 'namespace_io', 'namespace_pmem', or 'namespace_block'
  * @namespace_path: devpath for namespace device
  * @bdev: associated block_device of a namespace
+ * @size: unsigned
  *
  * A 'namespace' is the resulting device after region-aliasing and
  * label-parsing is resolved.
@@ -189,6 +194,9 @@ struct ndctl_namespace {
 	char *bdev;
 	int type, id, buf_len;
 	int generation;
+	unsigned long long size;
+	char *alt_name;
+	uuid_t uuid;
 };
 
 /**
@@ -563,7 +571,7 @@ static int sysfs_read_attr(struct ndctl_ctx *ctx, char *path, char *buf)
 	return 0;
 }
 
-static int sysfs_write_attr(struct ndctl_ctx *ctx, char *path, const char *buf)
+static int sysfs_write_attr(struct ndctl_ctx *ctx, const char *path, const char *buf)
 {
 	int fd = open(path, O_WRONLY|O_CLOEXEC);
 	int n, len = strlen(buf) + 1;
@@ -1031,6 +1039,13 @@ static int add_region(void *parent, int id, const char *region_base)
 		goto err_read;
 	region->nstype = strtoul(buf, NULL, 0);
 
+	if (region->nstype == ND_DEVICE_NAMESPACE_PMEM) {
+		sprintf(path, "%s/available_size", region_base);
+		if (sysfs_read_attr(ctx, path, buf) < 0)
+			goto err_read;
+		region->available_size = strtoull(buf, NULL, 0);
+	}
+
 	sprintf(path, "%s/spa_index", region_base);
 	if (region->nstype != ND_DEVICE_NAMESPACE_BLOCK) {
 		if (sysfs_read_attr(ctx, path, buf) < 0)
@@ -1117,6 +1132,12 @@ NDCTL_EXPORT unsigned int ndctl_region_get_mappings(struct ndctl_region *region)
 NDCTL_EXPORT unsigned long long ndctl_region_get_size(struct ndctl_region *region)
 {
 	return region->size;
+}
+
+NDCTL_EXPORT unsigned long long ndctl_region_get_available_size(
+		struct ndctl_region *region)
+{
+	return region->available_size;
 }
 
 NDCTL_EXPORT unsigned int ndctl_region_get_spa_index(struct ndctl_region *region)
@@ -1760,6 +1781,15 @@ static int add_namespace(void *parent, int id, const char *ndns_base)
 		goto err_read;
 	ndns->type = strtoul(buf, NULL, 0);
 
+	if (ndns->type == ND_DEVICE_NAMESPACE_PMEM) {
+		sprintf(path, "%s/alt_name", ndns_base);
+		if (sysfs_read_attr(ctx, path, buf) < 0)
+			goto err_read;
+		ndns->alt_name = strdup(buf);
+		if (!ndns->alt_name)
+			goto err_read;
+	}
+
 	ndns->ndns_path = strdup(ndns_base);
 	if (!ndns->ndns_path)
 		goto err_read;
@@ -1999,6 +2029,152 @@ NDCTL_EXPORT int ndctl_namespace_disable(struct ndctl_namespace *ndns)
 
 	dbg(ctx, "%s: disabled\n", devname);
 	return 0;
+}
+
+static int pmem_namespace_is_configured(struct ndctl_namespace *ndns)
+{
+	if (ndctl_namespace_get_size(ndns) < ND_MIN_NAMESPACE_SIZE)
+		return 0;
+
+	if (memcmp(&ndns->uuid, null_uuid, sizeof(null_uuid)) == 0)
+		return 0;
+
+	return 1;
+}
+
+NDCTL_EXPORT int ndctl_namespace_is_configured(struct ndctl_namespace *ndns)
+{
+	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
+
+	switch (ndctl_namespace_get_type(ndns)) {
+	case ND_DEVICE_NAMESPACE_PMEM:
+		return pmem_namespace_is_configured(ndns);
+	case ND_DEVICE_NAMESPACE_IO:
+		return 1;
+	default:
+		dbg(ctx, "%s: nstype: %d is_configured() not implemented\n",
+				ndctl_namespace_get_devname(ndns),
+				ndctl_namespace_get_type(ndns));
+		return -ENXIO;
+	}
+}
+
+NDCTL_EXPORT void ndctl_namespace_get_uuid(struct ndctl_namespace *ndns, uuid_t uu)
+{
+	memcpy(uu, ndns->uuid, sizeof(uuid_t));
+}
+
+NDCTL_EXPORT int ndctl_namespace_set_uuid(struct ndctl_namespace *ndns, uuid_t uu)
+{
+	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
+	char *path = ndns->ndns_buf;
+	int len = ndns->buf_len;
+	char uuid[40];
+
+	if (snprintf(path, len, "%s/uuid", ndns->ndns_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_namespace_get_devname(ndns));
+		return -ENXIO;
+	}
+
+	uuid_unparse(uu, uuid);
+	if (sysfs_write_attr(ctx, path, uuid) != 0)
+		return -ENXIO;
+	memcpy(ndns->uuid, uu, sizeof(uuid_t));
+	return 0;
+}
+
+NDCTL_EXPORT const char *ndctl_namespace_get_alt_name(struct ndctl_namespace *ndns)
+{
+	if (ndns->alt_name)
+		return ndns->alt_name;
+	return "";
+}
+
+NDCTL_EXPORT int ndctl_namespace_set_alt_name(struct ndctl_namespace *ndns,
+		const char *alt_name)
+{
+	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
+	char *path = ndns->ndns_buf;
+	int len = ndns->buf_len;
+	char *buf;
+
+	if (!ndns->alt_name)
+		return 0;
+
+	if (strlen(alt_name) >= (size_t) NSLABEL_NAME_LEN)
+		return -EINVAL;
+
+	if (snprintf(path, len, "%s/alt_name", ndns->ndns_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_namespace_get_devname(ndns));
+		return -ENXIO;
+	}
+
+	buf = strdup(alt_name);
+	if (!buf)
+		return -ENOMEM;
+
+	if (sysfs_write_attr(ctx, path, buf) < 0)
+		return -ENXIO;
+
+	free(ndns->alt_name);
+	ndns->alt_name = buf;
+	return 0;
+}
+
+NDCTL_EXPORT unsigned long long ndctl_namespace_get_size(struct ndctl_namespace *ndns)
+{
+	return ndns->size;
+}
+
+static int pmem_namespace_set_size(const char *path,
+		struct ndctl_namespace *ndns,
+		unsigned long long size)
+{
+	struct ndctl_region *region = ndctl_namespace_get_region(ndns);
+	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
+	char buf[20];
+
+	if (size < ND_MIN_NAMESPACE_SIZE || size > region->available_size)
+		return -ENOSPC;
+
+	sprintf(buf, "%#llx\n", size);
+	if (sysfs_write_attr(ctx, path, buf) < 0)
+		return -ENXIO;
+
+	if (size >= ndns->size)
+		region->available_size -= size - ndns->size;
+	else
+		region->available_size += ndns->size - size;
+	return 0;
+}
+
+NDCTL_EXPORT int ndctl_namespace_set_size(struct ndctl_namespace *ndns,
+		unsigned long long size)
+{
+	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
+	char *path = ndns->ndns_buf;
+	int len = ndns->buf_len;
+
+	if (ndctl_namespace_is_enabled(ndns))
+		return -EBUSY;
+
+	if (snprintf(path, len, "%s/size", ndns->ndns_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_namespace_get_devname(ndns));
+		return -ENXIO;
+	}
+
+	switch (ndctl_namespace_get_type(ndns)) {
+	case ND_DEVICE_NAMESPACE_PMEM:
+		return pmem_namespace_set_size(path, ndns, size);
+	default:
+		dbg(ctx, "%s: nstype: %d set size failed\n",
+				ndctl_namespace_get_devname(ndns),
+				ndctl_namespace_get_type(ndns));
+		return -ENXIO;
+	}
 }
 
 static int parse_lbasize_supported(struct ndctl_ctx *ctx, const char *buf,
@@ -2342,8 +2518,6 @@ NDCTL_EXPORT int ndctl_btt_disable(struct ndctl_btt *btt)
 
 NDCTL_EXPORT int ndctl_btt_is_configured(struct ndctl_btt *btt)
 {
-	static uuid_t null_uuid;
-
 	if (ndctl_btt_get_sector_size(btt) == UINT_MAX)
 		return 0;
 
