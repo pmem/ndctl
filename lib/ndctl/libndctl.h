@@ -158,6 +158,7 @@ unsigned int ndctl_region_get_mappings(struct ndctl_region *region);
 unsigned long long ndctl_region_get_size(struct ndctl_region *region);
 unsigned int ndctl_region_get_spa_index(struct ndctl_region *region);
 unsigned int ndctl_region_get_type(struct ndctl_region *region);
+unsigned int ndctl_region_get_nstype(struct ndctl_region *region);
 const char *ndctl_region_get_type_name(struct ndctl_region *region);
 struct ndctl_bus *ndctl_region_get_bus(struct ndctl_region *region);
 struct ndctl_ctx *ndctl_region_get_ctx(struct ndctl_region *region);
@@ -172,6 +173,31 @@ int ndctl_region_is_enabled(struct ndctl_region *region);
 int ndctl_region_enable(struct ndctl_region *region);
 int ndctl_region_disable(struct ndctl_region *region, int cleanup);
 void ndctl_region_cleanup(struct ndctl_region *region);
+
+struct ndctl_interleave_set;
+struct ndctl_interleave_set *ndctl_region_get_interleave_set(
+		struct ndctl_region *region);
+struct ndctl_interleave_set *ndctl_interleave_set_get_first(
+		struct ndctl_bus *bus);
+struct ndctl_interleave_set *ndctl_interleave_set_get_next(
+		struct ndctl_interleave_set *iset);
+#define ndctl_interleave_set_foreach(bus, iset) \
+        for (iset = ndctl_interleave_set_get_first(bus); \
+             iset != NULL; \
+             iset = ndctl_interleave_set_get_next(iset))
+#define ndctl_dimm_foreach_in_interleave_set(iset, dimm) \
+        for (dimm = ndctl_interleave_set_get_first_dimm(iset); \
+             dimm != NULL; \
+             dimm = ndctl_interleave_set_get_next_dimm(iset, dimm))
+int ndctl_interleave_set_is_active(struct ndctl_interleave_set *iset);
+unsigned long long ndctl_interleave_set_get_cookie(
+		struct ndctl_interleave_set *iset);
+struct ndctl_region *ndctl_interleave_set_get_region(
+		struct ndctl_interleave_set *iset);
+struct ndctl_dimm *ndctl_interleave_set_get_first_dimm(
+	struct ndctl_interleave_set *iset);
+struct ndctl_dimm *ndctl_interleave_set_get_next_dimm(
+	struct ndctl_interleave_set *iset, struct ndctl_dimm *dimm);
 
 struct ndctl_mapping;
 struct ndctl_mapping *ndctl_mapping_get_first(struct ndctl_region *region);
