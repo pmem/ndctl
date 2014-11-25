@@ -113,6 +113,7 @@ global:
 	ndctl_btt_set_backing_dev;
 	ndctl_btt_enable;
 	ndctl_btt_disable;
+	ndctl_btt_is_configured;
 	ndctl_cmd_cfg_size_get_size;
 	ndctl_cmd_cfg_read_get_data;
 	ndctl_cmd_cfg_write_set_data;

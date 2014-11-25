@@ -204,7 +204,7 @@ static struct ndctl_btt *get_idle_btt(struct ndctl_bus *bus)
 	struct ndctl_btt *btt;
 
 	ndctl_btt_foreach(bus, btt)
-		if (!ndctl_btt_is_enabled(btt))
+		if (!ndctl_btt_is_enabled(btt) && !ndctl_btt_is_configured(btt))
 			return btt;
 
 	return NULL;

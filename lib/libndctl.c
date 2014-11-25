@@ -2339,3 +2339,19 @@ NDCTL_EXPORT int ndctl_btt_disable(struct ndctl_btt *btt)
 	dbg(ctx, "%s: disabled\n", devname);
 	return 0;
 }
+
+NDCTL_EXPORT int ndctl_btt_is_configured(struct ndctl_btt *btt)
+{
+	static uuid_t null_uuid;
+
+	if (ndctl_btt_get_sector_size(btt) == UINT_MAX)
+		return 0;
+
+	if (strcmp(ndctl_btt_get_backing_dev(btt), "") == 0)
+		return 0;
+
+	if (memcmp(&btt->uuid, null_uuid, sizeof(null_uuid)) == 0)
+		return 0;
+
+	return 1;
+}
