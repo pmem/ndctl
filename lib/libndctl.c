@@ -29,7 +29,12 @@
 #include <ccan/list/list.h>
 #include <ccan/minmax/minmax.h>
 
+#ifdef HAVE_NDCTL_H
 #include <linux/ndctl.h>
+#else
+#include <ndctl.h>
+#endif
+
 #include <ndctl/libndctl.h>
 #include "libndctl-private.h"
 
