@@ -396,10 +396,11 @@ static int check_regions(struct ndctl_bus *bus, struct region *regions, int n)
 static int check_btt_create(struct ndctl_bus *bus, struct ndctl_namespace *ndns,
 		struct btt *create_btt)
 {
+	int fd, rc, retry = 10;
 	struct ndctl_btt *btt;
+	const char *devname;
 	char bdevpath[50];
 	void *buf = NULL;
-	int i;
 
 	if (!create_btt)
 		return 0;
@@ -417,11 +418,10 @@ static int check_btt_create(struct ndctl_bus *bus, struct ndctl_namespace *ndns,
 	ndctl_btt_set_backing_dev(btt, bdevpath);
 	ndctl_btt_enable(btt);
 
-	for (i = 0; i < 1; i++) {
-		const char *devname = ndctl_btt_get_devname(btt);
-		int fd;
-
-		sprintf(bdevpath, "/dev/%s", ndctl_btt_get_block_device(btt));
+	sprintf(bdevpath, "/dev/%s", ndctl_btt_get_block_device(btt));
+	devname = ndctl_btt_get_devname(btt);
+	rc = -ENXIO;
+	do {
 		fd = open(bdevpath, O_RDWR|O_DIRECT);
 		if (fd < 0) {
 			fprintf(stderr, "%s: failed to open %s\n",
@@ -429,23 +429,29 @@ static int check_btt_create(struct ndctl_bus *bus, struct ndctl_namespace *ndns,
 			break;
 		}
 		if (read(fd, buf, 4096) < 4096) {
-			fprintf(stderr, "%s: failed to read %s\n",
-					devname, bdevpath);
-			close(fd);
+			/* TODO: track down how this happens! */
+			if (errno == ENOENT && retry--) {
+				close(fd);
+				usleep(5000);
+				continue;
+			}
+			fprintf(stderr, "%s: failed to read %s: %d (%s)\n",
+					devname, bdevpath, -errno,
+					strerror(errno));
 			break;
 		}
 		if (write(fd, buf, 4096) < 4096) {
 			fprintf(stderr, "%s: failed to write %s\n",
 					devname, bdevpath);
-			close(fd);
 			break;
 		}
+		rc = 0;
+		break;
+	} while (1);
+	if (fd >= 0)
 		close(fd);
-	}
 	free(buf);
-	if (i < 1)
-		return -ENXIO;
-	return 0;
+	return rc;
 }
 
 static int configure_namespace(struct ndctl_region *region,
