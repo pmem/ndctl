@@ -92,6 +92,9 @@ static const char *NFIT_TEST_MODULE = "nfit_test";
 static const char *NFIT_PROVIDER0 = "nfit_test.0";
 static const char *NFIT_PROVIDER1 = "nfit_test.1";
 #define SZ_128K 0x00020000
+#define SZ_16M  0x01000000
+#define SZ_32M  0x02000000
+#define SZ_64M  0x04000000
 
 struct dimm {
 	unsigned int handle;
@@ -116,17 +119,12 @@ struct region {
 	unsigned int interleave_ways;
 	int enabled;
 	char *type;
+	unsigned long long available_size;
 	struct set {
 		unsigned long long cookie;
 		int active;
 	} iset;
-};
-
-struct btt;
-struct namespace {
-	unsigned int id;
-	char *type;
-	struct btt *create_btt;
+	struct namespace *namespaces[4];
 };
 
 struct btt {
@@ -137,28 +135,7 @@ struct btt {
 	unsigned int sector_sizes[4];
 };
 
-static struct region regions0[] = {
-	{ { 1 }, 2, 0, "pmem", { 0xfe50000200000000ULL, 1 }, },
-	{ { 2 }, 4, 0, "pmem", { 0x0850020500000000ULL, 1 }, },
-	{ { DIMM_HANDLE(0, 0, 0, 0, 0) }, 1, 0, "block" },
-	{ { DIMM_HANDLE(0, 0, 0, 0, 1) }, 1, 0, "block" },
-	{ { DIMM_HANDLE(0, 0, 1, 0, 0) }, 1, 0, "block" },
-	{ { DIMM_HANDLE(0, 0, 1, 0, 1) }, 1, 0, "block" },
-};
-
-static struct region regions1[] = {
-	{ { 1 }, 0, 1, "pmem" },
-};
-
-static struct btt btts0[] = {
-	{ 0, { 0, }, 1, UINT_MAX, { 512, }, },
-};
-
-static struct btt btts1[] = {
-	{ 0, { 0, }, 1, UINT_MAX, { 512, }, }
-};
-
-static struct btt create_btt1 = {
+static struct btt btt_settings = {
 	.enabled = 1,
 	.uuid = {  0,  1,  2,  3,  4,  5,  6,  7,
 		   8, 9,  10, 11, 12, 13, 14, 15
@@ -168,8 +145,61 @@ static struct btt create_btt1 = {
 	.sector_sizes =  { 512, },
 };
 
-static struct namespace namespaces1[] = {
-	{ 0, "namespace_io", &create_btt1, },
+struct namespace {
+	int id;
+	char *type;
+	struct btt *btt_settings;
+	unsigned long long size;
+	uuid_t uuid;
+	int do_configure;
+	int check_alt_name;
+};
+
+static struct namespace namespace0_pmem0 = {
+	0, "namespace_pmem", &btt_settings, SZ_16M,
+	{ 1, 1, 1, 1,
+	  1, 1, 1, 1,
+	  1, 1, 1, 1,
+	  1, 1, 1, 1, }, 1, 1,
+};
+
+static struct namespace namespace0_pmem1 = {
+	0, "namespace_pmem", &btt_settings, SZ_32M,
+	{ 2, 2, 2, 2,
+	  2, 2, 2, 2,
+	  2, 2, 2, 2,
+	  2, 2, 2, 2, }, 1, 1,
+};
+
+static struct region regions0[] = {
+	{ { 1 }, 2, 1, "pmem", SZ_32M, { 0xfe50000200000000ULL, 1 },
+		{ &namespace0_pmem0, NULL, }, },
+	{ { 2 }, 4, 1, "pmem", SZ_64M, { 0x0850020500000000ULL, 1 },
+		{ &namespace0_pmem1, NULL, }, },
+	{ { DIMM_HANDLE(0, 0, 0, 0, 0) }, 1, 0, "block", 0, },
+	{ { DIMM_HANDLE(0, 0, 0, 0, 1) }, 1, 0, "block", 0, },
+	{ { DIMM_HANDLE(0, 0, 1, 0, 0) }, 1, 0, "block", 0, },
+	{ { DIMM_HANDLE(0, 0, 1, 0, 1) }, 1, 0, "block", 0, },
+};
+
+static struct namespace namespace1 = {
+	0, "namespace_io", &btt_settings, SZ_32M,
+};
+
+static struct region regions1[] = {
+	{ { 1 }, 0, 1, "pmem", 0,
+		.namespaces = {
+			[0] = &namespace1,
+		},
+	},
+};
+
+static struct btt btts0[] = {
+	{ 0, { 0, }, 1, UINT_MAX, { 512, }, },
+};
+
+static struct btt btts1[] = {
+	{ 0, { 0, }, 1, UINT_MAX, { 512, }, }
 };
 
 static unsigned long commands0 = 1UL << NFIT_CMD_GET_CONFIG_SIZE
@@ -268,9 +298,12 @@ static struct ndctl_interleave_set *get_interleave_set_by_cookie(
 	return NULL;
 }
 
+static int check_namespaces(struct ndctl_region *region,
+		struct namespace **namespaces);
+
 static int check_regions(struct ndctl_bus *bus, struct region *regions, int n)
 {
-	int i;
+	int i, rc = 0;
 
 	for (i = 0; i < n; i++) {
 		struct ndctl_interleave_set *iset;
@@ -308,6 +341,13 @@ static int check_regions(struct ndctl_bus *bus, struct region *regions, int n)
 			return -ENXIO;
 		}
 
+		if (regions[i].available_size != ndctl_region_get_available_size(region)) {
+			fprintf(stderr, "%s: expected available_size: %#llx got: %#llx\n",
+					devname, regions[i].available_size,
+					ndctl_region_get_available_size(region));
+			return -ENXIO;
+		}
+
 		iset = ndctl_region_get_interleave_set(region);
 		if (regions[i].iset.active
 				&& !(iset && ndctl_interleave_set_is_active(iset) > 0)) {
@@ -339,9 +379,14 @@ static int check_regions(struct ndctl_bus *bus, struct region *regions, int n)
 			fprintf(stderr, "%s: failed to enable\n", devname);
 			return -ENXIO;
 		}
+
+		if (regions[i].namespaces)
+			rc = check_namespaces(region, regions[i].namespaces);
+		if (rc)
+			break;
 	}
 
-	return 0;
+	return rc;
 }
 
 static int check_btt_create(struct ndctl_bus *bus, struct ndctl_namespace *ndns,
@@ -399,51 +444,125 @@ static int check_btt_create(struct ndctl_bus *bus, struct ndctl_namespace *ndns,
 	return 0;
 }
 
+static int configure_namespace(struct ndctl_region *region,
+		struct ndctl_namespace *ndns, struct namespace *namespace)
+{
+	char devname[50];
+	int rc;
+
+	if (!namespace->do_configure)
+		return 0;
+
+	snprintf(devname, sizeof(devname), "namespace%d.%d",
+			ndctl_region_get_id(region), namespace->id);
+
+	if (ndctl_namespace_is_configured(ndns)) {
+		fprintf(stderr, "%s: expected an unconfigured namespace by default\n",
+				devname);
+		return -ENXIO;
+	}
+
+	rc = ndctl_namespace_set_alt_name(ndns, devname);
+	if (rc)
+		fprintf(stderr, "%s: set_alt_name failed: %d\n", devname, rc);
+	rc = ndctl_namespace_set_size(ndns, namespace->size);
+	if (rc)
+		fprintf(stderr, "%s: set_size failed: %d\n", devname, rc);
+	ndctl_namespace_set_uuid(ndns, namespace->uuid);
+	if (rc)
+		fprintf(stderr, "%s: set_uuid failed: %d\n", devname, rc);
+
+	rc = ndctl_namespace_is_configured(ndns);
+	if (rc < 1)
+		fprintf(stderr, "%s: is_configured: %d\n", devname, rc);
+
+	rc = ndctl_namespace_enable(ndns);
+	if (rc)
+		fprintf(stderr, "%s: enable: %d\n", devname, rc);
+
+	return rc;
+}
+
 static int check_namespaces(struct ndctl_region *region,
-		struct namespace *namespaces, int n)
+		struct namespace **namespaces)
 {
 	struct ndctl_bus *bus = ndctl_region_get_bus(region);
+	struct namespace *namespace, **iter;
 	struct ndctl_namespace **ndns_save;
+	int i, rc, retry_cnt = 1;
 	void *buf = NULL;
-	int i, rc = -ENXIO;
+	char devname[50];
 
 	if (!region)
 		return -ENXIO;
 
-	ndns_save = calloc(n, sizeof(struct ndctl_namespace *));
-	if (!ndns_save)
-		return -ENXIO;
-
 	if (posix_memalign(&buf, 4096, 4096) != 0)
-		goto out;
+		return -ENOMEM;
 
-	for (i = 0; i < n; i++) {
+retry:
+	ndns_save = NULL;
+	for (i = 0, iter = namespaces; (namespace = *iter); iter++, i++) {
 		struct ndctl_namespace *ndns;
-		char devname[50];
 		char bdevpath[50];
+		uuid_t uu;
 		int fd;
 
 		snprintf(devname, sizeof(devname), "namespace%d.%d",
-				ndctl_region_get_id(region), namespaces[i].id);
-		ndns = get_namespace_by_id(region, namespaces[i].id);
+				ndctl_region_get_id(region), namespace->id);
+		ndns = get_namespace_by_id(region, namespace->id);
 		if (!ndns) {
 			fprintf(stderr, "%s: failed to find namespace\n",
 					devname);
 			break;
 		}
 
+		rc = configure_namespace(region, ndns, namespace);
+		if (rc) {
+			fprintf(stderr, "%s: failed to configure namespace\n",
+					devname);
+			break;
+		}
+		namespace->do_configure = 0;
+
 		if (strcmp(ndctl_namespace_get_type_name(ndns),
-					namespaces[i].type) != 0) {
+					namespace->type) != 0) {
 			fprintf(stderr, "%s: expected type: %s got: %s\n",
 					devname,
 					ndctl_namespace_get_type_name(ndns),
-					namespaces[i].type);
+					namespace->type);
 			break;
 		}
 
 		if (!ndctl_namespace_is_enabled(ndns)) {
 			fprintf(stderr, "%s: expected enabled by default\n",
 					devname);
+			break;
+		}
+
+		if (namespace->size != ndctl_namespace_get_size(ndns)) {
+			fprintf(stderr, "%s: expected size: %#llx got: %#llx\n",
+					devname, namespace->size,
+					ndctl_namespace_get_size(ndns));
+			break;
+		}
+
+		ndctl_namespace_get_uuid(ndns, uu);
+		if (uuid_compare(uu, namespace->uuid) != 0) {
+			char expect[40], actual[40];
+
+			uuid_unparse(uu, actual);
+			uuid_unparse(namespace->uuid, expect);
+			fprintf(stderr, "%s: expected uuid: %s got: %s\n",
+					devname, expect, actual);
+			break;
+		}
+
+		if (namespace->check_alt_name
+				&& strcmp(ndctl_namespace_get_alt_name(ndns),
+					devname) != 0) {
+			fprintf(stderr, "%s: expected alt_name: %s got: %s\n",
+					devname, devname,
+					ndctl_namespace_get_alt_name(ndns));
 			break;
 		}
 
@@ -468,8 +587,8 @@ static int check_namespaces(struct ndctl_region *region,
 		}
 		close(fd);
 
-		if (check_btt_create(bus, ndns, namespaces[i].create_btt) < 0) {
-			fprintf(stderr, "failed to create btt\n");
+		if (check_btt_create(bus, ndns, namespace->btt_settings) < 0) {
+			fprintf(stderr, "%s: failed to create btt\n", devname);
 			break;
 		}
 
@@ -482,22 +601,42 @@ static int check_namespaces(struct ndctl_region *region,
 			fprintf(stderr, "%s: failed to enable\n", devname);
 			break;
 		}
+		ndns_save = realloc(ndns_save,
+				sizeof(struct ndctl_namespace *) * (i + 1));
+		if (!ndns_save) {
+			fprintf(stderr, "%s: %s() -ENOMEM\n",
+					devname, __func__);
+			rc = -ENOMEM;
+			break;
+		}
 		ndns_save[i] = ndns;
 	}
-	if (i < n || ndctl_region_disable(region, 0) != 0) {
-		if (i >= n)
+
+	if (namespace || ndctl_region_disable(region, 0) != 0) {
+		rc = -ENXIO;
+		if (!namespace)
 			fprintf(stderr, "failed to disable region%d\n",
 					ndctl_region_get_id(region));
 		goto out;
 	}
 
+	/*
+	 * On the second time through configure_namespace() is skipped
+	 * to test assembling namespace(s) from an existing label set
+	 */
+	if (retry_cnt--) {
+		ndctl_region_enable(region);
+		goto retry;
+	}
+
 	rc = 0;
-	for (i = 0; i < n; i++) {
-		char devname[50];
+	for (i--; i >= 0; i--) {
+		struct ndctl_namespace *ndns = ndns_save[i];
 
 		snprintf(devname, sizeof(devname), "namespace%d.%d",
-				ndctl_region_get_id(region), namespaces[i].id);
-		if (ndctl_namespace_is_valid(ndns_save[i])) {
+				ndctl_region_get_id(region),
+				ndctl_namespace_get_id(ndns));
+		if (ndctl_namespace_is_valid(ndns)) {
 			fprintf(stderr, "%s: failed to invalidate\n", devname);
 			rc = -ENXIO;
 			break;
@@ -744,33 +883,26 @@ static int do_test0(struct ndctl_ctx *ctx)
 	if (rc)
 		return rc;
 
-	rc = check_regions(bus, regions0, ARRAY_SIZE(regions0));
+	rc = check_btts(bus, btts0, ARRAY_SIZE(btts0));
 	if (rc)
 		return rc;
 
-	return check_btts(bus, btts0, ARRAY_SIZE(btts0));
+	return check_regions(bus, regions0, ARRAY_SIZE(regions0));
 }
 
 static int do_test1(struct ndctl_ctx *ctx)
 {
 	struct ndctl_bus *bus = get_bus_by_provider(ctx, NFIT_PROVIDER1);
-	struct ndctl_region *region;
 	int rc;
 
 	if (!bus)
 		return -ENXIO;
 
-	rc = check_regions(bus, regions1, ARRAY_SIZE(regions1));
-	if (rc)
-		return rc;
-
-	region = get_pmem_region_by_spa_index(bus, regions1[0].spa_index);
-
 	rc = check_btts(bus, btts1, ARRAY_SIZE(btts1));
 	if (rc)
 		return rc;
 
-	return check_namespaces(region, namespaces1, ARRAY_SIZE(namespaces1));
+	return check_regions(bus, regions1, ARRAY_SIZE(regions1));
 }
 
 typedef int (*do_test_fn)(struct ndctl_ctx *ctx);
