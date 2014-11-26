@@ -221,6 +221,7 @@ struct ndctl_lbasize {
  * @uuid: unique identifier for a btt instance
  * @btt_buf: space to print paths for bind/unbind operations
  * @bdev: block device associated with a btt
+ * @enabled: once a btt has been enabled it can't be reconfigured
  */
 struct ndctl_btt {
 	struct kmod_module *module;
@@ -231,6 +232,7 @@ struct ndctl_btt {
 	char *btt_path;
 	char *btt_buf;
 	char *bdev;
+	int enabled;
 	int buf_len;
 	uuid_t uuid;
 	int id;
@@ -456,11 +458,14 @@ static void free_region(struct ndctl_region *region)
 	free(region);
 }
 
-static void free_btt(struct ndctl_btt *btt)
+#define BTT_DELETE 1
+#define BTT_SKIP_DELETE 0
+static void free_btt(struct ndctl_btt *btt, int delete)
 {
 	struct ndctl_bus *bus = btt->bus;
 
-	list_del_from(&bus->btts, &btt->list);
+	if (delete)
+		list_del_from(&bus->btts, &btt->list);
 	kmod_module_unref(btt->module);
 	free(btt->lbasize.supported);
 	free(btt->backing_dev);
@@ -480,7 +485,7 @@ static void free_bus(struct ndctl_bus *bus)
 		free(dimm);
 	}
 	list_for_each_safe(&bus->btts, btt, _b, list)
-		free_btt(btt);
+		free_btt(btt, BTT_DELETE);
 	list_for_each_safe(&bus->regions, region, _r, list)
 		free_region(region);
 	list_del_from(&bus->ctx->busses, &bus->list);
@@ -641,13 +646,14 @@ static int device_parse(struct ndctl_ctx *ctx, const char *base_path,
 
 		rc = add_dev(parent, id, dev_path);
 		free(dev_path);
-		if (rc) {
+		if (rc < 0) {
 			add_errors++;
 			err(ctx, "%s%d: add_dev() failed: %d\n",
 					dev_name, id, rc);
-		} else {
+		} else if (rc == 0) {
 			dbg(ctx, "%s%d: added\n", dev_name, id);
-		}
+		} else
+			dbg(ctx, "%s%d: duplicate\n", dev_name, id);
 	}
 	closedir(dir);
 
@@ -2227,7 +2233,7 @@ static int add_btt(void *parent, int id, const char *btt_base)
 	char *path = calloc(1, strlen(btt_base) + 20);
 	struct ndctl_bus *bus = parent;
 	struct ndctl_ctx *ctx = bus->ctx;
-	struct ndctl_btt *btt;
+	struct ndctl_btt *btt, *dup;
 	char buf[SYSFS_ATTR_SIZE];
 	int rc = -ENOMEM;
 
@@ -2275,8 +2281,19 @@ static int add_btt(void *parent, int id, const char *btt_base)
 	if (!btt->backing_dev)
 		goto err_read;
 
-	list_add(&bus->btts, &btt->list);
 	free(path);
+	if (ndctl_btt_is_enabled(btt) || ndctl_btt_is_configured(btt)) {
+		free_btt(btt, BTT_SKIP_DELETE);
+		return 1;
+	}
+	ndctl_btt_foreach(bus, dup) {
+		if (ndctl_btt_is_configured(dup))
+			continue;
+		if (dup->id == btt->id)
+			return 1;
+	}
+
+	list_add(&bus->btts, &btt->list);
 	return 0;
 
  err_read:
@@ -2354,6 +2371,9 @@ NDCTL_EXPORT int ndctl_btt_set_uuid(struct ndctl_btt *btt, uuid_t uu)
 	int len = btt->buf_len;
 	char uuid[40];
 
+	if (btt->enabled)
+		return -EINVAL;
+
 	if (snprintf(path, len, "%s/uuid", btt->btt_path) >= len) {
 		err(ctx, "%s: buffer too small!\n",
 				ndctl_btt_get_devname(btt));
@@ -2375,6 +2395,9 @@ NDCTL_EXPORT int ndctl_btt_set_sector_size(struct ndctl_btt *btt,
 	int len = btt->buf_len;
 	char sector_str[40];
 	int i;
+
+	if (btt->enabled)
+		return -EINVAL;
 
 	if (snprintf(path, len, "%s/sector_size", btt->btt_path) >= len) {
 		err(ctx, "%s: buffer too small!\n",
@@ -2398,6 +2421,9 @@ NDCTL_EXPORT int ndctl_btt_set_backing_dev(struct ndctl_btt *btt,
 	struct ndctl_ctx *ctx = ndctl_btt_get_ctx(btt);
 	char *path = btt->btt_buf;
 	int len = btt->buf_len;
+
+	if (btt->enabled)
+		return -EINVAL;
 
 	if (snprintf(path, len, "%s/backing_dev", btt->btt_path) >= len) {
 		err(ctx, "%s: buffer too small!\n",
@@ -2467,8 +2493,9 @@ NDCTL_EXPORT int ndctl_btt_is_enabled(struct ndctl_btt *btt)
 
 NDCTL_EXPORT int ndctl_btt_enable(struct ndctl_btt *btt)
 {
-	struct ndctl_ctx *ctx = ndctl_btt_get_ctx(btt);
 	const char *devname = ndctl_btt_get_devname(btt);
+	struct ndctl_ctx *ctx = ndctl_btt_get_ctx(btt);
+	struct ndctl_bus *bus = ndctl_btt_get_bus(btt);
 	char *path = btt->btt_buf;
 	int len = btt->buf_len;
 
@@ -2486,33 +2513,49 @@ NDCTL_EXPORT int ndctl_btt_enable(struct ndctl_btt *btt)
 
 	if (snprintf(path, len, "%s/block", btt->btt_path) >= len) {
 		err(ctx, "%s: buffer too small!\n",
-				ndctl_btt_get_devname(btt));
+				devname);
 	} else {
 		btt->bdev = get_block_device(ctx, path);
 	}
+	btt->enabled = 1;
+
+	/*
+	 * Rescan now as successfully enabling a btt device leads to a
+	 * new one being created
+	 */
+	bus->btts_init = 0;
+	btts_init(bus);
 
 	return 0;
 }
 
-NDCTL_EXPORT int ndctl_btt_disable(struct ndctl_btt *btt)
+NDCTL_EXPORT int ndctl_btt_delete(struct ndctl_btt *btt)
 {
 	struct ndctl_ctx *ctx = ndctl_btt_get_ctx(btt);
-	const char *devname = ndctl_btt_get_devname(btt);
+	int len = btt->buf_len, rc;
+	char *path = btt->btt_buf;
 
+	/*
+	 * Only permit deletion when we know a replacement seed device
+	 * is present.
+	 */
 	if (!ndctl_btt_is_enabled(btt))
-		return 0;
+		return -EINVAL;
 
 	ndctl_unbind(ctx, btt->btt_path);
 
-	if (ndctl_btt_is_enabled(btt)) {
-		err(ctx, "%s: failed to disable\n", devname);
-		return -EBUSY;
+	if (snprintf(path, len, "%s/delete", btt->btt_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_btt_get_devname(btt));
+		return -EINVAL;
 	}
 
-	free(btt->bdev);
-	btt->bdev = NULL;
+	rc = sysfs_write_attr(ctx, path, "1\n");
+	dbg(ctx, "%s: %d\n", ndctl_btt_get_devname(btt), rc);
+	if (rc < 0)
+		return -ENXIO;
+	free_btt(btt, BTT_DELETE);
 
-	dbg(ctx, "%s: disabled\n", devname);
 	return 0;
 }
 

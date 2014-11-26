@@ -265,7 +265,7 @@ int ndctl_btt_set_uuid(struct ndctl_btt *btt, uuid_t uu);
 int ndctl_btt_set_sector_size(struct ndctl_btt *btt, unsigned int sector_size);
 int ndctl_btt_set_backing_dev(struct ndctl_btt *btt, const char *backing_dev);
 int ndctl_btt_enable(struct ndctl_btt *btt);
-int ndctl_btt_disable(struct ndctl_btt *btt);
+int ndctl_btt_delete(struct ndctl_btt *btt);
 int ndctl_btt_is_configured(struct ndctl_btt *btt);
 
 #ifdef __cplusplus
