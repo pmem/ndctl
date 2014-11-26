@@ -18,7 +18,11 @@
 
 #include <stdbool.h>
 #include <syslog.h>
+#ifdef HAVE_NDCTL_H
 #include <linux/ndctl.h>
+#else
+#include <ndctl.h>
+#endif
 #include <ndctl/libndctl.h>
 #include <ccan/endian/endian.h>
 #include <ccan/short_types/short_types.h>
