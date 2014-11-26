@@ -1787,6 +1787,11 @@ static int add_namespace(void *parent, int id, const char *ndns_base)
 		goto err_read;
 	ndns->type = strtoul(buf, NULL, 0);
 
+	sprintf(path, "%s/size", ndns_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		goto err_read;
+	ndns->size = strtoull(buf, NULL, 0);
+
 	if (ndns->type == ND_DEVICE_NAMESPACE_PMEM) {
 		sprintf(path, "%s/alt_name", ndns_base);
 		if (sysfs_read_attr(ctx, path, buf) < 0)
@@ -1794,6 +1799,15 @@ static int add_namespace(void *parent, int id, const char *ndns_base)
 		ndns->alt_name = strdup(buf);
 		if (!ndns->alt_name)
 			goto err_read;
+
+		sprintf(path, "%s/uuid", ndns_base);
+		if (sysfs_read_attr(ctx, path, buf) < 0)
+			goto err_read;
+		if (strlen(buf) && uuid_parse(buf, ndns->uuid) < 0) {
+			dbg(ctx, "%s:%s\n", path, buf);
+			rc = -EINVAL;
+			goto err_read;
+		}
 	}
 
 	ndns->ndns_path = strdup(ndns_base);
@@ -2153,6 +2167,7 @@ static int pmem_namespace_set_size(const char *path,
 		region->available_size -= size - ndns->size;
 	else
 		region->available_size += ndns->size - size;
+	ndns->size = size;
 	return 0;
 }
 
