@@ -2253,7 +2253,7 @@ static int add_btt(void *parent, int id, const char *btt_base)
 	char *path = calloc(1, strlen(btt_base) + 20);
 	struct ndctl_bus *bus = parent;
 	struct ndctl_ctx *ctx = bus->ctx;
-	struct ndctl_btt *btt, *dup;
+	struct ndctl_btt *btt, *btt_dup;
 	char buf[SYSFS_ATTR_SIZE];
 	int rc = -ENOMEM;
 
@@ -2306,10 +2306,10 @@ static int add_btt(void *parent, int id, const char *btt_base)
 		free_btt(btt, BTT_SKIP_DELETE);
 		return 1;
 	}
-	ndctl_btt_foreach(bus, dup) {
-		if (ndctl_btt_is_configured(dup))
+	ndctl_btt_foreach(bus, btt_dup) {
+		if (ndctl_btt_is_configured(btt_dup))
 			continue;
-		if (dup->id == btt->id)
+		if (btt_dup->id == btt->id)
 			return 1;
 	}
 
