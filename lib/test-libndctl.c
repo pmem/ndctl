@@ -125,7 +125,6 @@ struct region {
 	char *type;
 	unsigned long long available_size;
 	struct set {
-		unsigned long long cookie;
 		int active;
 	} iset;
 	struct namespace *namespaces[4];
@@ -176,9 +175,9 @@ static struct namespace namespace0_pmem1 = {
 };
 
 static struct region regions0[] = {
-	{ { 1 }, 2, 1, "pmem", SZ_32M, { 0xfe50000200000000ULL, 1 },
+	{ { 1 }, 2, 1, "pmem", SZ_32M, { 1 },
 		{ &namespace0_pmem0, NULL, }, },
-	{ { 2 }, 4, 1, "pmem", SZ_64M, { 0x0850020500000000ULL, 1 },
+	{ { 2 }, 4, 1, "pmem", SZ_64M, { 1 },
 		{ &namespace0_pmem1, NULL, }, },
 	{ { DIMM_HANDLE(0, 0, 0, 0, 0) }, 1, 0, "block", 0, },
 	{ { DIMM_HANDLE(0, 0, 0, 0, 1) }, 1, 0, "block", 0, },
@@ -290,18 +289,6 @@ static struct ndctl_region *get_blk_region_by_dimm_handle(struct ndctl_bus *bus,
 	return NULL;
 }
 
-static struct ndctl_interleave_set *get_interleave_set_by_cookie(
-		struct ndctl_bus *bus, unsigned long long cookie)
-{
-	struct ndctl_interleave_set *iset;
-
-	ndctl_interleave_set_foreach(bus, iset)
-		if (ndctl_interleave_set_get_cookie(iset) == cookie)
-			return iset;
-
-	return NULL;
-}
-
 static int check_namespaces(struct ndctl_region *region,
 		struct namespace **namespaces);
 
@@ -362,17 +349,6 @@ static int check_regions(struct ndctl_bus *bus, struct region *regions, int n)
 			fprintf(stderr, "%s: expected no interleave set\n",
 					devname);
 			return -ENXIO;
-		}
-
-		if (regions[i].iset.cookie) {
-			unsigned long long cookie = regions[i].iset.cookie;
-
-			iset = get_interleave_set_by_cookie(bus, cookie);
-			if (!iset) {
-				fprintf(stderr, "%s: expected iset-%#llx\n",
-						devname, cookie);
-				return -ENXIO;
-			}
 		}
 
 		if (ndctl_region_disable(region, 1) < 0) {
