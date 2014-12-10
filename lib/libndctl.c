@@ -42,19 +42,32 @@ static uuid_t null_uuid;
 
 /**
  * DOC: General note, the structure layouts are privately defined.
- * Access struct member fields with ndctl_<object>_get_<property>.
+ * Access struct member fields with ndctl_<object>_get_<property>.  This
+ * library is multithread-aware in that it supports multiple
+ * simultaneous reference-counted contexts, but it is not multithread
+ * safe.  Also note that there is no coordination between contexts,
+ * changes made in one context instance may not be reflected in another.
  */
 
+/**
+ * ndctl_sizeof_namespace_index - min size of a namespace index block plus padding
+ */
 NDCTL_EXPORT size_t ndctl_sizeof_namespace_index(void)
 {
 	return sizeof_namespace_index();
 }
 
+/**
+ * ndctl_min_namespace_size - minimum namespace size that btt suports
+ */
 NDCTL_EXPORT size_t ndctl_min_namespace_size(void)
 {
 	return NSLABEL_NAMESPACE_MIN_SIZE;
 }
 
+/**
+ * ndctl_sizeof_namespace_label - single entry size in a dimm label set
+ */
 NDCTL_EXPORT size_t ndctl_sizeof_namespace_label(void)
 {
 	return sizeof(struct namespace_label);
@@ -356,6 +369,14 @@ static int log_priority(const char *priority)
 	return 0;
 }
 
+/**
+ * ndctl_new - instantiate a new library context
+ * @ctx: context to establish
+ *
+ * Returns zero on success and stores an opaque pointer in ctx.  The
+ * context is freed by ndctl_unref(), i.e. ndctl_new() implies an
+ * internal ndctl_ref().
+ */
 NDCTL_EXPORT int ndctl_new(struct ndctl_ctx **ctx)
 {
 	struct kmod_ctx *kmod_ctx;
@@ -423,6 +444,10 @@ NDCTL_EXPORT int ndctl_new(struct ndctl_ctx **ctx)
 	return rc;
 }
 
+/**
+ * ndctl_ref - take an additional reference on the context
+ * @ctx: context established by ndctl_new()
+ */
 NDCTL_EXPORT struct ndctl_ctx *ndctl_ref(struct ndctl_ctx *ctx)
 {
 	if (ctx == NULL)
@@ -509,6 +534,13 @@ static void free_context(struct ndctl_ctx *ctx)
 	free(ctx);
 }
 
+/**
+ * ndctl_unref - drop a context reference count
+ * @ctx: context established by ndctl_new()
+ *
+ * Drop a reference and if the resulting reference count is 0 destroy
+ * the context.
+ */
 NDCTL_EXPORT struct ndctl_ctx *ndctl_unref(struct ndctl_ctx *ctx)
 {
 	if (ctx == NULL)
@@ -542,6 +574,10 @@ NDCTL_EXPORT void ndctl_set_log_fn(struct ndctl_ctx *ctx,
 	info(ctx, "custom logging function %p registered\n", log_fn);
 }
 
+/**
+ * ndctl_get_log_priority - retrieve current library loglevel (syslog)
+ * @ctx: ndctl library context
+ */
 NDCTL_EXPORT int ndctl_get_log_priority(struct ndctl_ctx *ctx)
 {
 	return ctx->log_priority;
@@ -763,6 +799,14 @@ static void busses_init(struct ndctl_ctx *ctx)
 	device_parse(ctx, "/sys/class/nd_bus", "ndctl", ctx, add_bus);
 }
 
+/**
+ * ndctl_bus_get_first - retrieve first "nd bus" in the system
+ * @ctx: context established by ndctl_new
+ *
+ * Returns an ndctl_bus if an nd bus exists in the system.  This return
+ * value can be used to iterate to the next available bus in the system
+ * ia ndctl_bus_get_next()
+ */
 NDCTL_EXPORT struct ndctl_bus *ndctl_bus_get_first(struct ndctl_ctx *ctx)
 {
 	busses_init(ctx);
@@ -770,6 +814,12 @@ NDCTL_EXPORT struct ndctl_bus *ndctl_bus_get_first(struct ndctl_ctx *ctx)
 	return list_top(&ctx->busses, struct ndctl_bus, list);
 }
 
+/**
+ * ndctl_bus_get_next - retrieve the "next" nd bus in the system
+ * @bus: ndctl_bus instance returned from ndctl_bus_get_{first|next}
+ *
+ * Returns NULL if @bus was the "last" bus available in the system
+ */
 NDCTL_EXPORT struct ndctl_bus *ndctl_bus_get_next(struct ndctl_bus *bus)
 {
 	struct ndctl_ctx *ctx = bus->ctx;
@@ -777,11 +827,19 @@ NDCTL_EXPORT struct ndctl_bus *ndctl_bus_get_next(struct ndctl_bus *bus)
 	return list_next(&ctx->busses, bus, list);
 }
 
+/**
+ * ndctl_bus_get_major - nd bus character device major number
+ * @bus: ndctl_bus instance returned from ndctl_bus_get_{first|next}
+ */
 NDCTL_EXPORT unsigned int ndctl_bus_get_major(struct ndctl_bus *bus)
 {
 	return bus->major;
 }
 
+/**
+ * ndctl_bus_get_minor - nd bus character device minor number
+ * @bus: ndctl_bus instance returned from ndctl_bus_get_{first|next}
+ */
 NDCTL_EXPORT unsigned int ndctl_bus_get_minor(struct ndctl_bus *bus)
 {
 	return bus->minor;
