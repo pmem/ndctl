@@ -149,7 +149,6 @@ struct ndctl_mapping {
  * @module: kernel module
  * @mappings: number of extent ranges contributing to the region
  * @size: total capacity of the region before resolving aliasing
- * @available_size: capacity available for namespace creation
  * @type: integer nd-bus device-type
  * @type_name: 'pmem' or 'block'
  * @generation: incremented everytime the region is disabled
@@ -170,7 +169,6 @@ struct ndctl_region {
 	int id, num_mappings, nstype, spa_index;
 	int mappings_init;
 	int namespaces_init;
-	unsigned long long available_size;
 	unsigned long long size;
 	char *region_path;
 	char *region_buf;
@@ -457,18 +455,23 @@ NDCTL_EXPORT struct ndctl_ctx *ndctl_ref(struct ndctl_ctx *ctx)
 	return ctx;
 }
 
+static void free_namespace(struct ndctl_namespace *ndns, struct list_head *head)
+{
+	if (head)
+		list_del_from(head, &ndns->list);
+	free(ndns->ndns_path);
+	free(ndns->ndns_buf);
+	free(ndns->bdev);
+	kmod_module_unref(ndns->module);
+	free(ndns);
+}
+
 static void free_namespaces(struct ndctl_region *region, struct list_head *head)
 {
 	struct ndctl_namespace *ndns, *_n;
 
-	list_for_each_safe(head, ndns, _n, list) {
-		list_del_from(head, &ndns->list);
-		free(ndns->ndns_path);
-		free(ndns->ndns_buf);
-		free(ndns->bdev);
-		kmod_module_unref(ndns->module);
-		free(ndns);
-	}
+	list_for_each_safe(head, ndns, _n, list)
+		free_namespace(ndns, head);
 }
 
 static void free_region(struct ndctl_region *region)
@@ -1109,13 +1112,6 @@ static int add_region(void *parent, int id, const char *region_base)
 		goto err_read;
 	region->nstype = strtoul(buf, NULL, 0);
 
-	if (region->nstype == ND_DEVICE_NAMESPACE_PMEM) {
-		sprintf(path, "%s/available_size", region_base);
-		if (sysfs_read_attr(ctx, path, buf) < 0)
-			goto err_read;
-		region->available_size = strtoull(buf, NULL, 0);
-	}
-
 	sprintf(path, "%s/spa_index", region_base);
 	if (region->nstype != ND_DEVICE_NAMESPACE_BLOCK) {
 		if (sysfs_read_attr(ctx, path, buf) < 0)
@@ -1207,7 +1203,30 @@ NDCTL_EXPORT unsigned long long ndctl_region_get_size(struct ndctl_region *regio
 NDCTL_EXPORT unsigned long long ndctl_region_get_available_size(
 		struct ndctl_region *region)
 {
-	return region->available_size;
+	unsigned int nstype = ndctl_region_get_nstype(region);
+	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
+	char *path = region->region_buf;
+	int len = region->buf_len;
+	char buf[50];
+
+	switch (nstype) {
+	case ND_DEVICE_NAMESPACE_PMEM:
+	case ND_DEVICE_NAMESPACE_BLOCK:
+		break;
+	default:
+		return 0;
+	}
+
+	if (snprintf(path, len, "%s/available_size", region->region_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_region_get_devname(region));
+		return -ENOMEM;
+	}
+
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		return -ENXIO;
+
+	return strtoull(buf, NULL, 0);
 }
 
 NDCTL_EXPORT unsigned int ndctl_region_get_spa_index(struct ndctl_region *region)
@@ -1832,10 +1851,10 @@ static int parse_lbasize_supported(struct ndctl_ctx *ctx, const char *buf,
 static int add_namespace(void *parent, int id, const char *ndns_base)
 {
 	char *path = calloc(1, strlen(ndns_base) + 20);
+	struct ndctl_namespace *ndns, *ndns_dup;
 	struct ndctl_region *region = parent;
 	struct ndctl_bus *bus = region->bus;
 	struct ndctl_ctx *ctx = bus->ctx;
-	struct ndctl_namespace *ndns;
 	char buf[SYSFS_ATTR_SIZE];
 	int rc = -ENOMEM;
 
@@ -1901,6 +1920,12 @@ static int add_namespace(void *parent, int id, const char *ndns_base)
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		goto err_read;
 	ndns->module = to_module(ctx, buf);
+
+	ndctl_namespace_foreach(region, ndns_dup)
+		if (ndns_dup->id == ndns->id) {
+			free_namespace(ndns, NULL);
+			return 1;
+		}
 
 	list_add(&region->namespaces, &ndns->list);
 	free(path);
@@ -2091,6 +2116,7 @@ NDCTL_EXPORT int ndctl_namespace_enable(struct ndctl_namespace *ndns)
 {
 	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
 	const char *devname = ndctl_namespace_get_devname(ndns);
+	struct ndctl_region *region = ndns->region;
 
 	if (ndctl_namespace_is_enabled(ndns))
 		return 0;
@@ -2101,6 +2127,13 @@ NDCTL_EXPORT int ndctl_namespace_enable(struct ndctl_namespace *ndns)
 		err(ctx, "%s: failed to enable\n", devname);
 		return -ENXIO;
 	}
+
+	/*
+	 * Rescan now as successfully enabling a namespace device leads
+	 * to a new one being created
+	 */
+	region->namespaces_init = 0;
+	namespaces_init(region);
 
 	dbg(ctx, "%s: enabled\n", devname);
 
@@ -2140,6 +2173,17 @@ static int pmem_namespace_is_configured(struct ndctl_namespace *ndns)
 	return 1;
 }
 
+static int blk_namespace_is_configured(struct ndctl_namespace *ndns)
+{
+	if (pmem_namespace_is_configured(ndns) == 0)
+		return 0;
+
+	if (ndctl_namespace_get_sector_size(ndns) == 0)
+		return 0;
+
+	return 1;
+}
+
 NDCTL_EXPORT int ndctl_namespace_is_configured(struct ndctl_namespace *ndns)
 {
 	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
@@ -2149,6 +2193,8 @@ NDCTL_EXPORT int ndctl_namespace_is_configured(struct ndctl_namespace *ndns)
 		return pmem_namespace_is_configured(ndns);
 	case ND_DEVICE_NAMESPACE_IO:
 		return 1;
+	case ND_DEVICE_NAMESPACE_BLOCK:
+		return blk_namespace_is_configured(ndns);
 	default:
 		dbg(ctx, "%s: nstype: %d is_configured() not implemented\n",
 				ndctl_namespace_get_devname(ndns),
@@ -2276,25 +2322,16 @@ NDCTL_EXPORT unsigned long long ndctl_namespace_get_size(struct ndctl_namespace 
 	return ndns->size;
 }
 
-static int pmem_namespace_set_size(const char *path,
-		struct ndctl_namespace *ndns,
+static int namespace_set_size(const char *path, struct ndctl_namespace *ndns,
 		unsigned long long size)
 {
-	struct ndctl_region *region = ndctl_namespace_get_region(ndns);
 	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
-	char buf[20];
-
-	if (size < ND_MIN_NAMESPACE_SIZE || size > region->available_size)
-		return -ENOSPC;
+	char buf[50];
 
 	sprintf(buf, "%#llx\n", size);
 	if (sysfs_write_attr(ctx, path, buf) < 0)
 		return -ENXIO;
 
-	if (size >= ndns->size)
-		region->available_size -= size - ndns->size;
-	else
-		region->available_size += ndns->size - size;
 	ndns->size = size;
 	return 0;
 }
@@ -2317,7 +2354,8 @@ NDCTL_EXPORT int ndctl_namespace_set_size(struct ndctl_namespace *ndns,
 
 	switch (ndctl_namespace_get_type(ndns)) {
 	case ND_DEVICE_NAMESPACE_PMEM:
-		return pmem_namespace_set_size(path, ndns, size);
+	case ND_DEVICE_NAMESPACE_BLOCK:
+		return namespace_set_size(path, ndns, size);
 	default:
 		dbg(ctx, "%s: nstype: %d set size failed\n",
 				ndctl_namespace_get_devname(ndns),
