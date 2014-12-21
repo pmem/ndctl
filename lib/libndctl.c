@@ -192,6 +192,18 @@ struct ndctl_region {
 };
 
 /**
+ * struct ndctl_lbasize - lbasize info for btt and blk-namespace devices
+ * @select: currently selected sector_size
+ * @supported: possible sector_size options
+ * @num: number of entries in @supported
+ */
+struct ndctl_lbasize {
+	int select;
+	unsigned int *supported;
+	int num;
+};
+
+/**
  * struct ndctl_namespace - device claimed by the nd_blk or nd_pmem driver
  * @module: kernel module
  * @type: integer nd-bus device-type
@@ -215,18 +227,7 @@ struct ndctl_namespace {
 	unsigned long long size;
 	char *alt_name;
 	uuid_t uuid;
-};
-
-/**
- * struct ndctl_lbasize - lbasize info for btt and blk-namespace devices
- * @select: currently selected sector_size
- * @supported: possible sector_size options
- * @num: number of entries in @supported
- */
-struct ndctl_lbasize {
-	int select;
-	unsigned int *supported;
-	int num;
+	struct ndctl_lbasize lbasize;
 };
 
 /**
@@ -1825,6 +1826,9 @@ static char *get_block_device(struct ndctl_ctx *ctx, const char *block_path)
 	return bdev_name;
 }
 
+static int parse_lbasize_supported(struct ndctl_ctx *ctx, const char *buf,
+		struct ndctl_lbasize *lba);
+
 static int add_namespace(void *parent, int id, const char *ndns_base)
 {
 	char *path = calloc(1, strlen(ndns_base) + 20);
@@ -1855,7 +1859,15 @@ static int add_namespace(void *parent, int id, const char *ndns_base)
 		goto err_read;
 	ndns->size = strtoull(buf, NULL, 0);
 
-	if (ndns->type == ND_DEVICE_NAMESPACE_PMEM) {
+	switch (ndns->type) {
+	case ND_DEVICE_NAMESPACE_BLOCK:
+		sprintf(path, "%s/sector_size", ndns_base);
+		if (sysfs_read_attr(ctx, path, buf) < 0)
+			goto err_read;
+		if (parse_lbasize_supported(ctx, buf, &ndns->lbasize) < 0)
+			goto err_read;
+		/* fall through */
+	case ND_DEVICE_NAMESPACE_PMEM:
 		sprintf(path, "%s/alt_name", ndns_base);
 		if (sysfs_read_attr(ctx, path, buf) < 0)
 			goto err_read;
@@ -1871,6 +1883,9 @@ static int add_namespace(void *parent, int id, const char *ndns_base)
 			rc = -EINVAL;
 			goto err_read;
 		}
+		break;
+	default:
+		break;
 	}
 
 	ndns->ndns_path = strdup(ndns_base);
@@ -2164,6 +2179,56 @@ NDCTL_EXPORT int ndctl_namespace_set_uuid(struct ndctl_namespace *ndns, uuid_t u
 	if (sysfs_write_attr(ctx, path, uuid) != 0)
 		return -ENXIO;
 	memcpy(ndns->uuid, uu, sizeof(uuid_t));
+	return 0;
+}
+
+NDCTL_EXPORT unsigned int ndctl_namespace_get_supported_sector_size(
+		struct ndctl_namespace *ndns, int i)
+{
+	if (ndns->lbasize.num == 0)
+		return 0;
+
+	if (i < 0 || i > ndns->lbasize.num)
+		return UINT_MAX;
+	else
+		return ndns->lbasize.supported[i];
+}
+
+NDCTL_EXPORT unsigned int ndctl_namespace_get_sector_size(struct ndctl_namespace *ndns)
+{
+	return ndctl_namespace_get_supported_sector_size(ndns, ndns->lbasize.select);
+}
+
+NDCTL_EXPORT int ndctl_namespace_get_num_sector_sizes(struct ndctl_namespace *ndns)
+{
+	return ndns->lbasize.num;
+}
+
+NDCTL_EXPORT int ndctl_namespace_set_sector_size(struct ndctl_namespace *ndns,
+		unsigned int sector_size)
+{
+	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
+	char *path = ndns->ndns_buf;
+	int len = ndns->buf_len;
+	char sector_str[40];
+	int i;
+
+	if (ndns->lbasize.num == 0)
+		return -ENXIO;
+
+	if (snprintf(path, len, "%s/sector_size", ndns->ndns_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_namespace_get_devname(ndns));
+		return -ENXIO;
+	}
+
+	sprintf(sector_str, "%d\n", sector_size);
+	if (sysfs_write_attr(ctx, path, sector_str) != 0)
+		return -ENXIO;
+
+	for (i = 0; i < ndns->lbasize.num; i++)
+		if (ndns->lbasize.supported[i] == sector_size)
+			ndns->lbasize.select = i;
 	return 0;
 }
 

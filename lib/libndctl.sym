@@ -103,6 +103,10 @@ global:
 	ndctl_namespace_set_alt_name;
 	ndctl_namespace_get_size;
 	ndctl_namespace_set_size;
+	ndctl_namespace_get_supported_sector_size;
+	ndctl_namespace_get_sector_size;
+	ndctl_namespace_get_num_sector_sizes;
+	ndctl_namespace_set_sector_size;
 	ndctl_btt_get_first;
 	ndctl_btt_get_next;
 	ndctl_btt_get_ctx;

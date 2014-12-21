@@ -242,6 +242,12 @@ int ndctl_namespace_set_alt_name(struct ndctl_namespace *ndns,
 unsigned long long ndctl_namespace_get_size(struct ndctl_namespace *ndns);
 int ndctl_namespace_set_size(struct ndctl_namespace *ndns,
 		unsigned long long size);
+unsigned int ndctl_namespace_get_supported_sector_size(
+		struct ndctl_namespace *ndns, int i);
+unsigned int ndctl_namespace_get_sector_size(struct ndctl_namespace *ndns);
+int ndctl_namespace_get_num_sector_sizes(struct ndctl_namespace *ndns);
+int ndctl_namespace_set_sector_size(struct ndctl_namespace *ndns,
+		unsigned int sector_size);
 
 struct ndctl_btt;
 struct ndctl_btt *ndctl_btt_get_first(struct ndctl_bus *bus);
