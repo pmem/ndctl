@@ -2425,16 +2425,11 @@ static int add_btt(void *parent, int id, const char *btt_base)
 		goto err_read;
 
 	free(path);
-	if (ndctl_btt_is_enabled(btt) || ndctl_btt_is_configured(btt)) {
-		free_btt(btt, BTT_SKIP_DELETE);
-		return 1;
-	}
-	ndctl_btt_foreach(bus, btt_dup) {
-		if (ndctl_btt_is_configured(btt_dup))
-			continue;
-		if (btt_dup->id == btt->id)
+	ndctl_btt_foreach(bus, btt_dup)
+		if (btt->id == btt_dup->id) {
+			free_btt(btt, BTT_SKIP_DELETE);
 			return 1;
-	}
+		}
 
 	list_add(&bus->btts, &btt->list);
 	return 0;
