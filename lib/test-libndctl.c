@@ -468,17 +468,15 @@ static int check_btt_create(struct ndctl_bus *bus, struct ndctl_namespace *ndns,
 	sprintf(bdevpath, "/dev/%s", ndctl_btt_get_block_device(btt));
 	devname = ndctl_btt_get_devname(btt);
 	rc = -ENXIO;
-	do {
-		fd = open(bdevpath, O_RDWR|O_DIRECT);
-		if (fd < 0) {
-			fprintf(stderr, "%s: failed to open %s\n",
-					devname, bdevpath);
-			break;
-		}
+	fd = open(bdevpath, O_RDWR|O_DIRECT);
+	if (fd < 0)
+		fprintf(stderr, "%s: failed to open %s\n",
+				devname, bdevpath);
+
+	while (fd >= 0) {
 		if (read(fd, buf, 4096) < 4096) {
 			/* TODO: track down how this happens! */
 			if (errno == ENOENT && retry--) {
-				close(fd);
 				usleep(5000);
 				continue;
 			}
@@ -494,7 +492,7 @@ static int check_btt_create(struct ndctl_bus *bus, struct ndctl_namespace *ndns,
 		}
 		rc = 0;
 		break;
-	} while (1);
+	}
 	if (fd >= 0)
 		close(fd);
 	free(buf);
