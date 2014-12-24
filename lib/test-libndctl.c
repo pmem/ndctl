@@ -96,7 +96,11 @@ static const char *NFIT_TEST_MODULE = "nfit_test";
 static const char *NFIT_PROVIDER0 = "nfit_test.0";
 static const char *NFIT_PROVIDER1 = "nfit_test.1";
 #define SZ_128K 0x00020000
+#define SZ_8M   0x00800000
+#define SZ_12M  0x00c00000
 #define SZ_16M  0x01000000
+#define SZ_20M  0x01400000
+#define SZ_28M  0x01c00000
 #define SZ_32M  0x02000000
 #define SZ_64M  0x04000000
 
@@ -149,40 +153,95 @@ static struct btt btt_settings = {
 };
 
 struct namespace {
-	int id;
+	unsigned int id;
 	char *type;
 	struct btt *btt_settings;
 	unsigned long long size;
 	uuid_t uuid;
 	int do_configure;
 	int check_alt_name;
+	unsigned long lbasize;
 };
+
+static uuid_t null_uuid;
 
 static struct namespace namespace0_pmem0 = {
 	0, "namespace_pmem", &btt_settings, SZ_16M,
 	{ 1, 1, 1, 1,
 	  1, 1, 1, 1,
 	  1, 1, 1, 1,
-	  1, 1, 1, 1, }, 1, 1,
+	  1, 1, 1, 1, }, 1, 1, 0,
 };
 
-static struct namespace namespace0_pmem1 = {
-	0, "namespace_pmem", &btt_settings, SZ_32M,
+static struct namespace namespace1_pmem0 = {
+	0, "namespace_pmem", &btt_settings, SZ_16M,
 	{ 2, 2, 2, 2,
 	  2, 2, 2, 2,
 	  2, 2, 2, 2,
-	  2, 2, 2, 2, }, 1, 1,
+	  2, 2, 2, 2, }, 1, 1, 0,
+};
+
+static struct namespace namespace2_blk0 = {
+	0, "namespace_block", NULL, SZ_8M,
+	{ 3, 3, 3, 3,
+	  3, 3, 3, 3,
+	  3, 3, 3, 3,
+	  3, 3, 3, 3, }, 1, 1, 512,
+};
+
+static struct namespace namespace2_blk1 = {
+	1, "namespace_block", NULL, SZ_12M,
+	{ 4, 4, 4, 4,
+	  4, 4, 4, 4,
+	  4, 4, 4, 4,
+	  4, 4, 4, 4, }, 1, 1, 512,
+};
+
+static struct namespace namespace3_blk0 = {
+	0, "namespace_block", NULL, SZ_8M,
+	{ 5, 5, 5, 5,
+	  5, 5, 5, 5,
+	  5, 5, 5, 5,
+	  5, 5, 5, 5, }, 1, 1, 512,
+};
+
+static struct namespace namespace3_blk1 = {
+	1, "namespace_block", NULL, SZ_12M,
+	{ 6, 6, 6, 6,
+	  6, 6, 6, 6,
+	  6, 6, 6, 6,
+	  6, 6, 6, 6, }, 1, 1, 512,
+};
+
+static struct namespace namespace4_blk0 = {
+	0, "namespace_block", NULL, SZ_28M,
+	{ 7, 7, 7, 7,
+	  7, 7, 7, 7,
+	  7, 7, 7, 7,
+	  7, 7, 7, 7, }, 1, 1, 512,
+};
+
+static struct namespace namespace5_blk0 = {
+	0, "namespace_block", NULL, SZ_28M,
+	{ 8, 8, 8, 8,
+	  8, 8, 8, 8,
+	  8, 8, 8, 8,
+	  8, 8, 8, 8, }, 1, 1, 512,
 };
 
 static struct region regions0[] = {
 	{ { 1 }, 2, 1, "pmem", SZ_32M, { 1 },
 		{ &namespace0_pmem0, NULL, }, },
 	{ { 2 }, 4, 1, "pmem", SZ_64M, { 1 },
-		{ &namespace0_pmem1, NULL, }, },
-	{ { DIMM_HANDLE(0, 0, 0, 0, 0) }, 1, 0, "block", 0, },
-	{ { DIMM_HANDLE(0, 0, 0, 0, 1) }, 1, 0, "block", 0, },
-	{ { DIMM_HANDLE(0, 0, 1, 0, 0) }, 1, 0, "block", 0, },
-	{ { DIMM_HANDLE(0, 0, 1, 0, 1) }, 1, 0, "block", 0, },
+		{ &namespace1_pmem0, NULL, }, },
+	{ { DIMM_HANDLE(0, 0, 0, 0, 0) }, 1, 1, "block", SZ_20M, { },
+		{ &namespace2_blk0, &namespace2_blk1, NULL, }, },
+	{ { DIMM_HANDLE(0, 0, 0, 0, 1) }, 1, 1, "block", SZ_20M, { },
+		{ &namespace3_blk0, &namespace3_blk1, NULL, }, },
+	{ { DIMM_HANDLE(0, 0, 1, 0, 0) }, 1, 1, "block", SZ_28M, { },
+		{ &namespace4_blk0, NULL, }, },
+	{ { DIMM_HANDLE(0, 0, 1, 0, 1) }, 1, 1, "block", SZ_28M, { },
+		{ &namespace5_blk0, NULL, }, },
 };
 
 static struct namespace namespace1 = {
@@ -244,12 +303,24 @@ static struct ndctl_btt *get_idle_btt(struct ndctl_bus *bus)
 }
 
 static struct ndctl_namespace *get_namespace_by_id(struct ndctl_region *region,
-		unsigned int id)
+		struct namespace *namespace)
 {
 	struct ndctl_namespace *ndns;
 
+	if (memcmp(namespace->uuid, null_uuid, sizeof(uuid_t)) != 0)
+		ndctl_namespace_foreach(region, ndns) {
+			uuid_t ndns_uuid;
+			int cmp;
+
+			ndctl_namespace_get_uuid(ndns, ndns_uuid);
+			cmp = memcmp(ndns_uuid, namespace->uuid, sizeof(uuid_t));
+			if (cmp == 0)
+				return ndns;
+		}
+
+	/* fall back to nominal id if uuid is not configured yet */
 	ndctl_namespace_foreach(region, ndns)
-		if (ndctl_namespace_get_id(ndns) == id)
+		if (ndctl_namespace_get_id(ndns) == namespace->id)
 			return ndns;
 
 	return NULL;
@@ -457,6 +528,12 @@ static int configure_namespace(struct ndctl_region *region,
 	rc = ndctl_namespace_set_size(ndns, namespace->size);
 	if (rc)
 		fprintf(stderr, "%s: set_size failed: %d\n", devname, rc);
+
+	if (namespace->lbasize)
+		rc = ndctl_namespace_set_sector_size(ndns, namespace->lbasize);
+	if (rc)
+		fprintf(stderr, "%s: set_sector_size failed: %d\n", devname, rc);
+
 	rc = ndctl_namespace_is_configured(ndns);
 	if (rc < 1)
 		fprintf(stderr, "%s: is_configured: %d\n", devname, rc);
@@ -472,8 +549,8 @@ static int check_namespaces(struct ndctl_region *region,
 		struct namespace **namespaces)
 {
 	struct ndctl_bus *bus = ndctl_region_get_bus(region);
-	struct namespace *namespace, **iter;
 	struct ndctl_namespace **ndns_save;
+	struct namespace *namespace;
 	int i, rc, retry_cnt = 1;
 	void *buf = NULL;
 	char devname[50];
@@ -486,7 +563,7 @@ static int check_namespaces(struct ndctl_region *region,
 
 retry:
 	ndns_save = NULL;
-	for (i = 0, iter = namespaces; (namespace = *iter); iter++, i++) {
+	for (i = 0; (namespace = namespaces[i]); i++) {
 		struct ndctl_namespace *ndns;
 		char bdevpath[50];
 		uuid_t uu;
@@ -494,7 +571,7 @@ retry:
 
 		snprintf(devname, sizeof(devname), "namespace%d.%d",
 				ndctl_region_get_id(region), namespace->id);
-		ndns = get_namespace_by_id(region, namespace->id);
+		ndns = get_namespace_by_id(region, namespace);
 		if (!ndns) {
 			fprintf(stderr, "%s: failed to find namespace\n",
 					devname);
@@ -551,6 +628,9 @@ retry:
 			break;
 		}
 
+		if (!namespace->btt_settings)
+			goto skip_io;
+
 		sprintf(bdevpath, "/dev/%s", ndctl_namespace_get_block_device(ndns));
 		fd = open(bdevpath, O_RDWR|O_DIRECT);
 		if (fd < 0) {
@@ -577,6 +657,7 @@ retry:
 			break;
 		}
 
+ skip_io:
 		if (ndctl_namespace_disable(ndns) < 0) {
 			fprintf(stderr, "%s: failed to disable\n", devname);
 			break;
