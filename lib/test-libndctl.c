@@ -448,16 +448,15 @@ static int configure_namespace(struct ndctl_region *region,
 		return -ENXIO;
 	}
 
+	rc = ndctl_namespace_set_uuid(ndns, namespace->uuid);
+	if (rc)
+		fprintf(stderr, "%s: set_uuid failed: %d\n", devname, rc);
 	rc = ndctl_namespace_set_alt_name(ndns, devname);
 	if (rc)
 		fprintf(stderr, "%s: set_alt_name failed: %d\n", devname, rc);
 	rc = ndctl_namespace_set_size(ndns, namespace->size);
 	if (rc)
 		fprintf(stderr, "%s: set_size failed: %d\n", devname, rc);
-	ndctl_namespace_set_uuid(ndns, namespace->uuid);
-	if (rc)
-		fprintf(stderr, "%s: set_uuid failed: %d\n", devname, rc);
-
 	rc = ndctl_namespace_is_configured(ndns);
 	if (rc < 1)
 		fprintf(stderr, "%s: is_configured: %d\n", devname, rc);
