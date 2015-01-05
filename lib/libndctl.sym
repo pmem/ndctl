@@ -90,6 +90,7 @@ global:
 	ndctl_namespace_get_id;
 	ndctl_namespace_get_devname;
 	ndctl_namespace_get_block_device;
+	ndctl_region_get_nstype;
 	ndctl_namespace_get_type;
 	ndctl_namespace_get_type_name;
 	ndctl_namespace_is_enabled;
