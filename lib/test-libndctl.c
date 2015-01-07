@@ -795,103 +795,175 @@ static int check_btts(struct ndctl_bus *bus, struct btt *btts, int n)
 	return 0;
 }
 
-static int check_get_config_size(struct ndctl_dimm *dimm, struct ndctl_cmd **cmd)
+struct check_cmd {
+	int (*check_fn)(struct ndctl_dimm *dimm, struct check_cmd *check);
+	struct ndctl_cmd *cmd;
+};
+
+static struct check_cmd *check_cmds;
+
+static int check_get_config_size(struct ndctl_dimm *dimm, struct check_cmd *check)
 {
-	struct ndctl_cmd *_cmd;
+	struct ndctl_cmd *cmd;
 	int rc;
 
-	if ((*cmd) != NULL) {
+	if (check->cmd != NULL) {
 		fprintf(stderr, "%s: dimm: %#x expected a NULL command, by default\n",
 				__func__, ndctl_dimm_get_handle(dimm));
 		return -ENXIO;
 	}
 
-	_cmd = ndctl_dimm_cmd_new_cfg_size(dimm);
-	if (!_cmd) {
+	cmd = ndctl_dimm_cmd_new_cfg_size(dimm);
+	if (!cmd) {
 		fprintf(stderr, "%s: dimm: %#x failed to create cmd\n",
 				__func__, ndctl_dimm_get_handle(dimm));
 		return -ENOTTY;
 	}
 
-	rc = ndctl_cmd_submit(_cmd);
+	rc = ndctl_cmd_submit(cmd);
 	if (rc) {
 		fprintf(stderr, "%s: dimm: %#x failed to submit cmd: %d\n",
 			__func__, ndctl_dimm_get_handle(dimm), rc);
-		ndctl_cmd_unref(_cmd);
+		ndctl_cmd_unref(cmd);
 		return rc;
 	}
 
-	if (ndctl_cmd_cfg_size_get_size(_cmd) != SZ_128K) {
+	if (ndctl_cmd_cfg_size_get_size(cmd) != SZ_128K) {
 		fprintf(stderr, "%s: dimm: %#x expect size: %d got: %d\n",
 				__func__, ndctl_dimm_get_handle(dimm), SZ_128K,
-				ndctl_cmd_cfg_size_get_size(_cmd));
-		ndctl_cmd_unref(_cmd);
+				ndctl_cmd_cfg_size_get_size(cmd));
+		ndctl_cmd_unref(cmd);
 		return -ENXIO;
 	}
 
-	*cmd = _cmd;
+	check->cmd = cmd;
 	return 0;
 }
 
-static int check_get_config_data(struct ndctl_dimm *dimm, struct ndctl_cmd **cmd)
+static int check_get_config_data(struct ndctl_dimm *dimm, struct check_cmd *check)
 {
-	struct ndctl_cmd *_cmd = ndctl_dimm_cmd_new_cfg_read(*cmd);
+	struct ndctl_cmd *cmd_size = check_cmds[NFIT_CMD_GET_CONFIG_SIZE].cmd;
+	struct ndctl_cmd *cmd = ndctl_dimm_cmd_new_cfg_read(cmd_size);
 	static char buf[SZ_128K];
 	ssize_t rc;
 
-	ndctl_cmd_unref(*cmd);
-	*cmd = NULL;
-	if (!_cmd) {
+	if (!cmd) {
 		fprintf(stderr, "%s: dimm: %#x failed to create cmd\n",
 				__func__, ndctl_dimm_get_handle(dimm));
 		return -ENOTTY;
 	}
 
-	rc = ndctl_cmd_submit(_cmd);
+	rc = ndctl_cmd_submit(cmd);
 	if (rc) {
 		fprintf(stderr, "%s: dimm: %#x failed to submit cmd: %zd\n",
 			__func__, ndctl_dimm_get_handle(dimm), rc);
-		ndctl_cmd_unref(_cmd);
+		ndctl_cmd_unref(cmd);
 		return rc;
 	}
 
-	rc = ndctl_cmd_cfg_read_get_data(_cmd, buf, SZ_128K);
+	rc = ndctl_cmd_cfg_read_get_data(cmd, buf, SZ_128K);
 	if (rc != SZ_128K) {
 		fprintf(stderr, "%s: dimm: %#x expected read %d bytes, got: %zd\n",
 			__func__, ndctl_dimm_get_handle(dimm), SZ_128K, rc);
-		ndctl_cmd_unref(_cmd);
+		ndctl_cmd_unref(cmd);
 		return -ENXIO;
 	}
 
-	*cmd = _cmd;
+	check->cmd = cmd;
 	return 0;
 }
 
-struct check_cmd {
-	int (*check_fn)(struct ndctl_dimm *dimm, struct ndctl_cmd **cmd);
-};
+static int check_set_config_data(struct ndctl_dimm *dimm, struct check_cmd *check)
+{
+	struct ndctl_cmd *cmd_read = check_cmds[NFIT_CMD_GET_CONFIG_DATA].cmd;
+	struct ndctl_cmd *cmd = ndctl_dimm_cmd_new_cfg_write(cmd_read);
+	char buf[20], result[sizeof(buf)];
+	size_t rc;
 
-/*
- * For now, by coincidence, these are indexed in test execution order
- * such that check_get_config_data can assume that check_get_config_size
- * has updated **cmd and check_set_config_data can assume that both
- * check_get_config_size and check_get_config_data have run
- */
-static struct check_cmd check_cmds[] = {
-	[NFIT_CMD_GET_CONFIG_SIZE] = { check_get_config_size },
-	[NFIT_CMD_GET_CONFIG_DATA] = { check_get_config_data },
-	//[NFIT_CMD_SET_CONFIG_DATA] = { check_set_config_data },
-	[NFIT_CMD_SMART_THRESHOLD] = { NULL, },
-};
+	if (!cmd) {
+		fprintf(stderr, "%s: dimm: %#x failed to create cmd\n",
+				__func__, ndctl_dimm_get_handle(dimm));
+		return -ENOTTY;
+	}
+
+	memset(buf, 0, sizeof(buf));
+	ndctl_cmd_cfg_write_set_data(cmd, buf, sizeof(buf));
+	rc = ndctl_cmd_submit(cmd);
+	if (rc) {
+		fprintf(stderr, "%s: dimm: %#x failed to submit cmd: %zd\n",
+			__func__, ndctl_dimm_get_handle(dimm), rc);
+		ndctl_cmd_unref(cmd);
+		return rc;
+	}
+
+	rc = ndctl_cmd_submit(cmd_read);
+	if (rc) {
+		fprintf(stderr, "%s: dimm: %#x failed to submit read1: %zd\n",
+				__func__, ndctl_dimm_get_handle(dimm), rc);
+		ndctl_cmd_unref(cmd);
+		return rc;
+	}
+	ndctl_cmd_cfg_read_get_data(cmd_read, result, sizeof(result));
+	if (memcmp(result, buf, sizeof(result)) != 0) {
+		fprintf(stderr, "%s: dimm: %#x read1 data miscompare: %zd\n",
+				__func__, ndctl_dimm_get_handle(dimm), rc);
+		ndctl_cmd_unref(cmd);
+		return rc;
+	}
+
+	sprintf(buf, "dimm-%#x", ndctl_dimm_get_handle(dimm));
+	ndctl_cmd_cfg_write_set_data(cmd, buf, sizeof(buf));
+	rc = ndctl_cmd_submit(cmd);
+	if (rc) {
+		fprintf(stderr, "%s: dimm: %#x failed to submit cmd: %zd\n",
+			__func__, ndctl_dimm_get_handle(dimm), rc);
+		ndctl_cmd_unref(cmd);
+		return rc;
+	}
+
+	rc = ndctl_cmd_submit(cmd_read);
+	if (rc) {
+		fprintf(stderr, "%s: dimm: %#x failed to submit read2: %zd\n",
+				__func__, ndctl_dimm_get_handle(dimm), rc);
+		ndctl_cmd_unref(cmd);
+		return rc;
+	}
+	ndctl_cmd_cfg_read_get_data(cmd_read, result, sizeof(result));
+	if (memcmp(result, buf, sizeof(result)) != 0) {
+		fprintf(stderr, "%s: dimm: %#x read2 data miscompare: %zd\n",
+				__func__, ndctl_dimm_get_handle(dimm), rc);
+		ndctl_cmd_unref(cmd);
+		return rc;
+	}
+
+	check->cmd = cmd;
+	return 0;
+}
 
 #define BITS_PER_LONG 32
 static int check_commands(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 		unsigned long commands)
 {
-	struct ndctl_cmd *cmd = NULL;
-	int i, rc;
+	/*
+	 * For now, by coincidence, these are indexed in test execution
+	 * order such that check_get_config_data can assume that
+	 * check_get_config_size has updated
+	 * check_cmd[NFIT_CMD_GET_CONFIG_SIZE].cmd and
+	 * check_set_config_data can assume that both
+	 * check_get_config_size and check_get_config_data have run
+	 */
+	static struct check_cmd __check_cmds[] = {
+		[NFIT_CMD_GET_CONFIG_SIZE] = { check_get_config_size },
+		[NFIT_CMD_GET_CONFIG_DATA] = { check_get_config_data },
+		[NFIT_CMD_SET_CONFIG_DATA] = { check_set_config_data },
+		[NFIT_CMD_SMART_THRESHOLD] = { },
+	};
+	unsigned int i, rc;
 
+	check_cmds = __check_cmds;
 	for (i = 0; i < BITS_PER_LONG; i++) {
+		struct check_cmd *check = &check_cmds[i];
+
 		if ((commands & (1UL << i)) == 0)
 			continue;
 		if (!ndctl_bus_is_cmd_supported(bus, i)) {
@@ -902,17 +974,20 @@ static int check_commands(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 			return -ENXIO;
 		}
 
-		if (!check_cmds[i].check_fn)
+		if (!check->check_fn)
 			continue;
-		rc = check_cmds[i].check_fn(dimm, &cmd);
-		if (rc) {
-			if (cmd)
-				ndctl_cmd_unref(cmd);
-			return rc;
-		}
+		rc = check->check_fn(dimm, check);
+		if (rc)
+			break;
 	}
 
-	return 0;
+	for (i = 0; i < ARRAY_SIZE(__check_cmds); i++) {
+		if (__check_cmds[i].cmd)
+			ndctl_cmd_unref(__check_cmds[i].cmd);
+		__check_cmds[i].cmd = NULL;
+	}
+
+	return rc;
 }
 
 static int check_dimms(struct ndctl_bus *bus, struct dimm *dimms, int n,
@@ -946,10 +1021,15 @@ static int check_dimms(struct ndctl_bus *bus, struct dimm *dimms, int n,
 static int do_test0(struct ndctl_ctx *ctx)
 {
 	struct ndctl_bus *bus = get_bus_by_provider(ctx, NFIT_PROVIDER0);
+	struct ndctl_region *region;
 	int rc;
 
 	if (!bus)
 		return -ENXIO;
+
+	/* disable all regions so that set_config_data commands are permitted */
+	ndctl_region_foreach(bus, region)
+		ndctl_region_disable(region, 1);
 
 	rc = check_dimms(bus, dimms0, ARRAY_SIZE(dimms0), commands0);
 	if (rc)
@@ -958,6 +1038,10 @@ static int do_test0(struct ndctl_ctx *ctx)
 	rc = check_btts(bus, btts0, ARRAY_SIZE(btts0));
 	if (rc)
 		return rc;
+
+	/* set regions back to their default state */
+	ndctl_region_foreach(bus, region)
+		ndctl_region_enable(region);
 
 	return check_regions(bus, regions0, ARRAY_SIZE(regions0));
 }
