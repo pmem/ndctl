@@ -1520,9 +1520,10 @@ NDCTL_EXPORT int ndctl_cmd_submit(struct ndctl_cmd *cmd)
 	}
 	close(fd);
  out:
-	dbg(ctx, "bus: %d dimm: %#x cmd: %s status: %d\n", bus->id,
+	dbg(ctx, "bus: %d dimm: %#x cmd: %s status: %d: (%s)\n", bus->id,
 			cmd->dimm ? ndctl_dimm_get_handle(cmd->dimm) : 0,
-			ndctl_bus_get_cmd_name(bus, cmd->type), rc);
+			ndctl_bus_get_cmd_name(bus, cmd->type), rc,
+			rc == -1 ? strerror(errno) : "");
 	cmd->status = rc;
 	return rc;
 }
