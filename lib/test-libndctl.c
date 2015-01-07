@@ -128,6 +128,7 @@ struct region {
 	int enabled;
 	char *type;
 	unsigned long long available_size;
+	unsigned long long size;
 	struct set {
 		int active;
 	} iset;
@@ -230,17 +231,17 @@ static struct namespace namespace5_blk0 = {
 };
 
 static struct region regions0[] = {
-	{ { 1 }, 2, 1, "pmem", SZ_32M, { 1 },
+	{ { 1 }, 2, 1, "pmem", SZ_32M, SZ_32M, { 1 },
 		{ &namespace0_pmem0, NULL, }, },
-	{ { 2 }, 4, 1, "pmem", SZ_64M, { 1 },
+	{ { 2 }, 4, 1, "pmem", SZ_64M, SZ_64M, { 1 },
 		{ &namespace1_pmem0, NULL, }, },
-	{ { DIMM_HANDLE(0, 0, 0, 0, 0) }, 1, 1, "block", SZ_20M, { },
+	{ { DIMM_HANDLE(0, 0, 0, 0, 0) }, 1, 1, "block", SZ_20M, SZ_32M, { },
 		{ &namespace2_blk0, &namespace2_blk1, NULL, }, },
-	{ { DIMM_HANDLE(0, 0, 0, 0, 1) }, 1, 1, "block", SZ_20M, { },
+	{ { DIMM_HANDLE(0, 0, 0, 0, 1) }, 1, 1, "block", SZ_20M, SZ_32M, { },
 		{ &namespace3_blk0, &namespace3_blk1, NULL, }, },
-	{ { DIMM_HANDLE(0, 0, 1, 0, 0) }, 1, 1, "block", SZ_28M, { },
+	{ { DIMM_HANDLE(0, 0, 1, 0, 0) }, 1, 1, "block", SZ_28M, SZ_32M, { },
 		{ &namespace4_blk0, NULL, }, },
-	{ { DIMM_HANDLE(0, 0, 1, 0, 1) }, 1, 1, "block", SZ_28M, { },
+	{ { DIMM_HANDLE(0, 0, 1, 0, 1) }, 1, 1, "block", SZ_28M, SZ_32M, { },
 		{ &namespace5_blk0, NULL, }, },
 };
 
@@ -249,7 +250,7 @@ static struct namespace namespace1 = {
 };
 
 static struct region regions1[] = {
-	{ { 1 }, 0, 1, "pmem", 0,
+	{ { 1 }, 0, 1, "pmem", 0, SZ_32M,
 		.namespaces = {
 			[0] = &namespace1,
 		},
@@ -407,6 +408,13 @@ static int check_regions(struct ndctl_bus *bus, struct region *regions, int n)
 			fprintf(stderr, "%s: expected available_size: %#llx got: %#llx\n",
 					devname, regions[i].available_size,
 					ndctl_region_get_available_size(region));
+			return -ENXIO;
+		}
+
+		if (regions[i].size != ndctl_region_get_size(region)) {
+			fprintf(stderr, "%s: expected size: %#llx got: %#llx\n",
+					devname, regions[i].size,
+					ndctl_region_get_size(region));
 			return -ENXIO;
 		}
 
