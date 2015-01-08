@@ -261,7 +261,7 @@ struct ndctl_btt {
  * Instantiate with ndctl_new(), which takes an initial reference.  Free
  * the context by dropping the reference count to zero with
  * ndctrl_unref(), or take additional references with ndctl_ref()
- * @timeout: default library timeout
+ * @timeout: default library timeout in milliseconds
  */
 struct ndctl_ctx {
 	int refcount;
@@ -404,7 +404,7 @@ NDCTL_EXPORT int ndctl_new(struct ndctl_ctx **ctx)
 	c->log_fn = log_stderr;
 	c->log_priority = LOG_ERR;
 	c->udev = udev;
-	c->timeout = 5;
+	c->timeout = 5000;
 	list_head_init(&c->busses);
 
 	/* environment overwrites config */
@@ -893,7 +893,7 @@ NDCTL_EXPORT int ndctl_bus_wait_probe(struct ndctl_bus *bus)
 	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
 	unsigned long tmo = ctx->timeout;
 	char buf[SYSFS_ATTR_SIZE];
-	int rc;
+	int rc, sleep = 0;
 
 	do {
 		rc = sysfs_read_attr(bus->ctx, bus->wait_probe_path, buf);
@@ -903,9 +903,13 @@ NDCTL_EXPORT int ndctl_bus_wait_probe(struct ndctl_bus *bus)
 			break;
 		if (udev_queue_get_queue_is_empty(ctx->udev_queue))
 			break;
-		dbg(ctx, "waiting for bus%d...\n", ndctl_bus_get_id(bus));
-		sleep(1);
+		sleep++;
+		usleep(1000);
 	} while (ctx->timeout == 0 || tmo-- != 0);
+
+	if (sleep)
+		dbg(ctx, "waited %d millisecond%s for bus%d...\n", sleep,
+				sleep == 1 ? "" : "s", ndctl_bus_get_id(bus));
 
 	return rc < 0 ? -ENXIO : 0;
 }
