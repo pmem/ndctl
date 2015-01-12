@@ -966,11 +966,12 @@ static int check_commands(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 
 		if ((commands & (1UL << i)) == 0)
 			continue;
-		if (!ndctl_bus_is_cmd_supported(bus, i)) {
-			fprintf(stderr, "%s: bus: %s expected cmd: %d (%s) supported\n",
+		if (!ndctl_dimm_is_cmd_supported(dimm, i)) {
+			fprintf(stderr, "%s: bus: %s dimm%d expected cmd: %s supported\n",
 					__func__,
-					ndctl_bus_get_provider(bus), i,
-					ndctl_bus_get_cmd_name(bus, i));
+					ndctl_bus_get_provider(bus),
+					ndctl_dimm_get_id(dimm),
+					ndctl_dimm_get_cmd_name(dimm, i));
 			return -ENXIO;
 		}
 

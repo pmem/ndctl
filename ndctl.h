@@ -16,20 +16,17 @@
 #include <linux/types.h>
 
 struct nfit_cmd_smart {
-	__u32 nfit_handle;
 	__u32 status;
 	__u8 data[8];
 } __attribute__((packed));
 
 struct nfit_cmd_get_config_size {
-	__u32 nfit_handle;
 	__u32 status;
 	__u32 config_size;
 	__u32 optimal_io_size;
 } __attribute__((packed));
 
 struct nfit_cmd_get_config_data_hdr {
-	__u32 nfit_handle;
 	__u32 in_offset;
 	__u32 in_length;
 	__u32 status;
@@ -37,14 +34,12 @@ struct nfit_cmd_get_config_data_hdr {
 } __attribute__((packed));
 
 struct nfit_cmd_set_config_hdr {
-	__u32 nfit_handle;
 	__u32 in_offset;
 	__u32 in_length;
 	__u8 in_buf[0];
 } __attribute__((packed));
 
 struct nfit_cmd_vendor_hdr {
-	__u32 nfit_handle;
 	__u32 in_length;
 	__u8 in_buf[0];
 } __attribute__((packed));
@@ -84,12 +79,10 @@ struct nfit_cmd_ars_query {
 } __attribute__((packed));
 
 struct nfit_cmd_arm {
-	__u32 nfit_handle;
 	__u32 status;
 } __attribute__((packed));
 
 struct nfit_cmd_smart_threshold {
-	__u32 nfit_handle;
 	__u32 status;
 	__u8 data[8];
 } __attribute__((packed));
@@ -180,6 +173,6 @@ enum nd_driver_flags {
 };
 
 enum {
-	ND_MIN_NAMESPACE_SIZE = 0x01000000,
+	ND_MIN_NAMESPACE_SIZE = 0x00400000,
 };
 #endif /* __NDCTL_H__ */
