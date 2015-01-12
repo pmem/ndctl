@@ -1,5 +1,5 @@
 /*
- * NVDIMM Firmware Interface Table (v0.8s8)
+ * NVDIMM Firmware Interface Table - NFIT
  *
  * Copyright(c) 2013-2014 Intel Corporation. All rights reserved.
  *
@@ -14,12 +14,18 @@
  */
 #ifndef __NFIT_H__
 #define __NFIT_H__
-
 #include <stdint.h>
+#include <linux/uuid.h>
+
+static inline void nfit_spa_uuid_pm(void *uuid)
+{
+	uuid_le uuid_pm = UUID_LE(0x66f0d379, 0xb4f3, 0x4074, 0xac, 0x43, 0x0d,
+			0x33, 0x18, 0xb7, 0x8c, 0xdb);
+	memcpy(uuid, &uuid_pm, 16);
+}
 
 enum {
 	NFIT_TABLE_SPA = 0,
-	NFIT_SPA_PM = 1,
 };
 
 /**
@@ -42,16 +48,15 @@ struct nfit {
 
 /**
  * struct nfit_spa - System Physical Address Range Descriptor Table
- * @spa_type: NFIT_SPA_*
  */
 struct nfit_spa {
 	uint16_t type;
 	uint16_t length;
-	uint16_t spa_type;
 	uint16_t spa_index;
 	uint16_t flags;
-	uint16_t reserved;
+	uint32_t reserved;
 	uint32_t proximity_domain;
+	uint8_t type_uuid[16];
 	uint64_t spa_base;
 	uint64_t spa_length;
 	uint64_t mem_attr;

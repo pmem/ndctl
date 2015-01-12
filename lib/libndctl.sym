@@ -36,6 +36,11 @@ global:
 	ndctl_dimm_get_device;
 	ndctl_dimm_get_revision;
 	ndctl_dimm_get_format;
+	ndctl_dimm_get_major;
+	ndctl_dimm_get_minor;
+	ndctl_dimm_get_id;
+	ndctl_dimm_get_cmd_name;
+	ndctl_dimm_is_cmd_supported;
 	ndctl_dimm_handle_get_node;
 	ndctl_dimm_handle_get_socket;
 	ndctl_dimm_handle_get_imc;

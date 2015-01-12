@@ -104,7 +104,9 @@ struct ndctl_bus {
 
 /**
  * struct ndctl_dimm - memory device as identified by NFIT
- * @handle: NFIT-handle value to be used for ioctl calls
+ * @handle: NFIT-handle value
+ * @major: /dev/nvdimmX major character device number
+ * @minor: /dev/nvdimmX minor character device number
  * @phys_id: SMBIOS physical id
  * @vendor_id: hardware component vendor
  * @device_id: hardware device id
@@ -118,12 +120,13 @@ struct ndctl_bus {
  */
 struct ndctl_dimm {
 	struct ndctl_bus *bus;
-	unsigned int handle;
+	unsigned int handle, major, minor;
 	unsigned short phys_id;
 	unsigned short vendor_id;
 	unsigned short device_id;
 	unsigned short revision_id;
 	unsigned short format_id;
+	unsigned long dsm_mask;
 	int id;
 	struct list_node list;
 };
@@ -256,7 +259,7 @@ struct ndctl_btt {
 };
 
 /**
- * struct ndctl_ctx - library user context to find "nd_bus" instances
+ * struct ndctl_ctx - library user context to find "nd" instances
  *
  * Instantiate with ndctl_new(), which takes an initial reference.  Free
  * the context by dropping the reference count to zero with
@@ -715,6 +718,24 @@ static int to_dsm_index(const char *name)
 	return 0;
 }
 
+static unsigned long parse_commands(char *commands)
+{
+	unsigned long dsm_mask = 0;
+	char *start, *end;
+
+	start = commands;
+	while ((end = strchr(start, ' '))) {
+		int cmd;
+
+		*end = '\0';
+		cmd = to_dsm_index(start);
+		if (cmd)
+			dsm_mask |= 1 << cmd;
+		start = end + 1;
+	}
+	return dsm_mask;
+}
+
 static int add_bus(void *parent, int id, const char *ctl_base)
 {
 	int rc = -ENOMEM;
@@ -722,7 +743,6 @@ static int add_bus(void *parent, int id, const char *ctl_base)
 	char buf[SYSFS_ATTR_SIZE];
 	struct ndctl_ctx *ctx = parent;
 	char *path = calloc(1, strlen(ctl_base) + 20);
-	char *start, *end;
 
 	if (!path)
 		return -ENOMEM;
@@ -745,16 +765,7 @@ static int add_bus(void *parent, int id, const char *ctl_base)
 	sprintf(path, "%s/commands", ctl_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		goto err_read;
-	start = buf;
-	while ((end = strchr(start, ' '))) {
-		int cmd;
-
-		*end = '\0';
-		cmd = to_dsm_index(start);
-		if (cmd)
-			bus->dsm_mask |= 1 << cmd;
-		start = end + 1;
-	}
+	bus->dsm_mask = parse_commands(buf);
 
 	sprintf(path, "%s/revision", ctl_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
@@ -800,7 +811,7 @@ static void busses_init(struct ndctl_ctx *ctx)
 		return;
 	ctx->busses_init = 1;
 
-	device_parse(ctx, "/sys/class/nd_bus", "ndctl", ctx, add_bus);
+	device_parse(ctx, "/sys/class/nd", "ndctl", ctx, add_bus);
 }
 
 /**
@@ -933,6 +944,13 @@ static int add_dimm(void *parent, int id, const char *dimm_base)
 	dimm->id = id;
 
 	rc = -ENXIO;
+
+	sprintf(path, "%s/dev", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		goto err_read;
+	if (sscanf(buf, "%d:%d", &dimm->major, &dimm->minor) != 2)
+		goto err_read;
+
 	sprintf(path, "%s/handle", dimm_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		goto err_read;
@@ -948,6 +966,11 @@ static int add_dimm(void *parent, int id, const char *dimm_base)
 		dimm->vendor_id = -1;
 	else
 		dimm->vendor_id = strtoul(buf, NULL, 0);
+
+	sprintf(path, "%s/commands", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		goto err_read;
+	dimm->dsm_mask = parse_commands(buf);
 
 	sprintf(path, "%s/device", dimm_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
@@ -985,7 +1008,7 @@ static void dimms_init(struct ndctl_bus *bus)
 		return;
 	bus->dimms_init = 1;
 
-	device_parse(bus->ctx, bus->bus_path, "dimm", bus, add_dimm);
+	device_parse(bus->ctx, bus->bus_path, "nvdimm", bus, add_dimm);
 }
 
 NDCTL_EXPORT struct ndctl_dimm *ndctl_dimm_get_first(struct ndctl_bus *bus)
@@ -1030,6 +1053,32 @@ NDCTL_EXPORT unsigned short ndctl_dimm_get_revision(struct ndctl_dimm *dimm)
 NDCTL_EXPORT unsigned short ndctl_dimm_get_format(struct ndctl_dimm *dimm)
 {
 	return dimm->format_id;
+}
+
+NDCTL_EXPORT unsigned int ndctl_dimm_get_major(struct ndctl_dimm *dimm)
+{
+	return dimm->major;
+}
+
+NDCTL_EXPORT unsigned int ndctl_dimm_get_minor(struct ndctl_dimm *dimm)
+{
+	return dimm->minor;
+}
+
+NDCTL_EXPORT unsigned int ndctl_dimm_get_id(struct ndctl_dimm *dimm)
+{
+	return dimm->id;
+}
+
+NDCTL_EXPORT const char *ndctl_dimm_get_cmd_name(struct ndctl_dimm *dimm, int cmd)
+{
+	return nfit_cmd_name(cmd);
+}
+
+NDCTL_EXPORT int ndctl_dimm_is_cmd_supported(struct ndctl_dimm *dimm,
+		int cmd)
+{
+	return !!(dimm->dsm_mask & (1ULL << cmd));
 }
 
 NDCTL_EXPORT unsigned int ndctl_dimm_handle_get_node(struct ndctl_dimm *dimm)
@@ -1319,7 +1368,7 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_size(struct ndctl_dimm *di
 	struct ndctl_cmd *cmd;
 	size_t size;
 
-	if (!ndctl_bus_is_cmd_supported(bus, NFIT_CMD_GET_CONFIG_SIZE)) {
+	if (!ndctl_dimm_is_cmd_supported(dimm, NFIT_CMD_GET_CONFIG_SIZE)) {
 		dbg(ctx, "unsupported cmd\n");
 		return NULL;
 	}
@@ -1334,7 +1383,6 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_size(struct ndctl_dimm *di
 	cmd->type = NFIT_CMD_GET_CONFIG_SIZE;
 	cmd->size = size;
 	cmd->status = 1;
-	cmd->get_size->nfit_handle = ndctl_dimm_get_handle(dimm);
 
 	return cmd;
 }
@@ -1349,9 +1397,15 @@ static struct ndctl_bus *cmd_to_bus(struct ndctl_cmd *cmd)
 NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_read(struct ndctl_cmd *cfg_size)
 {
 	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(cmd_to_bus(cfg_size));
-	struct ndctl_cmd *cmd;
+	struct ndctl_dimm *dimm = cfg_size->dimm;
 	unsigned int config_size;
+	struct ndctl_cmd *cmd;
 	size_t size;
+
+	if (!ndctl_dimm_is_cmd_supported(dimm, NFIT_CMD_GET_CONFIG_DATA)) {
+		dbg(ctx, "unsupported cmd\n");
+		return NULL;
+	}
 
 	if (cfg_size->type != NFIT_CMD_GET_CONFIG_SIZE
 			|| cfg_size->status != 0) {
@@ -1375,7 +1429,6 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_read(struct ndctl_cmd *cfg
 	cmd->type = NFIT_CMD_GET_CONFIG_DATA;
 	cmd->size = size;
 	cmd->status = 1;
-	cmd->get_data->nfit_handle = ndctl_dimm_get_handle(cmd->dimm);
 	cmd->get_data->in_offset = 0;
 	cmd->get_data->in_length = config_size;
 
@@ -1385,9 +1438,15 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_read(struct ndctl_cmd *cfg
 NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_write(struct ndctl_cmd *cfg_read)
 {
 	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(cmd_to_bus(cfg_read));
-	struct ndctl_cmd *cmd;
+	struct ndctl_dimm *dimm = cfg_read->dimm;
 	unsigned int config_size;
+	struct ndctl_cmd *cmd;
 	size_t size;
+
+	if (!ndctl_dimm_is_cmd_supported(dimm, NFIT_CMD_SET_CONFIG_DATA)) {
+		dbg(ctx, "unsupported cmd\n");
+		return NULL;
+	}
 
 	/* enforce rmw */
 	if (cfg_read->type != NFIT_CMD_GET_CONFIG_DATA
@@ -1413,7 +1472,6 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_write(struct ndctl_cmd *cf
 	cmd->type = NFIT_CMD_SET_CONFIG_DATA;
 	cmd->size = size;
 	cmd->status = 1;
-	cmd->set_data->nfit_handle = ndctl_dimm_get_handle(cmd->dimm);
 	cmd->set_data->in_offset = 0;
 	cmd->set_data->in_length = config_size;
 	memcpy(cmd->set_data->in_buf, cfg_read->get_data->out_buf, config_size);
@@ -1489,8 +1547,9 @@ static int to_ioctl_cmd(int cmd)
 
 NDCTL_EXPORT int ndctl_cmd_submit(struct ndctl_cmd *cmd)
 {
-	char path[20];
 	struct stat st;
+	char path[20], *prefix;
+	unsigned int major, minor, id;
 	int rc = 0, fd, len = sizeof(path);
 	int ioctl_cmd = to_ioctl_cmd(cmd->type);
 	struct ndctl_bus *bus = cmd_to_bus(cmd);
@@ -1501,7 +1560,19 @@ NDCTL_EXPORT int ndctl_cmd_submit(struct ndctl_cmd *cmd)
 		goto out;
 	}
 
-	if (snprintf(path, len, "/dev/ndctl%u", bus->id) >= len) {
+	if (cmd->dimm) {
+		prefix = "nvdimm";
+		id = ndctl_dimm_get_id(cmd->dimm);
+		major = ndctl_dimm_get_major(cmd->dimm);
+		minor = ndctl_dimm_get_minor(cmd->dimm);
+	} else {
+		prefix = "ndctl";
+		id = ndctl_bus_get_id(cmd->bus);
+		major = ndctl_bus_get_major(cmd->bus);
+		minor = ndctl_bus_get_minor(cmd->bus);
+	}
+
+	if (snprintf(path, len, "/dev/%s%u", prefix, id) >= len) {
 		rc = -EINVAL;
 		goto out;
 	}
@@ -1514,12 +1585,11 @@ NDCTL_EXPORT int ndctl_cmd_submit(struct ndctl_cmd *cmd)
 	}
 
 	if (fstat(fd, &st) >= 0 && S_ISCHR(st.st_mode)
-			&& major(st.st_rdev) == bus->major
-			&& minor(st.st_rdev) == bus->minor) {
+			&& major(st.st_rdev) == major
+			&& minor(st.st_rdev) == minor) {
 		rc = ioctl(fd, ioctl_cmd, cmd->cmd_buf);
 	} else {
-		err(ctx, "failed to validate %s as a control node for bus%d\n",
-				path, bus->id);
+		err(ctx, "failed to validate %s as a control node\n", path);
 		rc = -ENXIO;
 	}
 	close(fd);
