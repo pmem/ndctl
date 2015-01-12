@@ -120,7 +120,7 @@ struct ndctl_bus {
  */
 struct ndctl_dimm {
 	struct ndctl_bus *bus;
-	unsigned int handle, major, minor;
+	unsigned int handle, major, minor, serial;
 	unsigned short phys_id;
 	unsigned short vendor_id;
 	unsigned short device_id;
@@ -972,6 +972,12 @@ static int add_dimm(void *parent, int id, const char *dimm_base)
 		goto err_read;
 	dimm->dsm_mask = parse_commands(buf);
 
+	sprintf(path, "%s/serial", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		dimm->serial = -1;
+	else
+		dimm->serial = strtoul(buf, NULL, 0);
+
 	sprintf(path, "%s/device", dimm_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		dimm->device_id = -1;
@@ -1068,6 +1074,11 @@ NDCTL_EXPORT unsigned int ndctl_dimm_get_minor(struct ndctl_dimm *dimm)
 NDCTL_EXPORT unsigned int ndctl_dimm_get_id(struct ndctl_dimm *dimm)
 {
 	return dimm->id;
+}
+
+NDCTL_EXPORT unsigned int ndctl_dimm_get_serial(struct ndctl_dimm *dimm)
+{
+	return dimm->serial;
 }
 
 NDCTL_EXPORT const char *ndctl_dimm_get_cmd_name(struct ndctl_dimm *dimm, int cmd)

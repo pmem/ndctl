@@ -122,6 +122,7 @@ unsigned short ndctl_dimm_get_format(struct ndctl_dimm *dimm);
 unsigned int ndctl_dimm_get_major(struct ndctl_dimm *dimm);
 unsigned int ndctl_dimm_get_minor(struct ndctl_dimm *dimm);
 unsigned int ndctl_dimm_get_id(struct ndctl_dimm *dimm);
+unsigned int ndctl_dimm_get_serial(struct ndctl_dimm *dimm);
 const char *ndctl_dimm_get_cmd_name(struct ndctl_dimm *dimm, int cmd);
 int ndctl_dimm_is_cmd_supported(struct ndctl_dimm *dimm, int cmd);
 unsigned int ndctl_dimm_handle_get_node(struct ndctl_dimm *dimm);
