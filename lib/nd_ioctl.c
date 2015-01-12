@@ -2,7 +2,6 @@
 #include <ccan/array_size/array_size.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <libkmod.h>
 #include <linux/ioctl.h>
 #include <linux/ndctl.h>
 #include <ndctl/libndctl.h>
@@ -19,7 +18,6 @@
 
 #define CR_CMD(NAME, IN_LEN, OUT_LEN)                                         \
 struct NAME {                                                                 \
-	__u32 nfit_handle;                                                    \
 	__u32 in_length;                                                      \
 	struct {                                                              \
 		__u8 data_format_revision;                                    \
@@ -42,7 +40,7 @@ struct NAME {                                                                 \
 	__u8  buffer[IN_LEN];                                                 \
 }
 
-static int write_string(int fd)
+static int write_string(int fd, struct ndctl_dimm *dimm)
 {
 	const int size = 128;
 	FNV_BIOS_INPUT(bios_input, size);
@@ -83,7 +81,7 @@ static int write_string(int fd)
 	return 0;
 }
 
-static int read_string(int fd)
+static int read_string(int fd, struct ndctl_dimm *dimm)
 {
 	const int size = 128;
 	FNV_BIOS_INPUT(bios_input, 0);
@@ -147,7 +145,7 @@ static int read_string(int fd)
 	return 0;
 }
 
-static int read_large_input_payload(int fd)
+static int read_large_input_payload(int fd, struct ndctl_dimm *dimm)
 {
 	const int one_mb = (1<<20) - 1024;
 	FNV_BIOS_INPUT(bios_input, 0);
@@ -177,7 +175,7 @@ static int read_large_input_payload(int fd)
 	return 0;
 }
 
-static int read_large_output_payload(int fd)
+static int read_large_output_payload(int fd, struct ndctl_dimm *dimm)
 {
 	const int one_mb = (1<<20);
 	FNV_BIOS_INPUT(bios_input, 0);
@@ -207,7 +205,7 @@ static int read_large_output_payload(int fd)
 	return 0;
 }
 
-static int write_large_payload(int fd)
+static int write_large_payload(int fd, struct ndctl_dimm *dimm)
 {
 	const int one_mb = (1<<20);
 	FNV_BIOS_INPUT(bios_input, one_mb);
@@ -237,7 +235,7 @@ static int write_large_payload(int fd)
 	return 0;
 }
 
-static int send_get_payload_size(int fd)
+static int send_get_payload_size(int fd, struct ndctl_dimm *dimm)
 {
 	CR_CMD(get_payload_size, 0, sizeof(struct fnv_bios_get_size));
 	struct get_payload_size cmd;
@@ -274,7 +272,7 @@ static int send_get_payload_size(int fd)
 	return 0;
 }
 
-static int send_bad_opcode(int fd)
+static int send_bad_opcode(int fd, struct ndctl_dimm *dimm)
 {
 	CR_CMD(identify_dimm_cmd, 0, 128);
 	struct identify_dimm_cmd cmd;
@@ -302,7 +300,7 @@ static int send_bad_opcode(int fd)
 	return 0;
 }
 
-static int send_too_large(int fd)
+static int send_too_large(int fd, struct ndctl_dimm *dimm)
 {
 	CR_CMD(double_payload_cmd, 0, 256); // meant to cause an error
 	struct double_payload_cmd cmd;
@@ -328,7 +326,7 @@ static int send_too_large(int fd)
 	return 0;
 }
 
-static int send_id_dimm(int fd)
+static int send_id_dimm(int fd, struct ndctl_dimm *dimm)
 {
 	CR_CMD(identify_dimm_cmd, 0, 128);
 	struct identify_dimm_cmd cmd;
@@ -365,17 +363,8 @@ static int send_id_dimm(int fd)
 	return 0;
 }
 
-static struct ndctl_bus *get_acpi_nfit_bus(struct ndctl_ctx *ctx)
-{
-	struct ndctl_bus *bus;
-
-        ndctl_bus_foreach(ctx, bus)
-		if (strcmp("ACPI.NFIT", ndctl_bus_get_provider(bus)) == 0)
-			return bus;
-	return NULL;
-}
-
-typedef int (*do_test_fn)(int fd);
+/* FIXME kill the fd parameter, and use the library helpers */
+typedef int (*do_test_fn)(int fd, struct ndctl_dimm *dimm);
 static do_test_fn do_test[] = {
 	send_id_dimm,
 	send_bad_opcode,
@@ -388,15 +377,54 @@ static do_test_fn do_test[] = {
 	read_string,
 };
 
+static int test_bus(struct ndctl_bus *bus)
+{
+	int fd;
+	char path[50];
+	unsigned int i;
+	struct ndctl_dimm *dimm = ndctl_dimm_get_first(bus);
+
+	if (!dimm) {
+		fprintf(stderr, "failed to find a dimm, skipping bus: %s\n",
+				ndctl_bus_get_provider(bus));
+		return 0;
+	}
+
+	if (!ndctl_dimm_is_cmd_supported(dimm, NFIT_CMD_VENDOR)) {
+		fprintf(stderr, "NFIT_CMD_VENDOR not supported, skipping bus: %s\n",
+				ndctl_bus_get_provider(bus));
+		return 0;
+	}
+
+	sprintf(path, "/dev/nvdimm%d", ndctl_dimm_get_id(dimm));
+	fd = open(path, O_RDWR);
+	if (fd < 0) {
+		fprintf(stderr, "failed to open %s\n", path);
+		return -ENXIO;
+	}
+
+	for (i = 0; i < ARRAY_SIZE(do_test); i++) {
+		int err = do_test[i](fd, dimm);
+
+		if (err < 0) {
+			fprintf(stderr, "ND IOCTL test %d failed: %d\n", i, err);
+			break;
+		}
+	}
+
+	close(fd);
+
+	if (i >= ARRAY_SIZE(do_test))
+		return 0;
+	return -ENXIO;
+}
+
 int main(int argc, char *argv[])
 {
-	int rc = -ENXIO, fd, err;
-	unsigned int i;
+	int rc = -ENXIO;
 	struct ndctl_ctx *ctx;
 	struct ndctl_bus *bus;
-	struct kmod_module *mod;
-	struct kmod_ctx *kmod_ctx;
-	char path[50];
+	int result = EXIT_SUCCESS;
 
 	rc = ndctl_new(&ctx);
 	if (rc < 0)
@@ -404,60 +432,14 @@ int main(int argc, char *argv[])
 
 	ndctl_set_log_priority(ctx, LOG_DEBUG);
 
-	kmod_ctx = kmod_new(NULL, NULL);
-	if (!kmod_ctx)
-		goto err_kmod;
-
-	rc = kmod_module_new_from_name(kmod_ctx, "nd_acpi", &mod);
-	if (rc < 0) {
-		fprintf(stderr, "failed to find nd_acpi\n");
-		goto err_module;
+	/* assumes all busses to be tested already have their driver loaded */
+	ndctl_bus_foreach(ctx, bus) {
+		rc = test_bus(bus);
+		if (rc)
+			result = EXIT_FAILURE;
 	}
 
-	rc = kmod_module_probe_insert_module(mod, KMOD_PROBE_APPLY_BLACKLIST,
-			NULL, NULL, NULL, NULL);
-	if (rc < 0) {
-		fprintf(stderr, "failed to load nd_acpi\n");
-		goto err_module;
-	}
-	rc = -ENXIO;
-
-	bus = get_acpi_nfit_bus(ctx);
-	if (!bus) {
-		fprintf(stderr, "failed to find ACPI.NFIT bus\n");
-		goto err_bus;
-	}
-
-	if (!ndctl_bus_is_cmd_supported(bus, NFIT_CMD_VENDOR)) {
-		fprintf(stderr, "NFIT_CMD_VENDOR not supported\n");
-		goto err_bus;
-	}
-
-	sprintf(path, "/dev/ndctl%d", ndctl_bus_get_id(bus));
-	fd = open(path, O_RDWR);
-	if (fd < 0) {
-		fprintf(stderr, "failed to open %s\n", path);
-		goto err_bus;
-	}
-
-        for (i = 0; i < ARRAY_SIZE(do_test); i++) {
-                err = do_test[i](fd);
-                if (err < 0) {
-                        fprintf(stderr, "ND IOCTL test %d failed: %d\n", i, err);
-                        break;
-                }
-        }
-
-	if (i == ARRAY_SIZE(do_test))
-		rc = EXIT_SUCCESS;
-
-	close(fd);
- err_bus:
-	kmod_module_remove_module(mod, 0);
- err_module:
-	kmod_unref(kmod_ctx);
- err_kmod:
 	ndctl_unref(ctx);
 
-	return rc;
+	return result;
 }
