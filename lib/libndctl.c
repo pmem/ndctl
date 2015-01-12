@@ -305,6 +305,7 @@ struct ndctl_cmd {
 		struct nfit_cmd_get_config_size get_size[0];
 		struct nfit_cmd_get_config_data_hdr get_data[0];
 		struct nfit_cmd_set_config_hdr set_data[0];
+		struct nfit_cmd_vendor_hdr vendor[0];
 		char cmd_buf[0];
 	};
 };
@@ -1370,6 +1371,65 @@ NDCTL_EXPORT struct ndctl_dimm *ndctl_region_get_next_dimm(struct ndctl_region *
 	}
 
 	return NULL;
+}
+
+NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_vendor_specific(
+		struct ndctl_dimm *dimm, size_t input_size, size_t output_size)
+{
+	struct ndctl_bus *bus = ndctl_dimm_get_bus(dimm);
+	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
+	struct ndctl_cmd *cmd;
+	size_t size;
+
+	if (!ndctl_dimm_is_cmd_supported(dimm, NFIT_CMD_VENDOR)) {
+		dbg(ctx, "unsupported cmd\n");
+		return NULL;
+	}
+
+	size = sizeof(*cmd) + sizeof(struct nfit_cmd_vendor_hdr)
+		+ sizeof(struct nfit_cmd_vendor_tail) + input_size
+		+ output_size;
+
+	cmd = calloc(1, size);
+	if (!cmd)
+		return NULL;
+
+	cmd->dimm = dimm;
+	cmd->refcount = 1;
+	cmd->type = NFIT_CMD_VENDOR;
+	cmd->size = size;
+	cmd->status = 1;
+	cmd->vendor->in_length = input_size;
+
+	return cmd;
+}
+
+NDCTL_EXPORT ssize_t ndctl_cmd_vendor_set_input(struct ndctl_cmd *cmd,
+		void *buf, unsigned int len)
+{
+	if (cmd->type != NFIT_CMD_VENDOR)
+		return -EINVAL;
+	len = min(len, cmd->vendor->in_length);
+	memcpy(cmd->vendor->in_buf, buf, len);
+	return len;
+}
+
+NDCTL_EXPORT ssize_t ndctl_cmd_vendor_get_output(struct ndctl_cmd *cmd,
+		void *buf, unsigned int len)
+{
+	struct nfit_cmd_vendor_tail *tail;
+
+	if (cmd->type != NFIT_CMD_VENDOR || cmd->status > 0)
+		return -EINVAL;
+	if (cmd->status < 0)
+		return cmd->status;
+
+	tail = (struct nfit_cmd_vendor_tail *) (cmd->cmd_buf
+			+ sizeof(struct nfit_cmd_vendor_hdr)
+			+ cmd->vendor->in_length);
+	len = min(len, tail->out_length);
+	memcpy(buf, tail->out_buf, len);
+	return len;
 }
 
 NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_size(struct ndctl_dimm *dimm)
