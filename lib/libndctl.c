@@ -2753,11 +2753,11 @@ NDCTL_EXPORT int ndctl_btt_set_backing_dev(struct ndctl_btt *btt,
 		return -ENXIO;
 	}
 
-	if (sysfs_write_attr(ctx, path, backing_dev) != 0)
+	if (sysfs_write_attr(ctx, path, backing_dev ? : "\n") != 0)
 		return -ENXIO;
 
 	free(btt->backing_dev);
-	btt->backing_dev = strdup(backing_dev);
+	btt->backing_dev = backing_dev ? strdup(backing_dev) : NULL;
 
 	return 0;
 }
@@ -2865,6 +2865,14 @@ NDCTL_EXPORT int ndctl_btt_delete(struct ndctl_btt *btt)
 		return -EINVAL;
 
 	ndctl_unbind(ctx, btt->btt_path);
+	btt->enabled = 0;
+
+	rc = ndctl_btt_set_backing_dev(btt, NULL);
+	if (rc) {
+		dbg(ctx, "%s: failed to clear backing dev: %d\n",
+			ndctl_btt_get_devname(btt), rc);
+		return rc;
+	}
 
 	if (snprintf(path, len, "%s/delete", btt->btt_path) >= len) {
 		err(ctx, "%s: buffer too small!\n",
@@ -2873,7 +2881,6 @@ NDCTL_EXPORT int ndctl_btt_delete(struct ndctl_btt *btt)
 	}
 
 	rc = sysfs_write_attr(ctx, path, "1\n");
-	dbg(ctx, "%s: %d\n", ndctl_btt_get_devname(btt), rc);
 	if (rc < 0)
 		return -ENXIO;
 	free_btt(btt, BTT_DELETE);
