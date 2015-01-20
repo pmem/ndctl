@@ -139,7 +139,6 @@ struct btt {
 	int enabled;
 	uuid_t uuid;
 	int num_sector_sizes;
-	unsigned int sector_size;
 	unsigned int sector_sizes[4];
 };
 
@@ -148,9 +147,8 @@ static struct btt btt_settings = {
 	.uuid = {  0,  1,  2,  3,  4,  5,  6,  7,
 		   8, 9,  10, 11, 12, 13, 14, 15
 	},
-	.num_sector_sizes = 1,
-	.sector_size = 512,
-	.sector_sizes =  { 512, },
+	.num_sector_sizes = 2,
+	.sector_sizes =  { 512, 4096 },
 };
 
 struct namespace {
@@ -258,11 +256,11 @@ static struct region regions1[] = {
 };
 
 static struct btt btts0[] = {
-	{ 0, { 0, }, 1, UINT_MAX, { 512, }, },
+	{ 0, { 0, }, 2, { 512, 4096, }, },
 };
 
 static struct btt btts1[] = {
-	{ 0, { 0, }, 1, UINT_MAX, { 512, }, }
+	{ 0, { 0, }, 2, { 512, 4096, }, },
 };
 
 static unsigned long commands0 = 1UL << NFIT_CMD_GET_CONFIG_SIZE
@@ -451,7 +449,7 @@ static int check_regions(struct ndctl_bus *bus, struct region *regions, int n)
 static int check_btt_create(struct ndctl_bus *bus, struct ndctl_namespace *ndns,
 		struct btt *create_btt)
 {
-	int fd, rc, retry = 10;
+	int i, fd, rc, retry = 10;
 	struct ndctl_btt *btt;
 	const char *devname;
 	char bdevpath[50];
@@ -460,49 +458,55 @@ static int check_btt_create(struct ndctl_bus *bus, struct ndctl_namespace *ndns,
 	if (!create_btt)
 		return 0;
 
-	btt = get_idle_btt(bus);
-	if (!btt)
-		return -ENXIO;
-
 	if (posix_memalign(&buf, 4096, 4096) != 0)
 		return -ENXIO;
 
-	sprintf(bdevpath, "/dev/%s", ndctl_namespace_get_block_device(ndns));
-	ndctl_btt_set_uuid(btt, create_btt->uuid);
-	ndctl_btt_set_sector_size(btt, create_btt->sector_size);
-	ndctl_btt_set_backing_dev(btt, bdevpath);
-	ndctl_btt_enable(btt);
+	for (i = 0; i < create_btt->num_sector_sizes; i++) {
+		btt = get_idle_btt(bus);
+		if (!btt)
+			return -ENXIO;
 
-	sprintf(bdevpath, "/dev/%s", ndctl_btt_get_block_device(btt));
-	devname = ndctl_btt_get_devname(btt);
-	rc = -ENXIO;
-	fd = open(bdevpath, O_RDWR|O_DIRECT);
-	if (fd < 0)
-		fprintf(stderr, "%s: failed to open %s\n",
-				devname, bdevpath);
+		sprintf(bdevpath, "/dev/%s", ndctl_namespace_get_block_device(ndns));
+		ndctl_btt_set_uuid(btt, create_btt->uuid);
+		ndctl_btt_set_sector_size(btt, create_btt->sector_sizes[i]);
+		ndctl_btt_set_backing_dev(btt, bdevpath);
+		ndctl_btt_enable(btt);
 
-	while (fd >= 0) {
-		if (read(fd, buf, 4096) < 4096) {
-			/* TODO: track down how this happens! */
-			if (errno == ENOENT && retry--) {
-				usleep(5000);
-				continue;
-			}
-			fprintf(stderr, "%s: failed to read %s: %d (%s)\n",
-					devname, bdevpath, -errno,
-					strerror(errno));
-			break;
-		}
-		if (write(fd, buf, 4096) < 4096) {
-			fprintf(stderr, "%s: failed to write %s\n",
+		sprintf(bdevpath, "/dev/%s", ndctl_btt_get_block_device(btt));
+		devname = ndctl_btt_get_devname(btt);
+		rc = -ENXIO;
+		fd = open(bdevpath, O_RDWR|O_DIRECT);
+		if (fd < 0)
+			fprintf(stderr, "%s: failed to open %s\n",
 					devname, bdevpath);
+
+		while (fd >= 0) {
+			if (read(fd, buf, 4096) < 4096) {
+				/* TODO: track down how this happens! */
+				if (errno == ENOENT && retry--) {
+					usleep(5000);
+					continue;
+				}
+				fprintf(stderr, "%s: failed to read %s: %d (%s)\n",
+						devname, bdevpath, -errno,
+						strerror(errno));
+				break;
+			}
+			if (write(fd, buf, 4096) < 4096) {
+				fprintf(stderr, "%s: failed to write %s\n",
+						devname, bdevpath);
+				break;
+			}
+			rc = 0;
 			break;
 		}
-		rc = 0;
-		break;
+		if (fd >= 0)
+			close(fd);
+
+		rc = ndctl_btt_delete(btt);
+		if(rc)
+			fprintf(stderr, "%s: failed to delete btt (%d)\n", devname, rc);
 	}
-	if (fd >= 0)
-		close(fd);
 	free(buf);
 	return rc;
 }
@@ -761,12 +765,6 @@ static int check_btts(struct ndctl_bus *bus, struct btt *btts, int n)
 		}
 		snprintf(devname, sizeof(devname), "btt%d",
 				ndctl_btt_get_id(btt));
-		if (ndctl_btt_get_sector_size(btt) != btts[i].sector_size) {
-			fprintf(stderr, "%s: expected sector_size: %d got: %d\n",
-					devname, btts[i].sector_size,
-					ndctl_btt_get_sector_size(btt));
-			return -ENXIO;
-		}
 		ndctl_btt_get_uuid(btt, btt_uuid);
 		if (uuid_compare(btt_uuid, btts[i].uuid) != 0) {
 			char expect[40], actual[40];
