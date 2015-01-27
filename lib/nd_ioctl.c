@@ -424,7 +424,7 @@ int main(int argc, char *argv[])
 	int rc = -ENXIO;
 	struct ndctl_ctx *ctx;
 	struct ndctl_bus *bus;
-	int result = EXIT_SUCCESS;
+	int result = EXIT_FAILURE;
 
 	rc = ndctl_new(&ctx);
 	if (rc < 0)
@@ -434,9 +434,17 @@ int main(int argc, char *argv[])
 
 	/* assumes all busses to be tested already have their driver loaded */
 	ndctl_bus_foreach(ctx, bus) {
+		if (strcmp(ndctl_bus_get_provider(bus), "ACPI.NFIT") == 0)
+			result = EXIT_SUCCESS;
+		else if (strcmp(ndctl_bus_get_provider(bus), "OLD_ACPI.NFIT") == 0)
+			result = EXIT_SUCCESS;
+		else
+			continue;
 		rc = test_bus(bus);
-		if (rc)
+		if (rc) {
 			result = EXIT_FAILURE;
+			break;
+		}
 	}
 
 	ndctl_unref(ctx);
