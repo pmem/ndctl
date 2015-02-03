@@ -329,27 +329,36 @@ static int send_too_large(int fd, struct ndctl_dimm *dimm)
 static int send_id_dimm(int fd, struct ndctl_dimm *dimm)
 {
 	CR_CMD(identify_dimm_cmd, 0, 128);
-	struct identify_dimm_cmd cmd;
+	struct identify_dimm_cmd id_cmd;
+	struct ndctl_cmd *cmd;
 	struct cr_pt_payload_identify_dimm dimm_id_payload;
-	int ret;
+	ssize_t out_length;
 
-	memset(&cmd, 0, sizeof(cmd));
+	id_cmd.in_length = sizeof(id_cmd.in);
+	id_cmd.in.data_format_revision 	= 1;
+	id_cmd.in.opcode 		= 1;
+	id_cmd.in.sub_opcode 		= 0;
+	id_cmd.in.flags	 		= 0;
+	id_cmd.out_length = sizeof(id_cmd.out_buf);
 
-	cmd.in_length = sizeof(cmd.in);
-	cmd.in.data_format_revision 	= 1;
-	cmd.in.opcode 			= 1;
-	cmd.in.sub_opcode 		= 0;
-	cmd.in.flags	 		= 0;
+	cmd = ndctl_dimm_cmd_new_vendor_specific(dimm, id_cmd.in_length,
+			id_cmd.out_length);
+	if (!cmd)
+		return -ENOMEM;
 
-	cmd.out_length = sizeof(cmd.out_buf);
-
-	ret = ioctl(fd, NFIT_IOCTL_VENDOR, &cmd);
-	if (ret) {
-		perror(__func__);
-		return -EINVAL;
+	ndctl_cmd_vendor_set_input(cmd, &id_cmd.in, sizeof(id_cmd.in));
+	ndctl_cmd_submit(cmd);
+	out_length = ndctl_cmd_vendor_get_output_size(cmd);
+	if (out_length < 0) {
+		fprintf(stderr, "nd_ioctl %s: cmd failed: %zd\n", __func__,
+				out_length);
+		return out_length;
 	}
-
-	memcpy(&dimm_id_payload, cmd.out_buf, sizeof(dimm_id_payload));
+	if (out_length > id_cmd.out_length)
+		fprintf(stderr, "nd_ioctl %s: cmd overrun: %zd\n", __func__,
+				out_length);
+	ndctl_cmd_vendor_get_output(cmd, id_cmd.out_buf, out_length);
+	memcpy(&dimm_id_payload, id_cmd.out_buf, sizeof(dimm_id_payload));
 
 	// check some values to make sure things look sane
 	if (dimm_id_payload.vendor_id != 0x8086 	||
