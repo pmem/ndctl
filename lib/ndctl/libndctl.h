@@ -140,6 +140,7 @@ struct ndctl_cmd *ndctl_dimm_cmd_new_vendor_specific(struct ndctl_dimm *dimm,
 		size_t input_size, size_t output_size);
 ssize_t ndctl_cmd_vendor_set_input(struct ndctl_cmd *cmd, void *buf,
 		unsigned int len);
+ssize_t ndctl_cmd_vendor_get_output_size(struct ndctl_cmd *cmd);
 ssize_t ndctl_cmd_vendor_get_output(struct ndctl_cmd *cmd, void *buf,
 		unsigned int len);
 struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_size(struct ndctl_dimm *dimm);

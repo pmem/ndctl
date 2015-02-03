@@ -1373,10 +1373,17 @@ NDCTL_EXPORT struct ndctl_dimm *ndctl_region_get_next_dimm(struct ndctl_region *
 	return NULL;
 }
 
+static struct nfit_cmd_vendor_tail *to_vendor_tail(struct ndctl_cmd *cmd)
+{
+	struct nfit_cmd_vendor_tail *tail = (struct nfit_cmd_vendor_tail *)
+		(cmd->cmd_buf + sizeof(struct nfit_cmd_vendor_hdr)
+		 + cmd->vendor->in_length);
+	return tail;
+}
+
 NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_vendor_specific(
 		struct ndctl_dimm *dimm, size_t input_size, size_t output_size)
 {
-	struct nfit_cmd_vendor_tail *tail;
 	struct ndctl_bus *bus = ndctl_dimm_get_bus(dimm);
 	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
 	struct ndctl_cmd *cmd;
@@ -1401,12 +1408,7 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_vendor_specific(
 	cmd->size = size;
 	cmd->status = 1;
 	cmd->vendor->in_length = input_size;
-
-	tail = (struct nfit_cmd_vendor_tail *) (cmd->cmd_buf
-				+ sizeof(struct nfit_cmd_vendor_hdr)
-				+ cmd->vendor->in_length);
-
-	tail->out_length = output_size;
+	to_vendor_tail(cmd)->out_length = output_size;
 
 	return cmd;
 }
@@ -1421,21 +1423,26 @@ NDCTL_EXPORT ssize_t ndctl_cmd_vendor_set_input(struct ndctl_cmd *cmd,
 	return len;
 }
 
-NDCTL_EXPORT ssize_t ndctl_cmd_vendor_get_output(struct ndctl_cmd *cmd,
-		void *buf, unsigned int len)
+NDCTL_EXPORT ssize_t ndctl_cmd_vendor_get_output_size(struct ndctl_cmd *cmd)
 {
-	struct nfit_cmd_vendor_tail *tail;
-
 	if (cmd->type != NFIT_CMD_VENDOR || cmd->status > 0)
 		return -EINVAL;
 	if (cmd->status < 0)
 		return cmd->status;
 
-	tail = (struct nfit_cmd_vendor_tail *) (cmd->cmd_buf
-			+ sizeof(struct nfit_cmd_vendor_hdr)
-			+ cmd->vendor->in_length);
-	len = min(len, tail->out_length);
-	memcpy(buf, tail->out_buf, len);
+	return to_vendor_tail(cmd)->out_length;
+}
+
+NDCTL_EXPORT ssize_t ndctl_cmd_vendor_get_output(struct ndctl_cmd *cmd,
+		void *buf, unsigned int len)
+{
+	ssize_t out_length = ndctl_cmd_vendor_get_output_size(cmd);
+
+	if (out_length < 0)
+		return out_length;
+
+	len = min(len, out_length);
+	memcpy(buf, to_vendor_tail(cmd)->out_buf, len);
 	return len;
 }
 
