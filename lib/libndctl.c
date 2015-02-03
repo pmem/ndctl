@@ -1376,6 +1376,7 @@ NDCTL_EXPORT struct ndctl_dimm *ndctl_region_get_next_dimm(struct ndctl_region *
 NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_vendor_specific(
 		struct ndctl_dimm *dimm, size_t input_size, size_t output_size)
 {
+	struct nfit_cmd_vendor_tail *tail;
 	struct ndctl_bus *bus = ndctl_dimm_get_bus(dimm);
 	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
 	struct ndctl_cmd *cmd;
@@ -1400,6 +1401,12 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_vendor_specific(
 	cmd->size = size;
 	cmd->status = 1;
 	cmd->vendor->in_length = input_size;
+
+	tail = (struct nfit_cmd_vendor_tail *) (cmd->cmd_buf
+				+ sizeof(struct nfit_cmd_vendor_hdr)
+				+ cmd->vendor->in_length);
+
+	tail->out_length = output_size;
 
 	return cmd;
 }
