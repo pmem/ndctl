@@ -52,6 +52,7 @@ global:
 	ndctl_dimm_get_by_handle;
 	ndctl_dimm_cmd_new_vendor_specific;
 	ndctl_cmd_vendor_set_input;
+	ndctl_cmd_vendor_get_output_size;
 	ndctl_cmd_vendor_get_output;
 	ndctl_dimm_cmd_new_cfg_size;
 	ndctl_dimm_cmd_new_cfg_read;
