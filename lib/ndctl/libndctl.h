@@ -98,6 +98,8 @@ struct ndctl_bus *ndctl_bus_get_next(struct ndctl_bus *bus);
 struct ndctl_ctx *ndctl_bus_get_ctx(struct ndctl_bus *bus);
 unsigned int ndctl_bus_get_major(struct ndctl_bus *bus);
 unsigned int ndctl_bus_get_minor(struct ndctl_bus *bus);
+const char *ndctl_bus_get_devname(struct ndctl_bus *bus);
+struct ndctl_btt *ndctl_bus_get_btt_seed(struct ndctl_bus *bus);
 unsigned short ndctl_bus_get_format(struct ndctl_bus *bus);
 const char *ndctl_bus_get_cmd_name(struct ndctl_bus *bus, int cmd);
 int ndctl_bus_is_cmd_supported(struct ndctl_bus *bus, int cmd);
@@ -173,6 +175,8 @@ unsigned long long ndctl_region_get_size(struct ndctl_region *region);
 unsigned long long ndctl_region_get_available_size(struct ndctl_region *region);
 unsigned int ndctl_region_get_spa_index(struct ndctl_region *region);
 unsigned int ndctl_region_get_type(struct ndctl_region *region);
+struct ndctl_namespace *ndctl_region_get_namespace_seed(
+		struct ndctl_region *region);
 unsigned int ndctl_region_get_nstype(struct ndctl_region *region);
 const char *ndctl_region_get_type_name(struct ndctl_region *region);
 struct ndctl_bus *ndctl_region_get_bus(struct ndctl_region *region);

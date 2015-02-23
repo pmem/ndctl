@@ -98,6 +98,8 @@ struct ndctl_bus {
 	int btts_init;
 	int regions_init;
 	char *bus_path;
+	char *bus_buf;
+	size_t buf_len;
 	char *wait_probe_path;
 	unsigned long dsm_mask;
 };
@@ -792,6 +794,12 @@ static int add_bus(void *parent, int id, const char *ctl_base)
 	bus->bus_path = parent_dev_path("char", bus->major, bus->minor);
 	if (!bus->bus_path)
 		goto err_dev_path;
+
+	bus->bus_buf = calloc(1, strlen(bus->bus_path) + 50);
+	if (!bus->bus_buf)
+		goto err_read;
+	bus->buf_len = strlen(bus->bus_path) + 50;
+
 	list_add(&ctx->busses, &bus->list);
 
 	rc = 0;
@@ -861,6 +869,34 @@ NDCTL_EXPORT unsigned int ndctl_bus_get_major(struct ndctl_bus *bus)
 NDCTL_EXPORT unsigned int ndctl_bus_get_minor(struct ndctl_bus *bus)
 {
 	return bus->minor;
+}
+
+NDCTL_EXPORT const char *ndctl_bus_get_devname(struct ndctl_bus *bus)
+{
+	return devpath_to_devname(bus->bus_path);
+}
+
+NDCTL_EXPORT struct ndctl_btt *ndctl_bus_get_btt_seed(struct ndctl_bus *bus)
+{
+	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
+	char *path = bus->bus_buf;
+	int len = bus->buf_len;
+	struct ndctl_btt *btt;
+	char buf[50];
+
+	if (snprintf(path, len, "%s/btt_seed", bus->bus_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_bus_get_devname(bus));
+		return NULL;
+	}
+
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		return NULL;
+
+	ndctl_btt_foreach(bus, btt)
+		if (strcmp(buf, ndctl_btt_get_devname(btt)) == 0)
+			return btt;
+	return NULL;
 }
 
 NDCTL_EXPORT const char *ndctl_bus_get_cmd_name(struct ndctl_bus *bus, int cmd)
@@ -1315,6 +1351,31 @@ NDCTL_EXPORT unsigned int ndctl_region_get_type(struct ndctl_region *region)
 	default:
 		return ND_DEVICE_REGION_BLOCK;
 	}
+}
+
+NDCTL_EXPORT struct ndctl_namespace *ndctl_region_get_namespace_seed(
+		struct ndctl_region *region)
+{
+	struct ndctl_bus *bus = ndctl_region_get_bus(region);
+	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
+	char *path = region->region_buf;
+	struct ndctl_namespace *ndns;
+	int len = region->buf_len;
+	char buf[50];
+
+	if (snprintf(path, len, "%s/namespace_seed", region->region_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_region_get_devname(region));
+		return NULL;
+	}
+
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		return NULL;
+
+	ndctl_namespace_foreach(region, ndns)
+		if (strcmp(buf, ndctl_namespace_get_devname(ndns)) == 0)
+			return ndns;
+	return NULL;
 }
 
 static const char *ndctl_device_type_name(int type)
