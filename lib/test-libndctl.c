@@ -906,7 +906,7 @@ static int check_set_config_data(struct ndctl_dimm *dimm, struct check_cmd *chec
 		fprintf(stderr, "%s: dimm: %#x read1 data miscompare: %zd\n",
 				__func__, ndctl_dimm_get_handle(dimm), rc);
 		ndctl_cmd_unref(cmd);
-		return rc;
+		return -ENXIO;
 	}
 
 	sprintf(buf, "dimm-%#x", ndctl_dimm_get_handle(dimm));
