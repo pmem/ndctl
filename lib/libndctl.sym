@@ -143,6 +143,7 @@ global:
 	ndctl_cmd_cfg_size_get_size;
 	ndctl_cmd_cfg_read_get_data;
 	ndctl_cmd_cfg_write_set_data;
+	ndctl_cmd_cfg_write_zero_data;
 	ndctl_cmd_unref;
 	ndctl_cmd_ref;
 	ndctl_cmd_get_type;
