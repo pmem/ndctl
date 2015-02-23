@@ -765,17 +765,17 @@ static int add_bus(void *parent, int id, const char *ctl_base)
 			|| sscanf(buf, "%d:%d", &bus->major, &bus->minor) != 2)
 		goto err_read;
 
-	sprintf(path, "%s/commands", ctl_base);
+	sprintf(path, "%s/device/commands", ctl_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		goto err_read;
 	bus->dsm_mask = parse_commands(buf);
 
-	sprintf(path, "%s/revision", ctl_base);
+	sprintf(path, "%s/device/revision", ctl_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		goto err_read;
 	bus->revision = strtoul(buf, NULL, 0);
 
-	sprintf(path, "%s/provider", ctl_base);
+	sprintf(path, "%s/device/provider", ctl_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		goto err_read;
 
@@ -784,7 +784,7 @@ static int add_bus(void *parent, int id, const char *ctl_base)
 	if (!bus->provider)
 		goto err_read;
 
-	sprintf(path, "%s/wait_probe", ctl_base);
+	sprintf(path, "%s/device/wait_probe", ctl_base);
 	bus->wait_probe_path = strdup(path);
 	if (!bus->wait_probe_path)
 		goto err_read;
