@@ -62,6 +62,7 @@ global:
 	ndctl_dimm_cmd_new_cfg_size;
 	ndctl_dimm_cmd_new_cfg_read;
 	ndctl_dimm_cmd_new_cfg_write;
+	ndctl_dimm_zero_labels;
 	ndctl_region_get_first;
 	ndctl_region_get_next;
 	ndctl_region_get_id;

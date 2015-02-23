@@ -39,6 +39,7 @@ int cmd_enable_namespace(int argc, const char **argv);
 int cmd_disable_namespace(int argc, const char **argv);
 int cmd_enable_region(int argc, const char **argv);
 int cmd_disable_region(int argc, const char **argv);
+int cmd_zero_labels(int argc, const char **argv);
 #ifdef ENABLE_TEST
 int cmd_test(int argc, const char **argv);
 #endif
@@ -50,6 +51,7 @@ static struct cmd_struct commands[] = {
 	{ "disable-namespace", cmd_disable_namespace },
 	{ "enable-region", cmd_enable_region },
 	{ "disable-region", cmd_disable_region },
+	{ "zero-labels", cmd_zero_labels },
 	#ifdef ENABLE_TEST
 	{ "test", cmd_test },
 	#endif
