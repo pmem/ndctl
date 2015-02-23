@@ -1,10 +1,12 @@
+#include <stdio.h>
 #include <syslog.h>
 #include <test-libndctl.h>
+#include <test-dpa-alloc.h>
 #include <util/parse-options.h>
 
 int cmd_test(int argc, const char **argv)
 {
-	int loglevel = LOG_DEBUG, i;
+	int loglevel = LOG_DEBUG, i, rc, err = 0;
 	const char * const u[] = {
 		"ndctl test [<options>]",
 		NULL
@@ -23,5 +25,11 @@ int cmd_test(int argc, const char **argv)
 	if (argc)
 		usage_with_options(u, options);
 
-	return test_libndctl(loglevel);
+	rc = test_libndctl(loglevel);
+	fprintf(stderr, "test-libndctl: %s\n", rc ? "FAIL" : "PASS");
+	err = rc;
+	rc = test_dpa_alloc(loglevel);
+	fprintf(stderr, "test-dpa-alloc: %s\n", rc ? "FAIL" : "PASS");
+	err = rc ? rc : err;
+	return err;
 }
