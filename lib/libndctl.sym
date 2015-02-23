@@ -23,6 +23,7 @@ global:
 	ndctl_bus_get_major;
 	ndctl_bus_get_minor;
 	ndctl_bus_get_devname;
+	ndctl_bus_get_by_provider;
 	ndctl_bus_get_btt_seed;
 	ndctl_bus_get_cmd_name;
 	ndctl_bus_is_cmd_supported;
@@ -63,6 +64,7 @@ global:
 	ndctl_dimm_cmd_new_cfg_read;
 	ndctl_dimm_cmd_new_cfg_write;
 	ndctl_dimm_zero_labels;
+	ndctl_dimm_get_available_labels;
 	ndctl_region_get_first;
 	ndctl_region_get_next;
 	ndctl_region_get_id;
@@ -115,6 +117,7 @@ global:
 	ndctl_namespace_disable;
 	ndctl_namespace_is_valid;
 	ndctl_namespace_is_configured;
+	ndctl_namespace_delete;
 	ndctl_namespace_set_uuid;
 	ndctl_namespace_get_uuid;
 	ndctl_namespace_get_alt_name;

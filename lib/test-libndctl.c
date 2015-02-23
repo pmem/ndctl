@@ -267,18 +267,6 @@ static unsigned long commands0 = 1UL << NFIT_CMD_GET_CONFIG_SIZE
 		| 1UL << NFIT_CMD_GET_CONFIG_DATA
 		| 1UL << NFIT_CMD_SET_CONFIG_DATA;
 
-static struct ndctl_bus *get_bus_by_provider(struct ndctl_ctx *ctx,
-		const char *provider)
-{
-	struct ndctl_bus *bus;
-
-        ndctl_bus_foreach(ctx, bus)
-		if (strcmp(provider, ndctl_bus_get_provider(bus)) == 0)
-			return bus;
-
-	return NULL;
-}
-
 static struct ndctl_dimm *get_dimm_by_handle(struct ndctl_bus *bus, unsigned int handle)
 {
 	struct ndctl_dimm *dimm;
@@ -1019,7 +1007,7 @@ static int check_dimms(struct ndctl_bus *bus, struct dimm *dimms, int n,
 
 static int do_test0(struct ndctl_ctx *ctx)
 {
-	struct ndctl_bus *bus = get_bus_by_provider(ctx, NFIT_PROVIDER0);
+	struct ndctl_bus *bus = ndctl_bus_get_by_provider(ctx, NFIT_PROVIDER0);
 	struct ndctl_region *region;
 	int rc;
 
@@ -1047,7 +1035,7 @@ static int do_test0(struct ndctl_ctx *ctx)
 
 static int do_test1(struct ndctl_ctx *ctx)
 {
-	struct ndctl_bus *bus = get_bus_by_provider(ctx, NFIT_PROVIDER1);
+	struct ndctl_bus *bus = ndctl_bus_get_by_provider(ctx, NFIT_PROVIDER1);
 	int rc;
 
 	if (!bus)
