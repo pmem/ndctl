@@ -144,5 +144,6 @@ global:
 	ndctl_cmd_ref;
 	ndctl_cmd_get_type;
 	ndctl_cmd_get_status;
+	ndctl_cmd_get_firmware_status;
 	ndctl_cmd_submit;
 } LIBNDCTL_1;

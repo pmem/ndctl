@@ -289,6 +289,7 @@ struct ndctl_ctx {
  * @type: cmd number
  * @size: total size of the ndctl_cmd allocation
  * @status: negative if failed, 0 if success, > 0 if never submitted
+ * @firmware_status: NFIT command output status code
  *
  * For dynamically sized commands like 'get_config', 'set_config', or
  * 'vendor', @size encompasses the entire buffer for the command input
@@ -301,6 +302,7 @@ struct ndctl_cmd {
 	int type;
 	int size;
 	int status;
+	u32 *firmware_status;
 	union {
 		struct nfit_cmd_get_config_size get_size[0];
 		struct nfit_cmd_get_config_data_hdr get_data[0];
@@ -1408,6 +1410,7 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_vendor_specific(
 	cmd->size = size;
 	cmd->status = 1;
 	cmd->vendor->in_length = input_size;
+	cmd->firmware_status = &to_vendor_tail(cmd)->status;
 	to_vendor_tail(cmd)->out_length = output_size;
 
 	return cmd;
@@ -1468,6 +1471,7 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_size(struct ndctl_dimm *di
 	cmd->type = NFIT_CMD_GET_CONFIG_SIZE;
 	cmd->size = size;
 	cmd->status = 1;
+	cmd->firmware_status = &cmd->get_size->status;
 
 	return cmd;
 }
@@ -1516,6 +1520,7 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_read(struct ndctl_cmd *cfg
 	cmd->status = 1;
 	cmd->get_data->in_offset = 0;
 	cmd->get_data->in_length = config_size;
+	cmd->firmware_status = &cmd->get_data->status;
 
 	return cmd;
 }
@@ -1559,6 +1564,8 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_write(struct ndctl_cmd *cf
 	cmd->status = 1;
 	cmd->set_data->in_offset = 0;
 	cmd->set_data->in_length = config_size;
+	cmd->firmware_status = (u32 *) (cmd->cmd_buf
+		+ sizeof(struct nfit_cmd_set_config_hdr) + config_size);
 	memcpy(cmd->set_data->in_buf, cfg_read->get_data->out_buf, config_size);
 
 	return cmd;
@@ -1690,6 +1697,11 @@ NDCTL_EXPORT int ndctl_cmd_submit(struct ndctl_cmd *cmd)
 NDCTL_EXPORT int ndctl_cmd_get_status(struct ndctl_cmd *cmd)
 {
 	return cmd->status;
+}
+
+NDCTL_EXPORT unsigned int ndctl_cmd_get_firmware_status(struct ndctl_cmd *cmd)
+{
+	return *(cmd->firmware_status);
 }
 
 NDCTL_EXPORT const char *ndctl_region_get_devname(struct ndctl_region *region)
