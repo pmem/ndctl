@@ -1733,12 +1733,65 @@ NDCTL_EXPORT ssize_t ndctl_cmd_cfg_write_set_data(struct ndctl_cmd *cfg_write,
 
 NDCTL_EXPORT ssize_t ndctl_cmd_cfg_write_zero_data(struct ndctl_cmd *cfg_write)
 {
-	if (cfg_write->type != NFIT_CMD_SET_CONFIG_DATA || cfg_write->status > 0)
+	if (cfg_write->type != NFIT_CMD_SET_CONFIG_DATA || cfg_write->status < 1)
 		return -EINVAL;
 	if (cfg_write->status < 0)
 		return cfg_write->status;
 	memset(cfg_write->iter.total_buf, 0, cfg_write->iter.total_xfer);
 	return cfg_write->iter.total_xfer;
+}
+
+NDCTL_EXPORT int ndctl_dimm_zero_labels(struct ndctl_dimm *dimm)
+{
+	struct ndctl_cmd *cmd_size, *cmd_read, *cmd_write;
+	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
+	int rc;
+
+	if (ndctl_dimm_is_active(dimm)) {
+		dbg(ctx, "%s: regions active, abort label write\n",
+			ndctl_dimm_get_devname(dimm));
+		return -EBUSY;
+	}
+
+	cmd_size = ndctl_dimm_cmd_new_cfg_size(dimm);
+	if (!cmd_size)
+		return -ENOTTY;
+	rc = ndctl_cmd_submit(cmd_size);
+	if (rc || ndctl_cmd_get_firmware_status(cmd_size))
+		goto err_size;
+
+	cmd_read = ndctl_dimm_cmd_new_cfg_read(cmd_size);
+	if (!cmd_read) {
+		rc = -ENOTTY;
+		goto err_size;
+	}
+	rc = ndctl_cmd_submit(cmd_read);
+	if (rc || ndctl_cmd_get_firmware_status(cmd_read))
+		goto err_read;
+
+	cmd_write = ndctl_dimm_cmd_new_cfg_write(cmd_read);
+	if (!cmd_write) {
+		rc = -ENOTTY;
+		goto err_read;
+	}
+	if (ndctl_cmd_cfg_write_zero_data(cmd_write) < 0) {
+		rc = -ENXIO;
+		goto err_write;
+	}
+	rc = ndctl_cmd_submit(cmd_write);
+	if (rc || ndctl_cmd_get_firmware_status(cmd_write))
+		goto err_write;
+
+	return 0;
+
+ err_write:
+	ndctl_cmd_unref(cmd_write);
+ err_read:
+	ndctl_cmd_unref(cmd_read);
+ err_size:
+	ndctl_cmd_unref(cmd_size);
+
+	return rc < 0 ? rc : -ENXIO;
 }
 
 NDCTL_EXPORT void ndctl_cmd_unref(struct ndctl_cmd *cmd)
