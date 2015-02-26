@@ -28,6 +28,7 @@
 #include <sys/ioctl.h>
 #include <ccan/list/list.h>
 #include <ccan/minmax/minmax.h>
+#include <ccan/array_size/array_size.h>
 
 #ifdef HAVE_NDCTL_H
 #include <linux/ndctl.h>
@@ -713,17 +714,31 @@ static int device_parse(struct ndctl_ctx *ctx, const char *base_path,
 	return add_errors;
 }
 
-static int to_dsm_index(const char *name)
+static int to_dsm_index(const char *name, int dimm)
 {
-	int i;
+	const char *(*cmd_name_fn)(unsigned cmd);
+	int i, end_cmd;
 
-	for (i = NFIT_CMD_SMART; i <= NFIT_CMD_SMART_THRESHOLD; i++)
-		if (strcmp(name, nfit_cmd_name(i)) == 0)
+	if (dimm) {
+		end_cmd = NFIT_CMD_VENDOR;
+		cmd_name_fn = nfit_dimm_cmd_name;
+	} else {
+		end_cmd = NFIT_CMD_ARS_QUERY;
+		cmd_name_fn = nfit_bus_cmd_name;
+	}
+
+	for (i = 1; i <= end_cmd; i++) {
+		const char *cmd_name = cmd_name_fn(i);
+
+		if (!cmd_name)
+			continue;
+		if (strcmp(name, cmd_name) == 0)
 			return i;
+	}
 	return 0;
 }
 
-static unsigned long parse_commands(char *commands)
+static unsigned long parse_commands(char *commands, int dimm)
 {
 	unsigned long dsm_mask = 0;
 	char *start, *end;
@@ -733,7 +748,7 @@ static unsigned long parse_commands(char *commands)
 		int cmd;
 
 		*end = '\0';
-		cmd = to_dsm_index(start);
+		cmd = to_dsm_index(start, dimm);
 		if (cmd)
 			dsm_mask |= 1 << cmd;
 		start = end + 1;
@@ -770,7 +785,7 @@ static int add_bus(void *parent, int id, const char *ctl_base)
 	sprintf(path, "%s/device/commands", ctl_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		goto err_read;
-	bus->dsm_mask = parse_commands(buf);
+	bus->dsm_mask = parse_commands(buf, 0);
 
 	sprintf(path, "%s/device/revision", ctl_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
@@ -901,7 +916,7 @@ NDCTL_EXPORT struct ndctl_btt *ndctl_bus_get_btt_seed(struct ndctl_bus *bus)
 
 NDCTL_EXPORT const char *ndctl_bus_get_cmd_name(struct ndctl_bus *bus, int cmd)
 {
-	return nfit_cmd_name(cmd);
+	return nfit_bus_cmd_name(cmd);
 }
 
 NDCTL_EXPORT int ndctl_bus_is_cmd_supported(struct ndctl_bus *bus,
@@ -1009,7 +1024,7 @@ static int add_dimm(void *parent, int id, const char *dimm_base)
 	sprintf(path, "%s/commands", dimm_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		goto err_read;
-	dimm->dsm_mask = parse_commands(buf);
+	dimm->dsm_mask = parse_commands(buf, 1);
 
 	sprintf(path, "%s/serial", dimm_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
@@ -1122,7 +1137,7 @@ NDCTL_EXPORT unsigned int ndctl_dimm_get_serial(struct ndctl_dimm *dimm)
 
 NDCTL_EXPORT const char *ndctl_dimm_get_cmd_name(struct ndctl_dimm *dimm, int cmd)
 {
-	return nfit_cmd_name(cmd);
+	return nfit_dimm_cmd_name(cmd);
 }
 
 NDCTL_EXPORT int ndctl_dimm_is_cmd_supported(struct ndctl_dimm *dimm,
@@ -1680,22 +1695,31 @@ NDCTL_EXPORT int ndctl_cmd_get_type(struct ndctl_cmd *cmd)
 	return cmd->type;
 }
 
-static int to_ioctl_cmd(int cmd)
+static int to_ioctl_cmd(int cmd, int dimm)
 {
+	if (!dimm) {
+		switch (cmd) {
+		case NFIT_CMD_ARS_CAP:         return NFIT_IOCTL_ARS_CAP;
+		case NFIT_CMD_ARS_START:       return NFIT_IOCTL_ARS_START;
+		case NFIT_CMD_ARS_QUERY:       return NFIT_IOCTL_ARS_QUERY;
+		default:
+						       return 0;
+		};
+	}
+
 	switch (cmd) {
-	case NFIT_CMD_SMART:           return NFIT_IOCTL_SMART;
-	case NFIT_CMD_GET_CONFIG_SIZE: return NFIT_IOCTL_GET_CONFIG_SIZE;
-	case NFIT_CMD_GET_CONFIG_DATA: return NFIT_IOCTL_GET_CONFIG_DATA;
-	case NFIT_CMD_SET_CONFIG_DATA: return NFIT_IOCTL_SET_CONFIG_DATA;
-	case NFIT_CMD_VENDOR:          return NFIT_IOCTL_VENDOR;
-	case NFIT_CMD_ARS_CAP:         return NFIT_IOCTL_ARS_CAP;
-	case NFIT_CMD_ARS_START:       return NFIT_IOCTL_ARS_START;
-	case NFIT_CMD_ARS_QUERY:       return NFIT_IOCTL_ARS_QUERY;
-	case NFIT_CMD_ARM:             return NFIT_IOCTL_ARM;
-	case NFIT_CMD_SMART_THRESHOLD: return NFIT_IOCTL_SMART_THRESHOLD;
+	case NFIT_CMD_SMART:                  return NFIT_IOCTL_SMART;
+	case NFIT_CMD_SMART_THRESHOLD:        return NFIT_IOCTL_SMART_THRESHOLD;
+	case NFIT_CMD_DIMM_FLAGS:             return NFIT_IOCTL_DIMM_FLAGS;
+	case NFIT_CMD_GET_CONFIG_SIZE:        return NFIT_IOCTL_GET_CONFIG_SIZE;
+	case NFIT_CMD_GET_CONFIG_DATA:        return NFIT_IOCTL_GET_CONFIG_DATA;
+	case NFIT_CMD_SET_CONFIG_DATA:        return NFIT_IOCTL_SET_CONFIG_DATA;
+	case NFIT_CMD_VENDOR:                 return NFIT_IOCTL_VENDOR;
+	case NFIT_CMD_VENDOR_EFFECT_LOG_SIZE:
+	case NFIT_CMD_VENDOR_EFFECT_LOG:
 	default:
-		return 0;
-	};
+					      return 0;
+	}
 }
 
 NDCTL_EXPORT int ndctl_cmd_submit(struct ndctl_cmd *cmd)
@@ -1704,7 +1728,7 @@ NDCTL_EXPORT int ndctl_cmd_submit(struct ndctl_cmd *cmd)
 	char path[20], *prefix;
 	unsigned int major, minor, id;
 	int rc = 0, fd, len = sizeof(path);
-	int ioctl_cmd = to_ioctl_cmd(cmd->type);
+	int ioctl_cmd = to_ioctl_cmd(cmd->type, !!cmd->dimm);
 	struct ndctl_bus *bus = cmd_to_bus(cmd);
 	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
 
