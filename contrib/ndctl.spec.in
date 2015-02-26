@@ -11,13 +11,13 @@ Version:
 Release:        1%{?gitcommit:.git%{gitcommit}}%{?dist}
 Summary:	Manage "nd" subsystem devices (Non-volatile Memory)
 License:        GPLv2
-URL:            http://01.org/linux-nvdimm/
+URL:            https://github.com/pmem/ndctl
 
 %if %{defined gitcommit}
 # Snapshot tarball can be created using: ./make-git-shapshot.sh [gitcommit]
 Source0:        %{name}-git%{gitcommit}.tar.xz
 %else
-Source0:        https://github.com/01org/nd/archive/%{name}-%{version}.tar.gz
+Source0:        https://github.com/pmem/ndctl/archive/%{name}-%{version}.tar.gz
 %endif
 
 BuildRequires: libtool
