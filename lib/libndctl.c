@@ -1719,7 +1719,7 @@ NDCTL_EXPORT ssize_t ndctl_cmd_cfg_read_get_data(struct ndctl_cmd *cfg_read,
 NDCTL_EXPORT ssize_t ndctl_cmd_cfg_write_set_data(struct ndctl_cmd *cfg_write,
 		void *buf, unsigned int len, unsigned int offset)
 {
-	if (cfg_write->type != NFIT_CMD_SET_CONFIG_DATA || cfg_write->status > 0)
+	if (cfg_write->type != NFIT_CMD_SET_CONFIG_DATA || cfg_write->status < 1)
 		return -EINVAL;
 	if (cfg_write->status < 0)
 		return cfg_write->status;
