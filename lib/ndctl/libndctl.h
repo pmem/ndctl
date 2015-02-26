@@ -99,6 +99,8 @@ struct ndctl_ctx *ndctl_bus_get_ctx(struct ndctl_bus *bus);
 unsigned int ndctl_bus_get_major(struct ndctl_bus *bus);
 unsigned int ndctl_bus_get_minor(struct ndctl_bus *bus);
 const char *ndctl_bus_get_devname(struct ndctl_bus *bus);
+struct ndctl_bus *ndctl_bus_get_by_provider(struct ndctl_ctx *ctx,
+		const char *provider);
 struct ndctl_btt *ndctl_bus_get_btt_seed(struct ndctl_bus *bus);
 unsigned short ndctl_bus_get_format(struct ndctl_bus *bus);
 const char *ndctl_bus_get_cmd_name(struct ndctl_bus *bus, int cmd);
@@ -152,6 +154,7 @@ struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_size(struct ndctl_dimm *dimm);
 struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_read(struct ndctl_cmd *cfg_size);
 struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_write(struct ndctl_cmd *cfg_read);
 int ndctl_dimm_zero_labels(struct ndctl_dimm *dimm);
+unsigned long ndctl_dimm_get_available_labels(struct ndctl_dimm *dimm);
 unsigned int ndctl_cmd_cfg_size_get_size(struct ndctl_cmd *cfg_size);
 ssize_t ndctl_cmd_cfg_read_get_data(struct ndctl_cmd *cfg_read, void *buf,
 		unsigned int len, unsigned int offset);
@@ -257,6 +260,7 @@ int ndctl_namespace_enable(struct ndctl_namespace *ndns);
 int ndctl_namespace_disable(struct ndctl_namespace *ndns);
 int ndctl_namespace_is_valid(struct ndctl_namespace *ndns);
 int ndctl_namespace_is_configured(struct ndctl_namespace *ndns);
+int ndctl_namespace_delete(struct ndctl_namespace *ndns);
 int ndctl_namespace_set_uuid(struct ndctl_namespace *ndns, uuid_t uu);
 void ndctl_namespace_get_uuid(struct ndctl_namespace *ndns, uuid_t uu);
 const char *ndctl_namespace_get_alt_name(struct ndctl_namespace *ndns);

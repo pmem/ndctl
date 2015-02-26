@@ -910,6 +910,18 @@ NDCTL_EXPORT const char *ndctl_bus_get_devname(struct ndctl_bus *bus)
 	return devpath_to_devname(bus->bus_path);
 }
 
+NDCTL_EXPORT struct ndctl_bus *ndctl_bus_get_by_provider(struct ndctl_ctx *ctx,
+		const char *provider)
+{
+	struct ndctl_bus *bus;
+
+        ndctl_bus_foreach(ctx, bus)
+		if (strcmp(provider, ndctl_bus_get_provider(bus)) == 0)
+			return bus;
+
+	return NULL;
+}
+
 NDCTL_EXPORT struct ndctl_btt *ndctl_bus_get_btt_seed(struct ndctl_bus *bus)
 {
 	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
@@ -2118,6 +2130,26 @@ NDCTL_EXPORT int ndctl_dimm_is_active(struct ndctl_dimm *dimm)
 	return 0;
 }
 
+NDCTL_EXPORT unsigned long ndctl_dimm_get_available_labels(
+		struct ndctl_dimm *dimm)
+{
+	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
+	char *path = dimm->dimm_buf;
+	int len = dimm->buf_len;
+	char buf[20];
+
+	if (snprintf(path, len, "%s/available_slots", dimm->dimm_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_dimm_get_devname(dimm));
+		return -ENOMEM;
+	}
+
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		return 0;
+
+	return strtoul(buf, NULL, 0);
+}
+
 NDCTL_EXPORT int ndctl_interleave_set_is_active(
 		struct ndctl_interleave_set *iset)
 {
@@ -2770,11 +2802,19 @@ NDCTL_EXPORT unsigned long long ndctl_namespace_get_size(struct ndctl_namespace 
 	return ndns->size;
 }
 
-static int namespace_set_size(const char *path, struct ndctl_namespace *ndns,
+static int namespace_set_size(struct ndctl_namespace *ndns,
 		unsigned long long size)
 {
 	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
+	char *path = ndns->ndns_buf;
+	int len = ndns->buf_len;
 	char buf[50];
+
+	if (snprintf(path, len, "%s/size", ndns->ndns_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_namespace_get_devname(ndns));
+		return -ENXIO;
+	}
 
 	sprintf(buf, "%#llx\n", size);
 	if (sysfs_write_attr(ctx, path, buf) < 0)
@@ -2788,28 +2828,60 @@ NDCTL_EXPORT int ndctl_namespace_set_size(struct ndctl_namespace *ndns,
 		unsigned long long size)
 {
 	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
-	char *path = ndns->ndns_buf;
-	int len = ndns->buf_len;
+
+	if (size == 0) {
+		dbg(ctx, "%s: use ndctl_namespace_delete() instead\n",
+				ndctl_namespace_get_devname(ndns));
+		return -EINVAL;
+	}
 
 	if (ndctl_namespace_is_enabled(ndns))
 		return -EBUSY;
 
-	if (snprintf(path, len, "%s/size", ndns->ndns_path) >= len) {
-		err(ctx, "%s: buffer too small!\n",
-				ndctl_namespace_get_devname(ndns));
-		return -ENXIO;
-	}
-
 	switch (ndctl_namespace_get_type(ndns)) {
 	case ND_DEVICE_NAMESPACE_PMEM:
 	case ND_DEVICE_NAMESPACE_BLOCK:
-		return namespace_set_size(path, ndns, size);
+		return namespace_set_size(ndns, size);
 	default:
 		dbg(ctx, "%s: nstype: %d set size failed\n",
 				ndctl_namespace_get_devname(ndns),
 				ndctl_namespace_get_type(ndns));
 		return -ENXIO;
 	}
+}
+
+NDCTL_EXPORT int ndctl_namespace_delete(struct ndctl_namespace *ndns)
+{
+	struct ndctl_region *region = ndctl_namespace_get_region(ndns);
+	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
+	int rc;
+
+	if (!ndctl_namespace_is_valid(ndns)) {
+		free_namespace(ndns, &region->stale_namespaces);
+		return 0;
+	}
+
+	if (ndctl_namespace_is_enabled(ndns))
+		return -EBUSY;
+
+        switch (ndctl_namespace_get_type(ndns)) {
+        case ND_DEVICE_NAMESPACE_PMEM:
+        case ND_DEVICE_NAMESPACE_BLOCK:
+		break;
+	default:
+		dbg(ctx, "%s: nstype: %d delete failed\n",
+				ndctl_namespace_get_devname(ndns),
+				ndctl_namespace_get_type(ndns));
+		return -ENXIO;
+	}
+
+	rc = namespace_set_size(ndns, 0);
+	if (rc)
+		return rc;
+
+	region->namespaces_init = 0;
+	free_namespace(ndns, &region->namespaces);
+	return 0;
 }
 
 static int parse_lbasize_supported(struct ndctl_ctx *ctx, const char *buf,
