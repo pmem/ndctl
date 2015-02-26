@@ -1071,6 +1071,7 @@ int test_libndctl(int loglevel)
 	kmod_ctx = kmod_new(NULL, NULL);
 	if (!kmod_ctx)
 		goto err_kmod;
+	kmod_set_log_priority(kmod_ctx, loglevel);
 
 	err = kmod_module_new_from_name(kmod_ctx, NFIT_TEST_MODULE, &mod);
 	if (err < 0)
