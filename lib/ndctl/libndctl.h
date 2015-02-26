@@ -155,6 +155,7 @@ void ndctl_cmd_unref(struct ndctl_cmd *cmd);
 void ndctl_cmd_ref(struct ndctl_cmd *cmd);
 int ndctl_cmd_get_type(struct ndctl_cmd *cmd);
 int ndctl_cmd_get_status(struct ndctl_cmd *cmd);
+unsigned int ndctl_cmd_get_firmware_status(struct ndctl_cmd *cmd);
 int ndctl_cmd_submit(struct ndctl_cmd *cmd);
 
 struct ndctl_region;
