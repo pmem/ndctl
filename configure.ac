@@ -3,7 +3,7 @@ AC_INIT([ndctl],
         [26],
         [linux-nvdimm@lists.01.org],
         [ndctl],
-        [http://01.org/linux-nvdimm/])
+        [https://github.com/pmem/ndctl])
 AC_CONFIG_SRCDIR([lib/libndctl.c])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([
