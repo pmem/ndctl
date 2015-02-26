@@ -132,10 +132,13 @@ unsigned int ndctl_dimm_handle_get_socket(struct ndctl_dimm *dimm);
 unsigned int ndctl_dimm_handle_get_imc(struct ndctl_dimm *dimm);
 unsigned int ndctl_dimm_handle_get_channel(struct ndctl_dimm *dimm);
 unsigned int ndctl_dimm_handle_get_dimm(struct ndctl_dimm *dimm);
+const char *ndctl_dimm_get_devname(struct ndctl_dimm *dimm);
 struct ndctl_bus *ndctl_dimm_get_bus(struct ndctl_dimm *dimm);
 struct ndctl_ctx *ndctl_dimm_get_ctx(struct ndctl_dimm *dimm);
 struct ndctl_dimm *ndctl_dimm_get_by_handle(struct ndctl_bus *bus,
 		unsigned int handle);
+int ndctl_dimm_is_active(struct ndctl_dimm *dimm);
+int ndctl_dimm_is_enabled(struct ndctl_dimm *dimm);
 
 struct ndctl_cmd;
 struct ndctl_cmd *ndctl_dimm_cmd_new_vendor_specific(struct ndctl_dimm *dimm,

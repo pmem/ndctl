@@ -130,6 +130,9 @@ struct ndctl_dimm {
 	unsigned short revision_id;
 	unsigned short format_id;
 	unsigned long dsm_mask;
+	char *dimm_path;
+	char *dimm_buf;
+	int buf_len;
 	int id;
 	struct list_node list;
 };
@@ -1031,6 +1034,15 @@ static int add_dimm(void *parent, int id, const char *dimm_base)
 		goto err_read;
 	dimm->phys_id = strtoul(buf, NULL, 0);
 
+	dimm->dimm_path = strdup(dimm_base);
+	if (!dimm->dimm_path)
+		goto err_read;
+
+        dimm->dimm_buf = calloc(1, strlen(dimm_base) + 50);
+        if (!dimm->dimm_buf)
+                goto err_read;
+        dimm->buf_len = strlen(dimm_base) + 50;
+
 	sprintf(path, "%s/vendor", dimm_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		dimm->vendor_id = -1;
@@ -1149,6 +1161,11 @@ NDCTL_EXPORT unsigned int ndctl_dimm_get_id(struct ndctl_dimm *dimm)
 NDCTL_EXPORT unsigned int ndctl_dimm_get_serial(struct ndctl_dimm *dimm)
 {
 	return dimm->serial;
+}
+
+NDCTL_EXPORT const char *ndctl_dimm_get_devname(struct ndctl_dimm *dimm)
+{
+	return devpath_to_devname(dimm->dimm_path);
 }
 
 NDCTL_EXPORT const char *ndctl_dimm_get_cmd_name(struct ndctl_dimm *dimm, int cmd)
@@ -2012,18 +2029,31 @@ NDCTL_EXPORT struct ndctl_interleave_set *ndctl_interleave_set_get_next(
 	return iset;
 }
 
-NDCTL_EXPORT int ndctl_interleave_set_is_active(
-		struct ndctl_interleave_set *iset)
+NDCTL_EXPORT int ndctl_dimm_is_enabled(struct ndctl_dimm *dimm)
 {
-	struct ndctl_region *region = ndctl_interleave_set_get_region(iset);
-	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
-	char *path = region->region_buf;
-	int len = region->buf_len;
+	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
+	char *path = dimm->dimm_buf;
+	int len = dimm->buf_len;
+
+	if (snprintf(path, len, "%s/driver", dimm->dimm_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_dimm_get_devname(dimm));
+		return 0;
+	}
+
+	return is_enabled(ndctl_dimm_get_bus(dimm), path);
+}
+
+NDCTL_EXPORT int ndctl_dimm_is_active(struct ndctl_dimm *dimm)
+{
+	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
+	char *path = dimm->dimm_buf;
+	int len = dimm->buf_len;
 	char buf[20];
 
-	if (snprintf(path, len, "%s/set_state", region->region_path) >= len) {
+	if (snprintf(path, len, "%s/state", dimm->dimm_path) >= len) {
 		err(ctx, "%s: buffer too small!\n",
-				ndctl_region_get_devname(region));
+				ndctl_dimm_get_devname(dimm));
 		return -ENOMEM;
 	}
 
@@ -2032,6 +2062,21 @@ NDCTL_EXPORT int ndctl_interleave_set_is_active(
 
 	if (strcmp(buf, "active") == 0)
 		return 1;
+	return 0;
+}
+
+NDCTL_EXPORT int ndctl_interleave_set_is_active(
+		struct ndctl_interleave_set *iset)
+{
+	struct ndctl_dimm *dimm;
+
+	ndctl_dimm_foreach_in_interleave_set(iset, dimm) {
+		int active = ndctl_dimm_is_active(dimm);
+
+		if (active)
+			return active;
+	}
+
 	return 0;
 }
 
