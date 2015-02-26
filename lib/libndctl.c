@@ -293,11 +293,18 @@ struct ndctl_ctx {
  * @size: total size of the ndctl_cmd allocation
  * @status: negative if failed, 0 if success, > 0 if never submitted
  * @firmware_status: NFIT command output status code
+ * @iter: iterator for multi-xfer commands
+ * @source: source cmd of an inherited iter.total_buf
  *
  * For dynamically sized commands like 'get_config', 'set_config', or
  * 'vendor', @size encompasses the entire buffer for the command input
  * and response output data.
+ *
+ * A command may only specify one of @source, or @iter.total_buf, not both.
  */
+enum {
+	READ, WRITE,
+};
 struct ndctl_cmd {
 	struct ndctl_dimm *dimm;
 	struct ndctl_bus *bus;
@@ -306,6 +313,15 @@ struct ndctl_cmd {
 	int size;
 	int status;
 	u32 *firmware_status;
+	struct ndctl_cmd_iter {
+		u32 *offset;
+		u8 *data; /* pointer to the data buffer location in cmd */
+		u32 max_xfer;
+		char *total_buf;
+		u32 total_xfer;
+		int dir;
+	} iter;
+	struct ndctl_cmd *source;
 	union {
 		struct nfit_cmd_get_config_size get_size[0];
 		struct nfit_cmd_get_config_data_hdr get_data[0];
@@ -1481,7 +1497,7 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_vendor_specific(
 		return NULL;
 
 	cmd->dimm = dimm;
-	cmd->refcount = 1;
+	ndctl_cmd_ref(cmd);
 	cmd->type = NFIT_CMD_VENDOR;
 	cmd->size = size;
 	cmd->status = 1;
@@ -1543,7 +1559,7 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_size(struct ndctl_dimm *di
 		return NULL;
 
 	cmd->dimm = dimm;
-	cmd->refcount = 1;
+	ndctl_cmd_ref(cmd);
 	cmd->type = NFIT_CMD_GET_CONFIG_SIZE;
 	cmd->size = size;
 	cmd->status = 1;
@@ -1563,7 +1579,6 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_read(struct ndctl_cmd *cfg
 {
 	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(cmd_to_bus(cfg_size));
 	struct ndctl_dimm *dimm = cfg_size->dimm;
-	unsigned int config_size;
 	struct ndctl_cmd *cmd;
 	size_t size;
 
@@ -1582,9 +1597,8 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_read(struct ndctl_cmd *cfg
 		return NULL;
 	}
 
-	config_size = cfg_size->get_size->config_size;
 	size = sizeof(*cmd) + sizeof(struct nfit_cmd_get_config_data_hdr)
-		+ config_size;
+		+ cfg_size->get_size->max_xfer;
 	cmd = calloc(1, size);
 	if (!cmd)
 		return NULL;
@@ -1595,8 +1609,18 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_read(struct ndctl_cmd *cfg
 	cmd->size = size;
 	cmd->status = 1;
 	cmd->get_data->in_offset = 0;
-	cmd->get_data->in_length = config_size;
+	cmd->get_data->in_length = cfg_size->get_size->max_xfer;
 	cmd->firmware_status = &cmd->get_data->status;
+	cmd->iter.offset = &cmd->get_data->in_offset;
+	cmd->iter.max_xfer = cfg_size->get_size->max_xfer;
+	cmd->iter.data = cmd->get_data->out_buf;
+	cmd->iter.total_xfer = cfg_size->get_size->config_size;
+	cmd->iter.total_buf = calloc(1, cmd->iter.total_xfer);
+	cmd->iter.dir = READ;
+	if (!cmd->iter.total_buf) {
+		free(cmd);
+		return NULL;
+	}
 
 	return cmd;
 }
@@ -1605,7 +1629,6 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_write(struct ndctl_cmd *cf
 {
 	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(cmd_to_bus(cfg_read));
 	struct ndctl_dimm *dimm = cfg_read->dimm;
-	unsigned int config_size;
 	struct ndctl_cmd *cmd;
 	size_t size;
 
@@ -1626,23 +1649,29 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_write(struct ndctl_cmd *cf
 		return NULL;
 	}
 
-	config_size = cfg_read->get_data->in_length;
 	size = sizeof(*cmd) + sizeof(struct nfit_cmd_set_config_hdr)
-		+ config_size + 4;
+		+ cfg_read->iter.max_xfer + 4;
 	cmd = calloc(1, size);
 	if (!cmd)
 		return NULL;
 
 	cmd->dimm = cfg_read->dimm;
-	cmd->refcount = 1;
+	ndctl_cmd_ref(cmd);
 	cmd->type = NFIT_CMD_SET_CONFIG_DATA;
 	cmd->size = size;
 	cmd->status = 1;
 	cmd->set_data->in_offset = 0;
-	cmd->set_data->in_length = config_size;
+	cmd->set_data->in_length = cfg_read->iter.max_xfer;
 	cmd->firmware_status = (u32 *) (cmd->cmd_buf
-		+ sizeof(struct nfit_cmd_set_config_hdr) + config_size);
-	memcpy(cmd->set_data->in_buf, cfg_read->get_data->out_buf, config_size);
+		+ sizeof(struct nfit_cmd_set_config_hdr) + cfg_read->iter.max_xfer);
+	cmd->iter.offset = &cmd->set_data->in_offset;
+	cmd->iter.max_xfer = cfg_read->iter.max_xfer;
+	cmd->iter.data = cmd->set_data->in_buf;
+	cmd->iter.total_xfer = cfg_read->iter.total_xfer;
+	cmd->iter.total_buf = cfg_read->iter.total_buf;
+	cmd->iter.dir = WRITE;
+	cmd->source = cfg_read;
+	ndctl_cmd_ref(cfg_read);
 
 	return cmd;
 }
@@ -1656,33 +1685,54 @@ NDCTL_EXPORT unsigned int ndctl_cmd_cfg_size_get_size(struct ndctl_cmd *cfg_size
 }
 
 NDCTL_EXPORT ssize_t ndctl_cmd_cfg_read_get_data(struct ndctl_cmd *cfg_read,
-		void *buf, unsigned int len)
+		void *buf, unsigned int len, unsigned int offset)
 {
 	if (cfg_read->type != NFIT_CMD_GET_CONFIG_DATA || cfg_read->status > 0)
 		return -EINVAL;
 	if (cfg_read->status < 0)
 		return cfg_read->status;
-	len = min(len, cfg_read->get_data->in_length);
-	memcpy(buf, cfg_read->get_data->out_buf, len);
+	if (offset > cfg_read->iter.total_xfer || len + offset < len)
+		return -EINVAL;
+	if (len + offset > cfg_read->iter.total_xfer)
+		len = cfg_read->iter.total_xfer - offset;
+	memcpy(buf, cfg_read->iter.total_buf + offset, len);
 	return len;
 }
 
 NDCTL_EXPORT ssize_t ndctl_cmd_cfg_write_set_data(struct ndctl_cmd *cfg_write,
-		void *buf, unsigned int len)
+		void *buf, unsigned int len, unsigned int offset)
 {
 	if (cfg_write->type != NFIT_CMD_SET_CONFIG_DATA || cfg_write->status > 0)
 		return -EINVAL;
 	if (cfg_write->status < 0)
 		return cfg_write->status;
-	len = min(len, cfg_write->get_data->in_length);
-	memcpy(cfg_write->set_data->in_buf, buf, len);
+	if (offset > cfg_write->iter.total_xfer || len + offset < len)
+		return -EINVAL;
+	if (len + offset > cfg_write->iter.total_xfer)
+		len = cfg_write->iter.total_xfer - offset;
+	memcpy(cfg_write->iter.total_buf + offset, buf, len);
 	return len;
+}
+
+NDCTL_EXPORT ssize_t ndctl_cmd_cfg_write_zero_data(struct ndctl_cmd *cfg_write)
+{
+	if (cfg_write->type != NFIT_CMD_SET_CONFIG_DATA || cfg_write->status > 0)
+		return -EINVAL;
+	if (cfg_write->status < 0)
+		return cfg_write->status;
+	memset(cfg_write->iter.total_buf, 0, cfg_write->iter.total_xfer);
+	return cfg_write->iter.total_xfer;
 }
 
 NDCTL_EXPORT void ndctl_cmd_unref(struct ndctl_cmd *cmd)
 {
-	if (--cmd->refcount == 0)
+	if (--cmd->refcount == 0) {
+		if (cmd->source)
+			ndctl_cmd_unref(cmd->source);
+		else
+			free(cmd->iter.total_buf);
 		free(cmd);
+	}
 }
 
 NDCTL_EXPORT void ndctl_cmd_ref(struct ndctl_cmd *cmd)
@@ -1720,6 +1770,53 @@ static int to_ioctl_cmd(int cmd, int dimm)
 	default:
 					      return 0;
 	}
+}
+
+static int do_cmd(int fd, int ioctl_cmd, struct ndctl_cmd *cmd)
+{
+	int rc;
+	u32 offset;
+	const char *name;
+	struct ndctl_bus *bus = cmd_to_bus(cmd);
+	struct ndctl_cmd_iter *iter = &cmd->iter;
+	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
+
+	if (cmd->dimm)
+		name = ndctl_dimm_get_cmd_name(cmd->dimm, cmd->type);
+	else
+		name = ndctl_bus_get_cmd_name(cmd->bus, cmd->type);
+
+	if (iter->total_xfer == 0) {
+		rc = ioctl(fd, ioctl_cmd, cmd->cmd_buf);
+		dbg(ctx, "bus: %d dimm: %#x cmd: %s status: %d fw: %d\n",
+				bus->id, cmd->dimm
+				? ndctl_dimm_get_handle(cmd->dimm) : 0,
+				name, rc, *(cmd->firmware_status));
+		return rc;
+	}
+
+
+	for (offset = 0; offset < iter->total_xfer; offset += iter->max_xfer) {
+		if (iter->dir == WRITE)
+			memcpy(iter->data, iter->total_buf + offset,
+					iter->max_xfer);
+		*(cmd->iter.offset) = offset;
+		rc = ioctl(fd, ioctl_cmd, cmd->cmd_buf);
+		dbg(ctx, "bus: %d dimm: %#x cmd: %s offset: %d status: (%d:%d)\n",
+				bus->id, cmd->dimm
+				? ndctl_dimm_get_handle(cmd->dimm) : 0,
+				name, offset, rc, *(cmd->firmware_status));
+		if (rc)
+			return rc;
+
+		if (iter->dir == READ)
+			memcpy(iter->total_buf + offset, iter->data,
+					iter->max_xfer);
+		if (*(cmd->firmware_status))
+			return iter->total_xfer - offset;
+	}
+
+	return 0;
 }
 
 NDCTL_EXPORT int ndctl_cmd_submit(struct ndctl_cmd *cmd)
@@ -1764,17 +1861,13 @@ NDCTL_EXPORT int ndctl_cmd_submit(struct ndctl_cmd *cmd)
 	if (fstat(fd, &st) >= 0 && S_ISCHR(st.st_mode)
 			&& major(st.st_rdev) == major
 			&& minor(st.st_rdev) == minor) {
-		rc = ioctl(fd, ioctl_cmd, cmd->cmd_buf);
+		rc = do_cmd(fd, ioctl_cmd, cmd);
 	} else {
 		err(ctx, "failed to validate %s as a control node\n", path);
 		rc = -ENXIO;
 	}
 	close(fd);
  out:
-	dbg(ctx, "bus: %d dimm: %#x cmd: %s status: %d: (%s)\n", bus->id,
-			cmd->dimm ? ndctl_dimm_get_handle(cmd->dimm) : 0,
-			ndctl_bus_get_cmd_name(bus, cmd->type), rc,
-			rc == -1 ? strerror(errno) : "");
 	cmd->status = rc;
 	return rc;
 }

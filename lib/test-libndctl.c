@@ -859,7 +859,7 @@ static int check_get_config_data(struct ndctl_dimm *dimm, struct check_cmd *chec
 		return rc;
 	}
 
-	rc = ndctl_cmd_cfg_read_get_data(cmd, buf, SZ_128K);
+	rc = ndctl_cmd_cfg_read_get_data(cmd, buf, SZ_128K, 0);
 	if (rc != SZ_128K) {
 		fprintf(stderr, "%s: dimm: %#x expected read %d bytes, got: %zd\n",
 			__func__, ndctl_dimm_get_handle(dimm), SZ_128K, rc);
@@ -885,7 +885,7 @@ static int check_set_config_data(struct ndctl_dimm *dimm, struct check_cmd *chec
 	}
 
 	memset(buf, 0, sizeof(buf));
-	ndctl_cmd_cfg_write_set_data(cmd, buf, sizeof(buf));
+	ndctl_cmd_cfg_write_set_data(cmd, buf, sizeof(buf), 0);
 	rc = ndctl_cmd_submit(cmd);
 	if (rc) {
 		fprintf(stderr, "%s: dimm: %#x failed to submit cmd: %zd\n",
@@ -901,7 +901,7 @@ static int check_set_config_data(struct ndctl_dimm *dimm, struct check_cmd *chec
 		ndctl_cmd_unref(cmd);
 		return rc;
 	}
-	ndctl_cmd_cfg_read_get_data(cmd_read, result, sizeof(result));
+	ndctl_cmd_cfg_read_get_data(cmd_read, result, sizeof(result), 0);
 	if (memcmp(result, buf, sizeof(result)) != 0) {
 		fprintf(stderr, "%s: dimm: %#x read1 data miscompare: %zd\n",
 				__func__, ndctl_dimm_get_handle(dimm), rc);
@@ -910,7 +910,7 @@ static int check_set_config_data(struct ndctl_dimm *dimm, struct check_cmd *chec
 	}
 
 	sprintf(buf, "dimm-%#x", ndctl_dimm_get_handle(dimm));
-	ndctl_cmd_cfg_write_set_data(cmd, buf, sizeof(buf));
+	ndctl_cmd_cfg_write_set_data(cmd, buf, sizeof(buf), 0);
 	rc = ndctl_cmd_submit(cmd);
 	if (rc) {
 		fprintf(stderr, "%s: dimm: %#x failed to submit cmd: %zd\n",
@@ -926,7 +926,7 @@ static int check_set_config_data(struct ndctl_dimm *dimm, struct check_cmd *chec
 		ndctl_cmd_unref(cmd);
 		return rc;
 	}
-	ndctl_cmd_cfg_read_get_data(cmd_read, result, sizeof(result));
+	ndctl_cmd_cfg_read_get_data(cmd_read, result, sizeof(result), 0);
 	if (memcmp(result, buf, sizeof(result)) != 0) {
 		fprintf(stderr, "%s: dimm: %#x read2 data miscompare: %zd\n",
 				__func__, ndctl_dimm_get_handle(dimm), rc);

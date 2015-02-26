@@ -150,9 +150,10 @@ struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_read(struct ndctl_cmd *cfg_size);
 struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_write(struct ndctl_cmd *cfg_read);
 unsigned int ndctl_cmd_cfg_size_get_size(struct ndctl_cmd *cfg_size);
 ssize_t ndctl_cmd_cfg_read_get_data(struct ndctl_cmd *cfg_read, void *buf,
-		unsigned int len);
+		unsigned int len, unsigned int offset);
 ssize_t ndctl_cmd_cfg_write_set_data(struct ndctl_cmd *cfg_write, void *buf,
-		unsigned int len);
+		unsigned int len, unsigned int offset);
+ssize_t ndctl_cmd_cfg_write_zero_data(struct ndctl_cmd *cfg_write);
 void ndctl_cmd_unref(struct ndctl_cmd *cmd);
 void ndctl_cmd_ref(struct ndctl_cmd *cmd);
 int ndctl_cmd_get_type(struct ndctl_cmd *cmd);
