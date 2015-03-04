@@ -628,7 +628,7 @@ NDCTL_EXPORT void ndctl_set_log_priority(struct ndctl_ctx *ctx, int priority)
 
 #define SYSFS_ATTR_SIZE 1024
 
-static int sysfs_read_attr(struct ndctl_ctx *ctx, char *path, char *buf)
+static int sysfs_read_attr(struct ndctl_ctx *ctx, const char *path, char *buf)
 {
 	int fd = open(path, O_RDONLY|O_CLOEXEC);
 	int n;
