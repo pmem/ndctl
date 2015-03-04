@@ -90,9 +90,9 @@ pkgconfig_DATA = lib/libndctl.pc
 EXTRA_DIST += lib/libndctl.pc.in
 CLEANFILES += lib/libndctl.pc
 
-TESTS = lib/test-libndctl lib/test-nd-dsm lib/test-dpa-alloc
+TESTS = lib/test-libndctl lib/test-nd-dsm lib/test-dpa-alloc lib/test-blk-ns
 
-check_PROGRAMS = lib/test-libndctl lib/test-nd-dsm lib/test-dpa-alloc
+check_PROGRAMS = lib/test-libndctl lib/test-nd-dsm lib/test-dpa-alloc lib/test-blk-ns
 
 lib_test_libndctl_SOURCES = lib/test-libndctl.c
 lib_test_libndctl_LDADD = lib/libndctl.la \
@@ -100,6 +100,10 @@ lib_test_libndctl_LDADD = lib/libndctl.la \
 
 lib_test_nd_dsm_SOURCES = lib/nd_ioctl.c
 lib_test_nd_dsm_LDADD = lib/libndctl.la \
+	$(LIBKMOD)
+
+lib_test_blk_ns_SOURCES = lib/blk_namespaces.c
+lib_test_blk_ns_LDADD = lib/libndctl.la \
 	$(LIBKMOD)
 
 lib_test_dpa_alloc_SOURCES = lib/test-dpa-alloc.c
