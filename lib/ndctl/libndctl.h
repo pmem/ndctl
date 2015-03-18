@@ -102,7 +102,6 @@ const char *ndctl_bus_get_devname(struct ndctl_bus *bus);
 struct ndctl_bus *ndctl_bus_get_by_provider(struct ndctl_ctx *ctx,
 		const char *provider);
 struct ndctl_btt *ndctl_bus_get_btt_seed(struct ndctl_bus *bus);
-unsigned short ndctl_bus_get_format(struct ndctl_bus *bus);
 const char *ndctl_bus_get_cmd_name(struct ndctl_bus *bus, int cmd);
 int ndctl_bus_is_cmd_supported(struct ndctl_bus *bus, int cmd);
 unsigned int ndctl_bus_get_revision(struct ndctl_bus *bus);
