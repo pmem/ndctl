@@ -51,9 +51,11 @@ ndctl_SOURCES = ndctl.c \
 		builtin-xable-namespace.c \
 		builtin-xable-region.c \
 		builtin-test.c \
+		builtin-bat.c \
 		builtin-zero-labels.c \
 		lib/test-libndctl.c \
 		lib/test-dpa-alloc.c \
+		lib/blk_namespaces.c \
 		util/parse-options.c \
 		util/parse-options.h \
 		util/usage.c \
