@@ -42,6 +42,7 @@ int cmd_disable_region(int argc, const char **argv);
 int cmd_zero_labels(int argc, const char **argv);
 #ifdef ENABLE_TEST
 int cmd_test(int argc, const char **argv);
+int cmd_bat(int argc, const char **argv);
 #endif
 
 static struct cmd_struct commands[] = {
@@ -54,6 +55,7 @@ static struct cmd_struct commands[] = {
 	{ "zero-labels", cmd_zero_labels },
 	#ifdef ENABLE_TEST
 	{ "test", cmd_test },
+	{ "bat", cmd_bat },
 	#endif
 };
 

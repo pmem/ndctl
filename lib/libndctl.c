@@ -1519,6 +1519,8 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_vendor_specific(
 		return NULL;
 	}
 
+	fprintf(stderr, "%s: in: %zd out: %zd\n", __func__, input_size,
+			output_size);
 	size = sizeof(*cmd) + sizeof(struct nfit_cmd_vendor_hdr)
 		+ sizeof(struct nfit_cmd_vendor_tail) + input_size
 		+ output_size;
