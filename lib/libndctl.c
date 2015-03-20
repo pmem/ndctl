@@ -688,13 +688,16 @@ static char *parent_dev_path(char *type, int major, int minor)
 
 typedef int (*add_dev_fn)(void *parent, int id, const char *dev_path);
 
-static int device_parse(struct ndctl_ctx *ctx, const char *base_path,
-		const char *dev_name, void *parent, add_dev_fn add_dev)
+static int device_parse(struct ndctl_ctx *ctx, struct ndctl_bus *bus,
+		const char *base_path, const char *dev_name, void *parent,
+		add_dev_fn add_dev)
 {
 	int add_errors = 0;
 	struct dirent *de;
 	DIR *dir;
 
+	if (bus)
+		ndctl_bus_wait_probe(bus);
 	dir = opendir(base_path);
 	if (!dir) {
 		dbg(ctx, "no \"%s\" devices found\n", dev_name);
@@ -856,7 +859,7 @@ static void busses_init(struct ndctl_ctx *ctx)
 		return;
 	ctx->busses_init = 1;
 
-	device_parse(ctx, "/sys/class/nd", "ndctl", ctx, add_bus);
+	device_parse(ctx, NULL, "/sys/class/nd", "ndctl", ctx, add_bus);
 }
 
 /**
@@ -1106,9 +1109,9 @@ static void dimms_init(struct ndctl_bus *bus)
 {
 	if (bus->dimms_init)
 		return;
-	bus->dimms_init = 1;
 
-	device_parse(bus->ctx, bus->bus_path, "nvdimm", bus, add_dimm);
+	bus->dimms_init = 1;
+	device_parse(bus->ctx, bus, bus->bus_path, "nvdimm", bus, add_dimm);
 }
 
 NDCTL_EXPORT struct ndctl_dimm *ndctl_dimm_get_first(struct ndctl_bus *bus)
@@ -1326,9 +1329,9 @@ static void regions_init(struct ndctl_bus *bus)
 {
 	if (bus->regions_init)
 		return;
-	bus->regions_init = 1;
 
-	device_parse(bus->ctx, bus->bus_path, "region", bus, add_region);
+	bus->regions_init = 1;
+	device_parse(bus->ctx, bus, bus->bus_path, "region", bus, add_region);
 }
 
 NDCTL_EXPORT struct ndctl_region *ndctl_region_get_first(struct ndctl_bus *bus)
@@ -2439,9 +2442,8 @@ static void namespaces_init(struct ndctl_region *region)
 		return;
 	region->namespaces_init = 1;
 
-	ndctl_bus_wait_probe(bus);
 	sprintf(ndns_fmt, "namespace%d.", region->id);
-	device_parse(ctx, region->region_path, ndns_fmt, region, add_namespace);
+	device_parse(ctx, bus, region->region_path, ndns_fmt, region, add_namespace);
 }
 
 NDCTL_EXPORT struct ndctl_namespace *ndctl_namespace_get_first(struct ndctl_region *region)
@@ -3028,8 +3030,7 @@ static void btts_init(struct ndctl_bus *bus)
 		return;
 	bus->btts_init = 1;
 
-	ndctl_bus_wait_probe(bus);
-	device_parse(bus->ctx, bus->bus_path, "btt", bus, add_btt);
+	device_parse(bus->ctx, bus, bus->bus_path, "btt", bus, add_btt);
 }
 
 NDCTL_EXPORT struct ndctl_btt *ndctl_btt_get_first(struct ndctl_bus *bus)
