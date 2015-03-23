@@ -1510,7 +1510,8 @@ static struct nfit_cmd_vendor_tail *to_vendor_tail(struct ndctl_cmd *cmd)
 }
 
 NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_vendor_specific(
-		struct ndctl_dimm *dimm, size_t input_size, size_t output_size)
+		struct ndctl_dimm *dimm, unsigned int opcode, size_t input_size,
+		size_t output_size)
 {
 	struct ndctl_bus *bus = ndctl_dimm_get_bus(dimm);
 	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
@@ -1535,6 +1536,7 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_vendor_specific(
 	cmd->type = NFIT_CMD_VENDOR;
 	cmd->size = size;
 	cmd->status = 1;
+	cmd->vendor->opcode = opcode;
 	cmd->vendor->in_length = input_size;
 	cmd->firmware_status = &to_vendor_tail(cmd)->status;
 	to_vendor_tail(cmd)->out_length = output_size;
