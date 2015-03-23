@@ -341,7 +341,7 @@ static int send_id_dimm(int fd, struct ndctl_dimm *dimm)
 	id_cmd.in.flags	 		= 0;
 	id_cmd.out_length = sizeof(id_cmd.out_buf);
 
-	cmd = ndctl_dimm_cmd_new_vendor_specific(dimm, id_cmd.in_length,
+	cmd = ndctl_dimm_cmd_new_vendor_specific(dimm, 1, id_cmd.in_length,
 			id_cmd.out_length);
 	if (!cmd)
 		return -ENOMEM;
