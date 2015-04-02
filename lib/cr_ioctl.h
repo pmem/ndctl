@@ -1471,4 +1471,23 @@ struct cr_pt_output_payload_fw_error_log {
 	unsigned char reservers[4];
 } __attribute__((packed));
 
+/* flags for fnv_passthru_cmd */
+enum {
+	FNV_BIOS_FLAG = 1,
+};
+
+enum {
+	FNV_BIOS_OPCODE			= 1,
+	FNV_BIOS_SUBOP_GET_SIZE		= 0,
+	FNV_BIOS_SUBOP_READ_INPUT	= 1,
+	FNV_BIOS_SUBOP_WRITE_INPUT	= 2,
+	FNV_BIOS_SUBOP_READ_OUTPUT	= 3,
+};
+
+struct fnv_bios_get_size {
+	__u32	input_size;
+	__u32	output_size;
+	__u32	rw_size;
+} __attribute__((packed));
+
 #endif	/* _CR_IOCTL_H */
