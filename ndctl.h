@@ -50,6 +50,7 @@ struct nfit_cmd_set_config_hdr {
 } __attribute__((packed));
 
 struct nfit_cmd_vendor_hdr {
+	__u32 opcode;
 	__u32 in_length;
 	__u8 in_buf[0];
 } __attribute__((packed));
@@ -118,7 +119,7 @@ static __inline__ const char *nfit_bus_cmd_name(unsigned cmd)
 		[NFIT_CMD_ARS_QUERY] = "ars_query",
 	};
 
-	if (cmd < ARRAY_SIZE(names))
+	if (cmd < ARRAY_SIZE(names) && names[cmd])
 		return names[cmd];
 	return "unknown";
 }
@@ -132,10 +133,12 @@ static __inline__ const char *nfit_dimm_cmd_name(unsigned cmd)
 		[NFIT_CMD_GET_CONFIG_SIZE] = "get_size",
 		[NFIT_CMD_GET_CONFIG_DATA] = "get_data",
 		[NFIT_CMD_SET_CONFIG_DATA] = "set_data",
+		[NFIT_CMD_VENDOR_EFFECT_LOG_SIZE] = "effect_size",
+		[NFIT_CMD_VENDOR_EFFECT_LOG] = "effect_log",
 		[NFIT_CMD_VENDOR] = "vendor",
 	};
 
-	if (cmd < ARRAY_SIZE(names))
+	if (cmd < ARRAY_SIZE(names) && names[cmd])
 		return names[cmd];
 	return "unknown";
 }
