@@ -246,6 +246,12 @@ struct ndctl_namespace *ndctl_namespace_get_next(struct ndctl_namespace *ndns);
         for (ndns = ndctl_namespace_get_first(region); \
              ndns != NULL; \
              ndns = ndctl_namespace_get_next(ndns))
+#define ndctl_namespace_foreach_safe(region, ndns, _ndns) \
+	for (ndns = ndctl_namespace_get_first(region), \
+	     _ndns = ndctl_namespace_get_next(ndns); \
+	     ndns != NULL; \
+	     ndns = _ndns, \
+	     _ndns = _ndns ? ndctl_namespace_get_next(_ndns) : NULL)
 struct ndctl_ctx *ndctl_namespace_get_ctx(struct ndctl_namespace *ndns);
 struct ndctl_bus *ndctl_namespace_get_bus(struct ndctl_namespace *ndns);
 struct ndctl_region *ndctl_namespace_get_region(struct ndctl_namespace *ndns);
@@ -282,6 +288,12 @@ struct ndctl_btt *ndctl_btt_get_next(struct ndctl_btt *btt);
         for (btt = ndctl_btt_get_first(bus); \
              btt != NULL; \
              btt = ndctl_btt_get_next(btt))
+#define ndctl_btt_foreach_safe(bus, btt, _btt) \
+	for (btt = ndctl_btt_get_first(bus), \
+	     _btt = ndctl_btt_get_next(btt); \
+	     btt != NULL; \
+	     btt = _btt, \
+	     _btt = _btt ? ndctl_btt_get_next(_btt) : NULL)
 struct ndctl_ctx *ndctl_btt_get_ctx(struct ndctl_btt *btt);
 struct ndctl_bus *ndctl_btt_get_bus(struct ndctl_btt *btt);
 unsigned int ndctl_btt_get_id(struct ndctl_btt *btt);
