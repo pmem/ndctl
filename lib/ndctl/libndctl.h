@@ -197,7 +197,8 @@ struct ndctl_dimm *ndctl_region_get_next_dimm(struct ndctl_region *region,
              dimm = ndctl_region_get_next_dimm(region, dimm))
 int ndctl_region_is_enabled(struct ndctl_region *region);
 int ndctl_region_enable(struct ndctl_region *region);
-int ndctl_region_disable(struct ndctl_region *region, int cleanup);
+int ndctl_region_disable_invalidate(struct ndctl_region *region);
+int ndctl_region_disable_preserve(struct ndctl_region *region);
 void ndctl_region_cleanup(struct ndctl_region *region);
 
 struct ndctl_interleave_set;

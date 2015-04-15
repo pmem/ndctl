@@ -2026,7 +2026,7 @@ NDCTL_EXPORT void ndctl_region_cleanup(struct ndctl_region *region)
 	free_namespaces(region, &region->stale_namespaces);
 }
 
-NDCTL_EXPORT int ndctl_region_disable(struct ndctl_region *region, int cleanup)
+static int ndctl_region_disable(struct ndctl_region *region, int cleanup)
 {
 	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
 	const char *devname = ndctl_region_get_devname(region);
@@ -2048,6 +2048,16 @@ NDCTL_EXPORT int ndctl_region_disable(struct ndctl_region *region, int cleanup)
 
 	dbg(ctx, "%s: disabled\n", devname);
 	return 0;
+}
+
+NDCTL_EXPORT int ndctl_region_disable_invalidate(struct ndctl_region *region)
+{
+	return ndctl_region_disable(region, 1);
+}
+
+NDCTL_EXPORT int ndctl_region_disable_preserve(struct ndctl_region *region)
+{
+	return ndctl_region_disable(region, 0);
 }
 
 NDCTL_EXPORT struct ndctl_interleave_set *ndctl_region_get_interleave_set(

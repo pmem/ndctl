@@ -83,7 +83,8 @@ global:
 	ndctl_region_get_next_dimm;
 	ndctl_region_is_enabled;
 	ndctl_region_enable;
-	ndctl_region_disable;
+	ndctl_region_disable_invalidate;
+	ndctl_region_disable_preserve;
 	ndctl_region_cleanup;
 	ndctl_region_get_interleave_set;
 	ndctl_interleave_set_get_first;

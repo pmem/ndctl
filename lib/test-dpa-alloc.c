@@ -65,14 +65,14 @@ static int do_test(struct ndctl_ctx *ctx)
 	if (!bus)
 		return -ENXIO;
 	ndctl_region_foreach(bus, region)
-		ndctl_region_disable(region, 1);
+		ndctl_region_disable_invalidate(region);
 
 	/* init nfit_test.0 */
 	bus = ndctl_bus_get_by_provider(ctx, NFIT_PROVIDER0);
 	if (!bus)
 		return -ENXIO;
 	ndctl_region_foreach(bus, region)
-		ndctl_region_disable(region, 1);
+		ndctl_region_disable_invalidate(region);
 
 	ndctl_dimm_foreach(bus, dimm) {
 		rc = ndctl_dimm_zero_labels(dimm);
@@ -205,7 +205,7 @@ static int do_test(struct ndctl_ctx *ctx)
 		namespaces[i].ndns = NULL;
 	}
 
-	ndctl_region_disable(region, 1);
+	ndctl_region_disable_invalidate(region);
 	rc = ndctl_region_enable(region);
 	if (rc) {
 		fprintf(stderr, "failed to re-enable %s: %d\n",
@@ -273,7 +273,7 @@ static int do_test(struct ndctl_ctx *ctx)
 	}
 
 	ndctl_region_foreach(bus, region)
-		ndctl_region_disable(region, 1);
+		ndctl_region_disable_invalidate(region);
 
 	return 0;
 }
