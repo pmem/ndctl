@@ -31,17 +31,17 @@ static int do_zero_dimm(struct ndctl_dimm *dimm, const char **argv, int argc,
 
 int cmd_zero_labels(int argc, const char **argv)
 {
-	const char *nvdimm_bus = NULL, *provider;
+	const char *nmem_bus = NULL, *provider;
 	bool verbose = false;
-	const struct option nvdimm_options[] = {
-		OPT_STRING('b', "bus", &nvdimm_bus, "bus-id",
-				"<nvdimm> must be on a bus with an id/provider of <bus-id>"),
+	const struct option nmem_options[] = {
+		OPT_STRING('b', "bus", &nmem_bus, "bus-id",
+				"<nmem> must be on a bus with an id/provider of <bus-id>"),
 		OPT_BOOLEAN('v',"verbose", &verbose, "turn on debug"),
 		OPT_END(),
 	};
 	unsigned long bus_id = ULONG_MAX, dimm_id;
 	const char * const u[] = {
-		"ndctl zero-labels <nvdimm0> [<nvdimm1>..<nvdimmN>] [<options>]",
+		"ndctl zero-labels <nmem0> [<nmem1>..<nmemN>] [<options>]",
 		NULL
 	};
 	struct ndctl_dimm *dimm;
@@ -49,17 +49,17 @@ int cmd_zero_labels(int argc, const char **argv)
 	struct ndctl_bus *bus;
 	int i, rc, count, err;
 
-        argc = parse_options(argc, argv, nvdimm_options, u, 0);
+        argc = parse_options(argc, argv, nmem_options, u, 0);
 
 	if (argc == 0)
-		usage_with_options(u, nvdimm_options);
+		usage_with_options(u, nmem_options);
 	for (i = 0; i < argc; i++) {
 		if (strcmp(argv[i], "all") == 0)
 			continue;
-		if (sscanf(argv[i], "nvdimm%lu", &dimm_id) != 1) {
+		if (sscanf(argv[i], "nmem%lu", &dimm_id) != 1) {
 			fprintf(stderr, "unknown extra parameter \"%s\"\n",
 					argv[i]);
-			usage_with_options(u, nvdimm_options);
+			usage_with_options(u, nmem_options);
 		}
 	}
 
@@ -67,10 +67,10 @@ int cmd_zero_labels(int argc, const char **argv)
 	if (rc < 0)
 		return rc;
 
-	if (nvdimm_bus) {
+	if (nmem_bus) {
 		char *end = NULL;
 
-		bus_id = strtoul(nvdimm_bus, &end, 0);
+		bus_id = strtoul(nmem_bus, &end, 0);
 		if (end)
 			bus_id = ULONG_MAX;
 	}
@@ -82,8 +82,8 @@ int cmd_zero_labels(int argc, const char **argv)
 		provider = ndctl_bus_get_provider(bus);
 		if (bus_id < ULONG_MAX && bus_id != id)
 			continue;
-		else if (bus_id == ULONG_MAX && nvdimm_bus
-				&& strcmp(nvdimm_bus, provider) != 0)
+		else if (bus_id == ULONG_MAX && nmem_bus
+				&& strcmp(nmem_bus, provider) != 0)
 			continue;
 
 		ndctl_dimm_foreach(bus, dimm) {
@@ -96,7 +96,7 @@ int cmd_zero_labels(int argc, const char **argv)
 	}
 	rc = err;
 
-	fprintf(stderr, "zeroed %d nvdimm%s\n", count, count > 1 ? "s" : "");
+	fprintf(stderr, "zeroed %d nmem%s\n", count, count > 1 ? "s" : "");
 
 	ndctl_unref(ctx);
 

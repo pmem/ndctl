@@ -108,8 +108,8 @@ struct ndctl_bus {
 /**
  * struct ndctl_dimm - memory device as identified by NFIT
  * @handle: NFIT-handle value
- * @major: /dev/nvdimmX major character device number
- * @minor: /dev/nvdimmX minor character device number
+ * @major: /dev/nmemX major character device number
+ * @minor: /dev/nmemX minor character device number
  * @phys_id: SMBIOS physical id
  * @vendor_id: hardware component vendor
  * @device_id: hardware device id
@@ -1111,7 +1111,7 @@ static void dimms_init(struct ndctl_bus *bus)
 		return;
 
 	bus->dimms_init = 1;
-	device_parse(bus->ctx, bus, bus->bus_path, "nvdimm", bus, add_dimm);
+	device_parse(bus->ctx, bus, bus->bus_path, "nmem", bus, add_dimm);
 }
 
 NDCTL_EXPORT struct ndctl_dimm *ndctl_dimm_get_first(struct ndctl_bus *bus)
@@ -1924,7 +1924,7 @@ NDCTL_EXPORT int ndctl_cmd_submit(struct ndctl_cmd *cmd)
 	}
 
 	if (cmd->dimm) {
-		prefix = "nvdimm";
+		prefix = "nmem";
 		id = ndctl_dimm_get_id(cmd->dimm);
 		major = ndctl_dimm_get_major(cmd->dimm);
 		minor = ndctl_dimm_get_minor(cmd->dimm);
