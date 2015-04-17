@@ -96,10 +96,14 @@ static const char *NFIT_TEST_MODULE = "nfit_test";
 static const char *NFIT_PROVIDER0 = "nfit_test.0";
 static const char *NFIT_PROVIDER1 = "nfit_test.1";
 #define SZ_128K 0x00020000
+#define SZ_7M   0x00700000
 #define SZ_8M   0x00800000
+#define SZ_11M  0x00b00000
 #define SZ_12M  0x00c00000
 #define SZ_16M  0x01000000
+#define SZ_18M  0x01200000
 #define SZ_20M  0x01400000
+#define SZ_27M  0x01b00000
 #define SZ_28M  0x01c00000
 #define SZ_32M  0x02000000
 #define SZ_64M  0x04000000
@@ -165,7 +169,7 @@ struct namespace {
 static uuid_t null_uuid;
 
 static struct namespace namespace0_pmem0 = {
-	0, "namespace_pmem", &btt_settings, SZ_16M,
+	0, "namespace_pmem", &btt_settings, SZ_18M,
 	{ 1, 1, 1, 1,
 	  1, 1, 1, 1,
 	  1, 1, 1, 1,
@@ -173,7 +177,7 @@ static struct namespace namespace0_pmem0 = {
 };
 
 static struct namespace namespace1_pmem0 = {
-	0, "namespace_pmem", &btt_settings, SZ_16M,
+	0, "namespace_pmem", &btt_settings, SZ_20M,
 	{ 2, 2, 2, 2,
 	  2, 2, 2, 2,
 	  2, 2, 2, 2,
@@ -181,7 +185,7 @@ static struct namespace namespace1_pmem0 = {
 };
 
 static struct namespace namespace2_blk0 = {
-	0, "namespace_block", NULL, SZ_8M,
+	0, "namespace_block", NULL, SZ_7M,
 	{ 3, 3, 3, 3,
 	  3, 3, 3, 3,
 	  3, 3, 3, 3,
@@ -189,7 +193,7 @@ static struct namespace namespace2_blk0 = {
 };
 
 static struct namespace namespace2_blk1 = {
-	1, "namespace_block", NULL, SZ_12M,
+	1, "namespace_block", NULL, SZ_11M,
 	{ 4, 4, 4, 4,
 	  4, 4, 4, 4,
 	  4, 4, 4, 4,
@@ -197,7 +201,7 @@ static struct namespace namespace2_blk1 = {
 };
 
 static struct namespace namespace3_blk0 = {
-	0, "namespace_block", NULL, SZ_8M,
+	0, "namespace_block", NULL, SZ_7M,
 	{ 5, 5, 5, 5,
 	  5, 5, 5, 5,
 	  5, 5, 5, 5,
@@ -205,7 +209,7 @@ static struct namespace namespace3_blk0 = {
 };
 
 static struct namespace namespace3_blk1 = {
-	1, "namespace_block", NULL, SZ_12M,
+	1, "namespace_block", NULL, SZ_11M,
 	{ 6, 6, 6, 6,
 	  6, 6, 6, 6,
 	  6, 6, 6, 6,
@@ -213,7 +217,7 @@ static struct namespace namespace3_blk1 = {
 };
 
 static struct namespace namespace4_blk0 = {
-	0, "namespace_block", &btt_settings, SZ_28M,
+	0, "namespace_block", &btt_settings, SZ_27M,
 	{ 7, 7, 7, 7,
 	  7, 7, 7, 7,
 	  7, 7, 7, 7,
@@ -221,7 +225,7 @@ static struct namespace namespace4_blk0 = {
 };
 
 static struct namespace namespace5_blk0 = {
-	0, "namespace_block", &btt_settings, SZ_28M,
+	0, "namespace_block", &btt_settings, SZ_27M,
 	{ 8, 8, 8, 8,
 	  8, 8, 8, 8,
 	  8, 8, 8, 8,
@@ -233,13 +237,13 @@ static struct region regions0[] = {
 		{ &namespace0_pmem0, NULL, }, },
 	{ { 2 }, 4, 1, "pmem", SZ_64M, SZ_64M, { 1 },
 		{ &namespace1_pmem0, NULL, }, },
-	{ { DIMM_HANDLE(0, 0, 0, 0, 0) }, 1, 1, "block", SZ_20M, SZ_32M, { },
+	{ { DIMM_HANDLE(0, 0, 0, 0, 0) }, 1, 1, "block", SZ_18M, SZ_32M, { },
 		{ &namespace2_blk0, &namespace2_blk1, NULL, }, },
-	{ { DIMM_HANDLE(0, 0, 0, 0, 1) }, 1, 1, "block", SZ_20M, SZ_32M, { },
+	{ { DIMM_HANDLE(0, 0, 0, 0, 1) }, 1, 1, "block", SZ_18M, SZ_32M, { },
 		{ &namespace3_blk0, &namespace3_blk1, NULL, }, },
-	{ { DIMM_HANDLE(0, 0, 1, 0, 0) }, 1, 1, "block", SZ_28M, SZ_32M, { },
+	{ { DIMM_HANDLE(0, 0, 1, 0, 0) }, 1, 1, "block", SZ_27M, SZ_32M, { },
 		{ &namespace4_blk0, NULL, }, },
-	{ { DIMM_HANDLE(0, 0, 1, 0, 1) }, 1, 1, "block", SZ_28M, SZ_32M, { },
+	{ { DIMM_HANDLE(0, 0, 1, 0, 1) }, 1, 1, "block", SZ_27M, SZ_32M, { },
 		{ &namespace5_blk0, NULL, }, },
 };
 
