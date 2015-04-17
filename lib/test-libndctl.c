@@ -437,11 +437,12 @@ static int check_regions(struct ndctl_bus *bus, struct region *regions, int n)
 static int check_btt_create(struct ndctl_bus *bus, struct ndctl_namespace *ndns,
 		struct btt *create_btt)
 {
-	int i, fd, rc, retry = 10;
+	int i, fd, retry = 10;
 	struct ndctl_btt *btt;
 	const char *devname;
 	char bdevpath[50];
 	void *buf = NULL;
+	ssize_t rc;
 
 	if (!create_btt)
 		return 0;
@@ -469,20 +470,23 @@ static int check_btt_create(struct ndctl_bus *bus, struct ndctl_namespace *ndns,
 					devname, bdevpath);
 
 		while (fd >= 0) {
-			if (read(fd, buf, 4096) < 4096) {
+			rc = pread(fd, buf, 4096, 0);
+			if (rc < 4096) {
 				/* TODO: track down how this happens! */
 				if (errno == ENOENT && retry--) {
 					usleep(5000);
 					continue;
 				}
-				fprintf(stderr, "%s: failed to read %s: %d (%s)\n",
-						devname, bdevpath, -errno,
+				fprintf(stderr, "%s: failed to read %s: %d %zd (%s)\n",
+						devname, bdevpath, -errno, rc,
 						strerror(errno));
+				rc = -ENXIO;
 				break;
 			}
 			if (write(fd, buf, 4096) < 4096) {
 				fprintf(stderr, "%s: failed to write %s\n",
 						devname, bdevpath);
+				rc = -ENXIO;
 				break;
 			}
 			rc = 0;
@@ -491,9 +495,12 @@ static int check_btt_create(struct ndctl_bus *bus, struct ndctl_namespace *ndns,
 		if (fd >= 0)
 			close(fd);
 
+		if (rc)
+			return rc;
+
 		rc = ndctl_btt_delete(btt);
-		if(rc)
-			fprintf(stderr, "%s: failed to delete btt (%d)\n", devname, rc);
+		if (rc)
+			fprintf(stderr, "%s: failed to delete btt (%zd)\n", devname, rc);
 	}
 	free(buf);
 	return rc;
