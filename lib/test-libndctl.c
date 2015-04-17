@@ -554,6 +554,64 @@ static int configure_namespace(struct ndctl_region *region,
 	return rc;
 }
 
+static int check_btt_autodetect(struct ndctl_bus *bus,
+		struct ndctl_namespace *ndns, void *buf, struct btt *auto_btt)
+{
+	const char *ndns_bdev = ndctl_namespace_get_block_device(ndns);
+	const char *devname = ndctl_namespace_get_devname(ndns);
+	struct ndctl_btt *btt, *found = NULL;
+	const char *btt_bdev;
+	ssize_t rc;
+	int fd;
+
+	ndctl_btt_foreach(bus, btt) {
+		uuid_t uu;
+
+		ndctl_btt_get_uuid(btt, uu);
+		if (uuid_compare(uu, auto_btt->uuid) != 0)
+			continue;
+		if (!ndctl_btt_is_enabled(btt))
+			continue;
+		btt_bdev = ndctl_btt_get_backing_dev(btt);
+		if (strcmp(btt_bdev+5, ndns_bdev) != 0)
+			continue;
+		found = btt;
+		break;
+	}
+
+	if (!found)
+		return -ENXIO;
+
+	btt_bdev = strdup(btt_bdev);
+	if (!btt_bdev) {
+		fprintf(stderr, "%s: failed to dup btt_bdev\n", devname);
+		return -ENXIO;
+	}
+
+	ndctl_btt_delete(found);
+
+	/* destroy btt */
+	fd = open(btt_bdev, O_RDWR|O_DIRECT|O_EXCL);
+	if (fd < 0) {
+		fprintf(stderr, "%s: failed to open %s to destroy btt\n",
+				devname, btt_bdev);
+		free((char *) btt_bdev);
+		return -ENXIO;
+	}
+
+	memset(buf, 0, 4096);
+	rc = pwrite(fd, buf, 4096, 4096);
+	close(fd);
+	if (rc < 4096) {
+		rc = -ENXIO;
+		fprintf(stderr, "%s: failed to overwrite btt on %s\n",
+				devname, btt_bdev);
+	}
+	free((char *) btt_bdev);
+
+	return rc;
+}
+
 static int check_namespaces(struct ndctl_region *region,
 		struct namespace **namespaces)
 {
@@ -674,6 +732,13 @@ retry:
 
 		if (ndctl_namespace_enable(ndns) < 0) {
 			fprintf(stderr, "%s: failed to enable\n", devname);
+			break;
+		}
+
+		if (namespace->btt_settings
+				&& check_btt_autodetect(bus, ndns, buf,
+					namespace->btt_settings) < 0) {
+			fprintf(stderr, "%s, failed btt autodetect\n", devname);
 			break;
 		}
 		ndns_save = realloc(ndns_save,
