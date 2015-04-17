@@ -2621,10 +2621,13 @@ static int ndctl_unbind(struct ndctl_ctx *ctx, const char *devpath)
 	return sysfs_write_attr(ctx, path, devname);
 }
 
+static void btts_init(struct ndctl_bus *bus);
+
 NDCTL_EXPORT int ndctl_namespace_enable(struct ndctl_namespace *ndns)
 {
-	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
 	const char *devname = ndctl_namespace_get_devname(ndns);
+	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
+	struct ndctl_bus *bus = ndctl_namespace_get_bus(ndns);
 	struct ndctl_region *region = ndns->region;
 	int rc;
 
@@ -2640,10 +2643,12 @@ NDCTL_EXPORT int ndctl_namespace_enable(struct ndctl_namespace *ndns)
 
 	/*
 	 * Rescan now as successfully enabling a namespace device leads
-	 * to a new one being created
+	 * to a new one being created, and potentially btts being attached
 	 */
 	region->namespaces_init = 0;
 	namespaces_init(region);
+	bus->btts_init = 0;
+	btts_init(bus);
 
 	dbg(ctx, "%s: enabled\n", devname);
 
