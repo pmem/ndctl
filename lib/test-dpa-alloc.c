@@ -27,13 +27,14 @@
 #include <uuid/uuid.h>
 
 #include <ndctl/libndctl.h>
+#include <test-dpa-alloc.h>
+#include <ccan/array_size/array_size.h>
+
 #ifdef HAVE_NDCTL_H
 #include <linux/ndctl.h>
 #else
 #include <ndctl.h>
 #endif
-#include <test-dpa-alloc.h>
-#include <ccan/array_size/array_size.h>
 
 static const char *NFIT_TEST_MODULE = "nfit_test";
 static const char *NFIT_PROVIDER0 = "nfit_test.0";
