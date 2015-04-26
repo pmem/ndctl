@@ -90,7 +90,7 @@ static int do_test(struct ndctl_ctx *ctx)
 	 * to lowest with no excursions into BLK only ranges.
 	 */
 	ndctl_region_foreach(bus, region) {
-		if (ndctl_region_get_type(region) != ND_DEVICE_REGION_BLOCK)
+		if (ndctl_region_get_type(region) != ND_DEVICE_REGION_BLK)
 			continue;
 		dimm = ndctl_region_get_first_dimm(region);
 		if (!dimm)

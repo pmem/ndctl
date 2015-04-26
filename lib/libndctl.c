@@ -98,6 +98,7 @@ struct ndctl_bus {
 	int dimms_init;
 	int btts_init;
 	int regions_init;
+	int has_nfit;
 	char *bus_path;
 	char *bus_buf;
 	size_t buf_len;
@@ -326,10 +327,10 @@ struct ndctl_cmd {
 	} iter;
 	struct ndctl_cmd *source;
 	union {
-		struct nfit_cmd_get_config_size get_size[0];
-		struct nfit_cmd_get_config_data_hdr get_data[0];
-		struct nfit_cmd_set_config_hdr set_data[0];
-		struct nfit_cmd_vendor_hdr vendor[0];
+		struct nd_cmd_get_config_size get_size[0];
+		struct nd_cmd_get_config_data_hdr get_data[0];
+		struct nd_cmd_set_config_hdr set_data[0];
+		struct nd_cmd_vendor_hdr vendor[0];
 		char cmd_buf[0];
 	};
 };
@@ -742,11 +743,11 @@ static int to_dsm_index(const char *name, int dimm)
 	int i, end_cmd;
 
 	if (dimm) {
-		end_cmd = NFIT_CMD_VENDOR;
-		cmd_name_fn = nfit_dimm_cmd_name;
+		end_cmd = ND_CMD_VENDOR;
+		cmd_name_fn = nd_dimm_cmd_name;
 	} else {
-		end_cmd = NFIT_CMD_ARS_QUERY;
-		cmd_name_fn = nfit_bus_cmd_name;
+		end_cmd = ND_CMD_ARS_QUERY;
+		cmd_name_fn = nd_bus_cmd_name;
 	}
 
 	for (i = 1; i <= end_cmd; i++) {
@@ -784,7 +785,7 @@ static int add_bus(void *parent, int id, const char *ctl_base)
 	struct ndctl_bus *bus;
 	char buf[SYSFS_ATTR_SIZE];
 	struct ndctl_ctx *ctx = parent;
-	char *path = calloc(1, strlen(ctl_base) + 20);
+	char *path = calloc(1, strlen(ctl_base) + 100);
 
 	if (!path)
 		return -ENOMEM;
@@ -809,10 +810,14 @@ static int add_bus(void *parent, int id, const char *ctl_base)
 		goto err_read;
 	bus->dsm_mask = parse_commands(buf, 0);
 
-	sprintf(path, "%s/device/revision", ctl_base);
-	if (sysfs_read_attr(ctx, path, buf) < 0)
-		goto err_read;
-	bus->revision = strtoul(buf, NULL, 0);
+	sprintf(path, "%s/device/nfit/revision", ctl_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0) {
+		bus->has_nfit = 0;
+		bus->revision = -1;
+	} else {
+		bus->has_nfit = 1;
+		bus->revision = strtoul(buf, NULL, 0);
+	}
 
 	sprintf(path, "%s/device/provider", ctl_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
@@ -890,6 +895,11 @@ NDCTL_EXPORT struct ndctl_bus *ndctl_bus_get_next(struct ndctl_bus *bus)
 	return list_next(&ctx->busses, bus, list);
 }
 
+NDCTL_EXPORT int ndctl_bus_has_nfit(struct ndctl_bus *bus)
+{
+	return bus->has_nfit;
+}
+
 /**
  * ndctl_bus_get_major - nd bus character device major number
  * @bus: ndctl_bus instance returned from ndctl_bus_get_{first|next}
@@ -950,7 +960,7 @@ NDCTL_EXPORT struct ndctl_btt *ndctl_bus_get_btt_seed(struct ndctl_bus *bus)
 
 NDCTL_EXPORT const char *ndctl_bus_get_cmd_name(struct ndctl_bus *bus, int cmd)
 {
-	return nfit_bus_cmd_name(cmd);
+	return nd_bus_cmd_name(cmd);
 }
 
 NDCTL_EXPORT int ndctl_bus_is_cmd_supported(struct ndctl_bus *bus,
@@ -1020,7 +1030,7 @@ static int add_dimm(void *parent, int id, const char *dimm_base)
 	char buf[SYSFS_ATTR_SIZE];
 	struct ndctl_bus *bus = parent;
 	struct ndctl_ctx *ctx = bus->ctx;
-	char *path = calloc(1, strlen(dimm_base) + 20);
+	char *path = calloc(1, strlen(dimm_base) + 100);
 
 	if (!path)
 		return -ENOMEM;
@@ -1039,60 +1049,62 @@ static int add_dimm(void *parent, int id, const char *dimm_base)
 	if (sscanf(buf, "%d:%d", &dimm->major, &dimm->minor) != 2)
 		goto err_read;
 
-	sprintf(path, "%s/handle", dimm_base);
+	sprintf(path, "%s/commands", dimm_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		goto err_read;
-	dimm->handle = strtoul(buf, NULL, 0);
-
-	sprintf(path, "%s/phys_id", dimm_base);
-	if (sysfs_read_attr(ctx, path, buf) < 0)
-		goto err_read;
-	dimm->phys_id = strtoul(buf, NULL, 0);
-
-	dimm->dimm_path = strdup(dimm_base);
-	if (!dimm->dimm_path)
-		goto err_read;
+	dimm->dsm_mask = parse_commands(buf, 1);
 
         dimm->dimm_buf = calloc(1, strlen(dimm_base) + 50);
         if (!dimm->dimm_buf)
                 goto err_read;
         dimm->buf_len = strlen(dimm_base) + 50;
 
-	sprintf(path, "%s/vendor", dimm_base);
+	dimm->dimm_path = strdup(dimm_base);
+	if (!dimm->dimm_path)
+		goto err_read;
+
+	dimm->handle = -1;
+	dimm->phys_id = -1;
+	dimm->vendor_id = -1;
+	dimm->serial = -1;
+	dimm->device_id = -1;
+	dimm->revision_id = -1;
+	dimm->format_id = -1;
+	if (!ndctl_bus_has_nfit(bus))
+		goto out;
+
+	sprintf(path, "%s/nfit/handle", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		goto err_read;
+	dimm->handle = strtoul(buf, NULL, 0);
+
+	sprintf(path, "%s/nfit/phys_id", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		goto err_read;
+	dimm->phys_id = strtoul(buf, NULL, 0);
+
+	sprintf(path, "%s/nfit/vendor", dimm_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		dimm->vendor_id = -1;
 	else
 		dimm->vendor_id = strtoul(buf, NULL, 0);
 
-	sprintf(path, "%s/commands", dimm_base);
-	if (sysfs_read_attr(ctx, path, buf) < 0)
-		goto err_read;
-	dimm->dsm_mask = parse_commands(buf, 1);
-
-	sprintf(path, "%s/serial", dimm_base);
-	if (sysfs_read_attr(ctx, path, buf) < 0)
-		dimm->serial = -1;
-	else
+	sprintf(path, "%s/nfit/serial", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) == 0)
 		dimm->serial = strtoul(buf, NULL, 0);
 
-	sprintf(path, "%s/device", dimm_base);
-	if (sysfs_read_attr(ctx, path, buf) < 0)
-		dimm->device_id = -1;
-	else
+	sprintf(path, "%s/nfit/device", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) == 0)
 		dimm->device_id = strtoul(buf, NULL, 0);
 
-	sprintf(path, "%s/revision", dimm_base);
-	if (sysfs_read_attr(ctx, path, buf) < 0)
-		dimm->revision_id = -1;
-	else
+	sprintf(path, "%s/nfit/rev_id", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) == 0)
 		dimm->revision_id = strtoul(buf, NULL, 0);
 
-	sprintf(path, "%s/format", dimm_base);
-	if (sysfs_read_attr(ctx, path, buf) < 0)
-		dimm->format_id = -1;
-	else
+	sprintf(path, "%s/nfit/format", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) == 0)
 		dimm->format_id = strtoul(buf, NULL, 0);
-
+ out:
 	list_add(&bus->dimms, &dimm->list);
 	free(path);
 
@@ -1185,7 +1197,7 @@ NDCTL_EXPORT const char *ndctl_dimm_get_devname(struct ndctl_dimm *dimm)
 
 NDCTL_EXPORT const char *ndctl_dimm_get_cmd_name(struct ndctl_dimm *dimm, int cmd)
 {
-	return nfit_dimm_cmd_name(cmd);
+	return nd_dimm_cmd_name(cmd);
 }
 
 NDCTL_EXPORT int ndctl_dimm_is_cmd_supported(struct ndctl_dimm *dimm,
@@ -1241,6 +1253,16 @@ NDCTL_EXPORT struct ndctl_dimm *ndctl_dimm_get_by_handle(struct ndctl_bus *bus,
 	return NULL;
 }
 
+static struct ndctl_dimm *ndctl_dimm_get_by_id(struct ndctl_bus *bus, unsigned int id)
+{
+	struct ndctl_dimm *dimm;
+
+	ndctl_dimm_foreach(bus, dimm)
+		if (ndctl_dimm_get_id(dimm) == id)
+			return dimm;
+	return NULL;
+}
+
 static int add_region(void *parent, int id, const char *region_base)
 {
 	int rc = -ENOMEM;
@@ -1248,7 +1270,7 @@ static int add_region(void *parent, int id, const char *region_base)
 	struct ndctl_region *region;
 	struct ndctl_bus *bus = parent;
 	struct ndctl_ctx *ctx = bus->ctx;
-	char *path = calloc(1, strlen(region_base) + 20);
+	char *path = calloc(1, strlen(region_base) + 100);
 
 	if (!path)
 		return -ENOMEM;
@@ -1278,8 +1300,8 @@ static int add_region(void *parent, int id, const char *region_base)
 		goto err_read;
 	region->nstype = strtoul(buf, NULL, 0);
 
-	sprintf(path, "%s/spa_index", region_base);
-	if (region->nstype != ND_DEVICE_NAMESPACE_BLOCK) {
+	sprintf(path, "%s/nfit/spa_index", region_base);
+	if (ndctl_bus_has_nfit(bus)) {
 		if (sysfs_read_attr(ctx, path, buf) < 0)
 			goto err_read;
 		region->spa_index = strtoul(buf, NULL, 0);
@@ -1379,7 +1401,7 @@ NDCTL_EXPORT unsigned long long ndctl_region_get_available_size(
 
 	switch (nstype) {
 	case ND_DEVICE_NAMESPACE_PMEM:
-	case ND_DEVICE_NAMESPACE_BLOCK:
+	case ND_DEVICE_NAMESPACE_BLK:
 		break;
 	default:
 		return 0;
@@ -1414,7 +1436,7 @@ NDCTL_EXPORT unsigned int ndctl_region_get_type(struct ndctl_region *region)
 	case ND_DEVICE_NAMESPACE_PMEM:
 		return ND_DEVICE_REGION_PMEM;
 	default:
-		return ND_DEVICE_REGION_BLOCK;
+		return ND_DEVICE_REGION_BLK;
 	}
 }
 
@@ -1446,13 +1468,13 @@ NDCTL_EXPORT struct ndctl_namespace *ndctl_region_get_namespace_seed(
 static const char *ndctl_device_type_name(int type)
 {
 	switch (type) {
-	case ND_DEVICE_DIMM:            return "dimm";
-	case ND_DEVICE_REGION_PMEM:     return "pmem";
-	case ND_DEVICE_REGION_BLOCK:    return "block";
-	case ND_DEVICE_NAMESPACE_IO:    return "namespace_io";
-	case ND_DEVICE_NAMESPACE_PMEM:  return "namespace_pmem";
-	case ND_DEVICE_NAMESPACE_BLOCK: return "namespace_block";
-	default:                        return "unknown";
+	case ND_DEVICE_DIMM:           return "dimm";
+	case ND_DEVICE_REGION_PMEM:    return "pmem";
+	case ND_DEVICE_REGION_BLK:     return "blk";
+	case ND_DEVICE_NAMESPACE_IO:   return "namespace_io";
+	case ND_DEVICE_NAMESPACE_PMEM: return "namespace_pmem";
+	case ND_DEVICE_NAMESPACE_BLK:  return "namespace_blk";
+	default:                       return "unknown";
 	}
 }
 
@@ -1501,10 +1523,10 @@ NDCTL_EXPORT struct ndctl_dimm *ndctl_region_get_next_dimm(struct ndctl_region *
 	return NULL;
 }
 
-static struct nfit_cmd_vendor_tail *to_vendor_tail(struct ndctl_cmd *cmd)
+static struct nd_cmd_vendor_tail *to_vendor_tail(struct ndctl_cmd *cmd)
 {
-	struct nfit_cmd_vendor_tail *tail = (struct nfit_cmd_vendor_tail *)
-		(cmd->cmd_buf + sizeof(struct nfit_cmd_vendor_hdr)
+	struct nd_cmd_vendor_tail *tail = (struct nd_cmd_vendor_tail *)
+		(cmd->cmd_buf + sizeof(struct nd_cmd_vendor_hdr)
 		 + cmd->vendor->in_length);
 	return tail;
 }
@@ -1518,13 +1540,13 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_vendor_specific(
 	struct ndctl_cmd *cmd;
 	size_t size;
 
-	if (!ndctl_dimm_is_cmd_supported(dimm, NFIT_CMD_VENDOR)) {
+	if (!ndctl_dimm_is_cmd_supported(dimm, ND_CMD_VENDOR)) {
 		dbg(ctx, "unsupported cmd\n");
 		return NULL;
 	}
 
-	size = sizeof(*cmd) + sizeof(struct nfit_cmd_vendor_hdr)
-		+ sizeof(struct nfit_cmd_vendor_tail) + input_size
+	size = sizeof(*cmd) + sizeof(struct nd_cmd_vendor_hdr)
+		+ sizeof(struct nd_cmd_vendor_tail) + input_size
 		+ output_size;
 
 	cmd = calloc(1, size);
@@ -1533,7 +1555,7 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_vendor_specific(
 
 	cmd->dimm = dimm;
 	ndctl_cmd_ref(cmd);
-	cmd->type = NFIT_CMD_VENDOR;
+	cmd->type = ND_CMD_VENDOR;
 	cmd->size = size;
 	cmd->status = 1;
 	cmd->vendor->opcode = opcode;
@@ -1547,7 +1569,7 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_vendor_specific(
 NDCTL_EXPORT ssize_t ndctl_cmd_vendor_set_input(struct ndctl_cmd *cmd,
 		void *buf, unsigned int len)
 {
-	if (cmd->type != NFIT_CMD_VENDOR)
+	if (cmd->type != ND_CMD_VENDOR)
 		return -EINVAL;
 	len = min(len, cmd->vendor->in_length);
 	memcpy(cmd->vendor->in_buf, buf, len);
@@ -1556,7 +1578,7 @@ NDCTL_EXPORT ssize_t ndctl_cmd_vendor_set_input(struct ndctl_cmd *cmd,
 
 NDCTL_EXPORT ssize_t ndctl_cmd_vendor_get_output_size(struct ndctl_cmd *cmd)
 {
-	if (cmd->type != NFIT_CMD_VENDOR || cmd->status > 0)
+	if (cmd->type != ND_CMD_VENDOR || cmd->status > 0)
 		return -EINVAL;
 	if (cmd->status < 0)
 		return cmd->status;
@@ -1584,19 +1606,19 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_size(struct ndctl_dimm *di
 	struct ndctl_cmd *cmd;
 	size_t size;
 
-	if (!ndctl_dimm_is_cmd_supported(dimm, NFIT_CMD_GET_CONFIG_SIZE)) {
+	if (!ndctl_dimm_is_cmd_supported(dimm, ND_CMD_GET_CONFIG_SIZE)) {
 		dbg(ctx, "unsupported cmd\n");
 		return NULL;
 	}
 
-	size = sizeof(*cmd) + sizeof(struct nfit_cmd_get_config_size);
+	size = sizeof(*cmd) + sizeof(struct nd_cmd_get_config_size);
 	cmd = calloc(1, size);
 	if (!cmd)
 		return NULL;
 
 	cmd->dimm = dimm;
 	ndctl_cmd_ref(cmd);
-	cmd->type = NFIT_CMD_GET_CONFIG_SIZE;
+	cmd->type = ND_CMD_GET_CONFIG_SIZE;
 	cmd->size = size;
 	cmd->status = 1;
 	cmd->firmware_status = &cmd->get_size->status;
@@ -1618,12 +1640,12 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_read(struct ndctl_cmd *cfg
 	struct ndctl_cmd *cmd;
 	size_t size;
 
-	if (!ndctl_dimm_is_cmd_supported(dimm, NFIT_CMD_GET_CONFIG_DATA)) {
+	if (!ndctl_dimm_is_cmd_supported(dimm, ND_CMD_GET_CONFIG_DATA)) {
 		dbg(ctx, "unsupported cmd\n");
 		return NULL;
 	}
 
-	if (cfg_size->type != NFIT_CMD_GET_CONFIG_SIZE
+	if (cfg_size->type != ND_CMD_GET_CONFIG_SIZE
 			|| cfg_size->status != 0) {
 		dbg(ctx, "expected sucessfully completed cfg_size command\n");
 		return NULL;
@@ -1633,7 +1655,7 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_read(struct ndctl_cmd *cfg
 		return NULL;
 	}
 
-	size = sizeof(*cmd) + sizeof(struct nfit_cmd_get_config_data_hdr)
+	size = sizeof(*cmd) + sizeof(struct nd_cmd_get_config_data_hdr)
 		+ cfg_size->get_size->max_xfer;
 	cmd = calloc(1, size);
 	if (!cmd)
@@ -1641,7 +1663,7 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_read(struct ndctl_cmd *cfg
 
 	cmd->dimm = cfg_size->dimm;
 	cmd->refcount = 1;
-	cmd->type = NFIT_CMD_GET_CONFIG_DATA;
+	cmd->type = ND_CMD_GET_CONFIG_DATA;
 	cmd->size = size;
 	cmd->status = 1;
 	cmd->get_data->in_offset = 0;
@@ -1668,13 +1690,13 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_write(struct ndctl_cmd *cf
 	struct ndctl_cmd *cmd;
 	size_t size;
 
-	if (!ndctl_dimm_is_cmd_supported(dimm, NFIT_CMD_SET_CONFIG_DATA)) {
+	if (!ndctl_dimm_is_cmd_supported(dimm, ND_CMD_SET_CONFIG_DATA)) {
 		dbg(ctx, "unsupported cmd\n");
 		return NULL;
 	}
 
 	/* enforce rmw */
-	if (cfg_read->type != NFIT_CMD_GET_CONFIG_DATA
+	if (cfg_read->type != ND_CMD_GET_CONFIG_DATA
 		       || cfg_read->status != 0) {
 		dbg(ctx, "expected sucessfully completed cfg_read command\n");
 		return NULL;
@@ -1685,7 +1707,7 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_write(struct ndctl_cmd *cf
 		return NULL;
 	}
 
-	size = sizeof(*cmd) + sizeof(struct nfit_cmd_set_config_hdr)
+	size = sizeof(*cmd) + sizeof(struct nd_cmd_set_config_hdr)
 		+ cfg_read->iter.max_xfer + 4;
 	cmd = calloc(1, size);
 	if (!cmd)
@@ -1693,13 +1715,13 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_write(struct ndctl_cmd *cf
 
 	cmd->dimm = cfg_read->dimm;
 	ndctl_cmd_ref(cmd);
-	cmd->type = NFIT_CMD_SET_CONFIG_DATA;
+	cmd->type = ND_CMD_SET_CONFIG_DATA;
 	cmd->size = size;
 	cmd->status = 1;
 	cmd->set_data->in_offset = 0;
 	cmd->set_data->in_length = cfg_read->iter.max_xfer;
 	cmd->firmware_status = (u32 *) (cmd->cmd_buf
-		+ sizeof(struct nfit_cmd_set_config_hdr) + cfg_read->iter.max_xfer);
+		+ sizeof(struct nd_cmd_set_config_hdr) + cfg_read->iter.max_xfer);
 	cmd->iter.offset = &cmd->set_data->in_offset;
 	cmd->iter.max_xfer = cfg_read->iter.max_xfer;
 	cmd->iter.data = cmd->set_data->in_buf;
@@ -1714,7 +1736,7 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_write(struct ndctl_cmd *cf
 
 NDCTL_EXPORT unsigned int ndctl_cmd_cfg_size_get_size(struct ndctl_cmd *cfg_size)
 {
-	if (cfg_size->type == NFIT_CMD_GET_CONFIG_SIZE
+	if (cfg_size->type == ND_CMD_GET_CONFIG_SIZE
 			&& cfg_size->status == 0)
 		return cfg_size->get_size->config_size;
 	return 0;
@@ -1723,7 +1745,7 @@ NDCTL_EXPORT unsigned int ndctl_cmd_cfg_size_get_size(struct ndctl_cmd *cfg_size
 NDCTL_EXPORT ssize_t ndctl_cmd_cfg_read_get_data(struct ndctl_cmd *cfg_read,
 		void *buf, unsigned int len, unsigned int offset)
 {
-	if (cfg_read->type != NFIT_CMD_GET_CONFIG_DATA || cfg_read->status > 0)
+	if (cfg_read->type != ND_CMD_GET_CONFIG_DATA || cfg_read->status > 0)
 		return -EINVAL;
 	if (cfg_read->status < 0)
 		return cfg_read->status;
@@ -1738,7 +1760,7 @@ NDCTL_EXPORT ssize_t ndctl_cmd_cfg_read_get_data(struct ndctl_cmd *cfg_read,
 NDCTL_EXPORT ssize_t ndctl_cmd_cfg_write_set_data(struct ndctl_cmd *cfg_write,
 		void *buf, unsigned int len, unsigned int offset)
 {
-	if (cfg_write->type != NFIT_CMD_SET_CONFIG_DATA || cfg_write->status < 1)
+	if (cfg_write->type != ND_CMD_SET_CONFIG_DATA || cfg_write->status < 1)
 		return -EINVAL;
 	if (cfg_write->status < 0)
 		return cfg_write->status;
@@ -1752,7 +1774,7 @@ NDCTL_EXPORT ssize_t ndctl_cmd_cfg_write_set_data(struct ndctl_cmd *cfg_write,
 
 NDCTL_EXPORT ssize_t ndctl_cmd_cfg_write_zero_data(struct ndctl_cmd *cfg_write)
 {
-	if (cfg_write->type != NFIT_CMD_SET_CONFIG_DATA || cfg_write->status < 1)
+	if (cfg_write->type != ND_CMD_SET_CONFIG_DATA || cfg_write->status < 1)
 		return -EINVAL;
 	if (cfg_write->status < 0)
 		return cfg_write->status;
@@ -1838,24 +1860,24 @@ static int to_ioctl_cmd(int cmd, int dimm)
 {
 	if (!dimm) {
 		switch (cmd) {
-		case NFIT_CMD_ARS_CAP:         return NFIT_IOCTL_ARS_CAP;
-		case NFIT_CMD_ARS_START:       return NFIT_IOCTL_ARS_START;
-		case NFIT_CMD_ARS_QUERY:       return NFIT_IOCTL_ARS_QUERY;
+		case ND_CMD_ARS_CAP:         return ND_IOCTL_ARS_CAP;
+		case ND_CMD_ARS_START:       return ND_IOCTL_ARS_START;
+		case ND_CMD_ARS_QUERY:       return ND_IOCTL_ARS_QUERY;
 		default:
 						       return 0;
 		};
 	}
 
 	switch (cmd) {
-	case NFIT_CMD_SMART:                  return NFIT_IOCTL_SMART;
-	case NFIT_CMD_SMART_THRESHOLD:        return NFIT_IOCTL_SMART_THRESHOLD;
-	case NFIT_CMD_DIMM_FLAGS:             return NFIT_IOCTL_DIMM_FLAGS;
-	case NFIT_CMD_GET_CONFIG_SIZE:        return NFIT_IOCTL_GET_CONFIG_SIZE;
-	case NFIT_CMD_GET_CONFIG_DATA:        return NFIT_IOCTL_GET_CONFIG_DATA;
-	case NFIT_CMD_SET_CONFIG_DATA:        return NFIT_IOCTL_SET_CONFIG_DATA;
-	case NFIT_CMD_VENDOR:                 return NFIT_IOCTL_VENDOR;
-	case NFIT_CMD_VENDOR_EFFECT_LOG_SIZE:
-	case NFIT_CMD_VENDOR_EFFECT_LOG:
+	case ND_CMD_SMART:                  return ND_IOCTL_SMART;
+	case ND_CMD_SMART_THRESHOLD:        return ND_IOCTL_SMART_THRESHOLD;
+	case ND_CMD_DIMM_FLAGS:             return ND_IOCTL_DIMM_FLAGS;
+	case ND_CMD_GET_CONFIG_SIZE:        return ND_IOCTL_GET_CONFIG_SIZE;
+	case ND_CMD_GET_CONFIG_DATA:        return ND_IOCTL_GET_CONFIG_DATA;
+	case ND_CMD_SET_CONFIG_DATA:        return ND_IOCTL_SET_CONFIG_DATA;
+	case ND_CMD_VENDOR:                 return ND_IOCTL_VENDOR;
+	case ND_CMD_VENDOR_EFFECT_LOG_SIZE:
+	case ND_CMD_VENDOR_EFFECT_LOG:
 	default:
 					      return 0;
 	}
@@ -1877,10 +1899,11 @@ static int do_cmd(int fd, int ioctl_cmd, struct ndctl_cmd *cmd)
 
 	if (iter->total_xfer == 0) {
 		rc = ioctl(fd, ioctl_cmd, cmd->cmd_buf);
-		dbg(ctx, "bus: %d dimm: %#x cmd: %s status: %d fw: %d\n",
+		dbg(ctx, "bus: %d dimm: %#x cmd: %s status: %d fw: %d (%s)\n",
 				bus->id, cmd->dimm
 				? ndctl_dimm_get_handle(cmd->dimm) : 0,
-				name, rc, *(cmd->firmware_status));
+				name, rc, *(cmd->firmware_status), rc < 0 ?
+				strerror(errno) : "success");
 		return rc;
 	}
 
@@ -1891,10 +1914,11 @@ static int do_cmd(int fd, int ioctl_cmd, struct ndctl_cmd *cmd)
 					iter->max_xfer);
 		*(cmd->iter.offset) = offset;
 		rc = ioctl(fd, ioctl_cmd, cmd->cmd_buf);
-		dbg(ctx, "bus: %d dimm: %#x cmd: %s offset: %d status: (%d:%d)\n",
+		dbg(ctx, "bus: %d dimm: %#x cmd: %s offset: %d status: %d fw: %d (%s)\n",
 				bus->id, cmd->dimm
 				? ndctl_dimm_get_handle(cmd->dimm) : 0,
-				name, offset, rc, *(cmd->firmware_status));
+				name, offset, rc, *(cmd->firmware_status),
+				rc < 0 ? strerror(errno) : "success");
 		if (rc)
 			return rc;
 
@@ -2215,7 +2239,7 @@ static void mappings_init(struct ndctl_region *region)
 		return;
 	region->mappings_init = 1;
 
-	mapping_path = calloc(1, strlen(region->region_path) + 20);
+	mapping_path = calloc(1, strlen(region->region_path) + 100);
 	if (!mapping_path) {
 		err(ctx, "bus%d region%d: allocation failure\n",
 				bus->id, region->id);
@@ -2226,7 +2250,7 @@ static void mappings_init(struct ndctl_region *region)
 		struct ndctl_mapping *mapping;
 		unsigned long long offset, length;
 		struct ndctl_dimm *dimm;
-		unsigned int handle;
+		unsigned int dimm_id;
 
 		sprintf(mapping_path, "%s/mapping%d", region->region_path, i);
 		if (sysfs_read_attr(ctx, mapping_path, buf) < 0) {
@@ -2235,17 +2259,17 @@ static void mappings_init(struct ndctl_region *region)
 			continue;
 		}
 
-		if (sscanf(buf, "%x,%llu,%llu", &handle, &offset,
+		if (sscanf(buf, "nmem%u,%llu,%llu", &dimm_id, &offset,
 					&length) != 3) {
 			err(ctx, "bus%d mapping parse failure\n",
 					ndctl_bus_get_id(bus));
 			continue;
 		}
 
-		dimm = ndctl_dimm_get_by_handle(bus, handle);
+		dimm = ndctl_dimm_get_by_id(bus, dimm_id);
 		if (!dimm) {
-			err(ctx, "bus%d region%d mapping%d: dimm lookup failure\n",
-					bus->id, region->id, i);
+			err(ctx, "bus%d region%d mapping%d: nmem%d lookup failure\n",
+					bus->id, region->id, i, dimm_id);
 			continue;
 		}
 
@@ -2350,7 +2374,7 @@ static int parse_lbasize_supported(struct ndctl_ctx *ctx, const char *buf,
 
 static int add_namespace(void *parent, int id, const char *ndns_base)
 {
-	char *path = calloc(1, strlen(ndns_base) + 20);
+	char *path = calloc(1, strlen(ndns_base) + 100);
 	struct ndctl_namespace *ndns, *ndns_dup;
 	struct ndctl_region *region = parent;
 	struct ndctl_bus *bus = region->bus;
@@ -2379,7 +2403,7 @@ static int add_namespace(void *parent, int id, const char *ndns_base)
 	ndns->size = strtoull(buf, NULL, 0);
 
 	switch (ndns->type) {
-	case ND_DEVICE_NAMESPACE_BLOCK:
+	case ND_DEVICE_NAMESPACE_BLK:
 		sprintf(path, "%s/sector_size", ndns_base);
 		if (sysfs_read_attr(ctx, path, buf) < 0)
 			goto err_read;
@@ -2708,7 +2732,7 @@ NDCTL_EXPORT int ndctl_namespace_is_configured(struct ndctl_namespace *ndns)
 		return pmem_namespace_is_configured(ndns);
 	case ND_DEVICE_NAMESPACE_IO:
 		return 1;
-	case ND_DEVICE_NAMESPACE_BLOCK:
+	case ND_DEVICE_NAMESPACE_BLK:
 		return blk_namespace_is_configured(ndns);
 	default:
 		dbg(ctx, "%s: nstype: %d is_configured() not implemented\n",
@@ -2875,7 +2899,7 @@ NDCTL_EXPORT int ndctl_namespace_set_size(struct ndctl_namespace *ndns,
 
 	switch (ndctl_namespace_get_type(ndns)) {
 	case ND_DEVICE_NAMESPACE_PMEM:
-	case ND_DEVICE_NAMESPACE_BLOCK:
+	case ND_DEVICE_NAMESPACE_BLK:
 		return namespace_set_size(ndns, size);
 	default:
 		dbg(ctx, "%s: nstype: %d set size failed\n",
@@ -2901,7 +2925,7 @@ NDCTL_EXPORT int ndctl_namespace_delete(struct ndctl_namespace *ndns)
 
         switch (ndctl_namespace_get_type(ndns)) {
         case ND_DEVICE_NAMESPACE_PMEM:
-        case ND_DEVICE_NAMESPACE_BLOCK:
+        case ND_DEVICE_NAMESPACE_BLK:
 		break;
 	default:
 		dbg(ctx, "%s: nstype: %d delete failed\n",
@@ -2966,7 +2990,7 @@ static int parse_lbasize_supported(struct ndctl_ctx *ctx, const char *buf,
 
 static int add_btt(void *parent, int id, const char *btt_base)
 {
-	char *path = calloc(1, strlen(btt_base) + 20);
+	char *path = calloc(1, strlen(btt_base) + 100);
 	struct ndctl_bus *bus = parent;
 	struct ndctl_ctx *ctx = bus->ctx;
 	struct ndctl_btt *btt, *btt_dup;
