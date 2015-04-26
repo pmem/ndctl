@@ -54,7 +54,7 @@
  *           +----------------------------+--------+--------+
  *
  * *) In this layout we have four dimms and two memory controllers in one
- *    socket.  Each unique interface ("block" or "pmem") to DPA space
+ *    socket.  Each unique interface ("blk" or "pmem") to DPA space
  *    is identified by a region device with a dynamically assigned id.
  *
  * *) The first portion of dimm0 and dimm1 are interleaved as REGION0.
@@ -185,7 +185,7 @@ static struct namespace namespace1_pmem0 = {
 };
 
 static struct namespace namespace2_blk0 = {
-	0, "namespace_block", NULL, SZ_7M,
+	0, "namespace_blk", NULL, SZ_7M,
 	{ 3, 3, 3, 3,
 	  3, 3, 3, 3,
 	  3, 3, 3, 3,
@@ -193,7 +193,7 @@ static struct namespace namespace2_blk0 = {
 };
 
 static struct namespace namespace2_blk1 = {
-	1, "namespace_block", NULL, SZ_11M,
+	1, "namespace_blk", NULL, SZ_11M,
 	{ 4, 4, 4, 4,
 	  4, 4, 4, 4,
 	  4, 4, 4, 4,
@@ -201,7 +201,7 @@ static struct namespace namespace2_blk1 = {
 };
 
 static struct namespace namespace3_blk0 = {
-	0, "namespace_block", NULL, SZ_7M,
+	0, "namespace_blk", NULL, SZ_7M,
 	{ 5, 5, 5, 5,
 	  5, 5, 5, 5,
 	  5, 5, 5, 5,
@@ -209,7 +209,7 @@ static struct namespace namespace3_blk0 = {
 };
 
 static struct namespace namespace3_blk1 = {
-	1, "namespace_block", NULL, SZ_11M,
+	1, "namespace_blk", NULL, SZ_11M,
 	{ 6, 6, 6, 6,
 	  6, 6, 6, 6,
 	  6, 6, 6, 6,
@@ -217,7 +217,7 @@ static struct namespace namespace3_blk1 = {
 };
 
 static struct namespace namespace4_blk0 = {
-	0, "namespace_block", &btt_settings, SZ_27M,
+	0, "namespace_blk", &btt_settings, SZ_27M,
 	{ 7, 7, 7, 7,
 	  7, 7, 7, 7,
 	  7, 7, 7, 7,
@@ -225,7 +225,7 @@ static struct namespace namespace4_blk0 = {
 };
 
 static struct namespace namespace5_blk0 = {
-	0, "namespace_block", &btt_settings, SZ_27M,
+	0, "namespace_blk", &btt_settings, SZ_27M,
 	{ 8, 8, 8, 8,
 	  8, 8, 8, 8,
 	  8, 8, 8, 8,
@@ -237,13 +237,13 @@ static struct region regions0[] = {
 		{ &namespace0_pmem0, NULL, }, },
 	{ { 2 }, 4, 1, "pmem", SZ_64M, SZ_64M, { 1 },
 		{ &namespace1_pmem0, NULL, }, },
-	{ { DIMM_HANDLE(0, 0, 0, 0, 0) }, 1, 1, "block", SZ_18M, SZ_32M, { },
+	{ { DIMM_HANDLE(0, 0, 0, 0, 0) }, 1, 1, "blk", SZ_18M, SZ_32M, { },
 		{ &namespace2_blk0, &namespace2_blk1, NULL, }, },
-	{ { DIMM_HANDLE(0, 0, 0, 0, 1) }, 1, 1, "block", SZ_18M, SZ_32M, { },
+	{ { DIMM_HANDLE(0, 0, 0, 0, 1) }, 1, 1, "blk", SZ_18M, SZ_32M, { },
 		{ &namespace3_blk0, &namespace3_blk1, NULL, }, },
-	{ { DIMM_HANDLE(0, 0, 1, 0, 0) }, 1, 1, "block", SZ_27M, SZ_32M, { },
+	{ { DIMM_HANDLE(0, 0, 1, 0, 0) }, 1, 1, "blk", SZ_27M, SZ_32M, { },
 		{ &namespace4_blk0, NULL, }, },
-	{ { DIMM_HANDLE(0, 0, 1, 0, 1) }, 1, 1, "block", SZ_27M, SZ_32M, { },
+	{ { DIMM_HANDLE(0, 0, 1, 0, 1) }, 1, 1, "blk", SZ_27M, SZ_32M, { },
 		{ &namespace5_blk0, NULL, }, },
 };
 
@@ -252,7 +252,7 @@ static struct namespace namespace1 = {
 };
 
 static struct region regions1[] = {
-	{ { 1 }, 0, 1, "pmem", 0, SZ_32M,
+	{ { 1 }, 1, 1, "pmem", 0, SZ_32M,
 		.namespaces = {
 			[0] = &namespace1,
 		},
@@ -267,9 +267,9 @@ static struct btt btts1[] = {
 	{ 0, { 0, }, 2, { 512, 4096, }, },
 };
 
-static unsigned long commands0 = 1UL << NFIT_CMD_GET_CONFIG_SIZE
-		| 1UL << NFIT_CMD_GET_CONFIG_DATA
-		| 1UL << NFIT_CMD_SET_CONFIG_DATA;
+static unsigned long commands0 = 1UL << ND_CMD_GET_CONFIG_SIZE
+		| 1UL << ND_CMD_GET_CONFIG_DATA
+		| 1UL << ND_CMD_SET_CONFIG_DATA;
 
 static struct ndctl_dimm *get_dimm_by_handle(struct ndctl_bus *bus, unsigned int handle)
 {
@@ -339,7 +339,7 @@ static struct ndctl_region *get_blk_region_by_dimm_handle(struct ndctl_bus *bus,
 	ndctl_region_foreach(bus, region) {
 		struct ndctl_mapping *map;
 
-		if (ndctl_region_get_type(region) != ND_DEVICE_REGION_BLOCK)
+		if (ndctl_region_get_type(region) != ND_DEVICE_REGION_BLK)
 			continue;
 		ndctl_mapping_foreach(region, map) {
 			struct ndctl_dimm *dimm = ndctl_mapping_get_dimm(map);
@@ -904,7 +904,7 @@ static int check_get_config_size(struct ndctl_dimm *dimm, struct check_cmd *chec
 
 static int check_get_config_data(struct ndctl_dimm *dimm, struct check_cmd *check)
 {
-	struct ndctl_cmd *cmd_size = check_cmds[NFIT_CMD_GET_CONFIG_SIZE].cmd;
+	struct ndctl_cmd *cmd_size = check_cmds[ND_CMD_GET_CONFIG_SIZE].cmd;
 	struct ndctl_cmd *cmd = ndctl_dimm_cmd_new_cfg_read(cmd_size);
 	static char buf[SZ_128K];
 	ssize_t rc;
@@ -937,7 +937,7 @@ static int check_get_config_data(struct ndctl_dimm *dimm, struct check_cmd *chec
 
 static int check_set_config_data(struct ndctl_dimm *dimm, struct check_cmd *check)
 {
-	struct ndctl_cmd *cmd_read = check_cmds[NFIT_CMD_GET_CONFIG_DATA].cmd;
+	struct ndctl_cmd *cmd_read = check_cmds[ND_CMD_GET_CONFIG_DATA].cmd;
 	struct ndctl_cmd *cmd = ndctl_dimm_cmd_new_cfg_write(cmd_read);
 	char buf[20], result[sizeof(buf)];
 	size_t rc;
@@ -1010,15 +1010,15 @@ static int check_commands(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 	 * For now, by coincidence, these are indexed in test execution
 	 * order such that check_get_config_data can assume that
 	 * check_get_config_size has updated
-	 * check_cmd[NFIT_CMD_GET_CONFIG_SIZE].cmd and
+	 * check_cmd[ND_CMD_GET_CONFIG_SIZE].cmd and
 	 * check_set_config_data can assume that both
 	 * check_get_config_size and check_get_config_data have run
 	 */
 	static struct check_cmd __check_cmds[] = {
-		[NFIT_CMD_GET_CONFIG_SIZE] = { check_get_config_size },
-		[NFIT_CMD_GET_CONFIG_DATA] = { check_get_config_data },
-		[NFIT_CMD_SET_CONFIG_DATA] = { check_set_config_data },
-		[NFIT_CMD_SMART_THRESHOLD] = { },
+		[ND_CMD_GET_CONFIG_SIZE] = { check_get_config_size },
+		[ND_CMD_GET_CONFIG_DATA] = { check_get_config_data },
+		[ND_CMD_SET_CONFIG_DATA] = { check_set_config_data },
+		[ND_CMD_SMART_THRESHOLD] = { },
 	};
 	unsigned int i, rc;
 
