@@ -83,13 +83,22 @@ static int do_test(struct ndctl_ctx *ctx)
 		}
 	}
 
-	/* find a guinea pig BLK region */
-	ndctl_region_foreach(bus, region)
-		if (ndctl_region_get_type(region) == ND_DEVICE_REGION_BLOCK) {
+	/*
+	 * Find a guineapig BLK region, we know that the dimm with
+	 * handle==0 from nfit_test.0 always allocates from highest DPA
+	 * to lowest with no excursions into BLK only ranges.
+	 */
+	ndctl_region_foreach(bus, region) {
+		if (ndctl_region_get_type(region) != ND_DEVICE_REGION_BLOCK)
+			continue;
+		dimm = ndctl_region_get_first_dimm(region);
+		if (!dimm)
+			continue;
+		if (ndctl_dimm_get_handle(dimm) == 0) {
 			blk_region = region;
 			break;
 		}
-
+	}
 	if (!blk_region || ndctl_region_enable(blk_region) < 0) {
 		fprintf(stderr, "failed to find a usable BLK region\n");
 		return -ENXIO;
@@ -99,13 +108,6 @@ static int do_test(struct ndctl_ctx *ctx)
 	if (ndctl_region_get_available_size(region) / ND_MIN_NAMESPACE_SIZE
 			< NUM_NAMESPACES) {
 		fprintf(stderr, "%s insufficient available_size\n",
-				ndctl_region_get_devname(region));
-		return -ENXIO;
-	}
-
-	dimm = ndctl_region_get_first_dimm(region);
-	if (!dimm) {
-		fprintf(stderr, "%s: failed to find a dimm to test\n",
 				ndctl_region_get_devname(region));
 		return -ENXIO;
 	}
@@ -249,8 +251,8 @@ static int do_test(struct ndctl_ctx *ctx)
 			fprintf(stderr, "failed to delete %s\n", uuid_str);
 			return rc;
 		}
-		rc = ndctl_namespace_set_size(ndns, size
-				+ ndctl_namespace_get_size(ndns));
+		size += ndctl_namespace_get_size(ndns);
+		rc = ndctl_namespace_set_size(ndns, size);
 		if (rc) {
 			fprintf(stderr, "failed to merge %s\n", uuid_str);
 			return rc;
@@ -259,8 +261,19 @@ static int do_test(struct ndctl_ctx *ctx)
 
 	/* there can be only one */
 	i = 0;
-	ndctl_namespace_foreach(region, ndns)
-		i++;
+	ndctl_namespace_foreach(region, ndns) {
+		unsigned long long sz = ndctl_namespace_get_size(ndns);
+
+		if (sz) {
+			i++;
+			if (sz == size)
+				continue;
+			fprintf(stderr, "%s size: %llx expected %llx\n",
+					ndctl_namespace_get_devname(ndns),
+					sz, size);
+			return -ENXIO;
+		}
+	}
 	if (i != 1) {
 		fprintf(stderr, "failed to delete namespaces\n");
 		return -ENXIO;
