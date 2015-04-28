@@ -14,11 +14,6 @@ static const struct option region_options[] = {
 	OPT_END(),
 };
 
-static int ndctl_region_disable_cleanup(struct ndctl_region *region)
-{
-	return ndctl_region_disable(region, 1);
-}
-
 static const char *parse_region_options(int argc, const char **argv,
 		char *xable_usage)
 {
@@ -98,7 +93,7 @@ int cmd_disable_region(int argc, const char **argv)
 {
 	char *xable_usage = "ndctl disable-region <region> [<options>]";
 	const char *region = parse_region_options(argc, argv, xable_usage);
-	int disabled = do_xable_region(region, ndctl_region_disable_cleanup);
+	int disabled = do_xable_region(region, ndctl_region_disable_invalidate);
 
 	if (disabled < 0) {
 		fprintf(stderr, "error disabling regions: %s\n",

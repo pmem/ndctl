@@ -416,7 +416,7 @@ static int check_regions(struct ndctl_bus *bus, struct region *regions, int n)
 			return -ENXIO;
 		}
 
-		if (ndctl_region_disable(region, 1) < 0) {
+		if (ndctl_region_disable_invalidate(region) < 0) {
 			fprintf(stderr, "%s: failed to disable\n", devname);
 			return -ENXIO;
 		}
@@ -676,7 +676,7 @@ retry:
 		ndns_save[i] = ndns;
 	}
 
-	if (namespace || ndctl_region_disable(region, 0) != 0) {
+	if (namespace || ndctl_region_disable_preserve(region) != 0) {
 		rc = -ENXIO;
 		if (!namespace)
 			fprintf(stderr, "failed to disable region%d\n",
@@ -1016,7 +1016,7 @@ static int do_test0(struct ndctl_ctx *ctx)
 
 	/* disable all regions so that set_config_data commands are permitted */
 	ndctl_region_foreach(bus, region)
-		ndctl_region_disable(region, 1);
+		ndctl_region_disable_invalidate(region);
 
 	rc = check_dimms(bus, dimms0, ARRAY_SIZE(dimms0), commands0);
 	if (rc)
