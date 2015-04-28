@@ -213,7 +213,7 @@ static struct namespace namespace3_blk1 = {
 };
 
 static struct namespace namespace4_blk0 = {
-	0, "namespace_block", NULL, SZ_28M,
+	0, "namespace_block", &btt_settings, SZ_28M,
 	{ 7, 7, 7, 7,
 	  7, 7, 7, 7,
 	  7, 7, 7, 7,
@@ -221,7 +221,7 @@ static struct namespace namespace4_blk0 = {
 };
 
 static struct namespace namespace5_blk0 = {
-	0, "namespace_block", NULL, SZ_28M,
+	0, "namespace_block", &btt_settings, SZ_28M,
 	{ 8, 8, 8, 8,
 	  8, 8, 8, 8,
 	  8, 8, 8, 8,
