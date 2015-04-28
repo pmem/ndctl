@@ -96,6 +96,7 @@ struct ndctl_bus *ndctl_bus_get_next(struct ndctl_bus *bus);
              bus != NULL; \
              bus = ndctl_bus_get_next(bus))
 struct ndctl_ctx *ndctl_bus_get_ctx(struct ndctl_bus *bus);
+int ndctl_bus_has_nfit(struct ndctl_bus *bus);
 unsigned int ndctl_bus_get_major(struct ndctl_bus *bus);
 unsigned int ndctl_bus_get_minor(struct ndctl_bus *bus);
 const char *ndctl_bus_get_devname(struct ndctl_bus *bus);

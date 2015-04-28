@@ -27,6 +27,7 @@ global:
 	ndctl_bus_get_btt_seed;
 	ndctl_bus_get_cmd_name;
 	ndctl_bus_is_cmd_supported;
+	ndctl_bus_has_nfit;
 	ndctl_bus_get_revision;
 	ndctl_bus_get_id;
 	ndctl_bus_get_provider;

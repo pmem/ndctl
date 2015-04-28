@@ -246,7 +246,7 @@ int test_blk_namespaces(int log_level)
 	}
 
 	ndctl_region_foreach(bus, region)
-		if (ndctl_region_get_nstype(region) == ND_DEVICE_NAMESPACE_BLOCK) {
+		if (ndctl_region_get_nstype(region) == ND_DEVICE_NAMESPACE_BLK) {
 			blk_region = region;
 			break;
 		}
