@@ -1,6 +1,6 @@
 AC_PREREQ(2.60)
 AC_INIT([ndctl],
-        [33],
+        [38],
         [linux-nvdimm@lists.01.org],
         [ndctl],
         [https://github.com/pmem/ndctl])
