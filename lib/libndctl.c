@@ -2369,11 +2369,12 @@ static char *get_block_device(struct ndctl_ctx *ctx, const char *block_path)
 	return bdev_name;
 }
 
-static int parse_lbasize_supported(struct ndctl_ctx *ctx, const char *buf,
-		struct ndctl_lbasize *lba);
+static int parse_lbasize_supported(struct ndctl_ctx *ctx, const char *devname,
+		const char *buf, struct ndctl_lbasize *lba);
 
 static int add_namespace(void *parent, int id, const char *ndns_base)
 {
+	const char *devname = devpath_to_devname(ndns_base);
 	char *path = calloc(1, strlen(ndns_base) + 100);
 	struct ndctl_namespace *ndns, *ndns_dup;
 	struct ndctl_region *region = parent;
@@ -2407,7 +2408,7 @@ static int add_namespace(void *parent, int id, const char *ndns_base)
 		sprintf(path, "%s/sector_size", ndns_base);
 		if (sysfs_read_attr(ctx, path, buf) < 0)
 			goto err_read;
-		if (parse_lbasize_supported(ctx, buf, &ndns->lbasize) < 0)
+		if (parse_lbasize_supported(ctx, devname, buf, &ndns->lbasize) < 0)
 			goto err_read;
 		/* fall through */
 	case ND_DEVICE_NAMESPACE_PMEM:
@@ -2943,8 +2944,8 @@ NDCTL_EXPORT int ndctl_namespace_delete(struct ndctl_namespace *ndns)
 	return 0;
 }
 
-static int parse_lbasize_supported(struct ndctl_ctx *ctx, const char *buf,
-		struct ndctl_lbasize *lba)
+static int parse_lbasize_supported(struct ndctl_ctx *ctx, const char *devname,
+		const char *buf, struct ndctl_lbasize *lba)
 {
 	char *s = strdup(buf), *end, *field;
 
@@ -2960,7 +2961,6 @@ static int parse_lbasize_supported(struct ndctl_ctx *ctx, const char *buf,
 		unsigned int val;
 
 		*end = '\0';
-		dbg(ctx, "field: %s num: %d\n", field, lba->num);
 		if (sscanf(field, "[%d]", &val) == 1) {
 			if (lba->select >= 0)
 				goto err;
@@ -2979,6 +2979,7 @@ static int parse_lbasize_supported(struct ndctl_ctx *ctx, const char *buf,
 	}
 
 	free(s);
+	dbg(ctx, "%s: %s\n", devname, buf);
 	return 0;
  err:
 	free(s);
@@ -2990,6 +2991,7 @@ static int parse_lbasize_supported(struct ndctl_ctx *ctx, const char *buf,
 
 static int add_btt(void *parent, int id, const char *btt_base)
 {
+	const char *devname = devpath_to_devname(btt_base);
 	char *path = calloc(1, strlen(btt_base) + 100);
 	struct ndctl_bus *bus = parent;
 	struct ndctl_ctx *ctx = bus->ctx;
@@ -3033,7 +3035,7 @@ static int add_btt(void *parent, int id, const char *btt_base)
 	sprintf(path, "%s/sector_size", btt_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		goto err_read;
-	if (parse_lbasize_supported(ctx, buf, &btt->lbasize) < 0)
+	if (parse_lbasize_supported(ctx, devname, buf, &btt->lbasize) < 0)
 		goto err_read;
 
 	sprintf(path, "%s/backing_dev", btt_base);
