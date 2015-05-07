@@ -143,7 +143,7 @@ struct btt {
 	int enabled;
 	uuid_t uuid;
 	int num_sector_sizes;
-	unsigned int sector_sizes[4];
+	unsigned int sector_sizes[7];
 };
 
 static struct btt btt_settings = {
@@ -151,8 +151,8 @@ static struct btt btt_settings = {
 	.uuid = {  0,  1,  2,  3,  4,  5,  6,  7,
 		   8, 9,  10, 11, 12, 13, 14, 15
 	},
-	.num_sector_sizes = 2,
-	.sector_sizes =  { 512, 4096 },
+	.num_sector_sizes = 7,
+	.sector_sizes =  { 512, 520, 528, 4096, 4104, 4160, 4224, },
 };
 
 struct namespace {
@@ -260,11 +260,11 @@ static struct region regions1[] = {
 };
 
 static struct btt btts0[] = {
-	{ 0, { 0, }, 2, { 512, 4096, }, },
+	{ 0, { 0, }, 7, { 512, 520, 528, 4096, 4104, 4160, 4224, }, },
 };
 
 static struct btt btts1[] = {
-	{ 0, { 0, }, 2, { 512, 4096, }, },
+	{ 0, { 0, }, 7, { 512, 520, 528, 4096, 4104, 4160, 4224, }, },
 };
 
 static unsigned long commands0 = 1UL << ND_CMD_GET_CONFIG_SIZE
