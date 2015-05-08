@@ -2393,7 +2393,7 @@ static int add_namespace(void *parent, int id, const char *ndns_base)
 	ndns->region = region;
 	ndns->generation = region->generation;
 
-	sprintf(path, "%s/type", ndns_base);
+	sprintf(path, "%s/nstype", ndns_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		goto err_read;
 	ndns->type = strtoul(buf, NULL, 0);
