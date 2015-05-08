@@ -52,14 +52,17 @@ ndctl_SOURCES = ndctl.c \
 		builtin-xable-region.c \
 		builtin-test.c \
 		builtin-zero-labels.c \
-		lib/test-libndctl.c \
-		lib/test-dpa-alloc.c \
 		util/parse-options.c \
 		util/parse-options.h \
 		util/usage.c \
 		util/strbuf.c \
 		util/strbuf.h \
 		util/wrapper.c
+
+if ENABLE_TEST
+ndctl_SOURCES += lib/test-libndctl.c lib/test-dpa-alloc.c
+endif
+
 ndctl_LDADD = lib/libndctl.la -luuid -lkmod
 
 noinst_LIBRARIES = libccan.a

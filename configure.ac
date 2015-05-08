@@ -59,6 +59,14 @@ AC_ARG_ENABLE([test],
         [], [enable_test=no])
 AS_IF([test "x$enable_test" = "xyes"],
 	[AC_DEFINE([ENABLE_TEST], [1], [ndctl test support])])
+AM_CONDITIONAL([ENABLE_TEST], [test "x$enable_test" = "xyes"])
+
+AC_ARG_ENABLE([destructive],
+        AS_HELP_STRING([--enable-destructive], [enable destructive functional tests @<:@default=disabled@:>@]),
+        [], [enable_destructive=no])
+AS_IF([test "x$enable_destructive" = "xyes"],
+	[AC_DEFINE([ENABLE_DESTRUCTIVE], [1], [destructive functional tests support])])
+AM_CONDITIONAL([ENABLE_DESTRUCTIVE], [test "x$enable_destructive" = "xyes"])
 
 AC_CHECK_LIB([udev], [main], [],
 	[AC_MSG_FAILURE([missing systemd-devel])], [])
