@@ -63,6 +63,11 @@ if ENABLE_TEST
 ndctl_SOURCES += lib/test-libndctl.c lib/test-dpa-alloc.c
 endif
 
+if ENABLE_DESTRUCTIVE
+ndctl_SOURCES += lib/blk_namespaces.c
+ndctl_SOURCES += builtin-bat.c
+endif
+
 ndctl_LDADD = lib/libndctl.la -luuid -lkmod
 
 noinst_LIBRARIES = libccan.a
@@ -94,11 +99,18 @@ EXTRA_DIST += lib/libndctl.pc.in
 CLEANFILES += lib/libndctl.pc
 
 TESTS = lib/test-libndctl lib/test-dpa-alloc
-
 check_PROGRAMS = lib/test-libndctl lib/test-dpa-alloc
+
+if ENABLE_DESTRUCTIVE
+TESTS += lib/test-blk-ns
+check_PROGRAMS += lib/test-blk-ns
+endif
 
 lib_test_libndctl_SOURCES = lib/test-libndctl.c
 lib_test_libndctl_LDADD = lib/libndctl.la -luuid -lkmod
+
+lib_test_blk_ns_SOURCES = lib/blk_namespaces.c
+lib_test_blk_ns_LDADD = lib/libndctl.la -lkmod
 
 lib_test_dpa_alloc_SOURCES = lib/test-dpa-alloc.c
 lib_test_dpa_alloc_LDADD = lib/libndctl.la -luuid -lkmod

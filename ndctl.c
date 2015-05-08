@@ -43,6 +43,9 @@ int cmd_zero_labels(int argc, const char **argv);
 #ifdef ENABLE_TEST
 int cmd_test(int argc, const char **argv);
 #endif
+#ifdef ENABLE_DESTRUCTIVE
+int cmd_bat(int argc, const char **argv);
+#endif
 
 static struct cmd_struct commands[] = {
 	{ "version", cmd_version },
@@ -54,6 +57,9 @@ static struct cmd_struct commands[] = {
 	{ "zero-labels", cmd_zero_labels },
 	#ifdef ENABLE_TEST
 	{ "test", cmd_test },
+	#endif
+	#ifdef ENABLE_DESTRUCTIVE
+	{ "bat", cmd_bat },
 	#endif
 };
 
