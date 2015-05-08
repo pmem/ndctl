@@ -18,6 +18,9 @@
 
 #include <stdbool.h>
 #include <syslog.h>
+#include <libudev.h>
+#include <libkmod.h>
+#include <uuid/uuid.h>
 #ifdef HAVE_NDCTL_H
 #include <linux/ndctl.h>
 #else
@@ -160,125 +163,15 @@ static inline const char *devpath_to_devname(const char *devpath)
 	return strrchr(devpath, '/') + 1;
 }
 
-#ifdef HAVE_LIBUDEV
-#include <libudev.h>
-
 static inline int check_udev(struct udev *udev)
 {
 	return udev ? 0 : -ENXIO;
 }
-#else
-struct udev;
-struct udev_queue;
 
-static inline struct udev *udev_new(void)
-{
-	return NULL;
-}
-
-static inline void udev_unref(struct udev *udev)
-{
-}
-
-static inline int check_udev(struct udev *udev)
-{
-	return 0;
-}
-
-static inline struct udev_queue *udev_queue_new(struct udev *udev)
-{
-	return NULL;
-}
-
-static inline void udev_queue_unref(struct udev_queue *udev_queue)
-{
-}
-
-static inline int udev_queue_get_queue_is_empty(struct udev_queue *udev_queue)
-{
-	return 0;
-}
-#endif
-
-#ifdef HAVE_LIBKMOD
-#include <libkmod.h>
 static inline int check_kmod(struct kmod_ctx *kmod_ctx)
 {
 	return kmod_ctx ? 0 : -ENXIO;
 }
-
-#else
-struct kmod_ctx;
-struct kmod_list;
-struct kmod_module;
-
-enum {
-	KMOD_PROBE_APPLY_BLACKLIST,
-};
-
-static inline int check_kmod(struct kmod_ctx *kmod_cts)
-{
-	return 0;
-}
-
-static inline struct kmod_ctx *kmod_new(const char *dirname,
-		const char * const *config_paths)
-{
-	return NULL;
-}
-
-static inline struct kmod_ctx *kmod_unref(struct kmod_ctx *ctx)
-{
-	return NULL;
-}
-
-static inline struct kmod_module *kmod_module_unref(struct kmod_module *mod)
-{
-	return NULL;
-}
-
-static inline int kmod_module_new_from_lookup(struct kmod_ctx *ctx, const char *alias,
-						struct kmod_list **list)
-{
-	return -ENOTTY;
-}
-
-static inline struct kmod_module *kmod_module_get_module(const struct kmod_list *entry)
-{
-	return NULL;
-}
-
-static inline const char *kmod_module_get_name(const struct kmod_module *mod)
-{
-	return "unknown";
-}
-
-static inline int kmod_module_unref_list(struct kmod_list *list)
-{
-	return -ENOTTY;
-}
-
-static inline int kmod_module_probe_insert_module(struct kmod_module *mod,
-			unsigned int flags, const char *extra_options,
-			int (*run_install)(struct kmod_module *m,
-						const char *cmdline, void *data),
-			const void *data,
-			void (*print_action)(struct kmod_module *m, bool install,
-						const char *options))
-{
-	return -ENOTTY;
-}
-
-#endif
-
-#ifdef HAVE_LIBUUID
-#include <uuid/uuid.h>
-#else
-static inline int uuid_parse(const char *in, uuid_t uu)
-{
-	return -1;
-}
-#endif
 
 static int ndctl_bind(struct ndctl_ctx *ctx, struct kmod_module *module,
 		const char *devname);

@@ -42,7 +42,7 @@ lib_LTLIBRARIES = lib/libndctl.la
 lib_libndctl_la_SOURCES =\
 	lib/libndctl-private.h \
 	lib/libndctl.c
-lib_libndctl_la_LIBADD = $(LIBUDEV) $(LIBUUID) $(LIBKMOD)
+lib_libndctl_la_LIBADD = -ludev -luuid -lkmod
 
 bin_PROGRAMS = ndctl
 
@@ -60,7 +60,7 @@ ndctl_SOURCES = ndctl.c \
 		util/strbuf.c \
 		util/strbuf.h \
 		util/wrapper.c
-ndctl_LDADD = lib/libndctl.la $(LIBUUID) $(LIBKMOD)
+ndctl_LDADD = lib/libndctl.la -luuid -lkmod
 
 noinst_LIBRARIES = libccan.a
 libccan_a_SOURCES = \
@@ -95,9 +95,7 @@ TESTS = lib/test-libndctl lib/test-dpa-alloc
 check_PROGRAMS = lib/test-libndctl lib/test-dpa-alloc
 
 lib_test_libndctl_SOURCES = lib/test-libndctl.c
-lib_test_libndctl_LDADD = lib/libndctl.la \
-	$(LIBUUID) $(LIBKMOD)
+lib_test_libndctl_LDADD = lib/libndctl.la -luuid -lkmod
 
 lib_test_dpa_alloc_SOURCES = lib/test-dpa-alloc.c
-lib_test_dpa_alloc_LDADD = lib/libndctl.la \
-	$(LIBUUID) $(LIBKMOD)
+lib_test_dpa_alloc_LDADD = lib/libndctl.la -luuid -lkmod

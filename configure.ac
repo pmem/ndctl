@@ -60,44 +60,14 @@ AC_ARG_ENABLE([test],
 AS_IF([test "x$enable_test" = "xyes"],
 	[AC_DEFINE([ENABLE_TEST], [1], [ndctl test support])])
 
-AC_ARG_WITH([udev], [AS_HELP_STRING([--without-udev], [disable support for udev])],
-			[], [with_udev=yes])
+AC_CHECK_LIB([udev], [main], [],
+	[AC_MSG_FAILURE([missing systemd-devel])], [])
 
-LIBUDEV=
-AS_IF([test "x$with_udev" != "xno"],
-	[AC_CHECK_LIB([udev], [main],
-		[AC_SUBST([LIBUDEV], ["-ludev"])
-			AC_DEFINE([HAVE_LIBUDEV], [1], [Define if you have libudev])
-		],
-		[AC_MSG_FAILURE([udev test failed (--without-udev to disable)])], [])
-	]
-)
+AC_CHECK_LIB([kmod], [main], [],
+	[AC_MSG_FAILURE([missing kmod-devel])], [])
 
-AC_ARG_WITH([kmod], [AS_HELP_STRING([--without-kmod], [disable support for kmod])],
-			[], [with_kmod=yes])
-
-LIBKMOD=
-AS_IF([test "x$with_kmod" != "xno"],
-	[AC_CHECK_LIB([kmod], [main],
-		[AC_SUBST([LIBKMOD], ["-lkmod"])
-			AC_DEFINE([HAVE_LIBKMOD], [1], [Define if you have libkmod])
-		],
-		[AC_MSG_FAILURE([kmod test failed (--without-kmod to disable)])], [])
-	]
-)
-
-AC_ARG_WITH([uuid], [AS_HELP_STRING([--without-uuid], [disable support for uuid])],
-			[], [with_uuid=yes])
-
-LIBUUID=
-AS_IF([test "x$with_uuid" != "xno"],
-	[AC_CHECK_LIB([uuid], [main],
-		[AC_SUBST([LIBUUID], ["-luuid"])
-			AC_DEFINE([HAVE_LIBUUID], [1], [Define if you have libuuid])
-		],
-		[AC_MSG_FAILURE([uuid test failed (--without-uuid to disable)])], [])
-	]
-)
+AC_CHECK_LIB([uuid], [main], [],
+	[AC_MSG_FAILURE([missing libuuid-devel])], [])
 
 AC_CHECK_HEADER([linux/ndctl.h],
 		[AC_DEFINE([HAVE_NDCTL_H], [1],
