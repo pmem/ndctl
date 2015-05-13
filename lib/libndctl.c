@@ -176,7 +176,7 @@ struct ndctl_mapping {
 struct ndctl_region {
 	struct kmod_module *module;
 	struct ndctl_bus *bus;
-	int id, num_mappings, nstype, spa_index;
+	int id, num_mappings, nstype, range_index;
 	int mappings_init;
 	int namespaces_init;
 	unsigned long long size;
@@ -1300,13 +1300,13 @@ static int add_region(void *parent, int id, const char *region_base)
 		goto err_read;
 	region->nstype = strtoul(buf, NULL, 0);
 
-	sprintf(path, "%s/nfit/spa_index", region_base);
+	sprintf(path, "%s/nfit/range_index", region_base);
 	if (ndctl_bus_has_nfit(bus)) {
 		if (sysfs_read_attr(ctx, path, buf) < 0)
 			goto err_read;
-		region->spa_index = strtoul(buf, NULL, 0);
+		region->range_index = strtoul(buf, NULL, 0);
 	} else
-		region->spa_index = -1;
+		region->range_index = -1;
 
 	sprintf(path, "%s/set_cookie", region_base);
 	if (region->nstype == ND_DEVICE_NAMESPACE_PMEM) {
@@ -1419,9 +1419,9 @@ NDCTL_EXPORT unsigned long long ndctl_region_get_available_size(
 	return strtoull(buf, NULL, 0);
 }
 
-NDCTL_EXPORT unsigned int ndctl_region_get_spa_index(struct ndctl_region *region)
+NDCTL_EXPORT unsigned int ndctl_region_get_range_index(struct ndctl_region *region)
 {
-	return region->spa_index;
+	return region->range_index;
 }
 
 NDCTL_EXPORT unsigned int ndctl_region_get_nstype(struct ndctl_region *region)

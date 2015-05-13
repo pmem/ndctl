@@ -125,7 +125,7 @@ static struct dimm dimms0[] = {
 
 struct region {
 	union {
-		unsigned int spa_index;
+		unsigned int range_index;
 		unsigned int handle;
 	};
 	unsigned int interleave_ways;
@@ -317,15 +317,15 @@ static struct ndctl_namespace *get_namespace_by_id(struct ndctl_region *region,
 	return NULL;
 }
 
-static struct ndctl_region *get_pmem_region_by_spa_index(struct ndctl_bus *bus,
-		unsigned int spa_index)
+static struct ndctl_region *get_pmem_region_by_range_index(struct ndctl_bus *bus,
+		unsigned int range_index)
 {
 	struct ndctl_region *region;
 
 	ndctl_region_foreach(bus, region) {
 		if (ndctl_region_get_type(region) != ND_DEVICE_REGION_PMEM)
 			continue;
-		if (ndctl_region_get_spa_index(region) == spa_index)
+		if (ndctl_region_get_range_index(region) == range_index)
 			return region;
 	}
 	return NULL;
@@ -364,7 +364,7 @@ static int check_regions(struct ndctl_bus *bus, struct region *regions, int n)
 		char devname[50];
 
 		if (strcmp(regions[i].type, "pmem") == 0)
-			region = get_pmem_region_by_spa_index(bus, regions[i].spa_index);
+			region = get_pmem_region_by_range_index(bus, regions[i].range_index);
 		else
 			region = get_blk_region_by_dimm_handle(bus, regions[i].handle);
 

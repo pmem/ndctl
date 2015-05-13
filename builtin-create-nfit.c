@@ -171,7 +171,7 @@ static struct nfit *create_nfit(struct list_head *spa_list)
 		writew(NFIT_TABLE_SPA, &nfit_spa->type);
 		writew(sizeof(*nfit_spa), &nfit_spa->length);
 		nfit_spa_uuid_pm(&nfit_spa->type_uuid);
-		writew(i++, &nfit_spa->spa_index);
+		writew(i++, &nfit_spa->range_index);
 		writeq(s->offset, &nfit_spa->spa_base);
 		writeq(s->size, &nfit_spa->spa_length);
 		nfit_spa++;

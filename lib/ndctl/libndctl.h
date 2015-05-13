@@ -181,7 +181,7 @@ unsigned int ndctl_region_get_interleave_ways(struct ndctl_region *region);
 unsigned int ndctl_region_get_mappings(struct ndctl_region *region);
 unsigned long long ndctl_region_get_size(struct ndctl_region *region);
 unsigned long long ndctl_region_get_available_size(struct ndctl_region *region);
-unsigned int ndctl_region_get_spa_index(struct ndctl_region *region);
+unsigned int ndctl_region_get_range_index(struct ndctl_region *region);
 unsigned int ndctl_region_get_type(struct ndctl_region *region);
 struct ndctl_namespace *ndctl_region_get_namespace_seed(
 		struct ndctl_region *region);

@@ -52,7 +52,7 @@ struct nfit {
 struct nfit_spa {
 	uint16_t type;
 	uint16_t length;
-	uint16_t spa_index;
+	uint16_t range_index;
 	uint16_t flags;
 	uint32_t reserved;
 	uint32_t proximity_domain;
