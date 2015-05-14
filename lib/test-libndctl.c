@@ -163,17 +163,20 @@ struct namespace {
 	uuid_t uuid;
 	int do_configure;
 	int check_alt_name;
-	unsigned long lbasize;
+	int num_sector_sizes;
+	unsigned long *sector_sizes;
 };
 
 static uuid_t null_uuid;
+static unsigned long blk_sector_sizes[7] = { 512, 520, 528, 4096, 4104, 4160, 4224, };
+static unsigned long pmem_sector_sizes[1] = { 0 };
 
 static struct namespace namespace0_pmem0 = {
 	0, "namespace_pmem", &btt_settings, SZ_18M,
 	{ 1, 1, 1, 1,
 	  1, 1, 1, 1,
 	  1, 1, 1, 1,
-	  1, 1, 1, 1, }, 1, 1, 0,
+	  1, 1, 1, 1, }, 1, 1, 1, pmem_sector_sizes,
 };
 
 static struct namespace namespace1_pmem0 = {
@@ -181,7 +184,7 @@ static struct namespace namespace1_pmem0 = {
 	{ 2, 2, 2, 2,
 	  2, 2, 2, 2,
 	  2, 2, 2, 2,
-	  2, 2, 2, 2, }, 1, 1, 0,
+	  2, 2, 2, 2, }, 1, 1, 1, pmem_sector_sizes,
 };
 
 static struct namespace namespace2_blk0 = {
@@ -189,7 +192,7 @@ static struct namespace namespace2_blk0 = {
 	{ 3, 3, 3, 3,
 	  3, 3, 3, 3,
 	  3, 3, 3, 3,
-	  3, 3, 3, 3, }, 1, 1, 512,
+	  3, 3, 3, 3, }, 1, 1, 7, blk_sector_sizes,
 };
 
 static struct namespace namespace2_blk1 = {
@@ -197,7 +200,7 @@ static struct namespace namespace2_blk1 = {
 	{ 4, 4, 4, 4,
 	  4, 4, 4, 4,
 	  4, 4, 4, 4,
-	  4, 4, 4, 4, }, 1, 1, 512,
+	  4, 4, 4, 4, }, 1, 1, 7, blk_sector_sizes,
 };
 
 static struct namespace namespace3_blk0 = {
@@ -205,7 +208,7 @@ static struct namespace namespace3_blk0 = {
 	{ 5, 5, 5, 5,
 	  5, 5, 5, 5,
 	  5, 5, 5, 5,
-	  5, 5, 5, 5, }, 1, 1, 512,
+	  5, 5, 5, 5, }, 1, 1, 7, blk_sector_sizes,
 };
 
 static struct namespace namespace3_blk1 = {
@@ -213,7 +216,7 @@ static struct namespace namespace3_blk1 = {
 	{ 6, 6, 6, 6,
 	  6, 6, 6, 6,
 	  6, 6, 6, 6,
-	  6, 6, 6, 6, }, 1, 1, 512,
+	  6, 6, 6, 6, }, 1, 1, 7, blk_sector_sizes,
 };
 
 static struct namespace namespace4_blk0 = {
@@ -221,7 +224,7 @@ static struct namespace namespace4_blk0 = {
 	{ 7, 7, 7, 7,
 	  7, 7, 7, 7,
 	  7, 7, 7, 7,
-	  7, 7, 7, 7, }, 1, 1, 512,
+	  7, 7, 7, 7, }, 1, 1, 7, blk_sector_sizes,
 };
 
 static struct namespace namespace5_blk0 = {
@@ -229,7 +232,7 @@ static struct namespace namespace5_blk0 = {
 	{ 8, 8, 8, 8,
 	  8, 8, 8, 8,
 	  8, 8, 8, 8,
-	  8, 8, 8, 8, }, 1, 1, 512,
+	  8, 8, 8, 8, }, 1, 1, 7, blk_sector_sizes,
 };
 
 static struct region regions0[] = {
@@ -249,6 +252,10 @@ static struct region regions0[] = {
 
 static struct namespace namespace1 = {
 	0, "namespace_io", &btt_settings, SZ_32M,
+	{ 0, 0, 0, 0,
+	  0, 0, 0, 0,
+	  0, 0, 0, 0,
+	  0, 0, 0, 0, }, 0, 0, 1, pmem_sector_sizes,
 };
 
 static struct region regions1[] = {
@@ -511,7 +518,8 @@ static int check_btt_create(struct ndctl_bus *bus, struct ndctl_namespace *ndns,
 }
 
 static int configure_namespace(struct ndctl_region *region,
-		struct ndctl_namespace *ndns, struct namespace *namespace)
+		struct ndctl_namespace *ndns, struct namespace *namespace,
+		unsigned long lbasize)
 {
 	char devname[50];
 	int rc;
@@ -522,26 +530,23 @@ static int configure_namespace(struct ndctl_region *region,
 	snprintf(devname, sizeof(devname), "namespace%d.%d",
 			ndctl_region_get_id(region), namespace->id);
 
-	if (ndctl_namespace_is_configured(ndns)) {
-		fprintf(stderr, "%s: expected an unconfigured namespace by default\n",
-				devname);
-		return -ENXIO;
+	if (!ndctl_namespace_is_configured(ndns)) {
+		rc = ndctl_namespace_set_uuid(ndns, namespace->uuid);
+		if (rc)
+			fprintf(stderr, "%s: set_uuid failed: %d\n", devname, rc);
+		rc = ndctl_namespace_set_alt_name(ndns, devname);
+		if (rc)
+			fprintf(stderr, "%s: set_alt_name failed: %d\n", devname, rc);
+		rc = ndctl_namespace_set_size(ndns, namespace->size);
+		if (rc)
+			fprintf(stderr, "%s: set_size failed: %d\n", devname, rc);
 	}
 
-	rc = ndctl_namespace_set_uuid(ndns, namespace->uuid);
+	if (lbasize)
+		rc = ndctl_namespace_set_sector_size(ndns, lbasize);
 	if (rc)
-		fprintf(stderr, "%s: set_uuid failed: %d\n", devname, rc);
-	rc = ndctl_namespace_set_alt_name(ndns, devname);
-	if (rc)
-		fprintf(stderr, "%s: set_alt_name failed: %d\n", devname, rc);
-	rc = ndctl_namespace_set_size(ndns, namespace->size);
-	if (rc)
-		fprintf(stderr, "%s: set_size failed: %d\n", devname, rc);
-
-	if (namespace->lbasize)
-		rc = ndctl_namespace_set_sector_size(ndns, namespace->lbasize);
-	if (rc)
-		fprintf(stderr, "%s: set_sector_size failed: %d\n", devname, rc);
+		fprintf(stderr, "%s: set_sector_size (%lu) failed: %d\n",
+			devname, lbasize, rc);
 
 	rc = ndctl_namespace_is_configured(ndns);
 	if (rc < 1)
@@ -618,7 +623,7 @@ static int check_namespaces(struct ndctl_region *region,
 	struct ndctl_bus *bus = ndctl_region_get_bus(region);
 	struct ndctl_namespace **ndns_save;
 	struct namespace *namespace;
-	int i, rc, retry_cnt = 1;
+	int i, j, rc, retry_cnt = 1;
 	void *buf = NULL;
 	char devname[50];
 
@@ -628,7 +633,7 @@ static int check_namespaces(struct ndctl_region *region,
 	if (posix_memalign(&buf, 4096, 4096) != 0)
 		return -ENOMEM;
 
-retry:
+ retry:
 	ndns_save = NULL;
 	for (i = 0; (namespace = namespaces[i]); i++) {
 		struct ndctl_namespace *ndns;
@@ -645,98 +650,140 @@ retry:
 			break;
 		}
 
-		rc = configure_namespace(region, ndns, namespace);
-		if (rc) {
-			fprintf(stderr, "%s: failed to configure namespace\n",
-					devname);
-			break;
+		for (j = 0; j < namespace->num_sector_sizes; j++) {
+			rc = configure_namespace(region, ndns, namespace,
+							namespace->sector_sizes[j]);
+			if (rc) {
+				fprintf(stderr, "%s: failed to configure namespace\n",
+						devname);
+				break;
+			}
+
+			if (strcmp(ndctl_namespace_get_type_name(ndns),
+						namespace->type) != 0) {
+				fprintf(stderr, "%s: expected type: %s got: %s\n",
+						devname,
+						ndctl_namespace_get_type_name(ndns),
+						namespace->type);
+				rc = -ENXIO;
+				break;
+			}
+
+			if (!ndctl_namespace_is_enabled(ndns)) {
+				fprintf(stderr, "%s: expected enabled by default\n",
+						devname);
+				rc = -ENXIO;
+				break;
+			}
+
+			if (namespace->size != ndctl_namespace_get_size(ndns)) {
+				fprintf(stderr, "%s: expected size: %#llx got: %#llx\n",
+						devname, namespace->size,
+						ndctl_namespace_get_size(ndns));
+				rc = -ENXIO;
+				break;
+			}
+
+			ndctl_namespace_get_uuid(ndns, uu);
+			if (uuid_compare(uu, namespace->uuid) != 0) {
+				char expect[40], actual[40];
+
+				uuid_unparse(uu, actual);
+				uuid_unparse(namespace->uuid, expect);
+				fprintf(stderr, "%s: expected uuid: %s got: %s\n",
+						devname, expect, actual);
+				rc = -ENXIO;
+				break;
+			}
+
+			if (namespace->check_alt_name
+					&& strcmp(ndctl_namespace_get_alt_name(ndns),
+						devname) != 0) {
+				fprintf(stderr, "%s: expected alt_name: %s got: %s\n",
+						devname, devname,
+						ndctl_namespace_get_alt_name(ndns));
+				rc = -ENXIO;
+				break;
+			}
+
+			sprintf(bdevpath, "/dev/%s", ndctl_namespace_get_block_device(ndns));
+			fd = open(bdevpath, O_RDWR|O_DIRECT);
+			if (fd < 0) {
+				fprintf(stderr, "%s: failed to open %s\n",
+						devname, bdevpath);
+				rc = -ENXIO;
+				break;
+			}
+			if (read(fd, buf, 4096) < 4096) {
+				fprintf(stderr, "%s: failed to read %s\n",
+						devname, bdevpath);
+				close(fd);
+				rc = -ENXIO;
+				break;
+			}
+			if (write(fd, buf, 4096) < 4096) {
+				fprintf(stderr, "%s: failed to write %s\n",
+						devname, bdevpath);
+				close(fd);
+				rc = -ENXIO;
+				break;
+			}
+			close(fd);
+
+			if (check_btt_create(bus, ndns, namespace->btt_settings) < 0) {
+				fprintf(stderr, "%s: failed to create btt\n", devname);
+				rc = -ENXIO;
+				break;
+			}
+
+			if (ndctl_namespace_disable(ndns) < 0) {
+				fprintf(stderr, "%s: failed to disable\n", devname);
+				rc = -ENXIO;
+				break;
+			}
+
+			if (ndctl_namespace_enable(ndns) < 0) {
+				fprintf(stderr, "%s: failed to enable\n", devname);
+				rc = -ENXIO;
+				break;
+			}
+
+			if (namespace->btt_settings
+					&& check_btt_autodetect(bus, ndns, buf,
+						namespace->btt_settings) < 0) {
+				fprintf(stderr, "%s, failed btt autodetect\n", devname);
+				rc = -ENXIO;
+				break;
+			}
+
+			/*
+			 * if the namespace is being tested with a btt, there is no
+			 * point testing different sector sizes for the namespace itself
+			 */
+			if (namespace->btt_settings)
+				break;
+
+			/*
+			 * If this is the last sector size being tested, don't disable
+			 * the namespace
+			 */
+			if (j == namespace->num_sector_sizes - 1)
+				break;
+
+			/*
+			 * If we're in the second time through this, don't loop for
+			 * different sector sizes as ->do_configure is disabled
+			 */
+			if (!retry_cnt)
+				break;
+
+			if (ndctl_namespace_disable(ndns) < 0) {
+				fprintf(stderr, "%s: failed to disable\n", devname);
+				break;
+			}
 		}
 		namespace->do_configure = 0;
 
-		if (strcmp(ndctl_namespace_get_type_name(ndns),
-					namespace->type) != 0) {
-			fprintf(stderr, "%s: expected type: %s got: %s\n",
-					devname,
-					ndctl_namespace_get_type_name(ndns),
-					namespace->type);
-			break;
-		}
-
-		if (!ndctl_namespace_is_enabled(ndns)) {
-			fprintf(stderr, "%s: expected enabled by default\n",
-					devname);
-			break;
-		}
-
-		if (namespace->size != ndctl_namespace_get_size(ndns)) {
-			fprintf(stderr, "%s: expected size: %#llx got: %#llx\n",
-					devname, namespace->size,
-					ndctl_namespace_get_size(ndns));
-			break;
-		}
-
-		ndctl_namespace_get_uuid(ndns, uu);
-		if (uuid_compare(uu, namespace->uuid) != 0) {
-			char expect[40], actual[40];
-
-			uuid_unparse(uu, actual);
-			uuid_unparse(namespace->uuid, expect);
-			fprintf(stderr, "%s: expected uuid: %s got: %s\n",
-					devname, expect, actual);
-			break;
-		}
-
-		if (namespace->check_alt_name
-				&& strcmp(ndctl_namespace_get_alt_name(ndns),
-					devname) != 0) {
-			fprintf(stderr, "%s: expected alt_name: %s got: %s\n",
-					devname, devname,
-					ndctl_namespace_get_alt_name(ndns));
-			break;
-		}
-
-		sprintf(bdevpath, "/dev/%s", ndctl_namespace_get_block_device(ndns));
-		fd = open(bdevpath, O_RDWR|O_DIRECT);
-		if (fd < 0) {
-			fprintf(stderr, "%s: failed to open %s\n",
-					devname, bdevpath);
-			break;
-		}
-		if (read(fd, buf, 4096) < 4096) {
-			fprintf(stderr, "%s: failed to read %s\n",
-					devname, bdevpath);
-			close(fd);
-			break;
-		}
-		if (write(fd, buf, 4096) < 4096) {
-			fprintf(stderr, "%s: failed to write %s\n",
-					devname, bdevpath);
-			close(fd);
-			break;
-		}
-		close(fd);
-
-		if (check_btt_create(bus, ndns, namespace->btt_settings) < 0) {
-			fprintf(stderr, "%s: failed to create btt\n", devname);
-			break;
-		}
-
-		if (ndctl_namespace_disable(ndns) < 0) {
-			fprintf(stderr, "%s: failed to disable\n", devname);
-			break;
-		}
-
-		if (ndctl_namespace_enable(ndns) < 0) {
-			fprintf(stderr, "%s: failed to enable\n", devname);
-			break;
-		}
-
-		if (namespace->btt_settings
-				&& check_btt_autodetect(bus, ndns, buf,
-					namespace->btt_settings) < 0) {
-			fprintf(stderr, "%s, failed btt autodetect\n", devname);
-			break;
-		}
 		ndns_save = realloc(ndns_save,
 				sizeof(struct ndctl_namespace *) * (i + 1));
 		if (!ndns_save) {
@@ -746,6 +793,9 @@ retry:
 			break;
 		}
 		ndns_save[i] = ndns;
+
+		if (rc)
+			break;
 	}
 
 	if (namespace || ndctl_region_disable_preserve(region) != 0) {
