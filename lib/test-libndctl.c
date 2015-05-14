@@ -695,9 +695,6 @@ retry:
 			break;
 		}
 
-		if (!namespace->btt_settings)
-			goto skip_io;
-
 		sprintf(bdevpath, "/dev/%s", ndctl_namespace_get_block_device(ndns));
 		fd = open(bdevpath, O_RDWR|O_DIRECT);
 		if (fd < 0) {
@@ -724,7 +721,6 @@ retry:
 			break;
 		}
 
- skip_io:
 		if (ndctl_namespace_disable(ndns) < 0) {
 			fprintf(stderr, "%s: failed to disable\n", devname);
 			break;
