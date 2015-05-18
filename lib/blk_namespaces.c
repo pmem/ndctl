@@ -216,6 +216,7 @@ int test_blk_namespaces(int log_level)
 	struct ndctl_bus *bus;
 	struct ndctl_namespace *ndns[2];
 	struct ndctl_region *region, *blk_region = NULL;
+	struct ndctl_dimm *dimm;
 
 	rc = ndctl_new(&ctx);
 	if (rc < 0)
@@ -234,13 +235,27 @@ int test_blk_namespaces(int log_level)
 				ndctl_bus_get_provider(bus));
 	}
 
+	/* get the system to a clean state */
+        ndctl_region_foreach(bus, region)
+                ndctl_region_disable_invalidate(region);
+
+        ndctl_dimm_foreach(bus, dimm) {
+                rc = ndctl_dimm_zero_labels(dimm);
+                if (rc < 0) {
+                        fprintf(stderr, "failed to zero %s\n",
+                                        ndctl_dimm_get_devname(dimm));
+                        return rc;
+                }
+        }
+
+	/* create our config */
 	ndctl_region_foreach(bus, region)
 		if (ndctl_region_get_nstype(region) == ND_DEVICE_NAMESPACE_BLK) {
 			blk_region = region;
 			break;
 		}
 
-	if (!blk_region) {
+	if (!blk_region || ndctl_region_enable(blk_region) < 0) {
 		fprintf(stderr, "%s: failed to find block region\n", comm);
 		rc = -ENODEV;
 		goto err_cleanup;

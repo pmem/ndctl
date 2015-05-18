@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <syslog.h>
 #include <test-blk-namespaces.h>
+#include <test-pmem-namespaces.h>
 #include <util/parse-options.h>
 
 int cmd_bat(int argc, const char **argv)
@@ -26,5 +27,10 @@ int cmd_bat(int argc, const char **argv)
 
 	rc = test_blk_namespaces(loglevel);
 	fprintf(stderr, "test_blk_namespaces: %s\n", rc ? "FAIL" : "PASS");
+	if (rc)
+		return rc;
+
+	rc = test_pmem_namespaces(loglevel);
+	fprintf(stderr, "test_pmem_namespaces: %s\n", rc ? "FAIL" : "PASS");
 	return rc;
 }
