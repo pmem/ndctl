@@ -17,6 +17,7 @@
 #define _LIBNDCTL_H_
 
 #include <stdarg.h>
+#include <unistd.h>
 
 #ifdef HAVE_LIBUUID
 #include <uuid/uuid.h>
