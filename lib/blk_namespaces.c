@@ -83,22 +83,21 @@ static struct ndctl_namespace *create_blk_namespace(int region_fraction,
 static int disable_blk_namespace(struct ndctl_namespace *ndns)
 {
 	if (ndctl_namespace_disable(ndns) < 0)
-		return -ENODEV;
+		return ENODEV;
 
 	if (ndctl_namespace_delete(ndns) < 0)
-		return -ENODEV;
+		return ENODEV;
 
 	return 0;
 }
 
 static int ns_do_io(const char *bdev)
 {
-	int fd, i;
-	int rc = 0;
 	const int page_size = 4096;
 	const int num_pages = 4;
 	unsigned long num_dev_pages, num_blocks;
 	off_t addr;
+	int fd, i, rc;
 
 	void *random_page[num_pages];
 	void *blk_page[num_pages];
@@ -122,13 +121,13 @@ static int ns_do_io(const char *bdev)
 
 	/* read random data into random_page */
 	if ((fd = open("/dev/urandom", O_RDONLY)) < 0) {
+		rc = errno;
 		err("open");
-		rc = -ENODEV;
 		goto err_free_all;
 	}
 
-	rc = read(fd, random_page[0], page_size * num_pages);
-	if (rc < 0) {
+	if (read(fd, random_page[0], page_size * num_pages) < 0) {
+		rc = errno;
 		err("read");
 		close(fd);
 		goto err_free_all;
@@ -136,9 +135,10 @@ static int ns_do_io(const char *bdev)
 
 	close(fd);
 
+	/* figure out our dev size */
 	if ((fd = open(bdev, O_RDWR|O_DIRECT)) < 0) {
+		rc = errno;
 		err("open");
-		rc = -ENODEV;
 		goto err_free_all;
 	}
 
@@ -146,45 +146,48 @@ static int ns_do_io(const char *bdev)
 	num_dev_pages = num_blocks / 8;
 
 	/* write the random data out to each of the segments */
-	rc = pwrite(fd, random_page[0], page_size, 0);
-	if (rc < 0) {
+	if (pwrite(fd, random_page[0], page_size, 0) < 0) {
+		rc = errno;
 		err("write");
 		goto err_close;
 	}
 
 	/* two pages that span the region discontinuity */
 	addr = page_size * (num_dev_pages/2 - 1);
-	rc = pwrite(fd, random_page[1], page_size*2, addr);
-	if (rc < 0) {
+
+	if (pwrite(fd, random_page[1], page_size*2, addr) < 0) {
+		rc = errno;
 		err("write");
 		goto err_close;
 	}
 
 	addr = page_size * (num_dev_pages - 1);
-	rc = pwrite(fd, random_page[3], page_size, addr);
-	if (rc < 0) {
+
+	if (pwrite(fd, random_page[3], page_size, addr) < 0) {
+		rc = errno;
 		err("write");
 		goto err_close;
 	}
 
 	/* read back the random data into blk_page */
-	rc = pread(fd, blk_page[0], page_size, 0);
-	if (rc < 0) {
+	if (pread(fd, blk_page[0], page_size, 0) < 0) {
+		rc = errno;
 		err("read");
 		goto err_close;
 	}
 
 	/* two pages that span the region discontinuity */
 	addr = page_size * (num_dev_pages/2 - 1);
-	rc = pread(fd, blk_page[1], page_size*2, addr);
-	if (rc < 0) {
+	if (pread(fd, blk_page[1], page_size*2, addr) < 0) {
+		rc = errno;
 		err("read");
 		goto err_close;
 	}
 
 	addr = page_size * (num_dev_pages - 1);
-	rc = pread(fd, blk_page[3], page_size, addr);
-	if (rc < 0) {
+
+	if (pread(fd, blk_page[3], page_size, addr) < 0) {
+		rc = errno;
 		err("read");
 		goto err_close;
 	}
@@ -192,11 +195,9 @@ static int ns_do_io(const char *bdev)
 	/* verify the data */
 	if (memcmp(random_page[0], blk_page[0], page_size * num_pages)) {
 		fprintf(stderr, "Block data miscompare\n");
-		rc = -EIO;
-		goto err_close;
+		rc = EIO;
 	}
 
-	rc = 0;
  err_close:
 	close(fd);
  err_free_all:
@@ -218,30 +219,28 @@ int test_blk_namespaces(int log_level)
 	struct ndctl_region *region, *blk_region = NULL;
 	struct ndctl_dimm *dimm;
 
-	rc = ndctl_new(&ctx);
-	if (rc < 0)
+	rc = -ndctl_new(&ctx);
+	if (rc)
 		return rc;
 
 	ndctl_set_log_priority(ctx, log_level);
 
 	bus = ndctl_bus_get_by_provider(ctx, provider);
 	if (!bus) {
-		fprintf(stderr, "%s: failed to find NFIT-provider\n",
-				comm);
-		rc = -ENODEV;
+		fprintf(stderr, "%s: failed to find NFIT-provider\n", comm);
+		rc = ENODEV;
 		goto err_nobus;
-	} else {
+	} else
 		fprintf(stderr, "%s: found provider: %s\n", comm,
 				ndctl_bus_get_provider(bus));
-	}
 
 	/* get the system to a clean state */
         ndctl_region_foreach(bus, region)
                 ndctl_region_disable_invalidate(region);
 
         ndctl_dimm_foreach(bus, dimm) {
-                rc = ndctl_dimm_zero_labels(dimm);
-                if (rc < 0) {
+                rc = -ndctl_dimm_zero_labels(dimm);
+                if (rc) {
                         fprintf(stderr, "failed to zero %s\n",
                                         ndctl_dimm_get_devname(dimm));
                         return rc;
@@ -255,13 +254,12 @@ int test_blk_namespaces(int log_level)
 			break;
 		}
 
+	rc = ENODEV;
 	if (!blk_region || ndctl_region_enable(blk_region) < 0) {
 		fprintf(stderr, "%s: failed to find block region\n", comm);
-		rc = -ENODEV;
 		goto err_cleanup;
 	}
 
-	rc = -ENODEV;
 	ndns[0] = create_blk_namespace(4, blk_region);
 	if (!ndns[0]) {
 		fprintf(stderr, "%s: failed to create block namespace\n", comm);
@@ -275,7 +273,7 @@ int test_blk_namespaces(int log_level)
 	}
 
 	rc = disable_blk_namespace(ndns[0]);
-	if (rc < 0) {
+	if (rc) {
 		fprintf(stderr, "%s: failed to disable block namespace\n", comm);
 		goto err_cleanup;
 	}
@@ -283,32 +281,30 @@ int test_blk_namespaces(int log_level)
 	ndns[0] = create_blk_namespace(2, blk_region);
 	if (!ndns[0]) {
 		fprintf(stderr, "%s: failed to create block namespace\n", comm);
-		rc = -ENODEV;
+		rc = ENODEV;
 		goto err_cleanup;
 	}
 
 	rc = disable_blk_namespace(ndns[1]);
-	if (rc < 0) {
+	if (rc) {
 		fprintf(stderr, "%s: failed to disable block namespace\n", comm);
 		goto err_cleanup;
 	}
 
-	rc = -ENODEV;
 	ndns[1] = create_blk_namespace(2, blk_region);
 	if (!ndns[1]) {
 		fprintf(stderr, "%s: failed to create block namespace\n", comm);
+		rc = ENODEV;
 		goto err_cleanup;
 	}
 
 	/* okay, all set up, do some I/O */
-	rc = -EIO;
 	sprintf(bdev, "/dev/%s", ndctl_namespace_get_block_device(ndns[0]));
-	if (ns_do_io(bdev))
+	rc = ns_do_io(bdev);
+	if (rc)
 		goto err_cleanup;
 	sprintf(bdev, "/dev/%s", ndctl_namespace_get_block_device(ndns[1]));
-	if (ns_do_io(bdev))
-		goto err_cleanup;
-	rc = 0;
+	rc = ns_do_io(bdev);
 
  err_cleanup:
 	if (blk_region) {

@@ -61,10 +61,10 @@ static struct ndctl_namespace *create_pmem_namespace(struct ndctl_region *region
 static int disable_pmem_namespace(struct ndctl_namespace *ndns)
 {
 	if (ndctl_namespace_disable(ndns) < 0)
-		return -ENODEV;
+		return ENODEV;
 
 	if (ndctl_namespace_delete(ndns) < 0)
-		return -ENODEV;
+		return ENODEV;
 
 	return 0;
 }
@@ -74,9 +74,8 @@ static int ns_do_io(const char *bdev)
 	unsigned long num_dev_pages, num_blocks;
 	const int page_size = 4096;
 	const int num_pages = 2;
+	int fd, i, rc;
 	off_t addr;
-	int rc = 0;
-	int fd, i;
 
 	void *random_page[num_pages];
 	void *pmem_page[num_pages];
@@ -100,13 +99,13 @@ static int ns_do_io(const char *bdev)
 
 	/* read random data into random_page */
 	if ((fd = open("/dev/urandom", O_RDONLY)) < 0) {
+		rc = errno;
 		err("open");
-		rc = -ENODEV;
 		goto err_free_all;
 	}
 
-	rc = read(fd, random_page[0], page_size * num_pages);
-	if (rc < 0) {
+	if (read(fd, random_page[0], page_size * num_pages) < 0) {
+		rc = errno;
 		err("read");
 		close(fd);
 		goto err_free_all;
@@ -116,8 +115,8 @@ static int ns_do_io(const char *bdev)
 
 	/* figure out our dev size */
 	if ((fd = open(bdev, O_RDWR|O_DIRECT)) < 0) {
+		rc = errno;
 		err("open");
-		rc = -ENODEV;
 		goto err_free_all;
 	}
 
@@ -125,29 +124,29 @@ static int ns_do_io(const char *bdev)
 	num_dev_pages = num_blocks / 8;
 
 	/* write the random data out to each of the segments */
-	rc = pwrite(fd, random_page[0], page_size, 0);
-	if (rc < 0) {
+	if (pwrite(fd, random_page[0], page_size, 0) < 0) {
+		rc = errno;
 		err("write");
 		goto err_close;
 	}
 
 	addr = page_size * (num_dev_pages - 1);
-	rc = pwrite(fd, random_page[1], page_size, addr);
-	if (rc < 0) {
+	if (pwrite(fd, random_page[1], page_size, addr) < 0) {
+		rc = errno;
 		err("write");
 		goto err_close;
 	}
 
 	/* read back the random data into pmem_page */
-	rc = pread(fd, pmem_page[0], page_size, 0);
-	if (rc < 0) {
+	if (pread(fd, pmem_page[0], page_size, 0) < 0) {
+		rc = errno;
 		err("read");
 		goto err_close;
 	}
 
 	addr = page_size * (num_dev_pages - 1);
-	rc = pread(fd, pmem_page[1], page_size, addr);
-	if (rc < 0) {
+	if (pread(fd, pmem_page[1], page_size, addr) < 0) {
+		rc = errno;
 		err("read");
 		goto err_close;
 	}
@@ -155,11 +154,10 @@ static int ns_do_io(const char *bdev)
 	/* verify the data */
 	if (memcmp(random_page[0], pmem_page[0], page_size * num_pages)) {
 		fprintf(stderr, "PMEM data miscompare\n");
-		rc = -EIO;
+		rc = EIO;
 		goto err_close;
 	}
 
-	rc = 0;
  err_close:
 	close(fd);
  err_free_all:
@@ -181,8 +179,8 @@ int test_pmem_namespaces(int log_level)
 	char bdev[50];
 	int rc;
 
-	rc = ndctl_new(&ctx);
-	if (rc < 0)
+	rc = -ndctl_new(&ctx);
+	if (rc)
 		return rc;
 
 	ndctl_set_log_priority(ctx, log_level);
@@ -190,7 +188,7 @@ int test_pmem_namespaces(int log_level)
 	bus = ndctl_bus_get_by_provider(ctx, provider);
 	if (!bus) {
 		fprintf(stderr, "%s: failed to find NFIT-provider\n", comm);
-		rc = -ENODEV;
+		rc = ENODEV;
 		goto err;
 	} else
 		fprintf(stderr, "%s: found provider: %s\n", comm,
@@ -201,8 +199,8 @@ int test_pmem_namespaces(int log_level)
                 ndctl_region_disable_invalidate(region);
 
         ndctl_dimm_foreach(bus, dimm) {
-                rc = ndctl_dimm_zero_labels(dimm);
-                if (rc < 0) {
+                rc = -ndctl_dimm_zero_labels(dimm);
+                if (rc) {
                         fprintf(stderr, "failed to zero %s\n",
                                         ndctl_dimm_get_devname(dimm));
                         return rc;
@@ -218,14 +216,14 @@ int test_pmem_namespaces(int log_level)
 
 	if (!pmem_region || ndctl_region_enable(pmem_region) < 0) {
 		fprintf(stderr, "%s: failed to find PMEM region\n", comm);
-		rc = -ENODEV;
+		rc = ENODEV;
 		goto err;
 	}
 
-	rc = -ENODEV;
 	ndns = create_pmem_namespace(pmem_region);
 	if (!ndns) {
 		fprintf(stderr, "%s: failed to create PMEM namespace\n", comm);
+		rc = ENODEV;
 		goto err;
 	}
 
