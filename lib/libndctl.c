@@ -1321,8 +1321,6 @@ static int add_region(void *parent, int id, const char *region_base)
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		goto err_read;
 	region->module = to_module(ctx, buf);
-	if (!region->module)
-		goto err_read;
 
         region->region_buf = calloc(1, strlen(region_base) + 50);
         if (!region->region_buf)
@@ -2329,7 +2327,7 @@ static struct kmod_module *to_module(struct ndctl_ctx *ctx, const char *alias)
 
 	rc = kmod_module_new_from_lookup(ctx->kmod_ctx, alias, &list);
 	if (rc < 0 || !list) {
-		err(ctx, "failed to find module for alias: %s %d list: %s\n",
+		dbg(ctx, "failed to find module for alias: %s %d list: %s\n",
 				alias, rc, list ? "populated" : "empty");
 		return NULL;
 	}
@@ -2445,8 +2443,6 @@ static int add_namespace(void *parent, int id, const char *ndns_base)
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		goto err_read;
 	ndns->module = to_module(ctx, buf);
-	if (!ndns->module)
-		goto err_read;
 
 	ndctl_namespace_foreach(region, ndns_dup)
 		if (ndns_dup->id == ndns->id) {
@@ -2576,27 +2572,28 @@ NDCTL_EXPORT int ndctl_namespace_is_enabled(struct ndctl_namespace *ndns)
 static int ndctl_bind(struct ndctl_ctx *ctx, struct kmod_module *module,
 		const char *devname)
 {
-	struct dirent *de;
-	int rc = -ENXIO;
-	char path[200];
+	int rc;
 	DIR *dir;
+	char path[200];
+	struct dirent *de;
 	const int len = sizeof(path);
 
-	if (!module || !devname) {
-		err(ctx, "%s: invalid paramters module: %p devname: %p\n",
-				__func__, module, devname);
+	if (!devname) {
+		err(ctx, "missing devname\n");
 		return -EINVAL;
 	}
 
-	rc = kmod_module_probe_insert_module(module,
-			KMOD_PROBE_APPLY_BLACKLIST, NULL, NULL, NULL, NULL);
-	if (rc < 0) {
-		err(ctx, "%s: insert failure: %d\n", __func__, rc);
-		return rc;
+	if (module) {
+		rc = kmod_module_probe_insert_module(module,
+				KMOD_PROBE_APPLY_BLACKLIST, NULL, NULL, NULL,
+				NULL);
+		if (rc < 0) {
+			err(ctx, "%s: insert failure: %d\n", __func__, rc);
+			return rc;
+		}
 	}
 
-	if (snprintf(path, len, "/sys/module/%s/drivers",
-				kmod_module_get_name(module)) >= len) {
+	if (snprintf(path, len, "/sys/bus/nd/drivers") >= len) {
 		err(ctx, "%s: buffer too small!\n", devname);
 		return -ENXIO;
 	}
@@ -2619,17 +2616,18 @@ static int ndctl_bind(struct ndctl_ctx *ctx, struct kmod_module *module,
 			continue;
 		}
 
-		if (sysfs_write_attr(ctx, drv_path, devname) == 0)
-			rc = 0;
+		rc = sysfs_write_attr(ctx, drv_path, devname);
 		free(drv_path);
 		if (rc == 0)
 			break;
 	}
 	closedir(dir);
 
-	if (rc)
+	if (rc) {
 		err(ctx, "%s: bind failed\n", devname);
-	return rc;
+		return -ENXIO;
+	}
+	return 0;
 }
 
 static int ndctl_unbind(struct ndctl_ctx *ctx, const char *devpath)
@@ -3021,8 +3019,6 @@ static int add_btt(void *parent, int id, const char *btt_base)
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		goto err_read;
 	btt->module = to_module(ctx, buf);
-	if (!btt->module)
-		goto err_read;
 
 	sprintf(path, "%s/uuid", btt_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
