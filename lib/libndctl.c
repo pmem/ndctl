@@ -744,10 +744,10 @@ static int to_dsm_index(const char *name, int dimm)
 
 	if (dimm) {
 		end_cmd = ND_CMD_VENDOR;
-		cmd_name_fn = nd_dimm_cmd_name;
+		cmd_name_fn = nvdimm_cmd_name;
 	} else {
 		end_cmd = ND_CMD_ARS_QUERY;
-		cmd_name_fn = nd_bus_cmd_name;
+		cmd_name_fn = nvdimm_bus_cmd_name;
 	}
 
 	for (i = 1; i <= end_cmd; i++) {
@@ -960,7 +960,7 @@ NDCTL_EXPORT struct ndctl_btt *ndctl_bus_get_btt_seed(struct ndctl_bus *bus)
 
 NDCTL_EXPORT const char *ndctl_bus_get_cmd_name(struct ndctl_bus *bus, int cmd)
 {
-	return nd_bus_cmd_name(cmd);
+	return nvdimm_bus_cmd_name(cmd);
 }
 
 NDCTL_EXPORT int ndctl_bus_is_cmd_supported(struct ndctl_bus *bus,
@@ -1197,7 +1197,7 @@ NDCTL_EXPORT const char *ndctl_dimm_get_devname(struct ndctl_dimm *dimm)
 
 NDCTL_EXPORT const char *ndctl_dimm_get_cmd_name(struct ndctl_dimm *dimm, int cmd)
 {
-	return nd_dimm_cmd_name(cmd);
+	return nvdimm_cmd_name(cmd);
 }
 
 NDCTL_EXPORT int ndctl_dimm_is_cmd_supported(struct ndctl_dimm *dimm,
