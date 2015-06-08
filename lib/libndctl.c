@@ -746,7 +746,7 @@ static int to_dsm_index(const char *name, int dimm)
 		end_cmd = ND_CMD_VENDOR;
 		cmd_name_fn = nvdimm_cmd_name;
 	} else {
-		end_cmd = ND_CMD_ARS_QUERY;
+		end_cmd = ND_CMD_ARS_STATUS;
 		cmd_name_fn = nvdimm_bus_cmd_name;
 	}
 
@@ -1860,7 +1860,7 @@ static int to_ioctl_cmd(int cmd, int dimm)
 		switch (cmd) {
 		case ND_CMD_ARS_CAP:         return ND_IOCTL_ARS_CAP;
 		case ND_CMD_ARS_START:       return ND_IOCTL_ARS_START;
-		case ND_CMD_ARS_QUERY:       return ND_IOCTL_ARS_QUERY;
+		case ND_CMD_ARS_STATUS:      return ND_IOCTL_ARS_STATUS;
 		default:
 						       return 0;
 		};

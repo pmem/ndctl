@@ -76,7 +76,7 @@ struct nd_cmd_ars_start {
 	__u32 status;
 } __attribute__((packed));
 
-struct nd_cmd_ars_query {
+struct nd_cmd_ars_status {
 	__u32 status;
 	__u32 out_length;
 	__u64 address;
@@ -97,7 +97,7 @@ enum {
 	/* bus commands */
 	ND_CMD_ARS_CAP = 1,
 	ND_CMD_ARS_START = 2,
-	ND_CMD_ARS_QUERY = 3,
+	ND_CMD_ARS_STATUS = 3,
 
 	/* per-dimm commands */
 	ND_CMD_SMART = 1,
@@ -116,7 +116,7 @@ static __inline__ const char *nd_bus_cmd_name(unsigned cmd)
 	static const char * const names[] = {
 		[ND_CMD_ARS_CAP] = "ars_cap",
 		[ND_CMD_ARS_START] = "ars_start",
-		[ND_CMD_ARS_QUERY] = "ars_query",
+		[ND_CMD_ARS_STATUS] = "ars_status",
 	};
 
 	if (cmd < ARRAY_SIZE(names) && names[cmd])
@@ -172,8 +172,8 @@ static __inline__ const char *nd_dimm_cmd_name(unsigned cmd)
 #define ND_IOCTL_ARS_START		_IOWR(ND_IOCTL, ND_CMD_ARS_START,\
 					struct nd_cmd_ars_start)
 
-#define ND_IOCTL_ARS_QUERY		_IOWR(ND_IOCTL, ND_CMD_ARS_QUERY,\
-					struct nd_cmd_ars_query)
+#define ND_IOCTL_ARS_STATUS		_IOWR(ND_IOCTL, ND_CMD_ARS_STATUS,\
+					struct nd_cmd_ars_status)
 
 #define ND_DEVICE_DIMM 1            /* nd_dimm: container for "config data" */
 #define ND_DEVICE_REGION_PMEM 2     /* nd_region: (parent of pmem namespaces) */
