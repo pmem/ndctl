@@ -137,6 +137,16 @@ struct ndctl_dimm {
 	char *dimm_buf;
 	int buf_len;
 	int id;
+	union {
+		unsigned long flags;
+		struct {
+			unsigned int f_arm:1;
+			unsigned int f_save:1;
+			unsigned int f_flush:1;
+			unsigned int f_smart:1;
+			unsigned int f_restore:1;
+		};
+	};
 	struct list_node list;
 };
 
@@ -781,6 +791,30 @@ static unsigned long parse_commands(char *commands, int dimm)
 	return dsm_mask;
 }
 
+static void parse_nfit_mem_flags(struct ndctl_dimm *dimm, char *flags)
+{
+	char *start, *end;
+
+	start = flags;
+	while ((end = strchr(start, ' '))) {
+		*end = '\0';
+		if (strcmp(start, "arm") == 0)
+			dimm->f_arm = 1;
+		else if (strcmp(start, "save") == 0)
+			dimm->f_save = 1;
+		else if (strcmp(start, "flush") == 0)
+			dimm->f_flush = 1;
+		else if (strcmp(start, "smart") == 0)
+			dimm->f_smart = 1;
+		else if (strcmp(start, "restore") == 0)
+			dimm->f_restore = 1;
+		start = end + 1;
+	}
+	if (end != start)
+		dbg(ndctl_dimm_get_ctx(dimm), "%s: %s\n",
+				ndctl_dimm_get_devname(dimm), flags);
+}
+
 static int add_bus(void *parent, int id, const char *ctl_base)
 {
 	int rc = -ENOMEM;
@@ -1108,6 +1142,10 @@ static int add_dimm(void *parent, int id, const char *dimm_base)
 	sprintf(path, "%s/nfit/format", dimm_base);
 	if (sysfs_read_attr(ctx, path, buf) == 0)
 		dimm->format_id = strtoul(buf, NULL, 0);
+
+	sprintf(path, "%s/nfit/flags", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) == 0)
+		parse_nfit_mem_flags(dimm, buf);
  out:
 	list_add(&bus->dimms, &dimm->list);
 	free(path);
@@ -1202,6 +1240,36 @@ NDCTL_EXPORT const char *ndctl_dimm_get_devname(struct ndctl_dimm *dimm)
 NDCTL_EXPORT const char *ndctl_dimm_get_cmd_name(struct ndctl_dimm *dimm, int cmd)
 {
 	return nvdimm_cmd_name(cmd);
+}
+
+NDCTL_EXPORT int ndctl_dimm_has_errors(struct ndctl_dimm *dimm)
+{
+	return dimm->flags != 0;
+}
+
+NDCTL_EXPORT int ndctl_dimm_failed_save(struct ndctl_dimm *dimm)
+{
+	return dimm->f_save;
+}
+
+NDCTL_EXPORT int ndctl_dimm_failed_arm(struct ndctl_dimm *dimm)
+{
+	return dimm->f_arm;
+}
+
+NDCTL_EXPORT int ndctl_dimm_failed_restore(struct ndctl_dimm *dimm)
+{
+	return dimm->f_restore;
+}
+
+NDCTL_EXPORT int ndctl_dimm_smart_pending(struct ndctl_dimm *dimm)
+{
+	return dimm->f_smart;
+}
+
+NDCTL_EXPORT int ndctl_dimm_failed_flush(struct ndctl_dimm *dimm)
+{
+	return dimm->f_flush;
 }
 
 NDCTL_EXPORT int ndctl_dimm_is_cmd_supported(struct ndctl_dimm *dimm,

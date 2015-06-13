@@ -25,6 +25,7 @@
 #include <syslog.h>
 #include <libkmod.h>
 #include <uuid/uuid.h>
+#include <sys/ioctl.h>
 
 #include <ccan/array_size/array_size.h>
 #include <ndctl/libndctl.h>
@@ -34,6 +35,9 @@
 #include <ndctl.h>
 #endif
 #include <test-libndctl.h>
+
+#define BLKROGET _IO(0x12,94) /* get read-only status (0 = read_write) */
+#define BLKROSET _IO(0x12,93) /* set device read-only (0 = read-write) */
 
 /*
  * Kernel provider "nfit_test.0" produces an NFIT with the following attributes:
@@ -88,8 +92,8 @@
  * |---------------------|
  * +---------------------+
  *
- * *) Describes a simple system-physical-address range with no backing
- *    dimm or interleave description.
+ * *) Describes a simple system-physical-address range with a non-aliasing backing
+ *    dimm.
  */
 
 static const char *NFIT_TEST_MODULE = "nfit_test";
@@ -111,16 +115,39 @@ static const char *NFIT_PROVIDER1 = "nfit_test.1";
 struct dimm {
 	unsigned int handle;
 	unsigned int phys_id;
+	union {
+		unsigned long flags;
+		struct {
+			unsigned int f_arm:1;
+			unsigned int f_save:1;
+			unsigned int f_flush:1;
+			unsigned int f_smart:1;
+			unsigned int f_restore:1;
+		};
+	};
 };
 
 #define DIMM_HANDLE(n, s, i, c, d) \
 	(((n & 0xfff) << 16) | ((s & 0xf) << 12) | ((i & 0xf) << 8) \
 	 | ((c & 0xf) << 4) | (d & 0xf))
 static struct dimm dimms0[] = {
-	{ DIMM_HANDLE(0, 0, 0, 0, 0), 0, },
-	{ DIMM_HANDLE(0, 0, 0, 0, 1), 1, },
-	{ DIMM_HANDLE(0, 0, 1, 0, 0), 2, },
-	{ DIMM_HANDLE(0, 0, 1, 0, 1), 3, },
+	{ DIMM_HANDLE(0, 0, 0, 0, 0), 0, { 0 }, },
+	{ DIMM_HANDLE(0, 0, 0, 0, 1), 1, { 0 }, },
+	{ DIMM_HANDLE(0, 0, 1, 0, 0), 2, { 0 }, },
+	{ DIMM_HANDLE(0, 0, 1, 0, 1), 3, { 0 }, },
+};
+
+static struct dimm dimms1[] = {
+	{
+		DIMM_HANDLE(0, 0, 0, 0, 0), 0,
+		{
+			.f_arm = 1,
+			.f_save = 1,
+			.f_flush = 1,
+			.f_smart = 1,
+			.f_restore = 1,
+		},
+	}
 };
 
 struct region {
@@ -164,6 +191,7 @@ struct namespace {
 	int do_configure;
 	int check_alt_name;
 	int num_sector_sizes;
+	int ro;
 	unsigned long *sector_sizes;
 };
 
@@ -176,7 +204,7 @@ static struct namespace namespace0_pmem0 = {
 	{ 1, 1, 1, 1,
 	  1, 1, 1, 1,
 	  1, 1, 1, 1,
-	  1, 1, 1, 1, }, 1, 1, 1, pmem_sector_sizes,
+	  1, 1, 1, 1, }, 1, 1, 1, 0, pmem_sector_sizes,
 };
 
 static struct namespace namespace1_pmem0 = {
@@ -184,7 +212,7 @@ static struct namespace namespace1_pmem0 = {
 	{ 2, 2, 2, 2,
 	  2, 2, 2, 2,
 	  2, 2, 2, 2,
-	  2, 2, 2, 2, }, 1, 1, 1, pmem_sector_sizes,
+	  2, 2, 2, 2, }, 1, 1, 1, 0, pmem_sector_sizes,
 };
 
 static struct namespace namespace2_blk0 = {
@@ -192,7 +220,7 @@ static struct namespace namespace2_blk0 = {
 	{ 3, 3, 3, 3,
 	  3, 3, 3, 3,
 	  3, 3, 3, 3,
-	  3, 3, 3, 3, }, 1, 1, 7, blk_sector_sizes,
+	  3, 3, 3, 3, }, 1, 1, 7, 0, blk_sector_sizes,
 };
 
 static struct namespace namespace2_blk1 = {
@@ -200,7 +228,7 @@ static struct namespace namespace2_blk1 = {
 	{ 4, 4, 4, 4,
 	  4, 4, 4, 4,
 	  4, 4, 4, 4,
-	  4, 4, 4, 4, }, 1, 1, 7, blk_sector_sizes,
+	  4, 4, 4, 4, }, 1, 1, 7, 0, blk_sector_sizes,
 };
 
 static struct namespace namespace3_blk0 = {
@@ -208,7 +236,7 @@ static struct namespace namespace3_blk0 = {
 	{ 5, 5, 5, 5,
 	  5, 5, 5, 5,
 	  5, 5, 5, 5,
-	  5, 5, 5, 5, }, 1, 1, 7, blk_sector_sizes,
+	  5, 5, 5, 5, }, 1, 1, 7, 0, blk_sector_sizes,
 };
 
 static struct namespace namespace3_blk1 = {
@@ -216,7 +244,7 @@ static struct namespace namespace3_blk1 = {
 	{ 6, 6, 6, 6,
 	  6, 6, 6, 6,
 	  6, 6, 6, 6,
-	  6, 6, 6, 6, }, 1, 1, 7, blk_sector_sizes,
+	  6, 6, 6, 6, }, 1, 1, 7, 0, blk_sector_sizes,
 };
 
 static struct namespace namespace4_blk0 = {
@@ -224,7 +252,7 @@ static struct namespace namespace4_blk0 = {
 	{ 7, 7, 7, 7,
 	  7, 7, 7, 7,
 	  7, 7, 7, 7,
-	  7, 7, 7, 7, }, 1, 1, 7, blk_sector_sizes,
+	  7, 7, 7, 7, }, 1, 1, 7, 0, blk_sector_sizes,
 };
 
 static struct namespace namespace5_blk0 = {
@@ -232,7 +260,7 @@ static struct namespace namespace5_blk0 = {
 	{ 8, 8, 8, 8,
 	  8, 8, 8, 8,
 	  8, 8, 8, 8,
-	  8, 8, 8, 8, }, 1, 1, 7, blk_sector_sizes,
+	  8, 8, 8, 8, }, 1, 1, 7, 0, blk_sector_sizes,
 };
 
 static struct region regions0[] = {
@@ -255,7 +283,7 @@ static struct namespace namespace1 = {
 	{ 0, 0, 0, 0,
 	  0, 0, 0, 0,
 	  0, 0, 0, 0,
-	  0, 0, 0, 0, }, 0, 0, 1, pmem_sector_sizes,
+	  0, 0, 0, 0, }, 0, 0, 1, 1, pmem_sector_sizes,
 };
 
 static struct region regions1[] = {
@@ -560,14 +588,17 @@ static int configure_namespace(struct ndctl_region *region,
 }
 
 static int check_btt_autodetect(struct ndctl_bus *bus,
-		struct ndctl_namespace *ndns, void *buf, struct btt *auto_btt)
+		struct ndctl_namespace *ndns, void *buf,
+		struct namespace *namespace)
 {
 	const char *ndns_bdev = ndctl_namespace_get_block_device(ndns);
 	const char *devname = ndctl_namespace_get_devname(ndns);
+	struct btt *auto_btt = namespace->btt_settings;
 	struct ndctl_btt *btt, *found = NULL;
-	const char *btt_bdev;
-	ssize_t rc;
-	int fd;
+	int btt_fd = -1, backing_fd = -1, ro;
+	const char *backing_bdev;
+	ssize_t rc = -ENXIO;
+	char btt_bdev[50];
 
 	ndctl_btt_foreach(bus, btt) {
 		uuid_t uu;
@@ -577,8 +608,8 @@ static int check_btt_autodetect(struct ndctl_bus *bus,
 			continue;
 		if (!ndctl_btt_is_enabled(btt))
 			continue;
-		btt_bdev = ndctl_btt_get_backing_dev(btt);
-		if (strcmp(btt_bdev+5, ndns_bdev) != 0)
+		backing_bdev = ndctl_btt_get_backing_dev(btt);
+		if (strcmp(backing_bdev+5, ndns_bdev) != 0)
 			continue;
 		found = btt;
 		break;
@@ -587,32 +618,84 @@ static int check_btt_autodetect(struct ndctl_bus *bus,
 	if (!found)
 		return -ENXIO;
 
-	btt_bdev = strdup(btt_bdev);
-	if (!btt_bdev) {
-		fprintf(stderr, "%s: failed to dup btt_bdev\n", devname);
+	sprintf(btt_bdev, "/dev/%s", ndctl_btt_get_block_device(btt));
+	btt_fd = open(btt_bdev, O_RDONLY);
+	if (btt_fd < 0)
 		return -ENXIO;
+	rc = ioctl(btt_fd, BLKROGET, &ro);
+	if (rc < 0) {
+		fprintf(stderr, "%s: failed to open %s\n", __func__, btt_bdev);
+		rc = -ENXIO;
+		goto out;
+	}
+
+	rc = -ENXIO;
+	if (ro != namespace->ro) {
+		fprintf(stderr, "%s: read-%s expected read-%s by default\n",
+				btt_bdev, ro ? "only" : "write",
+				namespace->ro ? "only" : "write");
+		goto out;
+	}
+
+	backing_fd = open(backing_bdev, O_RDONLY);
+	if (backing_fd < 0) {
+		fprintf(stderr, "%s: failed to open %s to set rw\n",
+				__func__, backing_bdev);
+		goto out;
+	}
+
+	ro = 0;
+	rc = ioctl(backing_fd, BLKROSET, &ro);
+	if (rc < 0) {
+		fprintf(stderr, "failed to set %s rw\n", backing_bdev);
+		rc = -ENXIO;
+		goto out;
+	}
+
+	rc = ioctl(btt_fd, BLKROGET, &ro);
+	if (rc < 0) {
+		fprintf(stderr, "failed to verify that %s is now rw\n",
+			btt_bdev);
+		rc = -ENXIO;
+		goto out;
+	}
+
+	if (ro) {
+		fprintf(stderr, "setting %s rw did not set %s rw\n",
+				backing_bdev, btt_bdev);
+		rc = -ENXIO;
+		goto out;
+	}
+
+	backing_bdev = strdup(backing_bdev);
+	if (!backing_bdev) {
+		fprintf(stderr, "%s: failed to dup backing_bdev\n", devname);
+		goto out;
 	}
 
 	ndctl_btt_delete(found);
 
 	/* destroy btt */
-	fd = open(btt_bdev, O_RDWR|O_DIRECT|O_EXCL);
-	if (fd < 0) {
+	backing_fd = open(backing_bdev, O_RDWR|O_DIRECT|O_EXCL);
+	if (backing_fd < 0) {
 		fprintf(stderr, "%s: failed to open %s to destroy btt\n",
-				devname, btt_bdev);
-		free((char *) btt_bdev);
-		return -ENXIO;
+				devname, backing_bdev);
+		goto out;
 	}
 
 	memset(buf, 0, 4096);
-	rc = pwrite(fd, buf, 4096, 4096);
-	close(fd);
+	rc = pwrite(backing_fd, buf, 4096, 4096);
 	if (rc < 4096) {
 		rc = -ENXIO;
 		fprintf(stderr, "%s: failed to overwrite btt on %s\n",
-				devname, btt_bdev);
+				devname, backing_bdev);
 	}
-	free((char *) btt_bdev);
+ out:
+	free((char *) backing_bdev);
+	if (backing_fd >= 0)
+		close(backing_fd);
+	if (btt_fd >= 0)
+		close(btt_fd);
 
 	return rc;
 }
@@ -638,8 +721,8 @@ static int check_namespaces(struct ndctl_region *region,
 	for (i = 0; (namespace = namespaces[i]); i++) {
 		struct ndctl_namespace *ndns;
 		char bdevpath[50];
+		int fd = -1, ro;
 		uuid_t uu;
-		int fd;
 
 		snprintf(devname, sizeof(devname), "namespace%d.%d",
 				ndctl_region_get_id(region), namespace->id);
@@ -707,9 +790,43 @@ static int check_namespaces(struct ndctl_region *region,
 			}
 
 			sprintf(bdevpath, "/dev/%s", ndctl_namespace_get_block_device(ndns));
+			fd = open(bdevpath, O_RDONLY);
+			if (fd < 0) {
+				fprintf(stderr, "%s: failed to open(%s, O_RDONLY)\n",
+						devname, bdevpath);
+				rc = -ENXIO;
+				break;
+			}
+
+			rc = ioctl(fd, BLKROGET, &ro);
+			if (rc < 0) {
+				fprintf(stderr, "%s: BLKROGET failed\n",
+						devname);
+				rc = -errno;
+				break;
+			}
+
+			if (namespace->ro != ro) {
+				fprintf(stderr, "%s: read-%s expected: read-%s\n",
+						devname, ro ? "only" : "write",
+						namespace->ro ? "only" : "write");
+				rc = -ENXIO;
+				break;
+			}
+
+			ro = 0;
+			rc = ioctl(fd, BLKROSET, &ro);
+			if (rc < 0) {
+				fprintf(stderr, "%s: BLKROSET failed\n",
+						devname);
+				rc = -errno;
+				break;
+			}
+
+			close(fd);
 			fd = open(bdevpath, O_RDWR|O_DIRECT);
 			if (fd < 0) {
-				fprintf(stderr, "%s: failed to open %s\n",
+				fprintf(stderr, "%s: failed to open(%s, O_RDWR|O_DIRECT)\n",
 						devname, bdevpath);
 				rc = -ENXIO;
 				break;
@@ -717,18 +834,17 @@ static int check_namespaces(struct ndctl_region *region,
 			if (read(fd, buf, 4096) < 4096) {
 				fprintf(stderr, "%s: failed to read %s\n",
 						devname, bdevpath);
-				close(fd);
 				rc = -ENXIO;
 				break;
 			}
 			if (write(fd, buf, 4096) < 4096) {
 				fprintf(stderr, "%s: failed to write %s\n",
 						devname, bdevpath);
-				close(fd);
 				rc = -ENXIO;
 				break;
 			}
 			close(fd);
+			fd = -1;
 
 			if (check_btt_create(bus, ndns, namespace->btt_settings) < 0) {
 				fprintf(stderr, "%s: failed to create btt\n", devname);
@@ -750,7 +866,7 @@ static int check_namespaces(struct ndctl_region *region,
 
 			if (namespace->btt_settings
 					&& check_btt_autodetect(bus, ndns, buf,
-						namespace->btt_settings) < 0) {
+						namespace) < 0) {
 				fprintf(stderr, "%s, failed btt autodetect\n", devname);
 				rc = -ENXIO;
 				break;
@@ -782,6 +898,8 @@ static int check_namespaces(struct ndctl_region *region,
 				break;
 			}
 		}
+		if (fd >= 0)
+			close(fd);
 		namespace->do_configure = 0;
 
 		ndns_save = realloc(ndns_save,
@@ -1119,6 +1237,33 @@ static int check_dimms(struct ndctl_bus *bus, struct dimm *dimms, int n,
 			return -ENXIO;
 		}
 
+		if (ndctl_dimm_has_errors(dimm) != !!dimms[i].flags) {
+			fprintf(stderr, "bus: %s dimm%d %s expected%s errors\n",
+					ndctl_bus_get_provider(bus), i,
+					dimms[i].flags ? "" : " no",
+					ndctl_dimm_get_devname(dimm));
+			return -ENXIO;
+		}
+
+		if (ndctl_dimm_failed_save(dimm) != dimms[i].f_save
+				|| ndctl_dimm_failed_arm(dimm) != dimms[i].f_arm
+				|| ndctl_dimm_failed_restore(dimm) != dimms[i].f_restore
+				|| ndctl_dimm_smart_pending(dimm) != dimms[i].f_smart
+				|| ndctl_dimm_failed_flush(dimm) != dimms[i].f_flush) {
+			fprintf(stderr, "expected: %s%s%s%s%sgot: %s%s%s%s%s\n",
+					dimms[i].f_save ? "save " : "",
+					dimms[i].f_arm ? "arm " : "",
+					dimms[i].f_restore ? "restore " : "",
+					dimms[i].f_smart ? "smart " : "",
+					dimms[i].f_flush ? "flush " : "",
+					ndctl_dimm_failed_save(dimm) ? "save " : "",
+					ndctl_dimm_failed_arm(dimm) ? "arm " : "",
+					ndctl_dimm_failed_restore(dimm) ? "restore " : "",
+					ndctl_dimm_smart_pending(dimm) ? "smart " : "",
+					ndctl_dimm_failed_flush(dimm) ? "flush " : "");
+			return -ENXIO;
+		}
+
 		rc = check_commands(bus, dimm, commands);
 		if (rc)
 			return rc;
@@ -1162,6 +1307,10 @@ static int do_test1(struct ndctl_ctx *ctx)
 
 	if (!bus)
 		return -ENXIO;
+
+	rc = check_dimms(bus, dimms1, ARRAY_SIZE(dimms1), 0);
+	if (rc)
+		return rc;
 
 	rc = check_btts(bus, btts1, ARRAY_SIZE(btts1));
 	if (rc)
