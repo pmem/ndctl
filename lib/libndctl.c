@@ -662,7 +662,8 @@ static int sysfs_read_attr(struct ndctl_ctx *ctx, const char *path, char *buf)
 	return 0;
 }
 
-static int sysfs_write_attr(struct ndctl_ctx *ctx, const char *path, const char *buf)
+static int __sysfs_write_attr(struct ndctl_ctx *ctx, const char *path,
+		const char *buf, int quiet)
 {
 	int fd = open(path, O_WRONLY|O_CLOEXEC);
 	int n, len = strlen(buf) + 1;
@@ -674,11 +675,24 @@ static int sysfs_write_attr(struct ndctl_ctx *ctx, const char *path, const char 
 	n = write(fd, buf, len);
 	close(fd);
 	if (n < len) {
-		dbg(ctx, "failed to write %s to %s: %s\n", buf, path,
-				strerror(errno));
+		if (!quiet)
+			dbg(ctx, "failed to write %s to %s: %s\n", buf, path,
+					strerror(errno));
 		return -1;
 	}
 	return 0;
+}
+
+static int sysfs_write_attr(struct ndctl_ctx *ctx, const char *path,
+		const char *buf)
+{
+	return __sysfs_write_attr(ctx, path, buf, 0);
+}
+
+static int sysfs_write_attr_quiet(struct ndctl_ctx *ctx, const char *path,
+		const char *buf)
+{
+	return __sysfs_write_attr(ctx, path, buf, 1);
 }
 
 static char *__dev_path(char *type, int major, int minor, int parent)
@@ -2745,7 +2759,7 @@ static int ndctl_bind(struct ndctl_ctx *ctx, struct kmod_module *module,
 			continue;
 		}
 
-		rc = sysfs_write_attr(ctx, drv_path, devname);
+		rc = sysfs_write_attr_quiet(ctx, drv_path, devname);
 		free(drv_path);
 		if (rc == 0)
 			break;
