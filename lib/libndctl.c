@@ -1905,29 +1905,32 @@ static int do_cmd(int fd, int ioctl_cmd, struct ndctl_cmd *cmd)
 		return rc;
 	}
 
-
 	for (offset = 0; offset < iter->total_xfer; offset += iter->max_xfer) {
 		if (iter->dir == WRITE)
 			memcpy(iter->data, iter->total_buf + offset,
 					iter->max_xfer);
 		*(cmd->iter.offset) = offset;
 		rc = ioctl(fd, ioctl_cmd, cmd->cmd_buf);
-		dbg(ctx, "bus: %d dimm: %#x cmd: %s offset: %d status: %d fw: %d (%s)\n",
-				bus->id, cmd->dimm
-				? ndctl_dimm_get_handle(cmd->dimm) : 0,
-				name, offset, rc, *(cmd->firmware_status),
-				rc < 0 ? strerror(errno) : "success");
 		if (rc)
-			return rc;
+			break;
 
 		if (iter->dir == READ)
 			memcpy(iter->total_buf + offset, iter->data,
 					iter->max_xfer);
-		if (*(cmd->firmware_status))
-			return iter->total_xfer - offset;
+		if (*(cmd->firmware_status)) {
+			rc = iter->total_xfer - offset;
+			break;
+		}
 	}
 
-	return 0;
+	dbg(ctx, "bus: %d dimm: %#x cmd: %s total: %d max_xfer: %d status: %d fw: %d (%s)\n",
+			bus->id,
+			cmd->dimm ? ndctl_dimm_get_handle(cmd->dimm) : 0,
+			name, iter->total_xfer, iter->max_xfer, rc,
+			*(cmd->firmware_status),
+			rc < 0 ? strerror(errno) : "success");
+
+	return rc;
 }
 
 NDCTL_EXPORT int ndctl_cmd_submit(struct ndctl_cmd *cmd)
