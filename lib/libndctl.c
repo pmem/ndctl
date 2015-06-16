@@ -108,6 +108,7 @@ struct ndctl_bus {
 
 /**
  * struct ndctl_dimm - memory device as identified by NFIT
+ * @module: kernel module (libnvdimm)
  * @handle: NFIT-handle value
  * @major: /dev/nmemX major character device number
  * @minor: /dev/nmemX minor character device number
@@ -123,6 +124,7 @@ struct ndctl_bus {
  * @dimm: dimm-id in the channel
  */
 struct ndctl_dimm {
+	struct kmod_module *module;
 	struct ndctl_bus *bus;
 	unsigned int handle, major, minor, serial;
 	unsigned short phys_id;
@@ -1063,6 +1065,8 @@ static int add_dimm(void *parent, int id, const char *dimm_base)
 	if (!dimm->dimm_path)
 		goto err_read;
 
+	dimm->module = to_module(ctx, buf);
+
 	dimm->handle = -1;
 	dimm->phys_id = -1;
 	dimm->vendor_id = -1;
@@ -1239,6 +1243,45 @@ NDCTL_EXPORT struct ndctl_bus *ndctl_dimm_get_bus(struct ndctl_dimm *dimm)
 NDCTL_EXPORT struct ndctl_ctx *ndctl_dimm_get_ctx(struct ndctl_dimm *dimm)
 {
 	return dimm->bus->ctx;
+}
+
+NDCTL_EXPORT int ndctl_dimm_disable(struct ndctl_dimm *dimm)
+{
+	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
+	const char *devname = ndctl_dimm_get_devname(dimm);
+
+	if (!ndctl_dimm_is_enabled(dimm))
+		return 0;
+
+	ndctl_unbind(ctx, dimm->dimm_path);
+
+	if (ndctl_dimm_is_enabled(dimm)) {
+		err(ctx, "%s: failed to disable\n", devname);
+		return -EBUSY;
+	}
+
+	dbg(ctx, "%s: disabled\n", devname);
+	return 0;
+}
+
+NDCTL_EXPORT int ndctl_dimm_enable(struct ndctl_dimm *dimm)
+{
+	const char *devname = ndctl_dimm_get_devname(dimm);
+	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
+
+	if (ndctl_dimm_is_enabled(dimm))
+		return 0;
+
+	ndctl_bind(ctx, dimm->module, devname);
+
+	if (!ndctl_dimm_is_enabled(dimm)) {
+		err(ctx, "%s: failed to enable\n", devname);
+		return -ENXIO;
+	}
+
+	dbg(ctx, "%s: enabled\n", devname);
+
+	return 0;
 }
 
 NDCTL_EXPORT struct ndctl_dimm *ndctl_dimm_get_by_handle(struct ndctl_bus *bus,
@@ -1784,7 +1827,12 @@ NDCTL_EXPORT int ndctl_dimm_zero_labels(struct ndctl_dimm *dimm)
 {
 	struct ndctl_cmd *cmd_size, *cmd_read, *cmd_write;
 	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
+	struct ndctl_bus *bus = ndctl_dimm_get_bus(dimm);
 	int rc;
+
+	rc = ndctl_bus_wait_probe(bus);
+	if (rc < 0)
+		return rc;
 
 	if (ndctl_dimm_is_active(dimm)) {
 		dbg(ctx, "%s: regions active, abort label write\n",
@@ -1797,40 +1845,50 @@ NDCTL_EXPORT int ndctl_dimm_zero_labels(struct ndctl_dimm *dimm)
 		return -ENOTTY;
 	rc = ndctl_cmd_submit(cmd_size);
 	if (rc || ndctl_cmd_get_firmware_status(cmd_size))
-		goto err_size;
+		goto out_size;
 
 	cmd_read = ndctl_dimm_cmd_new_cfg_read(cmd_size);
 	if (!cmd_read) {
 		rc = -ENOTTY;
-		goto err_size;
+		goto out_size;
 	}
 	rc = ndctl_cmd_submit(cmd_read);
 	if (rc || ndctl_cmd_get_firmware_status(cmd_read))
-		goto err_read;
+		goto out_read;
 
 	cmd_write = ndctl_dimm_cmd_new_cfg_write(cmd_read);
 	if (!cmd_write) {
 		rc = -ENOTTY;
-		goto err_read;
+		goto out_read;
 	}
 	if (ndctl_cmd_cfg_write_zero_data(cmd_write) < 0) {
 		rc = -ENXIO;
-		goto err_write;
+		goto out_write;
 	}
 	rc = ndctl_cmd_submit(cmd_write);
 	if (rc || ndctl_cmd_get_firmware_status(cmd_write))
-		goto err_write;
+		goto out_write;
 
-	return 0;
+	/*
+	 * If the dimm is already disabled the kernel is not holding a cached
+	 * copy of the label space.
+	 */
+	if (!ndctl_dimm_is_enabled(dimm))
+		goto out_write;
 
- err_write:
+	rc = ndctl_dimm_disable(dimm);
+	if (rc)
+		goto out_write;
+	rc = ndctl_dimm_enable(dimm);
+
+ out_write:
 	ndctl_cmd_unref(cmd_write);
- err_read:
+ out_read:
 	ndctl_cmd_unref(cmd_read);
- err_size:
+ out_size:
 	ndctl_cmd_unref(cmd_size);
 
-	return rc < 0 ? rc : -ENXIO;
+	return rc;
 }
 
 NDCTL_EXPORT void ndctl_cmd_unref(struct ndctl_cmd *cmd)

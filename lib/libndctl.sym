@@ -57,6 +57,8 @@ global:
 	ndctl_dimm_get_by_handle;
 	ndctl_dimm_is_active;
 	ndctl_dimm_is_enabled;
+	ndctl_dimm_disable;
+	ndctl_dimm_enable;
 	ndctl_dimm_cmd_new_vendor_specific;
 	ndctl_cmd_vendor_set_input;
 	ndctl_cmd_vendor_get_output_size;
