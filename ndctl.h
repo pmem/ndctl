@@ -111,7 +111,7 @@ enum {
 	ND_CMD_VENDOR = 9,
 };
 
-static __inline__ const char *nd_bus_cmd_name(unsigned cmd)
+static __inline__ const char *nvdimm_bus_cmd_name(unsigned cmd)
 {
 	static const char * const names[] = {
 		[ND_CMD_ARS_CAP] = "ars_cap",
@@ -124,7 +124,7 @@ static __inline__ const char *nd_bus_cmd_name(unsigned cmd)
 	return "unknown";
 }
 
-static __inline__ const char *nd_dimm_cmd_name(unsigned cmd)
+static __inline__ const char *nvdimm_cmd_name(unsigned cmd)
 {
 	static const char * const names[] = {
 		[ND_CMD_SMART] = "smart",
@@ -176,11 +176,11 @@ static __inline__ const char *nd_dimm_cmd_name(unsigned cmd)
 					struct nd_cmd_ars_status)
 
 #define ND_DEVICE_DIMM 1            /* nd_dimm: container for "config data" */
-#define ND_DEVICE_REGION_PMEM 2     /* nd_region: (parent of pmem namespaces) */
-#define ND_DEVICE_REGION_BLK 3      /* nd_region: (parent of blk namespaces) */
+#define ND_DEVICE_REGION_PMEM 2     /* nd_region: (parent of PMEM namespaces) */
+#define ND_DEVICE_REGION_BLK 3      /* nd_region: (parent of BLK namespaces) */
 #define ND_DEVICE_NAMESPACE_IO 4    /* legacy persistent memory */
-#define ND_DEVICE_NAMESPACE_PMEM 5  /* persistent memory namespace (may alias) */
-#define ND_DEVICE_NAMESPACE_BLK 6   /* block-data-window namespace (may alias) */
+#define ND_DEVICE_NAMESPACE_PMEM 5  /* PMEM namespace (may alias with BLK) */
+#define ND_DEVICE_NAMESPACE_BLK 6   /* BLK namespace (may alias with PMEM) */
 #define ND_DEVICE_BTT 7		    /* block-translation table device */
 
 enum nd_driver_flags {
