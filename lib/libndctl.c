@@ -1113,6 +1113,9 @@ static int add_dimm(void *parent, int id, const char *dimm_base)
 	if (!dimm->dimm_path)
 		goto err_read;
 
+	sprintf(path, "%s/modalias", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		goto err_read;
 	dimm->module = to_module(ctx, buf);
 
 	dimm->handle = -1;
