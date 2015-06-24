@@ -260,7 +260,6 @@ struct ndctl_namespace {
  * @uuid: unique identifier for a btt instance
  * @btt_buf: space to print paths for bind/unbind operations
  * @bdev: block device associated with a btt
- * @enabled: once a btt has been enabled it can't be reconfigured
  */
 struct ndctl_btt {
 	struct kmod_module *module;
@@ -271,7 +270,6 @@ struct ndctl_btt {
 	char *btt_path;
 	char *btt_buf;
 	char *bdev;
-	int enabled;
 	int buf_len;
 	uuid_t uuid;
 	int id;
@@ -3271,9 +3269,6 @@ NDCTL_EXPORT int ndctl_btt_set_uuid(struct ndctl_btt *btt, uuid_t uu)
 	int len = btt->buf_len;
 	char uuid[40];
 
-	if (btt->enabled)
-		return -EINVAL;
-
 	if (snprintf(path, len, "%s/uuid", btt->btt_path) >= len) {
 		err(ctx, "%s: buffer too small!\n",
 				ndctl_btt_get_devname(btt));
@@ -3295,9 +3290,6 @@ NDCTL_EXPORT int ndctl_btt_set_sector_size(struct ndctl_btt *btt,
 	int len = btt->buf_len;
 	char sector_str[40];
 	int i;
-
-	if (btt->enabled)
-		return -EINVAL;
 
 	if (snprintf(path, len, "%s/sector_size", btt->btt_path) >= len) {
 		err(ctx, "%s: buffer too small!\n",
@@ -3321,9 +3313,6 @@ NDCTL_EXPORT int ndctl_btt_set_backing_dev(struct ndctl_btt *btt,
 	struct ndctl_ctx *ctx = ndctl_btt_get_ctx(btt);
 	char *path = btt->btt_buf;
 	int len = btt->buf_len;
-
-	if (btt->enabled)
-		return -EINVAL;
 
 	if (snprintf(path, len, "%s/backing_dev", btt->btt_path) >= len) {
 		err(ctx, "%s: buffer too small!\n",
@@ -3417,7 +3406,6 @@ NDCTL_EXPORT int ndctl_btt_enable(struct ndctl_btt *btt)
 	} else {
 		btt->bdev = get_block_device(ctx, path);
 	}
-	btt->enabled = 1;
 
 	/*
 	 * Rescan now as successfully enabling a btt device leads to a
@@ -3443,7 +3431,6 @@ NDCTL_EXPORT int ndctl_btt_delete(struct ndctl_btt *btt)
 		return -EINVAL;
 
 	ndctl_unbind(ctx, btt->btt_path);
-	btt->enabled = 0;
 
 	rc = ndctl_btt_set_backing_dev(btt, NULL);
 	if (rc) {
