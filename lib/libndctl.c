@@ -91,12 +91,10 @@ struct ndctl_bus {
 	struct ndctl_ctx *ctx;
 	unsigned int id, major, minor, revision;
 	char *provider;
-	struct list_head btts;
 	struct list_head dimms;
 	struct list_head regions;
 	struct list_node list;
 	int dimms_init;
-	int btts_init;
 	int regions_init;
 	int has_nfit;
 	char *bus_path;
@@ -181,24 +179,27 @@ struct ndctl_mapping {
  * coordinating configuration with peer regions.
  *
  * When a region is disabled a client may have pending references to
- * namespaces.  After a disable event the client can
+ * namespaces and btts.  After a disable event the client can
  * ndctl_region_cleanup() to clean up invalid objects, or it can
  * specify the cleanup flag to ndctl_region_disable().
  */
 struct ndctl_region {
 	struct kmod_module *module;
 	struct ndctl_bus *bus;
-	int id, num_mappings, nstype, range_index;
+	int id, num_mappings, nstype, range_index, ro;
 	int mappings_init;
 	int namespaces_init;
+	int btts_init;
 	unsigned long long size;
 	char *region_path;
 	char *region_buf;
 	int buf_len;
 	int generation;
+	struct list_head btts;
 	struct list_head mappings;
 	struct list_head namespaces;
 	struct list_head stale_namespaces;
+	struct list_head stale_btts;
 	struct list_node list;
 	/**
 	 * struct ndctl_interleave_set - extra info for interleave sets
@@ -242,7 +243,7 @@ struct ndctl_namespace {
 	char *ndns_path;
 	char *ndns_buf;
 	char *bdev;
-	int type, id, buf_len;
+	int type, id, buf_len, raw_mode;
 	int generation;
 	unsigned long long size;
 	char *alt_name;
@@ -254,8 +255,8 @@ struct ndctl_namespace {
  * struct ndctl_btt - stacked block device provided sector atomicity
  * @module: kernel module (nd_btt)
  * @lbasize: sector size info
- * @bus: parent bus
- * @backing_dev: backing block device name
+ * @ndns: host namespace for the btt instance
+ * @region: parent region
  * @btt_path: btt devpath
  * @uuid: unique identifier for a btt instance
  * @btt_buf: space to print paths for bind/unbind operations
@@ -263,16 +264,16 @@ struct ndctl_namespace {
  */
 struct ndctl_btt {
 	struct kmod_module *module;
-	struct ndctl_bus *bus;
+	struct ndctl_region *region;
+	struct ndctl_namespace *ndns;
 	struct list_node list;
 	struct ndctl_lbasize lbasize;
-	char *backing_dev;
 	char *btt_path;
 	char *btt_buf;
 	char *bdev;
 	int buf_len;
 	uuid_t uuid;
-	int id;
+	int id, generation;
 };
 
 /**
@@ -505,12 +506,47 @@ static void free_namespace(struct ndctl_namespace *ndns, struct list_head *head)
 	free(ndns);
 }
 
-static void free_namespaces(struct ndctl_region *region, struct list_head *head)
+static void free_namespaces(struct ndctl_region *region)
 {
 	struct ndctl_namespace *ndns, *_n;
 
-	list_for_each_safe(head, ndns, _n, list)
-		free_namespace(ndns, head);
+	list_for_each_safe(&region->namespaces, ndns, _n, list)
+		free_namespace(ndns, &region->namespaces);
+}
+
+static void free_stale_namespaces(struct ndctl_region *region)
+{
+	struct ndctl_namespace *ndns, *_n;
+
+	list_for_each_safe(&region->stale_namespaces, ndns, _n, list)
+		free_namespace(ndns, &region->stale_namespaces);
+}
+
+static void free_btt(struct ndctl_btt *btt, struct list_head *head)
+{
+	if (head)
+		list_del_from(head, &btt->list);
+	kmod_module_unref(btt->module);
+	free(btt->lbasize.supported);
+	free(btt->btt_path);
+	free(btt->btt_buf);
+	free(btt);
+}
+
+static void free_btts(struct ndctl_region *region)
+{
+	struct ndctl_btt *btt, *_b;
+
+	list_for_each_safe(&region->btts, btt, _b, list)
+		free_btt(btt, &region->btts);
+}
+
+static void free_stale_btts(struct ndctl_region *region)
+{
+	struct ndctl_btt *btt, *_b;
+
+	list_for_each_safe(&region->stale_btts, btt, _b, list)
+		free_btt(btt, &region->stale_btts);
 }
 
 static void free_region(struct ndctl_region *region)
@@ -522,8 +558,10 @@ static void free_region(struct ndctl_region *region)
 		list_del_from(&region->mappings, &mapping->list);
 		free(mapping);
 	}
-	free_namespaces(region, &region->namespaces);
-	free_namespaces(region, &region->stale_namespaces);
+	free_btts(region);
+	free_stale_btts(region);
+	free_namespaces(region);
+	free_stale_namespaces(region);
 	list_del_from(&bus->regions, &region->list);
 	kmod_module_unref(region->module);
 	free(region->region_buf);
@@ -531,25 +569,8 @@ static void free_region(struct ndctl_region *region)
 	free(region);
 }
 
-#define BTT_DELETE 1
-#define BTT_SKIP_DELETE 0
-static void free_btt(struct ndctl_btt *btt, int delete)
-{
-	struct ndctl_bus *bus = btt->bus;
-
-	if (delete)
-		list_del_from(&bus->btts, &btt->list);
-	kmod_module_unref(btt->module);
-	free(btt->lbasize.supported);
-	free(btt->backing_dev);
-	free(btt->btt_path);
-	free(btt->btt_buf);
-	free(btt);
-}
-
 static void free_bus(struct ndctl_bus *bus)
 {
-	struct ndctl_btt *btt, *_b;
 	struct ndctl_dimm *dimm, *_d;
 	struct ndctl_region *region, *_r;
 
@@ -557,8 +578,6 @@ static void free_bus(struct ndctl_bus *bus)
 		list_del_from(&bus->dimms, &dimm->list);
 		free(dimm);
 	}
-	list_for_each_safe(&bus->btts, btt, _b, list)
-		free_btt(btt, BTT_DELETE);
 	list_for_each_safe(&bus->regions, region, _r, list)
 		free_region(region);
 	list_del_from(&bus->ctx->busses, &bus->list);
@@ -841,7 +860,6 @@ static int add_bus(void *parent, int id, const char *ctl_base)
 	bus = calloc(1, sizeof(*bus));
 	if (!bus)
 		goto err_bus;
-	list_head_init(&bus->btts);
 	list_head_init(&bus->dimms);
 	list_head_init(&bus->regions);
 	bus->ctx = ctx;
@@ -983,27 +1001,52 @@ NDCTL_EXPORT struct ndctl_bus *ndctl_bus_get_by_provider(struct ndctl_ctx *ctx,
 	return NULL;
 }
 
-NDCTL_EXPORT struct ndctl_btt *ndctl_bus_get_btt_seed(struct ndctl_bus *bus)
+NDCTL_EXPORT struct ndctl_btt *ndctl_region_get_btt_seed(struct ndctl_region *region)
 {
-	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
-	char *path = bus->bus_buf;
-	int len = bus->buf_len;
+	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
+	char *path = region->region_buf;
+	int len = region->buf_len;
 	struct ndctl_btt *btt;
 	char buf[50];
 
-	if (snprintf(path, len, "%s/btt_seed", bus->bus_path) >= len) {
+	if (snprintf(path, len, "%s/btt_seed", region->region_path) >= len) {
 		err(ctx, "%s: buffer too small!\n",
-				ndctl_bus_get_devname(bus));
+				ndctl_region_get_devname(region));
 		return NULL;
 	}
 
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		return NULL;
 
-	ndctl_btt_foreach(bus, btt)
+	ndctl_btt_foreach(region, btt)
 		if (strcmp(buf, ndctl_btt_get_devname(btt)) == 0)
 			return btt;
 	return NULL;
+}
+
+NDCTL_EXPORT int ndctl_region_get_ro(struct ndctl_region *region)
+{
+	return region->ro;
+}
+
+NDCTL_EXPORT int ndctl_region_set_ro(struct ndctl_region *region, int ro)
+{
+	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
+	char *path = region->region_buf;
+	int len = region->buf_len;
+
+	if (snprintf(path, len, "%s/read_only", region->region_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_region_get_devname(region));
+		return -ENXIO;
+	}
+
+	ro = !!ro;
+	if (sysfs_write_attr(ctx, path, ro ? "1\n" : "0\n") < 0)
+		return -ENXIO;
+
+	region->ro = ro;
+	return ro;
 }
 
 NDCTL_EXPORT const char *ndctl_bus_get_cmd_name(struct ndctl_bus *bus, int cmd)
@@ -1404,6 +1447,8 @@ static int add_region(void *parent, int id, const char *region_base)
 	region = calloc(1, sizeof(*region));
 	if (!region)
 		goto err_region;
+	list_head_init(&region->btts);
+	list_head_init(&region->stale_btts);
 	list_head_init(&region->mappings);
 	list_head_init(&region->namespaces);
 	list_head_init(&region->stale_namespaces);
@@ -1442,6 +1487,11 @@ static int add_region(void *parent, int id, const char *region_base)
 		dbg(ctx, "region%d: iset-%#.16llx added\n", id,
 				region->iset.cookie);
 	}
+
+	sprintf(path, "%s/read_only", region_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		goto err_read;
+	region->ro = strtoul(buf, NULL, 0);
 
 	sprintf(path, "%s/modalias", region_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
@@ -2189,7 +2239,8 @@ NDCTL_EXPORT int ndctl_region_enable(struct ndctl_region *region)
 
 NDCTL_EXPORT void ndctl_region_cleanup(struct ndctl_region *region)
 {
-	free_namespaces(region, &region->stale_namespaces);
+	free_stale_namespaces(region);
+	free_stale_btts(region);
 }
 
 static int ndctl_region_disable(struct ndctl_region *region, int cleanup)
@@ -2207,7 +2258,9 @@ static int ndctl_region_disable(struct ndctl_region *region, int cleanup)
 		return -EBUSY;
 	}
 	region->namespaces_init = 0;
+	region->btts_init = 0;
 	list_append_list(&region->stale_namespaces, &region->namespaces);
+	list_append_list(&region->stale_btts, &region->btts);
 	region->generation++;
 	if (cleanup)
 		ndctl_region_cleanup(region);
@@ -2545,6 +2598,11 @@ static int add_namespace(void *parent, int id, const char *ndns_base)
 		goto err_read;
 	ndns->size = strtoull(buf, NULL, 0);
 
+	sprintf(path, "%s/force_raw", ndns_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		goto err_read;
+	ndns->raw_mode = strtoul(buf, NULL, 0);
+
 	switch (ndns->type) {
 	case ND_DEVICE_NAMESPACE_BLK:
 		sprintf(path, "%s/sector_size", ndns_base);
@@ -2670,6 +2728,30 @@ NDCTL_EXPORT const char *ndctl_namespace_get_devname(struct ndctl_namespace *ndn
 	return devpath_to_devname(ndns->ndns_path);
 }
 
+NDCTL_EXPORT struct ndctl_btt *ndctl_namespace_get_btt(struct ndctl_namespace *ndns)
+{
+	struct ndctl_region *region = ndctl_namespace_get_region(ndns);
+	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
+	char *path = ndns->ndns_buf;
+	int len = ndns->buf_len;
+	struct ndctl_btt *btt;
+	char buf[50];
+
+	if (snprintf(path, len, "%s/holder", ndns->ndns_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_namespace_get_devname(ndns));
+		return NULL;
+	}
+
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		return NULL;
+
+	ndctl_btt_foreach(region, btt)
+		if (strcmp(buf, ndctl_btt_get_devname(btt)) == 0)
+			return btt;
+	return NULL;
+}
+
 NDCTL_EXPORT const char *ndctl_namespace_get_block_device(struct ndctl_namespace *ndns)
 {
 	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
@@ -2696,6 +2778,32 @@ NDCTL_EXPORT int ndctl_namespace_is_valid(struct ndctl_namespace *ndns)
 	struct ndctl_region *region = ndctl_namespace_get_region(ndns);
 
 	return ndns->generation == region->generation;
+}
+
+NDCTL_EXPORT int ndctl_namespace_get_raw_mode(struct ndctl_namespace *ndns)
+{
+	return ndns->raw_mode;
+}
+
+NDCTL_EXPORT int ndctl_namespace_set_raw_mode(struct ndctl_namespace *ndns,
+		int raw_mode)
+{
+	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
+	char *path = ndns->ndns_buf;
+	int len = ndns->buf_len;
+
+	if (snprintf(path, len, "%s/force_raw", ndns->ndns_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_namespace_get_devname(ndns));
+		return -ENXIO;
+	}
+
+	raw_mode = !!raw_mode;
+	if (sysfs_write_attr(ctx, path, raw_mode ? "1\n" : "0\n") < 0)
+		return -ENXIO;
+
+	ndns->raw_mode = raw_mode;
+	return raw_mode;
 }
 
 NDCTL_EXPORT int ndctl_namespace_is_enabled(struct ndctl_namespace *ndns)
@@ -2788,13 +2896,30 @@ static int ndctl_unbind(struct ndctl_ctx *ctx, const char *devpath)
 	return sysfs_write_attr(ctx, path, devname);
 }
 
-static void btts_init(struct ndctl_bus *bus);
+static int add_btt(void *parent, int id, const char *btt_base);
 
+static void btts_init(struct ndctl_region *region)
+{
+	struct ndctl_bus *bus = ndctl_region_get_bus(region);
+	char btt_fmt[20];
+
+	if (region->btts_init)
+		return;
+	region->btts_init = 1;
+
+	sprintf(btt_fmt, "btt%d.", region->id);
+	device_parse(bus->ctx, bus, region->region_path, btt_fmt, region, add_btt);
+}
+
+/*
+ * Return 0 if enabled, < 0 if failed to enable, and > 0 if claimed by
+ * another device and that device is enabled.  In the > 0 case a
+ * subsequent call to ndctl_namespace_is_enabled() will return 'false'.
+ */
 NDCTL_EXPORT int ndctl_namespace_enable(struct ndctl_namespace *ndns)
 {
 	const char *devname = ndctl_namespace_get_devname(ndns);
 	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
-	struct ndctl_bus *bus = ndctl_namespace_get_bus(ndns);
 	struct ndctl_region *region = ndns->region;
 	int rc;
 
@@ -2804,22 +2929,31 @@ NDCTL_EXPORT int ndctl_namespace_enable(struct ndctl_namespace *ndns)
 	rc = ndctl_bind(ctx, ndns->module, devname);
 
 	if (!ndctl_namespace_is_enabled(ndns)) {
+		struct ndctl_btt *btt = ndctl_namespace_get_btt(ndns);
+
+		if (btt && ndctl_btt_is_enabled(btt)) {
+			dbg(ctx, "%s: enabled via %s\n", devname,
+					ndctl_btt_get_devname(btt));
+			rc = 1;
+			goto out;
+		}
 		err(ctx, "%s: failed to enable\n", devname);
 		return rc ? rc : -ENXIO;
 	}
+	rc = 0;
+	dbg(ctx, "%s: enabled\n", devname);
 
 	/*
 	 * Rescan now as successfully enabling a namespace device leads
 	 * to a new one being created, and potentially btts being attached
 	 */
+ out:
 	region->namespaces_init = 0;
+	region->btts_init = 0;
 	namespaces_init(region);
-	bus->btts_init = 0;
-	btts_init(bus);
+	btts_init(region);
 
-	dbg(ctx, "%s: enabled\n", devname);
-
-	return 0;
+	return rc;
 }
 
 NDCTL_EXPORT int ndctl_namespace_disable(struct ndctl_namespace *ndns)
@@ -3133,10 +3267,10 @@ static int parse_lbasize_supported(struct ndctl_ctx *ctx, const char *devname,
 
 static int add_btt(void *parent, int id, const char *btt_base)
 {
+	struct ndctl_ctx *ctx = ndctl_region_get_ctx(parent);
 	const char *devname = devpath_to_devname(btt_base);
 	char *path = calloc(1, strlen(btt_base) + 100);
-	struct ndctl_bus *bus = parent;
-	struct ndctl_ctx *ctx = bus->ctx;
+	struct ndctl_region *region = parent;
 	struct ndctl_btt *btt, *btt_dup;
 	char buf[SYSFS_ATTR_SIZE];
 	int rc = -ENOMEM;
@@ -3148,7 +3282,8 @@ static int add_btt(void *parent, int id, const char *btt_base)
 	if (!btt)
 		goto err_btt;
 	btt->id = id;
-	btt->bus = bus;
+	btt->region = region;
+	btt->generation = region->generation;
 
 	btt->btt_path = strdup(btt_base);
 	if (!btt->btt_path)
@@ -3178,21 +3313,14 @@ static int add_btt(void *parent, int id, const char *btt_base)
 	if (parse_lbasize_supported(ctx, devname, buf, &btt->lbasize) < 0)
 		goto err_read;
 
-	sprintf(path, "%s/backing_dev", btt_base);
-	if (sysfs_read_attr(ctx, path, buf) < 0)
-		goto err_read;
-	btt->backing_dev = strdup(buf);
-	if (!btt->backing_dev)
-		goto err_read;
-
 	free(path);
-	ndctl_btt_foreach(bus, btt_dup)
+	ndctl_btt_foreach(region, btt_dup)
 		if (btt->id == btt_dup->id) {
-			free_btt(btt, BTT_SKIP_DELETE);
+			free_btt(btt, NULL);
 			return 1;
 		}
 
-	list_add(&bus->btts, &btt->list);
+	list_add(&region->btts, &btt->list);
 	return 0;
 
  err_read:
@@ -3205,27 +3333,18 @@ static int add_btt(void *parent, int id, const char *btt_base)
 	return rc;
 }
 
-static void btts_init(struct ndctl_bus *bus)
+NDCTL_EXPORT struct ndctl_btt *ndctl_btt_get_first(struct ndctl_region *region)
 {
-	if (bus->btts_init)
-		return;
-	bus->btts_init = 1;
+	btts_init(region);
 
-	device_parse(bus->ctx, bus, bus->bus_path, "btt", bus, add_btt);
-}
-
-NDCTL_EXPORT struct ndctl_btt *ndctl_btt_get_first(struct ndctl_bus *bus)
-{
-	btts_init(bus);
-
-	return list_top(&bus->btts, struct ndctl_btt, list);
+	return list_top(&region->btts, struct ndctl_btt, list);
 }
 
 NDCTL_EXPORT struct ndctl_btt *ndctl_btt_get_next(struct ndctl_btt *btt)
 {
-	struct ndctl_bus *bus = btt->bus;
+	struct ndctl_region *region = btt->region;
 
-	return list_next(&bus->btts, btt, list);
+	return list_next(&region->btts, btt, list);
 }
 
 NDCTL_EXPORT unsigned int ndctl_btt_get_id(struct ndctl_btt *btt)
@@ -3252,9 +3371,32 @@ NDCTL_EXPORT int ndctl_btt_get_num_sector_sizes(struct ndctl_btt *btt)
 	return btt->lbasize.num;
 }
 
-NDCTL_EXPORT const char *ndctl_btt_get_backing_dev(struct ndctl_btt *btt)
+NDCTL_EXPORT struct ndctl_namespace *ndctl_btt_get_namespace(struct ndctl_btt *btt)
 {
-	return btt->backing_dev;
+	struct ndctl_ctx *ctx = ndctl_btt_get_ctx(btt);
+	struct ndctl_namespace *ndns, *found = NULL;
+	struct ndctl_region *region = btt->region;
+	char *path = region->region_buf;
+	int len = region->buf_len;
+	char buf[50];
+
+	if (btt->ndns)
+		return btt->ndns;
+
+	if (snprintf(path, len, "%s/namespace", btt->btt_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_btt_get_devname(btt));
+		return NULL;
+	}
+
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		return NULL;
+
+	ndctl_namespace_foreach(region, ndns)
+		if (strcmp(buf, ndctl_namespace_get_devname(ndns)) == 0)
+			found = ndns;
+	btt->ndns = found;
+	return found;
 }
 
 NDCTL_EXPORT void ndctl_btt_get_uuid(struct ndctl_btt *btt, uuid_t uu)
@@ -3307,31 +3449,30 @@ NDCTL_EXPORT int ndctl_btt_set_sector_size(struct ndctl_btt *btt,
 	return 0;
 }
 
-NDCTL_EXPORT int ndctl_btt_set_backing_dev(struct ndctl_btt *btt,
-		const char *backing_dev)
+NDCTL_EXPORT int ndctl_btt_set_namespace(struct ndctl_btt *btt,
+		struct ndctl_namespace *ndns)
 {
 	struct ndctl_ctx *ctx = ndctl_btt_get_ctx(btt);
 	char *path = btt->btt_buf;
 	int len = btt->buf_len;
 
-	if (snprintf(path, len, "%s/backing_dev", btt->btt_path) >= len) {
+	if (snprintf(path, len, "%s/namespace", btt->btt_path) >= len) {
 		err(ctx, "%s: buffer too small!\n",
 				ndctl_btt_get_devname(btt));
 		return -ENXIO;
 	}
 
-	if (sysfs_write_attr(ctx, path, backing_dev ? : "\n") != 0)
+	if (sysfs_write_attr(ctx, path, ndns
+				? ndctl_namespace_get_devname(ndns) : "\n"))
 		return -ENXIO;
 
-	free(btt->backing_dev);
-	btt->backing_dev = backing_dev ? strdup(backing_dev) : NULL;
-
+	btt->ndns = ndns;
 	return 0;
 }
 
 NDCTL_EXPORT struct ndctl_bus *ndctl_btt_get_bus(struct ndctl_btt *btt)
 {
-	return btt->bus;
+	return btt->region->bus;
 }
 
 NDCTL_EXPORT struct ndctl_ctx *ndctl_btt_get_ctx(struct ndctl_btt *btt)
@@ -3365,6 +3506,13 @@ NDCTL_EXPORT const char *ndctl_btt_get_block_device(struct ndctl_btt *btt)
 	return btt->bdev ? btt->bdev : "";
 }
 
+NDCTL_EXPORT int ndctl_btt_is_valid(struct ndctl_btt *btt)
+{
+	struct ndctl_region *region = ndctl_btt_get_region(btt);
+
+	return btt->generation == region->generation;
+}
+
 NDCTL_EXPORT int ndctl_btt_is_enabled(struct ndctl_btt *btt)
 {
 	struct ndctl_ctx *ctx = ndctl_btt_get_ctx(btt);
@@ -3380,11 +3528,16 @@ NDCTL_EXPORT int ndctl_btt_is_enabled(struct ndctl_btt *btt)
 	return is_enabled(ndctl_btt_get_bus(btt), path);
 }
 
+NDCTL_EXPORT struct ndctl_region *ndctl_btt_get_region(struct ndctl_btt *btt)
+{
+	return btt->region;
+}
+
 NDCTL_EXPORT int ndctl_btt_enable(struct ndctl_btt *btt)
 {
+	struct ndctl_region *region = ndctl_btt_get_region(btt);
 	const char *devname = ndctl_btt_get_devname(btt);
 	struct ndctl_ctx *ctx = ndctl_btt_get_ctx(btt);
-	struct ndctl_bus *bus = ndctl_btt_get_bus(btt);
 	char *path = btt->btt_buf;
 	int len = btt->buf_len;
 
@@ -3411,58 +3564,48 @@ NDCTL_EXPORT int ndctl_btt_enable(struct ndctl_btt *btt)
 	 * Rescan now as successfully enabling a btt device leads to a
 	 * new one being created
 	 */
-	bus->btts_init = 0;
-	btts_init(bus);
+	region->btts_init = 0;
+	btts_init(region);
 
 	return 0;
 }
 
 NDCTL_EXPORT int ndctl_btt_delete(struct ndctl_btt *btt)
 {
+	struct ndctl_region *region = ndctl_btt_get_region(btt);
 	struct ndctl_ctx *ctx = ndctl_btt_get_ctx(btt);
-	int len = btt->buf_len, rc;
-	char *path = btt->btt_buf;
+	int rc;
 
-	/*
-	 * Only permit deletion when we know a replacement seed device
-	 * is present.
-	 */
-	if (!ndctl_btt_is_enabled(btt))
-		return -EINVAL;
+	if (!ndctl_btt_is_valid(btt)) {
+		free_btt(btt, &region->stale_btts);
+		return 0;
+	}
 
 	ndctl_unbind(ctx, btt->btt_path);
 
-	rc = ndctl_btt_set_backing_dev(btt, NULL);
+	rc = ndctl_btt_set_namespace(btt, NULL);
 	if (rc) {
-		dbg(ctx, "%s: failed to clear backing dev: %d\n",
+		dbg(ctx, "%s: failed to clear namespace: %d\n",
 			ndctl_btt_get_devname(btt), rc);
 		return rc;
 	}
 
-	if (snprintf(path, len, "%s/delete", btt->btt_path) >= len) {
-		err(ctx, "%s: buffer too small!\n",
-				ndctl_btt_get_devname(btt));
-		return -EINVAL;
-	}
-
-	rc = sysfs_write_attr(ctx, path, "1\n");
-	if (rc < 0)
-		return -ENXIO;
-	free_btt(btt, BTT_DELETE);
+	free_btt(btt, &region->btts);
+	region->btts_init = 0;
 
 	return 0;
 }
 
 NDCTL_EXPORT int ndctl_btt_is_configured(struct ndctl_btt *btt)
 {
-	if (ndctl_btt_get_sector_size(btt) == UINT_MAX)
-		return 0;
+	if (ndctl_btt_get_namespace(btt))
+		return 1;
 
-	if (strcmp(ndctl_btt_get_backing_dev(btt), "") == 0)
-		return 0;
+	if (ndctl_btt_get_sector_size(btt) != UINT_MAX)
+		return 1;
 
-	if (memcmp(&btt->uuid, null_uuid, sizeof(null_uuid)) == 0)
-		return 0;
+	if (memcmp(&btt->uuid, null_uuid, sizeof(null_uuid)) != 0)
+		return 1;
 
-	return 1;
+	return 0;
 }

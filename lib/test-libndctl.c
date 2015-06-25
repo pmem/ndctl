@@ -150,6 +150,13 @@ static struct dimm dimms1[] = {
 	}
 };
 
+struct btt {
+	int enabled;
+	uuid_t uuid;
+	int num_sector_sizes;
+	unsigned int sector_sizes[7];
+};
+
 struct region {
 	union {
 		unsigned int range_index;
@@ -163,14 +170,8 @@ struct region {
 	struct set {
 		int active;
 	} iset;
+	struct btt *btts[2];
 	struct namespace *namespaces[4];
-};
-
-struct btt {
-	int enabled;
-	uuid_t uuid;
-	int num_sector_sizes;
-	unsigned int sector_sizes[7];
 };
 
 static struct btt btt_settings = {
@@ -263,19 +264,61 @@ static struct namespace namespace5_blk0 = {
 	  8, 8, 8, 8, }, 1, 1, 7, 0, blk_sector_sizes,
 };
 
+static struct btt default_btt = {
+	0, { 0, }, 7, { 512, 520, 528, 4096, 4104, 4160, 4224, },
+};
+
 static struct region regions0[] = {
 	{ { 1 }, 2, 1, "pmem", SZ_32M, SZ_32M, { 1 },
-		{ &namespace0_pmem0, NULL, }, },
+		.namespaces = {
+			[0] = &namespace0_pmem0,
+		},
+		.btts = {
+			[0] = &default_btt,
+		},
+	},
 	{ { 2 }, 4, 1, "pmem", SZ_64M, SZ_64M, { 1 },
-		{ &namespace1_pmem0, NULL, }, },
-	{ { DIMM_HANDLE(0, 0, 0, 0, 0) }, 1, 1, "blk", SZ_18M, SZ_32M, { },
-		{ &namespace2_blk0, &namespace2_blk1, NULL, }, },
-	{ { DIMM_HANDLE(0, 0, 0, 0, 1) }, 1, 1, "blk", SZ_18M, SZ_32M, { },
-		{ &namespace3_blk0, &namespace3_blk1, NULL, }, },
-	{ { DIMM_HANDLE(0, 0, 1, 0, 0) }, 1, 1, "blk", SZ_27M, SZ_32M, { },
-		{ &namespace4_blk0, NULL, }, },
-	{ { DIMM_HANDLE(0, 0, 1, 0, 1) }, 1, 1, "blk", SZ_27M, SZ_32M, { },
-		{ &namespace5_blk0, NULL, }, },
+		.namespaces = {
+			[0] = &namespace1_pmem0,
+		},
+		.btts = {
+			[0] = &default_btt,
+		},
+	},
+	{ { DIMM_HANDLE(0, 0, 0, 0, 0) }, 1, 1, "blk", SZ_18M, SZ_32M,
+		.namespaces = {
+			[0] = &namespace2_blk0,
+			[1] = &namespace2_blk1,
+		},
+		.btts = {
+			[0] = &default_btt,
+		},
+	},
+	{ { DIMM_HANDLE(0, 0, 0, 0, 1) }, 1, 1, "blk", SZ_18M, SZ_32M,
+		.namespaces = {
+			[0] = &namespace3_blk0,
+			[1] = &namespace3_blk1,
+		},
+		.btts = {
+			[0] = &default_btt,
+		},
+	},
+	{ { DIMM_HANDLE(0, 0, 1, 0, 0) }, 1, 1, "blk", SZ_27M, SZ_32M,
+		.namespaces = {
+			[0] = &namespace4_blk0,
+		},
+		.btts = {
+			[0] = &default_btt,
+		},
+	},
+	{ { DIMM_HANDLE(0, 0, 1, 0, 1) }, 1, 1, "blk", SZ_27M, SZ_32M,
+		.namespaces = {
+			[0] = &namespace5_blk0,
+		},
+		.btts = {
+			[0] = &default_btt,
+		},
+	},
 };
 
 static struct namespace namespace1 = {
@@ -294,14 +337,6 @@ static struct region regions1[] = {
 	},
 };
 
-static struct btt btts0[] = {
-	{ 0, { 0, }, 7, { 512, 520, 528, 4096, 4104, 4160, 4224, }, },
-};
-
-static struct btt btts1[] = {
-	{ 0, { 0, }, 7, { 512, 520, 528, 4096, 4104, 4160, 4224, }, },
-};
-
 static unsigned long commands0 = 1UL << ND_CMD_GET_CONFIG_SIZE
 		| 1UL << ND_CMD_GET_CONFIG_DATA
 		| 1UL << ND_CMD_SET_CONFIG_DATA;
@@ -317,11 +352,11 @@ static struct ndctl_dimm *get_dimm_by_handle(struct ndctl_bus *bus, unsigned int
 	return NULL;
 }
 
-static struct ndctl_btt *get_idle_btt(struct ndctl_bus *bus)
+static struct ndctl_btt *get_idle_btt(struct ndctl_region *region)
 {
 	struct ndctl_btt *btt;
 
-	ndctl_btt_foreach(bus, btt)
+	ndctl_btt_foreach(region, btt)
 		if (!ndctl_btt_is_enabled(btt) && !ndctl_btt_is_configured(btt))
 			return btt;
 
@@ -388,6 +423,7 @@ static struct ndctl_region *get_blk_region_by_dimm_handle(struct ndctl_bus *bus,
 
 static int check_namespaces(struct ndctl_region *region,
 		struct namespace **namespaces);
+static int check_btts(struct ndctl_region *region, struct btt **btts);
 
 static int check_regions(struct ndctl_bus *bus, struct region *regions, int n)
 {
@@ -464,6 +500,10 @@ static int check_regions(struct ndctl_bus *bus, struct region *regions, int n)
 			return -ENXIO;
 		}
 
+		rc = check_btts(region, regions[i].btts);
+		if (rc)
+			return rc;
+
 		if (regions[i].namespaces)
 			rc = check_namespaces(region, regions[i].namespaces);
 		if (rc)
@@ -473,9 +513,10 @@ static int check_regions(struct ndctl_bus *bus, struct region *regions, int n)
 	return rc;
 }
 
-static int check_btt_create(struct ndctl_bus *bus, struct ndctl_namespace *ndns,
-		struct btt *create_btt)
+static int check_btt_create(struct ndctl_region *region, struct ndctl_namespace *ndns,
+		struct namespace *namespace)
 {
+	struct btt *btt_s = namespace->btt_settings;
 	int i, fd, retry = 10;
 	struct ndctl_btt *btt;
 	const char *devname;
@@ -483,25 +524,41 @@ static int check_btt_create(struct ndctl_bus *bus, struct ndctl_namespace *ndns,
 	void *buf = NULL;
 	ssize_t rc;
 
-	if (!create_btt)
+	if (!namespace->btt_settings)
 		return 0;
 
 	if (posix_memalign(&buf, 4096, 4096) != 0)
 		return -ENXIO;
 
-	for (i = 0; i < create_btt->num_sector_sizes; i++) {
-		btt = get_idle_btt(bus);
+	for (i = 0; i < btt_s->num_sector_sizes; i++) {
+		btt = get_idle_btt(region);
 		if (!btt)
 			return -ENXIO;
 
-		sprintf(bdevpath, "/dev/%s", ndctl_namespace_get_block_device(ndns));
-		ndctl_btt_set_uuid(btt, create_btt->uuid);
-		ndctl_btt_set_sector_size(btt, create_btt->sector_sizes[i]);
-		ndctl_btt_set_backing_dev(btt, bdevpath);
-		ndctl_btt_enable(btt);
+		devname = ndctl_btt_get_devname(btt);
+		ndctl_btt_set_uuid(btt, btt_s->uuid);
+		ndctl_btt_set_sector_size(btt, btt_s->sector_sizes[i]);
+		ndctl_btt_set_namespace(btt, ndns);
+		ndctl_namespace_disable(ndns);
+		rc = ndctl_btt_enable(btt);
+		if (namespace->ro == (rc == 0)) {
+			fprintf(stderr, "%s: expected btt enable %s, %s read-%s\n",
+					devname,
+					namespace->ro ? "failure" : "success",
+					ndctl_region_get_devname(region),
+					namespace->ro ? "only" : "write");
+			return -ENXIO;
+		}
+		if (namespace->ro) {
+			ndctl_region_set_ro(region, 0);
+			rc = ndctl_btt_enable(btt);
+			fprintf(stderr, "%s: failed to enable after setting rw\n",
+					devname);
+			ndctl_region_set_ro(region, 1);
+			return -ENXIO;
+		}
 
 		sprintf(bdevpath, "/dev/%s", ndctl_btt_get_block_device(btt));
-		devname = ndctl_btt_get_devname(btt);
 		rc = -ENXIO;
 		fd = open(bdevpath, O_RDWR|O_DIRECT);
 		if (fd < 0)
@@ -531,6 +588,8 @@ static int check_btt_create(struct ndctl_bus *bus, struct ndctl_namespace *ndns,
 			rc = 0;
 			break;
 		}
+		if (namespace->ro)
+			ndctl_region_set_ro(region, 1);
 		if (fd >= 0)
 			close(fd);
 
@@ -591,16 +650,16 @@ static int check_btt_autodetect(struct ndctl_bus *bus,
 		struct ndctl_namespace *ndns, void *buf,
 		struct namespace *namespace)
 {
-	const char *ndns_bdev = ndctl_namespace_get_block_device(ndns);
+	struct ndctl_region *region = ndctl_namespace_get_region(ndns);
 	const char *devname = ndctl_namespace_get_devname(ndns);
 	struct btt *auto_btt = namespace->btt_settings;
 	struct ndctl_btt *btt, *found = NULL;
-	int btt_fd = -1, backing_fd = -1, ro;
-	const char *backing_bdev;
 	ssize_t rc = -ENXIO;
-	char btt_bdev[50];
+	char bdev[50];
+	int fd, ro;
 
-	ndctl_btt_foreach(bus, btt) {
+	ndctl_btt_foreach(region, btt) {
+		struct ndctl_namespace *btt_ndns;
 		uuid_t uu;
 
 		ndctl_btt_get_uuid(btt, uu);
@@ -608,9 +667,11 @@ static int check_btt_autodetect(struct ndctl_bus *bus,
 			continue;
 		if (!ndctl_btt_is_enabled(btt))
 			continue;
-		backing_bdev = ndctl_btt_get_backing_dev(btt);
-		if (strcmp(backing_bdev+5, ndns_bdev) != 0)
+		btt_ndns = ndctl_btt_get_namespace(btt);
+		if (strcmp(ndctl_namespace_get_devname(btt_ndns), devname) != 0)
 			continue;
+		fprintf(stderr, "%s: btt_ndns: %p ndns: %p\n", __func__,
+				btt_ndns, ndns);
 		found = btt;
 		break;
 	}
@@ -618,13 +679,13 @@ static int check_btt_autodetect(struct ndctl_bus *bus,
 	if (!found)
 		return -ENXIO;
 
-	sprintf(btt_bdev, "/dev/%s", ndctl_btt_get_block_device(btt));
-	btt_fd = open(btt_bdev, O_RDONLY);
-	if (btt_fd < 0)
+	sprintf(bdev, "/dev/%s", ndctl_btt_get_block_device(btt));
+	fd = open(bdev, O_RDONLY);
+	if (fd < 0)
 		return -ENXIO;
-	rc = ioctl(btt_fd, BLKROGET, &ro);
+	rc = ioctl(fd, BLKROGET, &ro);
 	if (rc < 0) {
-		fprintf(stderr, "%s: failed to open %s\n", __func__, btt_bdev);
+		fprintf(stderr, "%s: failed to open %s\n", __func__, bdev);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -632,70 +693,40 @@ static int check_btt_autodetect(struct ndctl_bus *bus,
 	rc = -ENXIO;
 	if (ro != namespace->ro) {
 		fprintf(stderr, "%s: read-%s expected read-%s by default\n",
-				btt_bdev, ro ? "only" : "write",
+				bdev, ro ? "only" : "write",
 				namespace->ro ? "only" : "write");
 		goto out;
 	}
 
-	backing_fd = open(backing_bdev, O_RDONLY);
-	if (backing_fd < 0) {
-		fprintf(stderr, "%s: failed to open %s to set rw\n",
-				__func__, backing_bdev);
-		goto out;
-	}
-
-	ro = 0;
-	rc = ioctl(backing_fd, BLKROSET, &ro);
-	if (rc < 0) {
-		fprintf(stderr, "failed to set %s rw\n", backing_bdev);
-		rc = -ENXIO;
-		goto out;
-	}
-
-	rc = ioctl(btt_fd, BLKROGET, &ro);
-	if (rc < 0) {
-		fprintf(stderr, "failed to verify that %s is now rw\n",
-			btt_bdev);
-		rc = -ENXIO;
-		goto out;
-	}
-
-	if (ro) {
-		fprintf(stderr, "setting %s rw did not set %s rw\n",
-				backing_bdev, btt_bdev);
-		rc = -ENXIO;
-		goto out;
-	}
-
-	backing_bdev = strdup(backing_bdev);
-	if (!backing_bdev) {
-		fprintf(stderr, "%s: failed to dup backing_bdev\n", devname);
-		goto out;
-	}
-
+	/* destroy btt device */
 	ndctl_btt_delete(found);
 
-	/* destroy btt */
-	backing_fd = open(backing_bdev, O_RDWR|O_DIRECT|O_EXCL);
-	if (backing_fd < 0) {
+	/* clear read-write, and enable raw mode */
+	ndctl_region_set_ro(region, 0);
+	ndctl_namespace_set_raw_mode(ndns, 1);
+	ndctl_namespace_enable(ndns);
+
+	/* destroy btt metadata */
+	sprintf(bdev, "/dev/%s", ndctl_namespace_get_block_device(ndns));
+	fd = open(bdev, O_RDWR|O_DIRECT|O_EXCL);
+	if (fd < 0) {
 		fprintf(stderr, "%s: failed to open %s to destroy btt\n",
-				devname, backing_bdev);
+				devname, bdev);
 		goto out;
 	}
 
 	memset(buf, 0, 4096);
-	rc = pwrite(backing_fd, buf, 4096, 4096);
+	rc = pwrite(fd, buf, 4096, 4096);
 	if (rc < 4096) {
 		rc = -ENXIO;
 		fprintf(stderr, "%s: failed to overwrite btt on %s\n",
-				devname, backing_bdev);
+				devname, bdev);
 	}
  out:
-	free((char *) backing_bdev);
-	if (backing_fd >= 0)
-		close(backing_fd);
-	if (btt_fd >= 0)
-		close(btt_fd);
+	ndctl_region_set_ro(region, namespace->ro);
+	ndctl_namespace_set_raw_mode(ndns, 0);
+	if (fd >= 0)
+		close(fd);
 
 	return rc;
 }
@@ -846,7 +877,7 @@ static int check_namespaces(struct ndctl_region *region,
 			close(fd);
 			fd = -1;
 
-			if (check_btt_create(bus, ndns, namespace->btt_settings) < 0) {
+			if (check_btt_create(region, ndns, namespace) < 0) {
 				fprintf(stderr, "%s: failed to create btt\n", devname);
 				rc = -ENXIO;
 				break;
@@ -976,17 +1007,18 @@ static int check_btt_supported_sectors(struct ndctl_btt *btt, struct btt *expect
 	return 0;
 }
 
-static int check_btts(struct ndctl_bus *bus, struct btt *btts, int n)
+static int check_btts(struct ndctl_region *region, struct btt **btts)
 {
+	struct btt *btt_s;
 	int i;
 
-	for (i = 0; i < n; i++) {
+	for (i = 0; (btt_s = btts[i]); i++) {
 		struct ndctl_btt *btt;
 		char devname[50];
 		uuid_t btt_uuid;
 		int rc;
 
-		btt = get_idle_btt(bus);
+		btt = get_idle_btt(region);
 		if (!btt) {
 			fprintf(stderr, "failed to find idle btt\n");
 			return -ENXIO;
@@ -994,24 +1026,24 @@ static int check_btts(struct ndctl_bus *bus, struct btt *btts, int n)
 		snprintf(devname, sizeof(devname), "btt%d",
 				ndctl_btt_get_id(btt));
 		ndctl_btt_get_uuid(btt, btt_uuid);
-		if (uuid_compare(btt_uuid, btts[i].uuid) != 0) {
+		if (uuid_compare(btt_uuid, btt_s->uuid) != 0) {
 			char expect[40], actual[40];
 
 			uuid_unparse(btt_uuid, actual);
-			uuid_unparse(btts[i].uuid, expect);
+			uuid_unparse(btt_s->uuid, expect);
 			fprintf(stderr, "%s: expected uuid: %s got: %s\n",
 					devname, expect, actual);
 			return -ENXIO;
 		}
-		if (ndctl_btt_get_num_sector_sizes(btt) != btts[i].num_sector_sizes) {
+		if (ndctl_btt_get_num_sector_sizes(btt) != btt_s->num_sector_sizes) {
 			fprintf(stderr, "%s: expected num_sector_sizes: %d got: %d\n",
-					devname, btts[i].num_sector_sizes,
+					devname, btt_s->num_sector_sizes,
 					ndctl_btt_get_num_sector_sizes(btt));
 		}
-		rc = check_btt_supported_sectors(btt, &btts[i]);
+		rc = check_btt_supported_sectors(btt, btt_s);
 		if (rc)
 			return rc;
-		if (btts[i].enabled && ndctl_btt_is_enabled(btt)) {
+		if (btt_s->enabled && ndctl_btt_is_enabled(btt)) {
 			fprintf(stderr, "%s: expected disabled by default\n",
 					devname);
 			return -ENXIO;
@@ -1289,10 +1321,6 @@ static int do_test0(struct ndctl_ctx *ctx)
 	if (rc)
 		return rc;
 
-	rc = check_btts(bus, btts0, ARRAY_SIZE(btts0));
-	if (rc)
-		return rc;
-
 	/* set regions back to their default state */
 	ndctl_region_foreach(bus, region)
 		ndctl_region_enable(region);
@@ -1309,10 +1337,6 @@ static int do_test1(struct ndctl_ctx *ctx)
 		return -ENXIO;
 
 	rc = check_dimms(bus, dimms1, ARRAY_SIZE(dimms1), 0);
-	if (rc)
-		return rc;
-
-	rc = check_btts(bus, btts1, ARRAY_SIZE(btts1));
 	if (rc)
 		return rc;
 

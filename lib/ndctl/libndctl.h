@@ -103,7 +103,6 @@ unsigned int ndctl_bus_get_minor(struct ndctl_bus *bus);
 const char *ndctl_bus_get_devname(struct ndctl_bus *bus);
 struct ndctl_bus *ndctl_bus_get_by_provider(struct ndctl_ctx *ctx,
 		const char *provider);
-struct ndctl_btt *ndctl_bus_get_btt_seed(struct ndctl_bus *bus);
 const char *ndctl_bus_get_cmd_name(struct ndctl_bus *bus, int cmd);
 int ndctl_bus_is_cmd_supported(struct ndctl_bus *bus, int cmd);
 unsigned int ndctl_bus_get_revision(struct ndctl_bus *bus);
@@ -194,6 +193,9 @@ unsigned int ndctl_region_get_range_index(struct ndctl_region *region);
 unsigned int ndctl_region_get_type(struct ndctl_region *region);
 struct ndctl_namespace *ndctl_region_get_namespace_seed(
 		struct ndctl_region *region);
+int ndctl_region_get_ro(struct ndctl_region *region);
+int ndctl_region_set_ro(struct ndctl_region *region, int ro);
+struct ndctl_btt *ndctl_region_get_btt_seed(struct ndctl_region *region);
 unsigned int ndctl_region_get_nstype(struct ndctl_region *region);
 const char *ndctl_region_get_type_name(struct ndctl_region *region);
 struct ndctl_bus *ndctl_region_get_bus(struct ndctl_region *region);
@@ -266,6 +268,7 @@ struct ndctl_namespace *ndctl_namespace_get_next(struct ndctl_namespace *ndns);
 struct ndctl_ctx *ndctl_namespace_get_ctx(struct ndctl_namespace *ndns);
 struct ndctl_bus *ndctl_namespace_get_bus(struct ndctl_namespace *ndns);
 struct ndctl_region *ndctl_namespace_get_region(struct ndctl_namespace *ndns);
+struct ndctl_btt *ndctl_namespace_get_btt(struct ndctl_namespace *ndns);
 unsigned int ndctl_namespace_get_id(struct ndctl_namespace *ndns);
 const char *ndctl_namespace_get_devname(struct ndctl_namespace *ndns);
 unsigned int ndctl_namespace_get_type(struct ndctl_namespace *ndns);
@@ -291,34 +294,38 @@ unsigned int ndctl_namespace_get_sector_size(struct ndctl_namespace *ndns);
 int ndctl_namespace_get_num_sector_sizes(struct ndctl_namespace *ndns);
 int ndctl_namespace_set_sector_size(struct ndctl_namespace *ndns,
 		unsigned int sector_size);
+int ndctl_namespace_get_raw_mode(struct ndctl_namespace *ndns);
+int ndctl_namespace_set_raw_mode(struct ndctl_namespace *ndns, int raw_mode);
 
 struct ndctl_btt;
-struct ndctl_btt *ndctl_btt_get_first(struct ndctl_bus *bus);
+struct ndctl_btt *ndctl_btt_get_first(struct ndctl_region *region);
 struct ndctl_btt *ndctl_btt_get_next(struct ndctl_btt *btt);
-#define ndctl_btt_foreach(bus, btt) \
-        for (btt = ndctl_btt_get_first(bus); \
+#define ndctl_btt_foreach(region, btt) \
+        for (btt = ndctl_btt_get_first(region); \
              btt != NULL; \
              btt = ndctl_btt_get_next(btt))
-#define ndctl_btt_foreach_safe(bus, btt, _btt) \
-	for (btt = ndctl_btt_get_first(bus), \
+#define ndctl_btt_foreach_safe(region, btt, _btt) \
+	for (btt = ndctl_btt_get_first(region), \
 	     _btt = ndctl_btt_get_next(btt); \
 	     btt != NULL; \
 	     btt = _btt, \
 	     _btt = _btt ? ndctl_btt_get_next(_btt) : NULL)
 struct ndctl_ctx *ndctl_btt_get_ctx(struct ndctl_btt *btt);
 struct ndctl_bus *ndctl_btt_get_bus(struct ndctl_btt *btt);
+struct ndctl_region *ndctl_btt_get_region(struct ndctl_btt *btt);
 unsigned int ndctl_btt_get_id(struct ndctl_btt *btt);
 unsigned int ndctl_btt_get_supported_sector_size(struct ndctl_btt *btt, int i);
 unsigned int ndctl_btt_get_sector_size(struct ndctl_btt *btt);
 int ndctl_btt_get_num_sector_sizes(struct ndctl_btt *btt);
-const char *ndctl_btt_get_backing_dev(struct ndctl_btt *btt);
+struct ndctl_namespace *ndctl_btt_get_namespace(struct ndctl_btt *btt);
 void ndctl_btt_get_uuid(struct ndctl_btt *btt, uuid_t uu);
 int ndctl_btt_is_enabled(struct ndctl_btt *btt);
+int ndctl_btt_is_valid(struct ndctl_btt *btt);
 const char *ndctl_btt_get_devname(struct ndctl_btt *btt);
 const char *ndctl_btt_get_block_device(struct ndctl_btt *btt);
 int ndctl_btt_set_uuid(struct ndctl_btt *btt, uuid_t uu);
 int ndctl_btt_set_sector_size(struct ndctl_btt *btt, unsigned int sector_size);
-int ndctl_btt_set_backing_dev(struct ndctl_btt *btt, const char *backing_dev);
+int ndctl_btt_set_namespace(struct ndctl_btt *btt, struct ndctl_namespace *ndns);
 int ndctl_btt_enable(struct ndctl_btt *btt);
 int ndctl_btt_delete(struct ndctl_btt *btt);
 int ndctl_btt_is_configured(struct ndctl_btt *btt);
