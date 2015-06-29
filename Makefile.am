@@ -32,9 +32,9 @@ SED_PROCESS = \
 %.pc: %.pc.in Makefile
 	$(SED_PROCESS)
 
-LIBNDCTL_CURRENT=2
+LIBNDCTL_CURRENT=3
 LIBNDCTL_REVISION=0
-LIBNDCTL_AGE=2
+LIBNDCTL_AGE=0
 
 pkginclude_HEADERS = lib/ndctl/libndctl.h
 lib_LTLIBRARIES = lib/libndctl.la
