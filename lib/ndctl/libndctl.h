@@ -151,6 +151,17 @@ int ndctl_dimm_disable(struct ndctl_dimm *dimm);
 int ndctl_dimm_enable(struct ndctl_dimm *dimm);
 
 struct ndctl_cmd;
+struct ndctl_cmd *ndctl_bus_cmd_new_ars_cap(struct ndctl_bus *bus,
+		unsigned long long address, unsigned long long len);
+struct ndctl_cmd *ndctl_bus_cmd_new_ars_start(struct ndctl_cmd *ars_cap, int type);
+struct ndctl_cmd *ndctl_bus_cmd_new_ars_status(struct ndctl_cmd *ars_cap);
+unsigned int ndctl_cmd_ars_cap_get_size(struct ndctl_cmd *ars_cap);
+unsigned int ndctl_cmd_ars_in_progress(struct ndctl_cmd *ars_status);
+unsigned int ndctl_cmd_ars_num_records(struct ndctl_cmd *ars_stat);
+unsigned int ndctl_cmd_ars_get_record_addr(struct ndctl_cmd *ars_stat,
+		unsigned int rec_index);
+unsigned int ndctl_cmd_ars_get_record_len(struct ndctl_cmd *ars_stat,
+		unsigned int rec_index);
 struct ndctl_cmd *ndctl_dimm_cmd_new_vendor_specific(struct ndctl_dimm *dimm,
 		unsigned int opcode, size_t input_size, size_t output_size);
 ssize_t ndctl_cmd_vendor_set_input(struct ndctl_cmd *cmd, void *buf,
