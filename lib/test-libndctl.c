@@ -535,6 +535,9 @@ static int check_btt_create(struct ndctl_region *region, struct ndctl_namespace 
 		return -ENXIO;
 
 	for (i = 0; i < btt_s->num_sector_sizes; i++) {
+		struct ndctl_namespace *ns_seed = ndctl_region_get_namespace_seed(region);
+		struct ndctl_btt *btt_seed = ndctl_region_get_btt_seed(region);
+
 		btt = get_idle_btt(region);
 		if (!btt)
 			return -ENXIO;
@@ -543,7 +546,6 @@ static int check_btt_create(struct ndctl_region *region, struct ndctl_namespace 
 		ndctl_btt_set_uuid(btt, btt_s->uuid);
 		ndctl_btt_set_sector_size(btt, btt_s->sector_sizes[i]);
 		ndctl_btt_set_namespace(btt, ndns);
-		ndctl_namespace_disable(ndns);
 		rc = ndctl_btt_enable(btt);
 		if (namespace->ro == (rc == 0)) {
 			fprintf(stderr, "%s: expected btt enable %s, %s read-%s\n",
@@ -553,6 +555,24 @@ static int check_btt_create(struct ndctl_region *region, struct ndctl_namespace 
 					namespace->ro ? "only" : "write");
 			return -ENXIO;
 		}
+
+		if (btt_seed == ndctl_region_get_btt_seed(region)
+				&& btt == btt_seed) {
+			fprintf(stderr, "%s: failed to advance btt seed\n",
+					ndctl_region_get_devname(region));
+			return -ENXIO;
+		}
+
+		/* check new seed creation for BLK regions */
+		if (ndctl_region_get_type(region) == ND_DEVICE_REGION_BLK) {
+			if (ns_seed == ndctl_region_get_namespace_seed(region)
+					&& ndns == ns_seed) {
+				fprintf(stderr, "%s: failed to advance namespace seed\n",
+						ndctl_region_get_devname(region));
+				return -ENXIO;
+			}
+		}
+
 		if (namespace->ro) {
 			ndctl_region_set_ro(region, 0);
 			rc = ndctl_btt_enable(btt);
@@ -643,8 +663,14 @@ static int configure_namespace(struct ndctl_region *region,
 	if (rc < 1)
 		fprintf(stderr, "%s: is_configured: %d\n", devname, rc);
 
+	rc = check_btt_create(region, ndns, namespace);
+	if (rc < 0) {
+		fprintf(stderr, "%s: failed to create btt\n", devname);
+		return rc;
+	}
+
 	rc = ndctl_namespace_enable(ndns);
-	if (rc)
+	if (rc < 0)
 		fprintf(stderr, "%s: enable: %d\n", devname, rc);
 
 	return rc;
@@ -769,9 +795,12 @@ static int check_namespaces(struct ndctl_region *region,
 		}
 
 		for (j = 0; j < namespace->num_sector_sizes; j++) {
+			struct btt *btt_s;
+			struct ndctl_btt *btt;
+
 			rc = configure_namespace(region, ndns, namespace,
 							namespace->sector_sizes[j]);
-			if (rc) {
+			if (rc < 0) {
 				fprintf(stderr, "%s: failed to configure namespace\n",
 						devname);
 				break;
@@ -787,7 +816,24 @@ static int check_namespaces(struct ndctl_region *region,
 				break;
 			}
 
-			if (!ndctl_namespace_is_enabled(ndns)) {
+			/*
+			 * On the second time through this loop we skip
+			 * establishing btt since check_btt_autodetect()
+			 * destroyed the inital instance.
+			 */
+			btt_s = namespace->do_configure
+				? namespace->btt_settings : NULL;
+
+			btt = ndctl_namespace_get_btt(ndns);
+			if (!!btt_s != !!btt) {
+				fprintf(stderr, "%s expected btt %s by default\n",
+						devname, namespace->btt_settings
+						? "enabled" : "disabled");
+				rc = -ENXIO;
+				break;
+			}
+
+			if (!btt_s && !ndctl_namespace_is_enabled(ndns)) {
 				fprintf(stderr, "%s: expected enabled by default\n",
 						devname);
 				rc = -ENXIO;
@@ -824,7 +870,8 @@ static int check_namespaces(struct ndctl_region *region,
 				break;
 			}
 
-			sprintf(bdevpath, "/dev/%s", ndctl_namespace_get_block_device(ndns));
+			sprintf(bdevpath, "/dev/%s", btt ? ndctl_btt_get_block_device(btt)
+					: ndctl_namespace_get_block_device(ndns));
 			fd = open(bdevpath, O_RDONLY);
 			if (fd < 0) {
 				fprintf(stderr, "%s: failed to open(%s, O_RDONLY)\n",
@@ -881,12 +928,6 @@ static int check_namespaces(struct ndctl_region *region,
 			close(fd);
 			fd = -1;
 
-			if (check_btt_create(region, ndns, namespace) < 0) {
-				fprintf(stderr, "%s: failed to create btt\n", devname);
-				rc = -ENXIO;
-				break;
-			}
-
 			if (ndctl_namespace_disable(ndns) < 0) {
 				fprintf(stderr, "%s: failed to disable\n", devname);
 				rc = -ENXIO;
@@ -899,8 +940,7 @@ static int check_namespaces(struct ndctl_region *region,
 				break;
 			}
 
-			if (namespace->btt_settings
-					&& check_btt_autodetect(bus, ndns, buf,
+			if (btt_s && check_btt_autodetect(bus, ndns, buf,
 						namespace) < 0) {
 				fprintf(stderr, "%s, failed btt autodetect\n", devname);
 				rc = -ENXIO;
@@ -911,7 +951,7 @@ static int check_namespaces(struct ndctl_region *region,
 			 * if the namespace is being tested with a btt, there is no
 			 * point testing different sector sizes for the namespace itself
 			 */
-			if (namespace->btt_settings)
+			if (btt_s)
 				break;
 
 			/*
