@@ -9,7 +9,7 @@
 Name:           ndctl
 Version:
 Release:        1%{?gitcommit:.git%{gitcommit}}%{?dist}
-Summary:	Manage "nd" subsystem devices (Non-volatile Memory)
+Summary:	Manage "libnvdimm" subsystem devices (Non-volatile Memory)
 License:        GPLv2
 URL:            https://github.com/pmem/ndctl
 
@@ -25,9 +25,10 @@ BuildRequires: autoconf
 BuildRequires: automake
 
 %description
-Utility library for managing the "nd" subsystem.  The "nd" subsystem
-defines a device model and control message interface for NFIT (NVDIMM
-Firmware Interface Table) defined devices.
+Utility library for managing the "libnvdimm" subsystem.  The "libnvdimm"
+subsystem defines a kernel device model and control message interface for
+platform NVDIMM resources like those defined by the ACPI 6.0 NFIT (NVDIMM
+Firmware Interface Table).
 
 
 %package        devel
