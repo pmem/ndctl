@@ -1,4 +1,4 @@
-%global gitcommit %(git log --pretty=format:"%h" -n 1)
+%global gitcommit
 
 # (hack stolen from systemd.spec)
 # We ship a .pc file but don't want to have a dep on pkg-config. We
@@ -23,6 +23,9 @@ Source0:        https://github.com/pmem/ndctl/archive/%{name}-%{version}.tar.gz
 BuildRequires: libtool
 BuildRequires: autoconf
 BuildRequires: automake
+BuildRequires: systemd-devel
+BuildRequires: libuuid-devel
+BuildRequires: kmod-devel
 
 %description
 Utility library for managing the "libnvdimm" subsystem.  The "libnvdimm"

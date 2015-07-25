@@ -6,11 +6,12 @@ OBJS=$(SRCS:.c=.o)
 PROG=genspec
 SPEC_IN=ndctl.spec.in
 SPEC=$(SPEC_IN:.in=)
+COMMIT_ID=git log --pretty=format:"%h" -n 1
 
 all: $(SPEC)
 
 $(SPEC) : $(SPEC_IN) $(PROG)
-	cat $(SPEC_IN) | $(dir $(PROG))$(PROG) > $@
+	cat $(SPEC_IN) | $(dir $(PROG))$(PROG) `$(COMMIT_ID)` > $@
 
 $(PROG) : $(OBJS)
 	$(CC) $(LDFLAGS) $(OBJS) -o $@
