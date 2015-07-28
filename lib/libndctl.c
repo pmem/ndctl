@@ -3019,8 +3019,8 @@ NDCTL_EXPORT int ndctl_namespace_is_enabled(struct ndctl_namespace *ndns)
 static int ndctl_bind(struct ndctl_ctx *ctx, struct kmod_module *module,
 		const char *devname)
 {
-	int rc;
 	DIR *dir;
+	int rc = 0;
 	char path[200];
 	struct dirent *de;
 	const int len = sizeof(path);

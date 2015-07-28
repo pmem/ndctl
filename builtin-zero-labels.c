@@ -47,7 +47,7 @@ int cmd_zero_labels(int argc, const char **argv)
 	struct ndctl_dimm *dimm;
 	struct ndctl_ctx *ctx;
 	struct ndctl_bus *bus;
-	int i, rc, count, err;
+	int i, rc, count, err = 0;
 
         argc = parse_options(argc, argv, nmem_options, u, 0);
 
