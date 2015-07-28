@@ -3106,6 +3106,15 @@ static void btts_init(struct ndctl_region *region)
 	device_parse(bus->ctx, bus, region->region_path, btt_fmt, region, add_btt);
 }
 
+static void region_refresh_children(struct ndctl_region *region)
+{
+	region->namespaces_init = 0;
+	region->btts_init = 0;
+	namespaces_init(region);
+	btts_init(region);
+}
+
+
 /*
  * Return 0 if enabled, < 0 if failed to enable, and > 0 if claimed by
  * another device and that device is enabled.  In the > 0 case a
@@ -3143,10 +3152,7 @@ NDCTL_EXPORT int ndctl_namespace_enable(struct ndctl_namespace *ndns)
 	 * to a new one being created, and potentially btts being attached
 	 */
  out:
-	region->namespaces_init = 0;
-	region->btts_init = 0;
-	namespaces_init(region);
-	btts_init(region);
+	region_refresh_children(region);
 
 	return rc;
 }
@@ -3757,10 +3763,10 @@ NDCTL_EXPORT int ndctl_btt_enable(struct ndctl_btt *btt)
 
 	/*
 	 * Rescan now as successfully enabling a btt device leads to a
-	 * new one being created
+	 * new one being created, and potentially the backing namespace
+	 * as well.
 	 */
-	region->btts_init = 0;
-	btts_init(region);
+	region_refresh_children(region);
 
 	return 0;
 }
