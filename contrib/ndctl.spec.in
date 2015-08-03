@@ -1,10 +1,12 @@
 %global gitcommit
+%define lname
+%define dname
 
 Name:           ndctl
 Version:
 Release:        1%{?gitcommit:.git%{gitcommit}}%{?dist}
 Summary:	Manage "libnvdimm" subsystem devices (Non-volatile Memory)
-License:        GPLv2
+License:        GPL-2.0
 URL:            https://github.com/pmem/ndctl
 
 %if %{defined gitcommit}
@@ -17,6 +19,7 @@ Source0:        https://github.com/pmem/ndctl/archive/%{name}-%{version}.tar.gz
 BuildRequires: libtool
 BuildRequires: autoconf
 BuildRequires: automake
+BuildRequires: pkgconfig
 BuildRequires: pkgconfig(libudev)
 BuildRequires: pkgconfig(uuid)
 BuildRequires: pkgconfig(libkmod)
@@ -28,21 +31,21 @@ platform NVDIMM resources like those defined by the ACPI 6.0 NFIT (NVDIMM
 Firmware Interface Table).
 
 
-%package        devel
-Summary:        Development files for %{name}
-License:        LGPLv2.1 and BSD and MIT
-Requires:       %{name}%{?_isa} = %{version}-%{release}
+%package -n %dname
+Summary:        Development files for libndctl
+License:        LGPL-2.1+
+Requires:       %{lname}%{?_isa} = %{version}-%{release}
 
-%description    devel
+%description -n %dname
 The %{name}-devel package contains libraries and header files for
 developing applications that use %{name}.
 
 
-%package        libs
-Summary:        %{name} libraries
-License:        LGPLv2.1 and BSD and MIT
+%package -n %lname
+Summary:        Management library for "libnvdimm" subsystem devices (Non-volatile Memory)
+License:        LGPL-2.1+
 
-%description    libs
+%description -n %lname
 Libraries for %{name}
 
 
@@ -63,21 +66,25 @@ make %{?_smp_mflags}
 find $RPM_BUILD_ROOT -name '*.la' -exec rm -f {} ';'
 
 
-%post libs -p /sbin/ldconfig
+%post -n %lname -p /sbin/ldconfig
 
-%postun libs -p /sbin/ldconfig
+%postun -n %lname -p /sbin/ldconfig
 
 %files
 %license licenses/GPLv2 licenses/BSD-MIT licenses/CC0
 %{_bindir}/ndctl
 
-%files libs
+%files -n %lname
 %doc README.md
 %license COPYING licenses/BSD-MIT licenses/CC0
 %{_libdir}/libndctl.so.*
 
-%files devel
+%files -n %dname
 %license COPYING
 %{_includedir}/ndctl/
 %{_libdir}/libndctl.so
 %{_libdir}/pkgconfig/libndctl.pc
+
+%changelog
+* Mon Aug 03 2015 dan.j.williams@intel.com
+- Initial rpm release

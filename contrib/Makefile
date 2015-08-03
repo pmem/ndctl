@@ -5,22 +5,29 @@ SRCS=genspec.c
 OBJS=$(SRCS:.c=.o)
 PROG=genspec
 SPEC_IN=ndctl.spec.in
-SPEC=$(SPEC_IN:.in=)
+RHEL_SPEC=rhel/$(SPEC_IN:.in=)
+SLES_SPEC=sles/$(SPEC_IN:.in=)
 COMMIT_ID=git log --pretty=format:"%h" -n 1
 
-all: $(SPEC)
+all: $(RHEL_SPEC) $(SLES_SPEC)
 
-$(SPEC) : $(SPEC_IN) $(PROG)
-	cat $(SPEC_IN) | $(dir $(PROG))$(PROG) `$(COMMIT_ID)` > $@
+$(RHEL_SPEC) : $(SPEC_IN) $(PROG)
+	@mkdir -p rhel
+	cat $(SPEC_IN) | $(dir $(PROG))$(PROG) `$(COMMIT_ID)` rhel > $@
 
-$(PROG) : $(OBJS)
+$(SLES_SPEC) : $(SPEC_IN) $(PROG)
+	@mkdir -p sles
+	cat $(SPEC_IN) | $(dir $(PROG))$(PROG) `$(COMMIT_ID)` sles > $@
+
+$(PROG) : $(OBJS) Makefile
 	$(CC) $(LDFLAGS) $(OBJS) -o $@
 
 .c.o:
 	$(CC) $(CFLAGS) $< -o $@
 
 clean:
-	rm $(OBJS) $(PROG) $(SPEC)
+	rm $(OBJS) $(PROG) $(RHEL_SPEC) $(SLES_SPEC)
+	@rmdir rhel sles
 
 depend: .depend
 
