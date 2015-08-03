@@ -1,11 +1,5 @@
 %global gitcommit
 
-# (hack stolen from systemd.spec)
-# We ship a .pc file but don't want to have a dep on pkg-config. We
-# strip the automatically generated dep here and instead co-own the
-# directory.
-%global __requires_exclude pkg-config
-
 Name:           ndctl
 Version:
 Release:        1%{?gitcommit:.git%{gitcommit}}%{?dist}
@@ -65,7 +59,6 @@ make %{?_smp_mflags}
 
 
 %install
-rm -rf $RPM_BUILD_ROOT
 %make_install
 find $RPM_BUILD_ROOT -name '*.la' -exec rm -f {} ';'
 
@@ -75,18 +68,16 @@ find $RPM_BUILD_ROOT -name '*.la' -exec rm -f {} ';'
 %postun libs -p /sbin/ldconfig
 
 %files
-%doc
+%license licenses/GPLv2 licenses/BSD-MIT licenses/CC0
 %{_bindir}/ndctl
 
 %files libs
-%{_libdir}/*.so.*
+%doc README.md
+%license COPYING licenses/BSD-MIT licenses/CC0
+%{_libdir}/libndctl.so.*
 
 %files devel
-%doc
-%{_includedir}/*
-%{_libdir}/*.so
+%license COPYING
+%{_includedir}/ndctl/
+%{_libdir}/libndctl.so
 %{_libdir}/pkgconfig/libndctl.pc
-
-%changelog
-* Wed Aug 27 2014 Dan Williams
-- 
