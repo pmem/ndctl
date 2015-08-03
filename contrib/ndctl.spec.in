@@ -17,9 +17,9 @@ Source0:        https://github.com/pmem/ndctl/archive/%{name}-%{version}.tar.gz
 BuildRequires: libtool
 BuildRequires: autoconf
 BuildRequires: automake
-BuildRequires: systemd-devel
-BuildRequires: libuuid-devel
-BuildRequires: kmod-devel
+BuildRequires: pkgconfig(libudev)
+BuildRequires: pkgconfig(uuid)
+BuildRequires: pkgconfig(libkmod)
 
 %description
 Utility library for managing the "libnvdimm" subsystem.  The "libnvdimm"
