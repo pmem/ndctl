@@ -2,6 +2,7 @@
 #include <syslog.h>
 #include <test-libndctl.h>
 #include <test-dpa-alloc.h>
+#include <test-parent-uuid.h>
 #include <util/parse-options.h>
 
 int cmd_test(int argc, const char **argv)
@@ -32,5 +33,10 @@ int cmd_test(int argc, const char **argv)
 
 	rc = test_dpa_alloc(loglevel);
 	fprintf(stderr, "test-dpa-alloc: %s\n", rc ? "FAIL" : "PASS");
+	if (rc)
+		return rc;
+
+	rc = test_parent_uuid(loglevel);
+	fprintf(stderr, "test-parent-uuid: %s\n", rc ? "FAIL" : "PASS");
 	return rc;
 }

@@ -63,7 +63,7 @@ ndctl_SOURCES = ndctl.c \
 		util/wrapper.c
 
 if ENABLE_TEST
-ndctl_SOURCES += lib/test-libndctl.c lib/test-dpa-alloc.c
+ndctl_SOURCES += lib/test-libndctl.c lib/test-dpa-alloc.c lib/test-parent-uuid.c
 endif
 
 if ENABLE_DESTRUCTIVE
@@ -102,8 +102,8 @@ pkgconfig_DATA = lib/libndctl.pc
 EXTRA_DIST += lib/libndctl.pc.in
 CLEANFILES += lib/libndctl.pc
 
-TESTS = lib/test-libndctl lib/test-dpa-alloc
-check_PROGRAMS = lib/test-libndctl lib/test-dpa-alloc
+TESTS = lib/test-libndctl lib/test-dpa-alloc lib/test-parent-uuid
+check_PROGRAMS = lib/test-libndctl lib/test-dpa-alloc lib/test-parent-uuid
 
 if ENABLE_DESTRUCTIVE
 TESTS += lib/test-blk-ns lib/test-pmem-ns
@@ -121,3 +121,6 @@ lib_test_pmem_ns_LDADD = lib/libndctl.la $(KMOD_LIBS)
 
 lib_test_dpa_alloc_SOURCES = lib/test-dpa-alloc.c
 lib_test_dpa_alloc_LDADD = lib/libndctl.la $(UUID_LIBS) $(KMOD_LIBS)
+
+lib_test_parent_uuid_SOURCES = lib/test-parent-uuid.c
+lib_test_parent_uuid_LDADD = lib/libndctl.la $(UUID_LIBS) $(KMOD_LIBS)
