@@ -68,14 +68,9 @@ AS_IF([test "x$enable_destructive" = "xyes"],
 	[AC_DEFINE([ENABLE_DESTRUCTIVE], [1], [destructive functional tests support])])
 AM_CONDITIONAL([ENABLE_DESTRUCTIVE], [test "x$enable_destructive" = "xyes"])
 
-AC_CHECK_LIB([udev], [main], [],
-	[AC_MSG_FAILURE([missing systemd-devel])], [])
-
-AC_CHECK_LIB([kmod], [main], [],
-	[AC_MSG_FAILURE([missing kmod-devel])], [])
-
-AC_CHECK_LIB([uuid], [main], [],
-	[AC_MSG_FAILURE([missing libuuid-devel])], [])
+PKG_CHECK_MODULES([KMOD], [libkmod])
+PKG_CHECK_MODULES([UDEV], [libudev])
+PKG_CHECK_MODULES([UUID], [uuid])
 
 AC_CHECK_HEADER([linux/ndctl.h],
 		[AC_DEFINE([HAVE_NDCTL_H], [1],

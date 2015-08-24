@@ -9,7 +9,10 @@ AM_CPPFLAGS = \
 	-DLIBEXECDIR=\""$(libexecdir)"\" \
 	-I${top_srcdir}/lib/ndctl \
 	-I${top_srcdir}/lib \
-	-I${top_srcdir}/
+	-I${top_srcdir}/ \
+	$(KMOD_CFLAGS) \
+	$(UDEV_CFLAGS) \
+	$(UUID_CFLAGS)
 
 AM_CFLAGS = ${my_CFLAGS} \
 	-fvisibility=hidden \
@@ -42,7 +45,7 @@ lib_LTLIBRARIES = lib/libndctl.la
 lib_libndctl_la_SOURCES =\
 	lib/libndctl-private.h \
 	lib/libndctl.c
-lib_libndctl_la_LIBADD = -ludev -luuid -lkmod
+lib_libndctl_la_LIBADD = $(UDEV_LIBS) $(UUID_LIBS) $(KMOD_LIBS)
 
 bin_PROGRAMS = ndctl
 
@@ -69,7 +72,7 @@ ndctl_SOURCES += lib/blk_namespaces.c \
 ndctl_SOURCES += builtin-bat.c
 endif
 
-ndctl_LDADD = lib/libndctl.la -luuid -lkmod
+ndctl_LDADD = lib/libndctl.la $(UUID_LIBS) $(KMOD_LIBS)
 
 noinst_LIBRARIES = libccan.a
 libccan_a_SOURCES = \
@@ -108,13 +111,13 @@ check_PROGRAMS += lib/test-blk-ns lib/test-pmem-ns
 endif
 
 lib_test_libndctl_SOURCES = lib/test-libndctl.c
-lib_test_libndctl_LDADD = lib/libndctl.la -luuid -lkmod
+lib_test_libndctl_LDADD = lib/libndctl.la $(UUID_LIBS) $(KMOD_LIBS)
 
 lib_test_blk_ns_SOURCES = lib/blk_namespaces.c
-lib_test_blk_ns_LDADD = lib/libndctl.la -lkmod
+lib_test_blk_ns_LDADD = lib/libndctl.la $(KMOD_LIBS)
 
 lib_test_pmem_ns_SOURCES = lib/pmem_namespaces.c
-lib_test_pmem_ns_LDADD = lib/libndctl.la -lkmod
+lib_test_pmem_ns_LDADD = lib/libndctl.la $(KMOD_LIBS)
 
 lib_test_dpa_alloc_SOURCES = lib/test-dpa-alloc.c
-lib_test_dpa_alloc_LDADD = lib/libndctl.la -luuid -lkmod
+lib_test_dpa_alloc_LDADD = lib/libndctl.la $(UUID_LIBS) $(KMOD_LIBS)
