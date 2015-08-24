@@ -1954,11 +1954,15 @@ NDCTL_EXPORT ssize_t ndctl_cmd_vendor_set_input(struct ndctl_cmd *cmd,
 
 NDCTL_EXPORT ssize_t ndctl_cmd_vendor_get_output_size(struct ndctl_cmd *cmd)
 {
-	if (cmd->type != ND_CMD_VENDOR || cmd->status > 0)
+	if (cmd->type != ND_CMD_VENDOR)
 		return -EINVAL;
-	if (cmd->status < 0)
+	/*
+	 * When cmd->status is non-zero it contains either a negative
+	 * error code, or the number of bytes that are available in the
+	 * output buffer.
+	 */
+	if (cmd->status)
 		return cmd->status;
-
 	return to_vendor_tail(cmd)->out_length;
 }
 
@@ -2297,14 +2301,14 @@ static int do_cmd(int fd, int ioctl_cmd, struct ndctl_cmd *cmd)
 					iter->max_xfer);
 		*(cmd->iter.offset) = offset;
 		rc = ioctl(fd, ioctl_cmd, cmd->cmd_buf);
-		if (rc)
+		if (rc < 0)
 			break;
 
 		if (iter->dir == READ)
 			memcpy(iter->total_buf + offset, iter->data,
-					iter->max_xfer);
-		if (*(cmd->firmware_status)) {
-			rc = iter->total_xfer - offset;
+					iter->max_xfer - rc);
+		if (*(cmd->firmware_status) || rc) {
+			rc = offset + iter->max_xfer - rc;
 			break;
 		}
 	}
