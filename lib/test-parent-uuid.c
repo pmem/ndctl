@@ -134,9 +134,9 @@ static int do_test(struct ndctl_ctx *ctx)
 {
 	int rc;
 	struct ndctl_bus *bus;
-	struct ndctl_btt *btt, *found = NULL;
+	struct ndctl_btt *btt, *found = NULL, *_btt;
 	struct ndctl_region *region, *blk_region;
-	struct ndctl_namespace *ndns;
+	struct ndctl_namespace *ndns, *_ndns;
 	unsigned long long ns_size = 18874368;
 	uuid_t uuid = {0,  1,  2,  3,  4,  5,  6,  7, 8, 9, 10, 11, 12, 13, 14, 16};
 	uuid_t btt_uuid;
@@ -144,8 +144,7 @@ static int do_test(struct ndctl_ctx *ctx)
 	bus = get_bus_by_provider(ctx, PROVIDER);
 	if (!bus) {
 		fprintf(stderr, "failed to find NFIT-provider: %s\n", PROVIDER);
-		rc = -ENODEV;
-		goto err_nobus;
+		return -ENODEV;
 	}
 
 	ndctl_region_foreach(bus, region)
@@ -156,15 +155,14 @@ static int do_test(struct ndctl_ctx *ctx)
 
 	if (!blk_region) {
 		fprintf(stderr, "failed to find block region\n");
-		rc = -ENODEV;
-		goto err_cleanup;
+		return -ENODEV;
 	}
 
 	/* create a blk namespace */
 	ndns = create_blk_namespace(1, blk_region, ns_size, uuid);
 	if (!ndns) {
 		fprintf(stderr, "failed to create block namespace\n");
-		goto err_cleanup;
+		return -ENXIO;
 	}
 
 	/* create a btt for this namespace */
@@ -180,7 +178,7 @@ static int do_test(struct ndctl_ctx *ctx)
 	rc = ndctl_btt_enable(btt);
 	if (rc) {
 		fprintf(stderr, "failed to create btt 0\n");
-		goto err_cleanup;
+		return rc;
 	}
 
 	/* disable the btt */
@@ -191,15 +189,13 @@ static int do_test(struct ndctl_ctx *ctx)
 	ndns = create_blk_namespace(1, blk_region, ns_size, uuid);
 	if (!ndns) {
 		fprintf(stderr, "failed to re-create block namespace\n");
-		goto err_cleanup;
+		return -ENXIO;
 	}
 
 	/* Verify btt was auto-created */
 	found = check_valid_btt(blk_region, ndns, btt_uuid);
-	if (!found) {
-		rc = -ENXIO;
-		goto err_cleanup;
-	}
+	if (!found)
+		return -ENXIO;
 	btt = found;
 
 	/*disable the btt and namespace again */
@@ -211,31 +207,27 @@ static int do_test(struct ndctl_ctx *ctx)
 	ndns = create_blk_namespace(1, blk_region, ns_size, uuid);
 	if (!ndns) {
 		fprintf(stderr, "failed to re-create block namespace\n");
-		goto err_cleanup;
+		return -ENXIO;
 	}
 
 	/* make sure there is no btt on this namespace */
 	found = check_valid_btt(blk_region, ndns, btt_uuid);
 	if (found) {
 		fprintf(stderr, "found a stale btt\n");
-		rc = -ENXIO;
-		goto err_cleanup;
+		return -ENXIO;
 	}
 
-err_cleanup:
-	ndctl_btt_foreach(blk_region, btt)
+	ndctl_btt_foreach_safe(blk_region, btt, _btt)
 		ndctl_btt_delete(btt);
 
-	ndctl_namespace_foreach(blk_region, ndns)
+	ndctl_namespace_foreach_safe(blk_region, ndns, _ndns)
 		if (ndctl_namespace_get_size(ndns) != 0)
 			disable_blk_namespace(ndns);
+
 	ndctl_region_foreach(bus, region)
 		ndctl_region_disable_invalidate(region);
 
-
- err_nobus:
-	ndctl_unref(ctx);
-	return rc;
+	return 0;
 }
 
 int test_parent_uuid(int loglevel)
@@ -269,9 +261,9 @@ int test_parent_uuid(int loglevel)
 		result = EXIT_SUCCESS;
 	kmod_module_remove_module(mod, 0);
 
-err_module:
+ err_module:
 	kmod_unref(kmod_ctx);
-err_kmod:
+ err_kmod:
 	ndctl_unref(ctx);
 	return result;
 }
