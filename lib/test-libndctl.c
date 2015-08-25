@@ -768,7 +768,7 @@ static int check_namespaces(struct ndctl_region *region,
 	struct ndctl_namespace **ndns_save;
 	struct namespace *namespace;
 	int i, j, rc, retry_cnt = 1;
-	void *buf = NULL;
+	void *buf = NULL, *__ndns_save;
 	char devname[50];
 
 	if (!region)
@@ -977,15 +977,17 @@ static int check_namespaces(struct ndctl_region *region,
 			close(fd);
 		namespace->do_configure = 0;
 
-		ndns_save = realloc(ndns_save,
+		__ndns_save = realloc(ndns_save,
 				sizeof(struct ndctl_namespace *) * (i + 1));
-		if (!ndns_save) {
+		if (!__ndns_save) {
 			fprintf(stderr, "%s: %s() -ENOMEM\n",
 					devname, __func__);
 			rc = -ENOMEM;
 			break;
+		} else {
+			ndns_save = __ndns_save;
+			ndns_save[i] = ndns;
 		}
-		ndns_save[i] = ndns;
 
 		if (rc)
 			break;
@@ -1005,6 +1007,7 @@ static int check_namespaces(struct ndctl_region *region,
 	 */
 	if (retry_cnt--) {
 		ndctl_region_enable(region);
+		free(ndns_save);
 		goto retry;
 	}
 
@@ -1380,7 +1383,7 @@ static int check_commands(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 		[ND_CMD_ARS_START] = { check_ars_start },
 		[ND_CMD_ARS_STATUS] = { check_ars_status },
 	};
-	unsigned int i, rc;
+	unsigned int i, rc = 0;
 
 	/* Check DIMM commands */
 	check_cmds = __check_dimm_cmds;

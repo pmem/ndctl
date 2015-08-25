@@ -502,9 +502,11 @@ static void free_namespace(struct ndctl_namespace *ndns, struct list_head *head)
 {
 	if (head)
 		list_del_from(head, &ndns->list);
+	free(ndns->lbasize.supported);
 	free(ndns->ndns_path);
 	free(ndns->ndns_buf);
 	free(ndns->bdev);
+	free(ndns->alt_name);
 	kmod_module_unref(ndns->module);
 	free(ndns);
 }
@@ -533,6 +535,7 @@ static void free_btt(struct ndctl_btt *btt, struct list_head *head)
 	free(btt->lbasize.supported);
 	free(btt->btt_path);
 	free(btt->btt_buf);
+	free(btt->bdev);
 	free(btt);
 }
 
@@ -579,6 +582,8 @@ static void free_bus(struct ndctl_bus *bus)
 
 	list_for_each_safe(&bus->dimms, dimm, _d, list) {
 		list_del_from(&bus->dimms, &dimm->list);
+		free(dimm->dimm_path);
+		free(dimm->dimm_buf);
 		free(dimm);
 	}
 	list_for_each_safe(&bus->regions, region, _r, list)
@@ -586,6 +591,7 @@ static void free_bus(struct ndctl_bus *bus)
 	list_del_from(&bus->ctx->busses, &bus->list);
 	free(bus->provider);
 	free(bus->bus_path);
+	free(bus->bus_buf);
 	free(bus->wait_probe_path);
 	free(bus);
 }
@@ -615,6 +621,7 @@ NDCTL_EXPORT struct ndctl_ctx *ndctl_unref(struct ndctl_ctx *ctx)
 		return NULL;
 	udev_queue_unref(ctx->udev_queue);
 	udev_unref(ctx->udev);
+	kmod_unref(ctx->kmod_ctx);
 	info(ctx, "context %p released\n", ctx);
 	free_context(ctx);
 	return NULL;
@@ -919,6 +926,7 @@ static int add_bus(void *parent, int id, const char *ctl_base)
  err_dev_path:
  err_read:
 	free(bus->provider);
+	free(bus->bus_buf);
 	free(bus);
  out:
  err_bus:
@@ -1214,6 +1222,8 @@ static int add_dimm(void *parent, int id, const char *dimm_base)
 	return 0;
 
  err_read:
+	free(dimm->dimm_buf);
+	free(dimm->dimm_path);
 	free(dimm);
  err_dimm:
 	free(path);
@@ -2848,6 +2858,7 @@ static int add_namespace(void *parent, int id, const char *ndns_base)
 	ndctl_namespace_foreach(region, ndns_dup)
 		if (ndns_dup->id == ndns->id) {
 			free_namespace(ndns, NULL);
+			free(path);
 			return 1;
 		}
 
@@ -2858,6 +2869,7 @@ static int add_namespace(void *parent, int id, const char *ndns_base)
  err_read:
 	free(ndns->ndns_buf);
 	free(ndns->ndns_path);
+	free(ndns->alt_name);
 	free(ndns);
  err_namespace:
 	free(path);
@@ -3330,8 +3342,10 @@ NDCTL_EXPORT int ndctl_namespace_set_alt_name(struct ndctl_namespace *ndns,
 	if (!buf)
 		return -ENOMEM;
 
-	if (sysfs_write_attr(ctx, path, buf) < 0)
+	if (sysfs_write_attr(ctx, path, buf) < 0) {
+		free(buf);
 		return -ENXIO;
+	}
 
 	free(ndns->alt_name);
 	ndns->alt_name = buf;
@@ -3429,6 +3443,7 @@ static int parse_lbasize_supported(struct ndctl_ctx *ctx, const char *devname,
 		const char *buf, struct ndctl_lbasize *lba)
 {
 	char *s = strdup(buf), *end, *field;
+	void *temp;
 
 	if (!s)
 		return -ENOMEM;
@@ -3452,8 +3467,12 @@ static int parse_lbasize_supported(struct ndctl_ctx *ctx, const char *devname,
 			break;
 		}
 
-		lba->supported = realloc(lba->supported,
+		temp = realloc(lba->supported,
 				sizeof(unsigned int) * ++lba->num);
+		if (temp != NULL)
+			lba->supported = temp;
+		else
+			goto err;
 		lba->supported[lba->num - 1] = val;
 		field = end + 1;
 		end = strchr(field, ' ');
