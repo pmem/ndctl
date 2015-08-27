@@ -1471,8 +1471,8 @@ static int check_dimms(struct ndctl_bus *bus, struct dimm *dimms, int n,
 		if (ndctl_dimm_has_errors(dimm) != !!dimms[i].flags) {
 			fprintf(stderr, "bus: %s dimm%d %s expected%s errors\n",
 					ndctl_bus_get_provider(bus), i,
-					dimms[i].flags ? "" : " no",
-					ndctl_dimm_get_devname(dimm));
+					ndctl_dimm_get_devname(dimm),
+					dimms[i].flags ? "" : " no");
 			return -ENXIO;
 		}
 
@@ -1482,16 +1482,16 @@ static int check_dimms(struct ndctl_bus *bus, struct dimm *dimms, int n,
 				|| ndctl_dimm_smart_pending(dimm) != dimms[i].f_smart
 				|| ndctl_dimm_failed_flush(dimm) != dimms[i].f_flush) {
 			fprintf(stderr, "expected: %s%s%s%s%sgot: %s%s%s%s%s\n",
-					dimms[i].f_save ? "save " : "",
-					dimms[i].f_arm ? "arm " : "",
-					dimms[i].f_restore ? "restore " : "",
-					dimms[i].f_smart ? "smart " : "",
-					dimms[i].f_flush ? "flush " : "",
-					ndctl_dimm_failed_save(dimm) ? "save " : "",
-					ndctl_dimm_failed_arm(dimm) ? "arm " : "",
-					ndctl_dimm_failed_restore(dimm) ? "restore " : "",
-					ndctl_dimm_smart_pending(dimm) ? "smart " : "",
-					ndctl_dimm_failed_flush(dimm) ? "flush " : "");
+					dimms[i].f_save ? "save_fail " : "",
+					dimms[i].f_arm ? "not_armed " : "",
+					dimms[i].f_restore ? "restore_fail " : "",
+					dimms[i].f_smart ? "smart_event " : "",
+					dimms[i].f_flush ? "flush_fail " : "",
+					ndctl_dimm_failed_save(dimm) ? "save_fail " : "",
+					ndctl_dimm_failed_arm(dimm) ? "not_armed " : "",
+					ndctl_dimm_failed_restore(dimm) ? "restore_fail " : "",
+					ndctl_dimm_smart_pending(dimm) ? "smart_event " : "",
+					ndctl_dimm_failed_flush(dimm) ? "flush_fail " : "");
 			return -ENXIO;
 		}
 

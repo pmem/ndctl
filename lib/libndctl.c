@@ -839,15 +839,15 @@ static void parse_nfit_mem_flags(struct ndctl_dimm *dimm, char *flags)
 	start = flags;
 	while ((end = strchr(start, ' '))) {
 		*end = '\0';
-		if (strcmp(start, "arm") == 0)
+		if (strcmp(start, "not_armed") == 0)
 			dimm->f_arm = 1;
-		else if (strcmp(start, "save") == 0)
+		else if (strcmp(start, "save_fail") == 0)
 			dimm->f_save = 1;
-		else if (strcmp(start, "flush") == 0)
+		else if (strcmp(start, "flush_fail") == 0)
 			dimm->f_flush = 1;
-		else if (strcmp(start, "smart") == 0)
+		else if (strcmp(start, "smart_event") == 0)
 			dimm->f_smart = 1;
-		else if (strcmp(start, "restore") == 0)
+		else if (strcmp(start, "restore_fail") == 0)
 			dimm->f_restore = 1;
 		start = end + 1;
 	}
