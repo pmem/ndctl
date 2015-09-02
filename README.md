@@ -6,7 +6,7 @@ Documentation
 =============
 See the latest documentation for the NVDIMM kernel sub-system here:
   
-https://git.kernel.org/cgit/linux/kernel/git/djbw/nvdimm.git/tree/Documentation/nvdimm/nvdimm.txt?h=libnvdimm-for-next
+https://git.kernel.org/cgit/linux/kernel/git/nvdimm/nvdimm.git/tree/Documentation/nvdimm/nvdimm.txt?h=libnvdimm-for-next
 
 Unit Tests
 ==========
