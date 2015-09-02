@@ -584,6 +584,7 @@ static void free_bus(struct ndctl_bus *bus)
 		list_del_from(&bus->dimms, &dimm->list);
 		free(dimm->dimm_path);
 		free(dimm->dimm_buf);
+		kmod_module_unref(dimm->module);
 		free(dimm);
 	}
 	list_for_each_safe(&bus->regions, region, _r, list)
