@@ -97,8 +97,10 @@
 static const char *NFIT_TEST_MODULE = "nfit_test";
 static const char *NFIT_PROVIDER0 = "nfit_test.0";
 static const char *NFIT_PROVIDER1 = "nfit_test.1";
+#define SZ_4K   0x00001000
 #define SZ_128K 0x00020000
 #define SZ_7M   0x00700000
+#define SZ_2M   0x00200000
 #define SZ_8M   0x00800000
 #define SZ_11M  0x00b00000
 #define SZ_12M  0x00c00000
@@ -109,6 +111,7 @@ static const char *NFIT_PROVIDER1 = "nfit_test.1";
 #define SZ_28M  0x01c00000
 #define SZ_32M  0x02000000
 #define SZ_64M  0x04000000
+#define SZ_1G   0x40000000
 
 struct dimm {
 	unsigned int handle;
@@ -148,11 +151,32 @@ static struct dimm dimms1[] = {
 	}
 };
 
-struct btt {
+static struct btt {
 	int enabled;
 	uuid_t uuid;
 	int num_sector_sizes;
 	unsigned int sector_sizes[7];
+} default_btt = {
+	0, { 0, }, 7, { 512, 520, 528, 4096, 4104, 4160, 4224, },
+};
+
+struct pfn {
+	int enabled;
+	uuid_t uuid;
+	enum ndctl_pfn_loc locs[2];
+	unsigned long aligns[4];
+};
+
+static struct pfn_default {
+	int enabled;
+	uuid_t uuid;
+	enum ndctl_pfn_loc loc;
+	unsigned long align;
+} default_pfn = {
+	.enabled = 0,
+	.uuid = { 0, },
+	.loc = NDCTL_PFN_LOC_NONE,
+	.align = SZ_2M,
 };
 
 struct region {
@@ -169,6 +193,7 @@ struct region {
 		int active;
 	} iset;
 	struct btt *btts[2];
+	struct pfn_default *pfns[2];
 	struct namespace *namespaces[4];
 };
 
@@ -181,10 +206,21 @@ static struct btt btt_settings = {
 	.sector_sizes =  { 512, 520, 528, 4096, 4104, 4160, 4224, },
 };
 
+static struct pfn pfn_settings = {
+	.enabled = 1,
+	.uuid = {  1,  2,  3,  4,  5,  6,  7, 0,
+		   8, 9,  10, 11, 12, 13, 14, 15
+	},
+	.locs = { NDCTL_PFN_LOC_RAM, NDCTL_PFN_LOC_PMEM },
+	/* order matters, successful aligns at the end */
+	.aligns = { 1, SZ_1G, SZ_4K, SZ_2M, },
+};
+
 struct namespace {
 	unsigned int id;
 	char *type;
 	struct btt *btt_settings;
+	struct pfn *pfn_settings;
 	unsigned long long size;
 	uuid_t uuid;
 	int do_configure;
@@ -199,7 +235,7 @@ static unsigned long blk_sector_sizes[7] = { 512, 520, 528, 4096, 4104, 4160, 42
 static unsigned long pmem_sector_sizes[1] = { 0 };
 
 static struct namespace namespace0_pmem0 = {
-	0, "namespace_pmem", &btt_settings, SZ_18M,
+	0, "namespace_pmem", &btt_settings, &pfn_settings, SZ_18M,
 	{ 1, 1, 1, 1,
 	  1, 1, 1, 1,
 	  1, 1, 1, 1,
@@ -207,7 +243,7 @@ static struct namespace namespace0_pmem0 = {
 };
 
 static struct namespace namespace1_pmem0 = {
-	0, "namespace_pmem", &btt_settings, SZ_20M,
+	0, "namespace_pmem", &btt_settings, &pfn_settings, SZ_20M,
 	{ 2, 2, 2, 2,
 	  2, 2, 2, 2,
 	  2, 2, 2, 2,
@@ -215,7 +251,7 @@ static struct namespace namespace1_pmem0 = {
 };
 
 static struct namespace namespace2_blk0 = {
-	0, "namespace_blk", NULL, SZ_7M,
+	0, "namespace_blk", NULL, NULL, SZ_7M,
 	{ 3, 3, 3, 3,
 	  3, 3, 3, 3,
 	  3, 3, 3, 3,
@@ -223,7 +259,7 @@ static struct namespace namespace2_blk0 = {
 };
 
 static struct namespace namespace2_blk1 = {
-	1, "namespace_blk", NULL, SZ_11M,
+	1, "namespace_blk", NULL, NULL, SZ_11M,
 	{ 4, 4, 4, 4,
 	  4, 4, 4, 4,
 	  4, 4, 4, 4,
@@ -231,7 +267,7 @@ static struct namespace namespace2_blk1 = {
 };
 
 static struct namespace namespace3_blk0 = {
-	0, "namespace_blk", NULL, SZ_7M,
+	0, "namespace_blk", NULL, NULL, SZ_7M,
 	{ 5, 5, 5, 5,
 	  5, 5, 5, 5,
 	  5, 5, 5, 5,
@@ -239,7 +275,7 @@ static struct namespace namespace3_blk0 = {
 };
 
 static struct namespace namespace3_blk1 = {
-	1, "namespace_blk", NULL, SZ_11M,
+	1, "namespace_blk", NULL, NULL, SZ_11M,
 	{ 6, 6, 6, 6,
 	  6, 6, 6, 6,
 	  6, 6, 6, 6,
@@ -247,7 +283,7 @@ static struct namespace namespace3_blk1 = {
 };
 
 static struct namespace namespace4_blk0 = {
-	0, "namespace_blk", &btt_settings, SZ_27M,
+	0, "namespace_blk", &btt_settings, NULL, SZ_27M,
 	{ 7, 7, 7, 7,
 	  7, 7, 7, 7,
 	  7, 7, 7, 7,
@@ -255,15 +291,11 @@ static struct namespace namespace4_blk0 = {
 };
 
 static struct namespace namespace5_blk0 = {
-	0, "namespace_blk", &btt_settings, SZ_27M,
+	0, "namespace_blk", &btt_settings, NULL, SZ_27M,
 	{ 8, 8, 8, 8,
 	  8, 8, 8, 8,
 	  8, 8, 8, 8,
 	  8, 8, 8, 8, }, 1, 1, 7, 0, blk_sector_sizes,
-};
-
-static struct btt default_btt = {
-	0, { 0, }, 7, { 512, 520, 528, 4096, 4104, 4160, 4224, },
 };
 
 static struct region regions0[] = {
@@ -274,6 +306,9 @@ static struct region regions0[] = {
 		.btts = {
 			[0] = &default_btt,
 		},
+		.pfns = {
+			[0] = &default_pfn,
+		},
 	},
 	{ { 2 }, 4, 1, "pmem", SZ_64M, SZ_64M, { 1 },
 		.namespaces = {
@@ -281,6 +316,9 @@ static struct region regions0[] = {
 		},
 		.btts = {
 			[0] = &default_btt,
+		},
+		.pfns = {
+			[0] = &default_pfn,
 		},
 	},
 	{ { DIMM_HANDLE(0, 0, 0, 0, 0) }, 1, 1, "blk", SZ_18M, SZ_32M,
@@ -320,11 +358,11 @@ static struct region regions0[] = {
 };
 
 static struct namespace namespace1 = {
-	0, "namespace_io", &btt_settings, SZ_32M,
+	0, "namespace_io", &btt_settings, &pfn_settings, SZ_32M,
 	{ 0, 0, 0, 0,
 	  0, 0, 0, 0,
 	  0, 0, 0, 0,
-	  0, 0, 0, 0, }, 0, 0, 1, 1, pmem_sector_sizes,
+	  0, 0, 0, 0, }, -1, 0, 1, 1, pmem_sector_sizes,
 };
 
 static struct region regions1[] = {
@@ -361,6 +399,17 @@ static struct ndctl_btt *get_idle_btt(struct ndctl_region *region)
 	ndctl_btt_foreach(region, btt)
 		if (!ndctl_btt_is_enabled(btt) && !ndctl_btt_is_configured(btt))
 			return btt;
+
+	return NULL;
+}
+
+static struct ndctl_pfn *get_idle_pfn(struct ndctl_region *region)
+{
+	struct ndctl_pfn *pfn;
+
+	ndctl_pfn_foreach(region, pfn)
+		if (!ndctl_pfn_is_enabled(pfn) && !ndctl_pfn_is_configured(pfn))
+			return pfn;
 
 	return NULL;
 }
@@ -423,11 +472,15 @@ static struct ndctl_region *get_blk_region_by_dimm_handle(struct ndctl_bus *bus,
 	return NULL;
 }
 
+enum ns_mode {
+	BTT, PFN,
+};
 static int check_namespaces(struct ndctl_region *region,
-		struct namespace **namespaces);
+		struct namespace **namespaces, enum ns_mode mode);
 static int check_btts(struct ndctl_region *region, struct btt **btts);
 
-static int check_regions(struct ndctl_bus *bus, struct region *regions, int n)
+static int check_regions(struct ndctl_bus *bus, struct region *regions, int n,
+		enum ns_mode mode)
 {
 	int i, rc = 0;
 
@@ -507,11 +560,141 @@ static int check_regions(struct ndctl_bus *bus, struct region *regions, int n)
 			return rc;
 
 		if (regions[i].namespaces[0])
-			rc = check_namespaces(region, regions[i].namespaces);
+			rc = check_namespaces(region, regions[i].namespaces,
+					mode);
 		if (rc)
 			break;
 	}
 
+	return rc;
+}
+
+static int __check_pfn_create(struct ndctl_region *region,
+		struct ndctl_namespace *ndns, struct namespace *namespace,
+		void *buf, enum ndctl_pfn_loc loc, unsigned long align,
+		uuid_t uuid)
+{
+	struct ndctl_pfn *pfn_seed = ndctl_region_get_pfn_seed(region);
+	struct ndctl_pfn *pfn;
+	const char *devname;
+	int fd, retry = 10;
+	char bdevpath[50];
+	ssize_t rc;
+
+	pfn = get_idle_pfn(region);
+	if (!pfn)
+		return -ENXIO;
+
+	devname = ndctl_pfn_get_devname(pfn);
+	ndctl_pfn_set_uuid(pfn, uuid);
+	ndctl_pfn_set_location(pfn, loc);
+	ndctl_pfn_set_align(pfn, align);
+	ndctl_pfn_set_namespace(pfn, ndns);
+	rc = ndctl_pfn_enable(pfn);
+	if (align == SZ_1G) {
+		if (rc == 0) {
+			fprintf(stderr, "%s: expected pfn enable failure with align: %lx\n",
+					devname, align);
+			return rc;
+		}
+		ndctl_pfn_delete(pfn);
+		return 0;
+	}
+	if (namespace->ro == (rc == 0)) {
+		fprintf(stderr, "%s: expected pfn enable %s, %s read-%s\n",
+				devname,
+				namespace->ro ? "failure" : "success",
+				ndctl_region_get_devname(region),
+				namespace->ro ? "only" : "write");
+		return -ENXIO;
+	}
+
+	if (pfn_seed == ndctl_region_get_pfn_seed(region)
+			&& pfn == pfn_seed) {
+		fprintf(stderr, "%s: failed to advance pfn seed\n",
+				ndctl_region_get_devname(region));
+		return -ENXIO;
+	}
+
+	if (namespace->ro) {
+		ndctl_region_set_ro(region, 0);
+		rc = ndctl_pfn_enable(pfn);
+		fprintf(stderr, "%s: failed to enable after setting rw\n",
+				devname);
+		ndctl_region_set_ro(region, 1);
+		return -ENXIO;
+	}
+
+	sprintf(bdevpath, "/dev/%s", ndctl_pfn_get_block_device(pfn));
+	rc = -ENXIO;
+	fd = open(bdevpath, O_RDWR|O_DIRECT);
+	if (fd < 0)
+		fprintf(stderr, "%s: failed to open %s\n",
+				devname, bdevpath);
+
+	while (fd >= 0) {
+		rc = pread(fd, buf, 4096, 0);
+		if (rc < 4096) {
+			/* TODO: track down how this happens! */
+			if (errno == ENOENT && retry--) {
+				usleep(5000);
+				continue;
+			}
+			fprintf(stderr, "%s: failed to read %s: %d %zd (%s)\n",
+					devname, bdevpath, -errno, rc,
+					strerror(errno));
+			rc = -ENXIO;
+			break;
+		}
+		if (write(fd, buf, 4096) < 4096) {
+			fprintf(stderr, "%s: failed to write %s\n",
+					devname, bdevpath);
+			rc = -ENXIO;
+			break;
+		}
+		rc = 0;
+		break;
+	}
+	if (namespace->ro)
+		ndctl_region_set_ro(region, 1);
+	if (fd >= 0)
+		close(fd);
+
+	if (rc)
+		return rc;
+
+	rc = ndctl_pfn_delete(pfn);
+	if (rc)
+		fprintf(stderr, "%s: failed to delete pfn (%zd)\n", devname, rc);
+	return rc;
+}
+
+static int check_pfn_create(struct ndctl_region *region,
+		struct ndctl_namespace *ndns, struct namespace *namespace)
+{
+	struct pfn *pfn_s = namespace->pfn_settings;
+	unsigned int i, j;
+	void *buf = NULL;
+	int rc = 0;
+
+	if (!pfn_s)
+		return 0;
+
+	if (posix_memalign(&buf, 4096, 4096) != 0)
+		return -ENXIO;
+
+	for (i = 0; i < ARRAY_SIZE(pfn_s->locs); i++) {
+		for (j = 0; j < ARRAY_SIZE(pfn_s->aligns); j++) {
+			rc = __check_pfn_create(region, ndns, namespace, buf,
+					pfn_s->locs[i], pfn_s->aligns[j],
+					pfn_s->uuid);
+			if (rc)
+				break;
+		}
+		if (rc)
+			break;
+	}
+	free(buf);
 	return rc;
 }
 
@@ -631,12 +814,12 @@ static int check_btt_create(struct ndctl_region *region, struct ndctl_namespace 
 
 static int configure_namespace(struct ndctl_region *region,
 		struct ndctl_namespace *ndns, struct namespace *namespace,
-		unsigned long lbasize)
+		unsigned long lbasize, enum ns_mode mode)
 {
 	char devname[50];
 	int rc;
 
-	if (!namespace->do_configure)
+	if (namespace->do_configure <= 0)
 		return 0;
 
 	snprintf(devname, sizeof(devname), "namespace%d.%d",
@@ -665,15 +848,112 @@ static int configure_namespace(struct ndctl_region *region,
 	if (rc < 1)
 		fprintf(stderr, "%s: is_configured: %d\n", devname, rc);
 
-	rc = check_btt_create(region, ndns, namespace);
-	if (rc < 0) {
-		fprintf(stderr, "%s: failed to create btt\n", devname);
-		return rc;
+	if (mode == BTT) {
+		rc = check_btt_create(region, ndns, namespace);
+		if (rc < 0) {
+			fprintf(stderr, "%s: failed to create btt\n", devname);
+			return rc;
+		}
+	}
+
+	if (mode == PFN) {
+		rc = check_pfn_create(region, ndns, namespace);
+		if (rc < 0) {
+			fprintf(stderr, "%s: failed to create pfn\n", devname);
+			return rc;
+		}
 	}
 
 	rc = ndctl_namespace_enable(ndns);
 	if (rc < 0)
 		fprintf(stderr, "%s: enable: %d\n", devname, rc);
+
+	return rc;
+}
+
+static int check_pfn_autodetect(struct ndctl_bus *bus,
+		struct ndctl_namespace *ndns, void *buf,
+		struct namespace *namespace)
+{
+	struct ndctl_region *region = ndctl_namespace_get_region(ndns);
+	const char *devname = ndctl_namespace_get_devname(ndns);
+	struct pfn *auto_pfn = namespace->pfn_settings;
+	struct ndctl_pfn *pfn, *found = NULL;
+	ssize_t rc = -ENXIO;
+	char bdev[50];
+	int fd, ro;
+
+	ndctl_pfn_foreach(region, pfn) {
+		struct ndctl_namespace *pfn_ndns;
+		uuid_t uu;
+
+		ndctl_pfn_get_uuid(pfn, uu);
+		if (uuid_compare(uu, auto_pfn->uuid) != 0)
+			continue;
+		if (!ndctl_pfn_is_enabled(pfn))
+			continue;
+		pfn_ndns = ndctl_pfn_get_namespace(pfn);
+		if (strcmp(ndctl_namespace_get_devname(pfn_ndns), devname) != 0)
+			continue;
+		fprintf(stderr, "%s: pfn_ndns: %p ndns: %p\n", __func__,
+				pfn_ndns, ndns);
+		found = pfn;
+		break;
+	}
+
+	if (!found)
+		return -ENXIO;
+
+	sprintf(bdev, "/dev/%s", ndctl_pfn_get_block_device(pfn));
+	fd = open(bdev, O_RDONLY);
+	if (fd < 0)
+		return -ENXIO;
+	rc = ioctl(fd, BLKROGET, &ro);
+	if (rc < 0) {
+		fprintf(stderr, "%s: failed to open %s\n", __func__, bdev);
+		rc = -ENXIO;
+		goto out;
+	}
+	close(fd);
+	fd = -1;
+
+	rc = -ENXIO;
+	if (ro != namespace->ro) {
+		fprintf(stderr, "%s: read-%s expected read-%s by default\n",
+				bdev, ro ? "only" : "write",
+				namespace->ro ? "only" : "write");
+		goto out;
+	}
+
+	/* destroy pfn device */
+	ndctl_pfn_delete(found);
+
+	/* clear read-write, and enable raw mode */
+	ndctl_region_set_ro(region, 0);
+	ndctl_namespace_set_raw_mode(ndns, 1);
+	ndctl_namespace_enable(ndns);
+
+	/* destroy pfn metadata */
+	sprintf(bdev, "/dev/%s", ndctl_namespace_get_block_device(ndns));
+	fd = open(bdev, O_RDWR|O_DIRECT|O_EXCL);
+	if (fd < 0) {
+		fprintf(stderr, "%s: failed to open %s to destroy pfn\n",
+				devname, bdev);
+		goto out;
+	}
+
+	memset(buf, 0, 4096);
+	rc = pwrite(fd, buf, 4096, 4096);
+	if (rc < 4096) {
+		rc = -ENXIO;
+		fprintf(stderr, "%s: failed to overwrite pfn on %s\n",
+				devname, bdev);
+	}
+ out:
+	ndctl_region_set_ro(region, namespace->ro);
+	ndctl_namespace_set_raw_mode(ndns, 0);
+	if (fd >= 0)
+		close(fd);
 
 	return rc;
 }
@@ -766,7 +1046,7 @@ static int check_btt_autodetect(struct ndctl_bus *bus,
 }
 
 static int check_namespaces(struct ndctl_region *region,
-		struct namespace **namespaces)
+		struct namespace **namespaces, enum ns_mode mode)
 {
 	struct ndctl_bus *bus = ndctl_region_get_bus(region);
 	struct ndctl_namespace **ndns_save;
@@ -777,6 +1057,10 @@ static int check_namespaces(struct ndctl_region *region,
 
 	if (posix_memalign(&buf, 4096, 4096) != 0)
 		return -ENOMEM;
+
+	for (i = 0; (namespace = namespaces[i]); i++)
+		if (namespace->do_configure >= 0)
+			namespace->do_configure = 1;
 
  retry:
 	ndns_save = NULL;
@@ -796,11 +1080,13 @@ static int check_namespaces(struct ndctl_region *region,
 		}
 
 		for (j = 0; j < namespace->num_sector_sizes; j++) {
-			struct btt *btt_s;
-			struct ndctl_btt *btt;
+			struct btt *btt_s = NULL;
+			struct pfn *pfn_s = NULL;
+			struct ndctl_btt *btt = NULL;
+			struct ndctl_pfn *pfn = NULL;
 
 			rc = configure_namespace(region, ndns, namespace,
-							namespace->sector_sizes[j]);
+					namespace->sector_sizes[j], mode);
 			if (rc < 0) {
 				fprintf(stderr, "%s: failed to configure namespace\n",
 						devname);
@@ -819,22 +1105,37 @@ static int check_namespaces(struct ndctl_region *region,
 
 			/*
 			 * On the second time through this loop we skip
-			 * establishing btt since check_btt_autodetect()
-			 * destroyed the inital instance.
+			 * establishing btt|pfn since
+			 * check_{btt|pfn}_autodetect() destroyed the
+			 * inital instance.
 			 */
-			btt_s = namespace->do_configure
-				? namespace->btt_settings : NULL;
-
-			btt = ndctl_namespace_get_btt(ndns);
-			if (!!btt_s != !!btt) {
-				fprintf(stderr, "%s expected btt %s by default\n",
-						devname, namespace->btt_settings
-						? "enabled" : "disabled");
-				rc = -ENXIO;
-				break;
+			if (mode == BTT) {
+				btt_s = namespace->do_configure > 0
+					? namespace->btt_settings : NULL;
+				btt = ndctl_namespace_get_btt(ndns);
+				if (!!btt_s != !!btt) {
+					fprintf(stderr, "%s expected btt %s by default\n",
+							devname, namespace->btt_settings
+							? "enabled" : "disabled");
+					rc = -ENXIO;
+					break;
+				}
 			}
 
-			if (!btt_s && !ndctl_namespace_is_enabled(ndns)) {
+			if (mode == PFN) {
+				pfn_s = namespace->do_configure > 0
+					? namespace->pfn_settings : NULL;
+				pfn = ndctl_namespace_get_pfn(ndns);
+				if (!!pfn_s != !!pfn) {
+					fprintf(stderr, "%s expected pfn %s by default\n",
+							devname, namespace->pfn_settings
+							? "enabled" : "disabled");
+					rc = -ENXIO;
+					break;
+				}
+			}
+
+			if (!btt_s && !pfn_s && !ndctl_namespace_is_enabled(ndns)) {
 				fprintf(stderr, "%s: expected enabled by default\n",
 						devname);
 				rc = -ENXIO;
@@ -871,8 +1172,16 @@ static int check_namespaces(struct ndctl_region *region,
 				break;
 			}
 
-			sprintf(bdevpath, "/dev/%s", btt ? ndctl_btt_get_block_device(btt)
-					: ndctl_namespace_get_block_device(ndns));
+			if (btt)
+				sprintf(bdevpath, "/dev/%s",
+						ndctl_btt_get_block_device(btt));
+			else if (pfn)
+				sprintf(bdevpath, "/dev/%s",
+						ndctl_pfn_get_block_device(pfn));
+			else
+				sprintf(bdevpath, "/dev/%s",
+						ndctl_namespace_get_block_device(ndns));
+
 			fd = open(bdevpath, O_RDONLY);
 			if (fd < 0) {
 				fprintf(stderr, "%s: failed to open(%s, O_RDONLY)\n",
@@ -948,11 +1257,19 @@ static int check_namespaces(struct ndctl_region *region,
 				break;
 			}
 
+			if (pfn_s && check_pfn_autodetect(bus, ndns, buf,
+						namespace) < 0) {
+				fprintf(stderr, "%s, failed pfn autodetect\n", devname);
+				rc = -ENXIO;
+				break;
+			}
+
+
 			/*
 			 * if the namespace is being tested with a btt, there is no
 			 * point testing different sector sizes for the namespace itself
 			 */
-			if (btt_s)
+			if (btt_s || pfn_s)
 				break;
 
 			/*
@@ -1532,10 +1849,28 @@ static int check_dimms(struct ndctl_bus *bus, struct dimm *dimms, int n,
 	return 0;
 }
 
+static void reset_bus(struct ndctl_bus *bus)
+{
+	struct ndctl_region *region;
+	struct ndctl_dimm *dimm;
+
+	/* disable all regions so that set_config_data commands are permitted */
+	ndctl_region_foreach(bus, region)
+		ndctl_region_disable_invalidate(region);
+
+	ndctl_dimm_foreach(bus, dimm)
+		ndctl_dimm_zero_labels(dimm);
+
+	/* set regions back to their default state */
+	ndctl_region_foreach(bus, region)
+		ndctl_region_enable(region);
+}
+
 static int do_test0(struct ndctl_ctx *ctx, struct ndctl_test *test)
 {
 	struct ndctl_bus *bus = ndctl_bus_get_by_provider(ctx, NFIT_PROVIDER0);
 	struct ndctl_region *region;
+	struct ndctl_dimm *dimm;
 	int rc;
 
 	if (!bus)
@@ -1550,11 +1885,24 @@ static int do_test0(struct ndctl_ctx *ctx, struct ndctl_test *test)
 	if (rc)
 		return rc;
 
+	ndctl_dimm_foreach(bus, dimm) {
+		rc = ndctl_dimm_zero_labels(dimm);
+		if (rc < 0) {
+			fprintf(stderr, "failed to zero %s\n",
+					ndctl_dimm_get_devname(dimm));
+			return rc;
+		}
+	}
+
 	/* set regions back to their default state */
 	ndctl_region_foreach(bus, region)
 		ndctl_region_enable(region);
 
-	return check_regions(bus, regions0, ARRAY_SIZE(regions0));
+	rc = check_regions(bus, regions0, ARRAY_SIZE(regions0), BTT);
+	if (rc)
+		return rc;
+	reset_bus(bus);
+	return check_regions(bus, regions0, ARRAY_SIZE(regions0), PFN);
 }
 
 static int do_test1(struct ndctl_ctx *ctx, struct ndctl_test *test)
@@ -1569,7 +1917,7 @@ static int do_test1(struct ndctl_ctx *ctx, struct ndctl_test *test)
 	if (rc)
 		return rc;
 
-	return check_regions(bus, regions1, ARRAY_SIZE(regions1));
+	return check_regions(bus, regions1, ARRAY_SIZE(regions1), BTT);
 }
 
 typedef int (*do_test_fn)(struct ndctl_ctx *ctx, struct ndctl_test *test);
