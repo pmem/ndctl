@@ -63,7 +63,10 @@ ndctl_SOURCES = ndctl.c \
 		util/wrapper.c
 
 if ENABLE_TEST
-ndctl_SOURCES += lib/test-libndctl.c lib/test-dpa-alloc.c lib/test-parent-uuid.c
+ndctl_SOURCES += lib/test-libndctl.c \
+		 lib/test-dpa-alloc.c \
+		 lib/test-parent-uuid.c \
+		 lib/test-core.c
 endif
 
 if ENABLE_DESTRUCTIVE
@@ -110,7 +113,7 @@ TESTS += lib/test-blk-ns lib/test-pmem-ns
 check_PROGRAMS += lib/test-blk-ns lib/test-pmem-ns
 endif
 
-lib_test_libndctl_SOURCES = lib/test-libndctl.c
+lib_test_libndctl_SOURCES = lib/test-libndctl.c lib/test-core.c
 lib_test_libndctl_LDADD = lib/libndctl.la $(UUID_LIBS) $(KMOD_LIBS)
 
 lib_test_blk_ns_SOURCES = lib/blk_namespaces.c
@@ -119,8 +122,8 @@ lib_test_blk_ns_LDADD = lib/libndctl.la $(KMOD_LIBS)
 lib_test_pmem_ns_SOURCES = lib/pmem_namespaces.c
 lib_test_pmem_ns_LDADD = lib/libndctl.la $(KMOD_LIBS)
 
-lib_test_dpa_alloc_SOURCES = lib/test-dpa-alloc.c
+lib_test_dpa_alloc_SOURCES = lib/test-dpa-alloc.c lib/test-core.c
 lib_test_dpa_alloc_LDADD = lib/libndctl.la $(UUID_LIBS) $(KMOD_LIBS)
 
-lib_test_parent_uuid_SOURCES = lib/test-parent-uuid.c
+lib_test_parent_uuid_SOURCES = lib/test-parent-uuid.c lib/test-core.c
 lib_test_parent_uuid_LDADD = lib/libndctl.la $(UUID_LIBS) $(KMOD_LIBS)

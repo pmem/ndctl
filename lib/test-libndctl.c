@@ -26,6 +26,7 @@
 #include <libkmod.h>
 #include <uuid/uuid.h>
 #include <sys/ioctl.h>
+#include <linux/version.h>
 
 #include <ccan/array_size/array_size.h>
 #include <ndctl/libndctl.h>
@@ -35,6 +36,7 @@
 #include <ndctl.h>
 #endif
 #include <test-libndctl.h>
+#include <test-core.h>
 
 #define BLKROGET _IO(0x12,94) /* get read-only status (0 = read_write) */
 #define BLKROSET _IO(0x12,93) /* set device read-only (0 = read-write) */
@@ -1362,7 +1364,8 @@ static int check_ars_status(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 
 #define BITS_PER_LONG 32
 static int check_commands(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
-		unsigned long bus_commands, unsigned long dimm_commands)
+		unsigned long bus_commands, unsigned long dimm_commands,
+		struct ndctl_test *test)
 {
 	/*
 	 * For now, by coincidence, these are indexed in test execution
@@ -1416,6 +1419,9 @@ static int check_commands(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 	if (rc)
 		goto out;
 
+	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 3, 0)))
+		goto out;
+
 	/* Check Bus commands */
 	check_cmds = __check_bus_cmds;
 	for (i = 1; i < BITS_PER_LONG; i++) {
@@ -1449,7 +1455,8 @@ static int check_commands(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 }
 
 static int check_dimms(struct ndctl_bus *bus, struct dimm *dimms, int n,
-		unsigned long bus_commands, unsigned long dimm_commands)
+		unsigned long bus_commands, unsigned long dimm_commands,
+		struct ndctl_test *test)
 {
 	int i, rc;
 
@@ -1495,7 +1502,7 @@ static int check_dimms(struct ndctl_bus *bus, struct dimm *dimms, int n,
 			return -ENXIO;
 		}
 
-		rc = check_commands(bus, dimm, bus_commands, dimm_commands);
+		rc = check_commands(bus, dimm, bus_commands, dimm_commands, test);
 		if (rc)
 			return rc;
 	}
@@ -1503,7 +1510,7 @@ static int check_dimms(struct ndctl_bus *bus, struct dimm *dimms, int n,
 	return 0;
 }
 
-static int do_test0(struct ndctl_ctx *ctx)
+static int do_test0(struct ndctl_ctx *ctx, struct ndctl_test *test)
 {
 	struct ndctl_bus *bus = ndctl_bus_get_by_provider(ctx, NFIT_PROVIDER0);
 	struct ndctl_region *region;
@@ -1517,7 +1524,7 @@ static int do_test0(struct ndctl_ctx *ctx)
 		ndctl_region_disable_invalidate(region);
 
 	rc = check_dimms(bus, dimms0, ARRAY_SIZE(dimms0), bus_commands0,
-			dimm_commands0);
+			dimm_commands0, test);
 	if (rc)
 		return rc;
 
@@ -1528,7 +1535,7 @@ static int do_test0(struct ndctl_ctx *ctx)
 	return check_regions(bus, regions0, ARRAY_SIZE(regions0));
 }
 
-static int do_test1(struct ndctl_ctx *ctx)
+static int do_test1(struct ndctl_ctx *ctx, struct ndctl_test *test)
 {
 	struct ndctl_bus *bus = ndctl_bus_get_by_provider(ctx, NFIT_PROVIDER1);
 	int rc;
@@ -1536,26 +1543,29 @@ static int do_test1(struct ndctl_ctx *ctx)
 	if (!bus)
 		return -ENXIO;
 
-	rc = check_dimms(bus, dimms1, ARRAY_SIZE(dimms1), 0, 0);
+	rc = check_dimms(bus, dimms1, ARRAY_SIZE(dimms1), 0, 0, test);
 	if (rc)
 		return rc;
 
 	return check_regions(bus, regions1, ARRAY_SIZE(regions1));
 }
 
-typedef int (*do_test_fn)(struct ndctl_ctx *ctx);
+typedef int (*do_test_fn)(struct ndctl_ctx *ctx, struct ndctl_test *test);
 static do_test_fn do_test[] = {
 	do_test0,
 	do_test1,
 };
 
-int test_libndctl(int loglevel)
+int test_libndctl(int loglevel, struct ndctl_test *test)
 {
 	unsigned int i;
 	struct ndctl_ctx *ctx;
 	struct kmod_module *mod;
 	struct kmod_ctx *kmod_ctx;
 	int err, result = EXIT_FAILURE;
+
+	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 2, 0)))
+		return 77;
 
 	err = ndctl_new(&ctx);
 	if (err < 0)
@@ -1574,11 +1584,15 @@ int test_libndctl(int loglevel)
 
 	err = kmod_module_probe_insert_module(mod, KMOD_PROBE_APPLY_BLACKLIST,
 			NULL, NULL, NULL, NULL);
-	if (err < 0)
+	if (err < 0) {
+		result = 77;
+		fprintf(stderr, "%s unavailable skipping tests\n",
+				NFIT_TEST_MODULE);
 		goto err_module;
+	}
 
 	for (i = 0; i < ARRAY_SIZE(do_test); i++) {
-		err = do_test[i](ctx);
+		err = do_test[i](ctx, test);
 		if (err < 0) {
 			fprintf(stderr, "ndctl-test%d failed: %d\n", i, err);
 			break;
@@ -1598,5 +1612,14 @@ int test_libndctl(int loglevel)
 
 int __attribute__((weak)) main(int argc, char *argv[])
 {
-	return test_libndctl(LOG_DEBUG);
+	struct ndctl_test *test = ndctl_test_new(0);
+	int rc;
+
+	if (!test) {
+		fprintf(stderr, "failed to initialize test\n");
+		return EXIT_FAILURE;
+	}
+
+	rc = test_libndctl(LOG_DEBUG, test);
+	return ndctl_test_result(test, rc);
 }

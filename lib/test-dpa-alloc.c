@@ -26,6 +26,8 @@
 #include <libkmod.h>
 #include <uuid/uuid.h>
 
+#include <test-core.h>
+#include <linux/version.h>
 #include <ndctl/libndctl.h>
 #include <test-dpa-alloc.h>
 #include <ccan/array_size/array_size.h>
@@ -49,7 +51,7 @@ struct test_dpa_namespace {
 	uuid_t uuid;
 } namespaces[NUM_NAMESPACES];
 
-static int do_test(struct ndctl_ctx *ctx)
+static int do_test(struct ndctl_ctx *ctx, struct ndctl_test *test)
 {
 	struct ndctl_region *region, *blk_region = NULL;
 	unsigned int available_slots, i;
@@ -292,12 +294,15 @@ static int do_test(struct ndctl_ctx *ctx)
 	return 0;
 }
 
-int test_dpa_alloc(int loglevel)
+int test_dpa_alloc(int loglevel, struct ndctl_test *test)
 {
 	struct ndctl_ctx *ctx;
 	struct kmod_module *mod;
 	struct kmod_ctx *kmod_ctx;
 	int err, result = EXIT_FAILURE;
+
+	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 2, 0)))
+		return 77;
 
 	err = ndctl_new(&ctx);
 	if (err < 0)
@@ -315,10 +320,14 @@ int test_dpa_alloc(int loglevel)
 
 	err = kmod_module_probe_insert_module(mod, KMOD_PROBE_APPLY_BLACKLIST,
 			NULL, NULL, NULL, NULL);
-	if (err < 0)
+	if (err < 0) {
+		result = 77;
+		fprintf(stderr, "%s unavailable skipping tests\n",
+				NFIT_TEST_MODULE);
 		goto err_module;
+	}
 
-	err = do_test(ctx);
+	err = do_test(ctx, test);
 	if (err == 0)
 		result = EXIT_SUCCESS;
 	kmod_module_remove_module(mod, 0);
@@ -332,5 +341,14 @@ int test_dpa_alloc(int loglevel)
 
 int __attribute__((weak)) main(int argc, char *argv[])
 {
-	return test_dpa_alloc(LOG_DEBUG);
+	struct ndctl_test *test = ndctl_test_new(0);
+	int rc;
+
+	if (!test) {
+		fprintf(stderr, "failed to initialize test\n");
+		return EXIT_FAILURE;
+	}
+
+	rc = test_dpa_alloc(LOG_DEBUG, test);
+	return ndctl_test_result(test, rc);
 }

@@ -188,7 +188,7 @@ int test_pmem_namespaces(int log_level)
 	bus = ndctl_bus_get_by_provider(ctx, provider);
 	if (!bus) {
 		fprintf(stderr, "%s: failed to find NFIT-provider\n", comm);
-		rc = ENODEV;
+		rc = 77;
 		goto err;
 	} else
 		fprintf(stderr, "%s: found provider: %s\n", comm,
