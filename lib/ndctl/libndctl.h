@@ -253,6 +253,7 @@ struct ndctl_namespace *ndctl_region_get_namespace_seed(
 int ndctl_region_get_ro(struct ndctl_region *region);
 int ndctl_region_set_ro(struct ndctl_region *region, int ro);
 struct ndctl_btt *ndctl_region_get_btt_seed(struct ndctl_region *region);
+struct ndctl_pfn *ndctl_region_get_pfn_seed(struct ndctl_region *region);
 unsigned int ndctl_region_get_nstype(struct ndctl_region *region);
 const char *ndctl_region_get_type_name(struct ndctl_region *region);
 struct ndctl_bus *ndctl_region_get_bus(struct ndctl_region *region);
@@ -326,11 +327,19 @@ struct ndctl_ctx *ndctl_namespace_get_ctx(struct ndctl_namespace *ndns);
 struct ndctl_bus *ndctl_namespace_get_bus(struct ndctl_namespace *ndns);
 struct ndctl_region *ndctl_namespace_get_region(struct ndctl_namespace *ndns);
 struct ndctl_btt *ndctl_namespace_get_btt(struct ndctl_namespace *ndns);
+struct ndctl_pfn *ndctl_namespace_get_pfn(struct ndctl_namespace *ndns);
 unsigned int ndctl_namespace_get_id(struct ndctl_namespace *ndns);
 const char *ndctl_namespace_get_devname(struct ndctl_namespace *ndns);
 unsigned int ndctl_namespace_get_type(struct ndctl_namespace *ndns);
 const char *ndctl_namespace_get_type_name(struct ndctl_namespace *ndns);
 const char *ndctl_namespace_get_block_device(struct ndctl_namespace *ndns);
+enum ndctl_namespace_mode {
+	NDCTL_NS_MODE_MEMORY,
+	NDCTL_NS_MODE_SAFE,
+	NDCTL_NS_MODE_RAW,
+};
+enum ndctl_namespace_mode ndctl_namespace_get_mode(
+		struct ndctl_namespace *ndns);
 int ndctl_namespace_is_enabled(struct ndctl_namespace *ndns);
 int ndctl_namespace_enable(struct ndctl_namespace *ndns);
 int ndctl_namespace_disable(struct ndctl_namespace *ndns);
@@ -387,6 +396,44 @@ int ndctl_btt_set_namespace(struct ndctl_btt *btt, struct ndctl_namespace *ndns)
 int ndctl_btt_enable(struct ndctl_btt *btt);
 int ndctl_btt_delete(struct ndctl_btt *btt);
 int ndctl_btt_is_configured(struct ndctl_btt *btt);
+
+struct ndctl_pfn;
+struct ndctl_pfn *ndctl_pfn_get_first(struct ndctl_region *region);
+struct ndctl_pfn *ndctl_pfn_get_next(struct ndctl_pfn *pfn);
+#define ndctl_pfn_foreach(region, pfn) \
+        for (pfn = ndctl_pfn_get_first(region); \
+             pfn != NULL; \
+             pfn = ndctl_pfn_get_next(pfn))
+#define ndctl_pfn_foreach_safe(region, pfn, _pfn) \
+	for (pfn = ndctl_pfn_get_first(region), \
+	     _pfn = ndctl_pfn_get_next(pfn); \
+	     pfn != NULL; \
+	     pfn = _pfn, \
+	     _pfn = _pfn ? ndctl_pfn_get_next(_pfn) : NULL)
+struct ndctl_ctx *ndctl_pfn_get_ctx(struct ndctl_pfn *pfn);
+struct ndctl_bus *ndctl_pfn_get_bus(struct ndctl_pfn *pfn);
+struct ndctl_region *ndctl_pfn_get_region(struct ndctl_pfn *pfn);
+unsigned int ndctl_pfn_get_id(struct ndctl_pfn *pfn);
+int ndctl_pfn_is_enabled(struct ndctl_pfn *pfn);
+int ndctl_pfn_is_valid(struct ndctl_pfn *pfn);
+const char *ndctl_pfn_get_devname(struct ndctl_pfn *pfn);
+const char *ndctl_pfn_get_block_device(struct ndctl_pfn *pfn);
+enum ndctl_pfn_loc {
+	NDCTL_PFN_LOC_NONE,
+	NDCTL_PFN_LOC_RAM,
+	NDCTL_PFN_LOC_PMEM,
+};
+int ndctl_pfn_set_location(struct ndctl_pfn *pfn, enum ndctl_pfn_loc loc);
+enum ndctl_pfn_loc ndctl_pfn_get_location(struct ndctl_pfn *pfn);
+int ndctl_pfn_set_uuid(struct ndctl_pfn *pfn, uuid_t uu);
+void ndctl_pfn_get_uuid(struct ndctl_pfn *pfn, uuid_t uu);
+int ndctl_pfn_set_align(struct ndctl_pfn *pfn, unsigned long align);
+unsigned long ndctl_pfn_get_align(struct ndctl_pfn *pfn);
+int ndctl_pfn_set_namespace(struct ndctl_pfn *pfn, struct ndctl_namespace *ndns);
+struct ndctl_namespace *ndctl_pfn_get_namespace(struct ndctl_pfn *pfn);
+int ndctl_pfn_enable(struct ndctl_pfn *pfn);
+int ndctl_pfn_delete(struct ndctl_pfn *pfn);
+int ndctl_pfn_is_configured(struct ndctl_pfn *pfn);
 
 #ifdef __cplusplus
 } /* extern "C" */

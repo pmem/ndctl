@@ -187,16 +187,19 @@ struct ndctl_region {
 	int mappings_init;
 	int namespaces_init;
 	int btts_init;
+	int pfns_init;
 	unsigned long long size;
 	char *region_path;
 	char *region_buf;
 	int buf_len;
 	int generation;
 	struct list_head btts;
+	struct list_head pfns;
 	struct list_head mappings;
 	struct list_head namespaces;
 	struct list_head stale_namespaces;
 	struct list_head stale_btts;
+	struct list_head stale_pfns;
 	struct list_node list;
 	/**
 	 * struct ndctl_interleave_set - extra info for interleave sets
@@ -267,6 +270,33 @@ struct ndctl_btt {
 	struct ndctl_lbasize lbasize;
 	char *btt_path;
 	char *btt_buf;
+	char *bdev;
+	int buf_len;
+	uuid_t uuid;
+	int id, generation;
+};
+
+/**
+ * struct ndctl_pfn - reservation for per-page-frame metadata
+ * @module: kernel module (nd_pfn)
+ * @ndns: host namespace for the pfn instance
+ * @loc: host metadata location (ram or pmem (default))
+ * @align: data offset alignment
+ * @region: parent region
+ * @pfn_path: pfn devpath
+ * @uuid: unique identifier for a pfn instance
+ * @pfn_buf: space to print paths for bind/unbind operations
+ * @bdev: block device associated with a pfn
+ */
+struct ndctl_pfn {
+	struct kmod_module *module;
+	struct ndctl_region *region;
+	struct ndctl_namespace *ndns;
+	struct list_node list;
+	enum ndctl_pfn_loc loc;
+	unsigned long align;
+	char *pfn_path;
+	char *pfn_buf;
 	char *bdev;
 	int buf_len;
 	uuid_t uuid;
@@ -502,6 +532,33 @@ static void free_stale_btts(struct ndctl_region *region)
 		free_btt(btt, &region->stale_btts);
 }
 
+static void free_pfn(struct ndctl_pfn *pfn, struct list_head *head)
+{
+	if (head)
+		list_del_from(head, &pfn->list);
+	kmod_module_unref(pfn->module);
+	free(pfn->pfn_path);
+	free(pfn->pfn_buf);
+	free(pfn->bdev);
+	free(pfn);
+}
+
+static void free_pfns(struct ndctl_region *region)
+{
+	struct ndctl_pfn *pfn, *_b;
+
+	list_for_each_safe(&region->pfns, pfn, _b, list)
+		free_pfn(pfn, &region->pfns);
+}
+
+static void free_stale_pfns(struct ndctl_region *region)
+{
+	struct ndctl_pfn *pfn, *_b;
+
+	list_for_each_safe(&region->stale_pfns, pfn, _b, list)
+		free_pfn(pfn, &region->stale_pfns);
+}
+
 static void free_region(struct ndctl_region *region)
 {
 	struct ndctl_bus *bus = region->bus;
@@ -513,6 +570,8 @@ static void free_region(struct ndctl_region *region)
 	}
 	free_btts(region);
 	free_stale_btts(region);
+	free_pfns(region);
+	free_stale_pfns(region);
 	free_namespaces(region);
 	free_stale_namespaces(region);
 	list_del_from(&bus->regions, &region->list);
@@ -983,6 +1042,29 @@ NDCTL_EXPORT struct ndctl_btt *ndctl_region_get_btt_seed(struct ndctl_region *re
 	return NULL;
 }
 
+NDCTL_EXPORT struct ndctl_pfn *ndctl_region_get_pfn_seed(struct ndctl_region *region)
+{
+	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
+	char *path = region->region_buf;
+	int len = region->buf_len;
+	struct ndctl_pfn *pfn;
+	char buf[SYSFS_ATTR_SIZE];
+
+	if (snprintf(path, len, "%s/pfn_seed", region->region_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_region_get_devname(region));
+		return NULL;
+	}
+
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		return NULL;
+
+	ndctl_pfn_foreach(region, pfn)
+		if (strcmp(buf, ndctl_pfn_get_devname(pfn)) == 0)
+			return pfn;
+	return NULL;
+}
+
 NDCTL_EXPORT int ndctl_region_get_ro(struct ndctl_region *region)
 {
 	return region->ro;
@@ -1414,7 +1496,9 @@ static int add_region(void *parent, int id, const char *region_base)
 	if (!region)
 		goto err_region;
 	list_head_init(&region->btts);
+	list_head_init(&region->pfns);
 	list_head_init(&region->stale_btts);
+	list_head_init(&region->stale_pfns);
 	list_head_init(&region->mappings);
 	list_head_init(&region->namespaces);
 	list_head_init(&region->stale_namespaces);
@@ -2205,6 +2289,7 @@ NDCTL_EXPORT void ndctl_region_cleanup(struct ndctl_region *region)
 {
 	free_stale_namespaces(region);
 	free_stale_btts(region);
+	free_stale_pfns(region);
 }
 
 static int ndctl_region_disable(struct ndctl_region *region, int cleanup)
@@ -2223,8 +2308,10 @@ static int ndctl_region_disable(struct ndctl_region *region, int cleanup)
 	}
 	region->namespaces_init = 0;
 	region->btts_init = 0;
+	region->pfns_init = 0;
 	list_append_list(&region->stale_namespaces, &region->namespaces);
 	list_append_list(&region->stale_btts, &region->btts);
+	list_append_list(&region->stale_pfns, &region->pfns);
 	region->generation++;
 	if (cleanup)
 		ndctl_region_cleanup(region);
@@ -2736,6 +2823,30 @@ NDCTL_EXPORT struct ndctl_btt *ndctl_namespace_get_btt(struct ndctl_namespace *n
 	return NULL;
 }
 
+NDCTL_EXPORT struct ndctl_pfn *ndctl_namespace_get_pfn(struct ndctl_namespace *ndns)
+{
+	struct ndctl_region *region = ndctl_namespace_get_region(ndns);
+	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
+	char *path = ndns->ndns_buf;
+	int len = ndns->buf_len;
+	struct ndctl_pfn *pfn;
+	char buf[SYSFS_ATTR_SIZE];
+
+	if (snprintf(path, len, "%s/holder", ndns->ndns_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_namespace_get_devname(ndns));
+		return NULL;
+	}
+
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		return NULL;
+
+	ndctl_pfn_foreach(region, pfn)
+		if (strcmp(buf, ndctl_pfn_get_devname(pfn)) == 0)
+			return pfn;
+	return NULL;
+}
+
 NDCTL_EXPORT const char *ndctl_namespace_get_block_device(struct ndctl_namespace *ndns)
 {
 	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
@@ -2881,6 +2992,7 @@ static int ndctl_unbind(struct ndctl_ctx *ctx, const char *devpath)
 }
 
 static int add_btt(void *parent, int id, const char *btt_base);
+static int add_pfn(void *parent, int id, const char *pfn_base);
 
 static void btts_init(struct ndctl_region *region)
 {
@@ -2895,14 +3007,28 @@ static void btts_init(struct ndctl_region *region)
 	device_parse(bus->ctx, bus, region->region_path, btt_fmt, region, add_btt);
 }
 
+static void pfns_init(struct ndctl_region *region)
+{
+	struct ndctl_bus *bus = ndctl_region_get_bus(region);
+	char pfn_fmt[20];
+
+	if (region->pfns_init)
+		return;
+	region->pfns_init = 1;
+
+	sprintf(pfn_fmt, "pfn%d.", region->id);
+	device_parse(bus->ctx, bus, region->region_path, pfn_fmt, region, add_pfn);
+}
+
 static void region_refresh_children(struct ndctl_region *region)
 {
 	region->namespaces_init = 0;
 	region->btts_init = 0;
+	region->pfns_init = 0;
 	namespaces_init(region);
 	btts_init(region);
+	pfns_init(region);
 }
-
 
 /*
  * Return 0 if enabled, < 0 if failed to enable, and > 0 if claimed by
@@ -2923,18 +3049,26 @@ NDCTL_EXPORT int ndctl_namespace_enable(struct ndctl_namespace *ndns)
 
 	/*
 	 * Rescan now as successfully enabling a namespace device leads
-	 * to a new one being created, and potentially btts being attached
+	 * to a new one being created, and potentially btts or pfns being
+	 * attached
 	 */
 	region_refresh_children(region);
 
 	if (!ndctl_namespace_is_enabled(ndns)) {
 		struct ndctl_btt *btt = ndctl_namespace_get_btt(ndns);
+		struct ndctl_pfn *pfn = ndctl_namespace_get_pfn(ndns);
 
 		if (btt && ndctl_btt_is_enabled(btt)) {
 			dbg(ctx, "%s: enabled via %s\n", devname,
 					ndctl_btt_get_devname(btt));
 			return 1;
 		}
+		if (pfn && ndctl_pfn_is_enabled(pfn)) {
+			dbg(ctx, "%s: enabled via %s\n", devname,
+					ndctl_pfn_get_devname(pfn));
+			return 1;
+		}
+
 		err(ctx, "%s: failed to enable\n", devname);
 		return rc ? rc : -ENXIO;
 	}
@@ -2970,13 +3104,15 @@ NDCTL_EXPORT int ndctl_namespace_disable(struct ndctl_namespace *ndns)
 NDCTL_EXPORT int ndctl_namespace_disable_invalidate(struct ndctl_namespace *ndns)
 {
 	struct ndctl_btt *btt = ndctl_namespace_get_btt(ndns);
+	struct ndctl_pfn *pfn = ndctl_namespace_get_pfn(ndns);
+	int rc = 0;
 
-	if (btt) {
-		int rc = ndctl_btt_delete(btt);
-
-		if (rc)
-			return rc;
-	}
+	if (btt)
+		rc = ndctl_btt_delete(btt);
+	if (pfn)
+		rc = ndctl_pfn_delete(pfn);
+	if (rc)
+		return rc;
 
 	return ndctl_namespace_disable(ndns);
 }
@@ -3615,6 +3751,380 @@ NDCTL_EXPORT int ndctl_btt_is_configured(struct ndctl_btt *btt)
 		return 1;
 
 	if (memcmp(&btt->uuid, null_uuid, sizeof(null_uuid)) != 0)
+		return 1;
+
+	return 0;
+}
+
+static int add_pfn(void *parent, int id, const char *pfn_base)
+{
+	struct ndctl_ctx *ctx = ndctl_region_get_ctx(parent);
+	char *path = calloc(1, strlen(pfn_base) + 100);
+	struct ndctl_region *region = parent;
+	struct ndctl_pfn *pfn, *pfn_dup;
+	char buf[SYSFS_ATTR_SIZE];
+	int rc = -ENOMEM;
+
+	if (!path)
+		return -ENOMEM;
+
+	pfn = calloc(1, sizeof(*pfn));
+	if (!pfn)
+		goto err_pfn;
+	pfn->id = id;
+	pfn->region = region;
+	pfn->generation = region->generation;
+
+	pfn->pfn_path = strdup(pfn_base);
+	if (!pfn->pfn_path)
+		goto err_read;
+
+	pfn->pfn_buf = calloc(1, strlen(pfn_base) + 50);
+	if (!pfn->pfn_buf)
+		goto err_read;
+	pfn->buf_len = strlen(pfn_base) + 50;
+
+	sprintf(path, "%s/modalias", pfn_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		goto err_read;
+	pfn->module = to_module(ctx, buf);
+
+	sprintf(path, "%s/uuid", pfn_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		goto err_read;
+	if (strlen(buf) && uuid_parse(buf, pfn->uuid) < 0) {
+		rc = -EINVAL;
+		goto err_read;
+	}
+
+	sprintf(path, "%s/mode", pfn_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		goto err_read;
+	if (strcmp(buf, "none") == 0)
+		pfn->loc = NDCTL_PFN_LOC_NONE;
+	else if (strcmp(buf, "ram") == 0)
+		pfn->loc = NDCTL_PFN_LOC_RAM;
+	else if (strcmp(buf, "pmem") == 0)
+		pfn->loc = NDCTL_PFN_LOC_PMEM;
+	else
+		goto err_read;
+
+	sprintf(path, "%s/align", pfn_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		pfn->align = 0;
+	else
+		pfn->align = strtoul(buf, NULL, 0);
+
+	free(path);
+	ndctl_pfn_foreach(region, pfn_dup)
+		if (pfn->id == pfn_dup->id) {
+			free_pfn(pfn, NULL);
+			return 1;
+		}
+
+	list_add(&region->pfns, &pfn->list);
+	return 0;
+
+ err_read:
+	free(pfn->pfn_buf);
+	free(pfn->pfn_path);
+	free(pfn);
+ err_pfn:
+	free(path);
+	return rc;
+}
+
+NDCTL_EXPORT struct ndctl_pfn *ndctl_pfn_get_first(struct ndctl_region *region)
+{
+	pfns_init(region);
+
+	return list_top(&region->pfns, struct ndctl_pfn, list);
+}
+
+NDCTL_EXPORT struct ndctl_pfn *ndctl_pfn_get_next(struct ndctl_pfn *pfn)
+{
+	struct ndctl_region *region = pfn->region;
+
+	return list_next(&region->pfns, pfn, list);
+}
+
+NDCTL_EXPORT unsigned int ndctl_pfn_get_id(struct ndctl_pfn *pfn)
+{
+	return pfn->id;
+}
+
+NDCTL_EXPORT struct ndctl_namespace *ndctl_pfn_get_namespace(struct ndctl_pfn *pfn)
+{
+	struct ndctl_ctx *ctx = ndctl_pfn_get_ctx(pfn);
+	struct ndctl_namespace *ndns, *found = NULL;
+	struct ndctl_region *region = pfn->region;
+	char *path = region->region_buf;
+	int len = region->buf_len;
+	char buf[SYSFS_ATTR_SIZE];
+
+	if (pfn->ndns)
+		return pfn->ndns;
+
+	if (snprintf(path, len, "%s/namespace", pfn->pfn_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_pfn_get_devname(pfn));
+		return NULL;
+	}
+
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		return NULL;
+
+	ndctl_namespace_foreach(region, ndns)
+		if (strcmp(buf, ndctl_namespace_get_devname(ndns)) == 0)
+			found = ndns;
+	pfn->ndns = found;
+	return found;
+}
+
+NDCTL_EXPORT void ndctl_pfn_get_uuid(struct ndctl_pfn *pfn, uuid_t uu)
+{
+	memcpy(uu, pfn->uuid, sizeof(uuid_t));
+}
+
+NDCTL_EXPORT int ndctl_pfn_set_uuid(struct ndctl_pfn *pfn, uuid_t uu)
+{
+	struct ndctl_ctx *ctx = ndctl_pfn_get_ctx(pfn);
+	char *path = pfn->pfn_buf;
+	int len = pfn->buf_len;
+	char uuid[40];
+
+	if (snprintf(path, len, "%s/uuid", pfn->pfn_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_pfn_get_devname(pfn));
+		return -ENXIO;
+	}
+
+	uuid_unparse(uu, uuid);
+	if (sysfs_write_attr(ctx, path, uuid) != 0)
+		return -ENXIO;
+	memcpy(pfn->uuid, uu, sizeof(uuid_t));
+	return 0;
+}
+
+NDCTL_EXPORT enum ndctl_pfn_loc ndctl_pfn_get_location(struct ndctl_pfn *pfn)
+{
+	return pfn->loc;
+}
+
+NDCTL_EXPORT int ndctl_pfn_set_location(struct ndctl_pfn *pfn,
+		enum ndctl_pfn_loc loc)
+{
+	struct ndctl_ctx *ctx = ndctl_pfn_get_ctx(pfn);
+	char *path = pfn->pfn_buf;
+	int len = pfn->buf_len;
+	const char *locations[] = {
+		[NDCTL_PFN_LOC_NONE] = "none",
+		[NDCTL_PFN_LOC_RAM] = "ram",
+		[NDCTL_PFN_LOC_PMEM] = "pmem",
+	};
+
+	switch (loc) {
+	case NDCTL_PFN_LOC_NONE:
+	case NDCTL_PFN_LOC_RAM:
+	case NDCTL_PFN_LOC_PMEM:
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	if (snprintf(path, len, "%s/mode", pfn->pfn_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_pfn_get_devname(pfn));
+		return -ENXIO;
+	}
+
+	if (sysfs_write_attr(ctx, path, locations[loc]) != 0)
+		return -ENXIO;
+	pfn->loc = loc;
+	return 0;
+}
+
+NDCTL_EXPORT unsigned long ndctl_pfn_get_align(struct ndctl_pfn *pfn)
+{
+	return pfn->align;
+}
+
+NDCTL_EXPORT int ndctl_pfn_set_align(struct ndctl_pfn *pfn, unsigned long align)
+{
+	struct ndctl_ctx *ctx = ndctl_pfn_get_ctx(pfn);
+	char *path = pfn->pfn_buf;
+	int len = pfn->buf_len;
+	char align_str[40];
+
+	if (snprintf(path, len, "%s/align", pfn->pfn_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_pfn_get_devname(pfn));
+		return -ENXIO;
+	}
+
+	sprintf(align_str, "%lu\n", align);
+	if (sysfs_write_attr(ctx, path, align_str) != 0)
+		return -ENXIO;
+	pfn->align = align;
+	return 0;
+}
+
+NDCTL_EXPORT int ndctl_pfn_set_namespace(struct ndctl_pfn *pfn,
+		struct ndctl_namespace *ndns)
+{
+	struct ndctl_ctx *ctx = ndctl_pfn_get_ctx(pfn);
+	char *path = pfn->pfn_buf;
+	int len = pfn->buf_len;
+
+	if (snprintf(path, len, "%s/namespace", pfn->pfn_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_pfn_get_devname(pfn));
+		return -ENXIO;
+	}
+
+	if (sysfs_write_attr(ctx, path, ndns
+				? ndctl_namespace_get_devname(ndns) : "\n"))
+		return -ENXIO;
+
+	pfn->ndns = ndns;
+	return 0;
+}
+
+NDCTL_EXPORT struct ndctl_bus *ndctl_pfn_get_bus(struct ndctl_pfn *pfn)
+{
+	return pfn->region->bus;
+}
+
+NDCTL_EXPORT struct ndctl_ctx *ndctl_pfn_get_ctx(struct ndctl_pfn *pfn)
+{
+	return ndctl_bus_get_ctx(ndctl_pfn_get_bus(pfn));
+}
+
+NDCTL_EXPORT const char *ndctl_pfn_get_devname(struct ndctl_pfn *pfn)
+{
+	return devpath_to_devname(pfn->pfn_path);
+}
+
+NDCTL_EXPORT const char *ndctl_pfn_get_block_device(struct ndctl_pfn *pfn)
+{
+	struct ndctl_ctx *ctx = ndctl_pfn_get_ctx(pfn);
+	struct ndctl_bus *bus = ndctl_pfn_get_bus(pfn);
+	char *path = pfn->pfn_buf;
+	int len = pfn->buf_len;
+
+	if (pfn->bdev)
+		return pfn->bdev;
+
+	if (snprintf(path, len, "%s/block", pfn->pfn_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_pfn_get_devname(pfn));
+		return "";
+	}
+
+	ndctl_bus_wait_probe(bus);
+	pfn->bdev = get_block_device(ctx, path);
+	return pfn->bdev ? pfn->bdev : "";
+}
+
+NDCTL_EXPORT int ndctl_pfn_is_valid(struct ndctl_pfn *pfn)
+{
+	struct ndctl_region *region = ndctl_pfn_get_region(pfn);
+
+	return pfn->generation == region->generation;
+}
+
+NDCTL_EXPORT int ndctl_pfn_is_enabled(struct ndctl_pfn *pfn)
+{
+	struct ndctl_ctx *ctx = ndctl_pfn_get_ctx(pfn);
+	char *path = pfn->pfn_buf;
+	int len = pfn->buf_len;
+
+	if (snprintf(path, len, "%s/driver", pfn->pfn_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_pfn_get_devname(pfn));
+		return 0;
+	}
+
+	return is_enabled(ndctl_pfn_get_bus(pfn), path);
+}
+
+NDCTL_EXPORT struct ndctl_region *ndctl_pfn_get_region(struct ndctl_pfn *pfn)
+{
+	return pfn->region;
+}
+
+NDCTL_EXPORT int ndctl_pfn_enable(struct ndctl_pfn *pfn)
+{
+	struct ndctl_region *region = ndctl_pfn_get_region(pfn);
+	const char *devname = ndctl_pfn_get_devname(pfn);
+	struct ndctl_ctx *ctx = ndctl_pfn_get_ctx(pfn);
+	char *path = pfn->pfn_buf;
+	int len = pfn->buf_len;
+
+	if (ndctl_pfn_is_enabled(pfn))
+		return 0;
+
+	ndctl_bind(ctx, pfn->module, devname);
+
+	if (!ndctl_pfn_is_enabled(pfn)) {
+		err(ctx, "%s: failed to enable\n", devname);
+		return -ENXIO;
+	}
+
+	dbg(ctx, "%s: enabled\n", devname);
+
+	if (snprintf(path, len, "%s/block", pfn->pfn_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				devname);
+	} else {
+		pfn->bdev = get_block_device(ctx, path);
+	}
+
+	/*
+	 * Rescan now as successfully enabling a pfn device leads to a
+	 * new one being created, and potentially the backing namespace
+	 * as well.
+	 */
+	region_refresh_children(region);
+
+	return 0;
+}
+
+NDCTL_EXPORT int ndctl_pfn_delete(struct ndctl_pfn *pfn)
+{
+	struct ndctl_region *region = ndctl_pfn_get_region(pfn);
+	struct ndctl_ctx *ctx = ndctl_pfn_get_ctx(pfn);
+	int rc;
+
+	if (!ndctl_pfn_is_valid(pfn)) {
+		free_pfn(pfn, &region->stale_pfns);
+		return 0;
+	}
+
+	ndctl_unbind(ctx, pfn->pfn_path);
+
+	rc = ndctl_pfn_set_namespace(pfn, NULL);
+	if (rc) {
+		dbg(ctx, "%s: failed to clear namespace: %d\n",
+			ndctl_pfn_get_devname(pfn), rc);
+		return rc;
+	}
+
+	free_pfn(pfn, &region->pfns);
+	region->pfns_init = 0;
+
+	return 0;
+}
+
+NDCTL_EXPORT int ndctl_pfn_is_configured(struct ndctl_pfn *pfn)
+{
+	if (ndctl_pfn_get_namespace(pfn))
+		return 1;
+
+	if (ndctl_pfn_get_location(pfn) != NDCTL_PFN_LOC_NONE)
+		return 1;
+
+	if (memcmp(&pfn->uuid, null_uuid, sizeof(null_uuid)) != 0)
 		return 1;
 
 	return 0;
