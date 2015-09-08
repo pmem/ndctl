@@ -34,7 +34,7 @@ int main(int argc, char **argv)
 
 	while (fgets(buf, sizeof(buf), stdin)) {
 		if (strncmp("Version:", buf, 8) == 0)
-			fprintf(stdout, "Version:        %s\n", VERSION);
+			fprintf(stdout, "Version:        %s\n", &VERSION[1]);
 		else if (strncmp("%global gitcommit", buf, 17) == 0)
 			fprintf(stdout, "%%global gitcommit %s\n", commit);
 		else if (strncmp("%define lname", buf, 12) == 0)
@@ -43,6 +43,8 @@ int main(int argc, char **argv)
 			fprintf(stdout, "%%define dname %s\n", dname[os]);
 		else if (strncmp("%license", buf, 8) == 0 && !license[os])
 			/* skip */;
+		else if (strncmp("echo \"\" > version", buf, 17) == 0)
+			fprintf(stdout, "echo \"%s\" > version\n", VERSION);
 		else
 			fprintf(stdout, "%s", buf);
 	}

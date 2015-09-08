@@ -1,0 +1,47 @@
+#!/bin/sh
+
+dirty() {
+	git update-index -q --refresh
+	if test -z "$(git diff-index --name-only HEAD --)"; then
+		echo "$1"
+	else
+		echo "${1}.dirty"
+	fi
+}
+
+GVF=version.m4
+DEF_VER=v41
+
+LF='
+'
+
+# First see if there is a version file (included in release tarballs),
+# then try git-describe, then default.
+if test -f version; then
+	VN=$(cat version) || VN="$DEF_VER"
+elif test -d ${GIT_DIR:-.git} -o -f .git &&
+	VN=$(git describe --match "v[0-9]*" --abbrev=7 HEAD 2>/dev/null) &&
+	case "$VN" in
+	*$LF*) (exit 1) ;;
+	v[0-9]*)
+		VN="$(dirty $VN)"
+	esac; then
+	VN=$(echo "$VN" | sed -e 's/-/./g');
+else
+	read COMMIT COMMIT_SUBJECT <<EOF
+	$(git log --oneline --abbrev=8 -n1 HEAD)
+EOF
+	VN="$(dirty ${DEF_VER}.git$COMMIT)"
+fi
+
+if test -r $GVF; then
+	VC=$(sed -e 's/m4_define(\[GIT_VERSION], \[//' <$GVF)
+		VC=$(echo $VC | sed -e 's/\])//')
+else
+	VC=unset
+fi
+test "$VN" = "$VC" || {
+	echo >&2 "GIT_VERSION = $VN"
+	echo "m4_define([GIT_VERSION], [$VN])" >$GVF
+	exit 0
+}

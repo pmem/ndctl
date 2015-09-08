@@ -23,6 +23,12 @@ AM_LDFLAGS = \
 	-Wl,--gc-sections \
 	-Wl,--as-needed
 
+BUILT_SOURCES = $(top_srcdir)/version.m4
+$(top_srcdir)/version.m4: FORCE
+	$(AM_V_GEN)$(top_srcdir)/git-version-gen
+
+FORCE:
+
 SED_PROCESS = \
 	$(AM_V_GEN)$(MKDIR_P) $(dir $@) && $(SED) \
 	-e 's,@VERSION\@,$(VERSION),g' \

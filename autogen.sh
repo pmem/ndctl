@@ -6,6 +6,7 @@ if [ -f .git/hooks/pre-commit.sample -a ! -f .git/hooks/pre-commit ] ; then
         echo "Activated pre-commit hook."
 fi
 
+$(dirname $0)/git-version-gen
 autoreconf --install --symlink
 
 libdir() {

@@ -22,9 +22,7 @@ struct cmd_struct {
 
 static int cmd_version(int argc, const char **argv)
 {
-	static const char ndctl_version_string[] = "ndctl " VERSION;
-
-	printf("%s\n", ndctl_version_string);
+	printf("%s\n", VERSION);
 	return 0;
 }
 

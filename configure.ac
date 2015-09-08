@@ -1,6 +1,7 @@
 AC_PREREQ(2.60)
+m4_include([version.m4])
 AC_INIT([ndctl],
-        [41],
+        GIT_VERSION,
         [linux-nvdimm@lists.01.org],
         [ndctl],
         [https://github.com/pmem/ndctl])

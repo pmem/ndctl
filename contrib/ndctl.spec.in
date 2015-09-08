@@ -4,7 +4,7 @@
 
 Name:           ndctl
 Version:
-Release:        1%{?gitcommit:.git%{gitcommit}}%{?dist}
+Release:        1%{?dist}
 Summary:	Manage "libnvdimm" subsystem devices (Non-volatile Memory)
 License:        GPL-2.0
 URL:            https://github.com/pmem/ndctl
@@ -52,11 +52,9 @@ Libraries for %{name}
 %prep
 %setup -q %{?gitcommit:-n %{name}-git%{gitcommit}}
 
-
 %build
-%if %{defined gitcommit}
-    ./autogen.sh
-%endif
+echo "" > version
+./autogen.sh
 %configure --disable-static
 make %{?_smp_mflags}
 
