@@ -3196,6 +3196,20 @@ NDCTL_EXPORT int ndctl_namespace_disable(struct ndctl_namespace *ndns)
 	return 0;
 }
 
+NDCTL_EXPORT int ndctl_namespace_disable_invalidate(struct ndctl_namespace *ndns)
+{
+	struct ndctl_btt *btt = ndctl_namespace_get_btt(ndns);
+
+	if (btt) {
+		int rc = ndctl_btt_delete(btt);
+
+		if (rc)
+			return rc;
+	}
+
+	return ndctl_namespace_disable(ndns);
+}
+
 static int pmem_namespace_is_configured(struct ndctl_namespace *ndns)
 {
 	if (ndctl_namespace_get_size(ndns) < ND_MIN_NAMESPACE_SIZE)

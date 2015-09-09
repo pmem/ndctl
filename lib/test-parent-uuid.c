@@ -100,7 +100,7 @@ static struct ndctl_namespace *create_blk_namespace(int region_fraction,
 
 static int disable_blk_namespace(struct ndctl_namespace *ndns)
 {
-	if (ndctl_namespace_disable(ndns) < 0)
+	if (ndctl_namespace_disable_invalidate(ndns) < 0)
 		return -ENODEV;
 
 	if (ndctl_namespace_delete(ndns) < 0)
@@ -172,18 +172,15 @@ static int do_test(struct ndctl_ctx *ctx)
 	if (!btt)
 		return -ENXIO;
 
+	ndctl_namespace_disable_invalidate(ndns);
 	ndctl_btt_set_uuid(btt, btt_uuid);
 	ndctl_btt_set_sector_size(btt, 512);
 	ndctl_btt_set_namespace(btt, ndns);
-	ndctl_namespace_disable(ndns);
 	rc = ndctl_btt_enable(btt);
 	if (rc) {
 		fprintf(stderr, "failed to create btt 0\n");
 		return rc;
 	}
-
-	/* disable the btt */
-	ndctl_btt_delete(btt);
 
 	/* re-create the namespace - this should auto-enable the btt */
 	disable_blk_namespace(ndns);

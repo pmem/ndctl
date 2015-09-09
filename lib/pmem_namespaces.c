@@ -60,7 +60,7 @@ static struct ndctl_namespace *create_pmem_namespace(struct ndctl_region *region
 
 static int disable_pmem_namespace(struct ndctl_namespace *ndns)
 {
-	if (ndctl_namespace_disable(ndns) < 0)
+	if (ndctl_namespace_disable_invalidate(ndns) < 0)
 		return ENODEV;
 
 	if (ndctl_namespace_delete(ndns) < 0)

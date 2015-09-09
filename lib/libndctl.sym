@@ -136,6 +136,7 @@ global:
 	ndctl_namespace_is_enabled;
 	ndctl_namespace_enable;
 	ndctl_namespace_disable;
+	ndctl_namespace_disable_invalidate;
 	ndctl_namespace_is_valid;
 	ndctl_namespace_is_configured;
 	ndctl_namespace_delete;

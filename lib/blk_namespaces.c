@@ -82,7 +82,7 @@ static struct ndctl_namespace *create_blk_namespace(int region_fraction,
 
 static int disable_blk_namespace(struct ndctl_namespace *ndns)
 {
-	if (ndctl_namespace_disable(ndns) < 0)
+	if (ndctl_namespace_disable_invalidate(ndns) < 0)
 		return ENODEV;
 
 	if (ndctl_namespace_delete(ndns) < 0)

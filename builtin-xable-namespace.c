@@ -116,7 +116,7 @@ int cmd_disable_namespace(int argc, const char **argv)
 {
 	char *xable_usage = "ndctl disable-namespace <namespace> [<options>]";
 	const char *namespace = parse_namespace_options(argc, argv, xable_usage);
-	int disabled = do_xable_namespace(namespace, ndctl_namespace_disable);
+	int disabled = do_xable_namespace(namespace, ndctl_namespace_disable_invalidate);
 
 	if (disabled < 0) {
 		fprintf(stderr, "error disabling namespaces: %s\n",

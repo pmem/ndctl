@@ -930,7 +930,7 @@ static int check_namespaces(struct ndctl_region *region,
 			close(fd);
 			fd = -1;
 
-			if (ndctl_namespace_disable(ndns) < 0) {
+			if (ndctl_namespace_disable_invalidate(ndns) < 0) {
 				fprintf(stderr, "%s: failed to disable\n", devname);
 				rc = -ENXIO;
 				break;
@@ -970,7 +970,7 @@ static int check_namespaces(struct ndctl_region *region,
 			if (!retry_cnt)
 				break;
 
-			if (ndctl_namespace_disable(ndns) < 0) {
+			if (ndctl_namespace_disable_invalidate(ndns) < 0) {
 				fprintf(stderr, "%s: failed to disable\n", devname);
 				break;
 			}

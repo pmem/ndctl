@@ -288,6 +288,7 @@ const char *ndctl_namespace_get_block_device(struct ndctl_namespace *ndns);
 int ndctl_namespace_is_enabled(struct ndctl_namespace *ndns);
 int ndctl_namespace_enable(struct ndctl_namespace *ndns);
 int ndctl_namespace_disable(struct ndctl_namespace *ndns);
+int ndctl_namespace_disable_invalidate(struct ndctl_namespace *ndns);
 int ndctl_namespace_is_valid(struct ndctl_namespace *ndns);
 int ndctl_namespace_is_configured(struct ndctl_namespace *ndns);
 int ndctl_namespace_delete(struct ndctl_namespace *ndns);

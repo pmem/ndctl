@@ -143,7 +143,7 @@ static int do_test(struct ndctl_ctx *ctx, struct ndctl_test *test)
 					ndctl_namespace_get_devname(ndns), rc);
 			return rc;
 		}
-		ndctl_namespace_disable(ndns);
+		ndctl_namespace_disable_invalidate(ndns);
 		rc = ndctl_namespace_set_size(ndns, SZ_4K);
 		if (rc) {
 			fprintf(stderr, "failed to init %s to size: %d\n",
