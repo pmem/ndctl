@@ -42,7 +42,7 @@ int main(int argc, char **argv)
 		else if (strncmp("%define dname", buf, 12) == 0)
 			fprintf(stdout, "%%define dname %s\n", dname[os]);
 		else if (strncmp("%license", buf, 8) == 0 && !license[os])
-			/* skip */;
+			fprintf(stdout, "%%doc %s", &buf[8]);
 		else if (strncmp("echo \"\" > version", buf, 17) == 0)
 			fprintf(stdout, "echo \"%s\" > version\n", VERSION);
 		else
