@@ -249,6 +249,7 @@ int test_parent_uuid(int loglevel, struct ndctl_test *test)
 			NULL, NULL, NULL, NULL);
 	if (err < 0) {
 		result = 77;
+		ndctl_test_skip(test);
 		fprintf(stderr, "%s unavailable skipping tests\n",
 				NFIT_TEST_MODULE);
 		goto err_module;

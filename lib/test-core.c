@@ -62,6 +62,13 @@ int __ndctl_test_attempt(struct ndctl_test *test, unsigned int kver,
 	return 0;
 }
 
+void __ndctl_test_skip(struct ndctl_test *test, const char *caller, int line)
+{
+	test->skip++;
+	test->attempt = test->skip;
+	fprintf(stderr, "%s: explicit skip %s:%d\n", __func__, caller, line);
+}
+
 int ndctl_test_get_attempted(struct ndctl_test *test)
 {
 	return test->attempt;
