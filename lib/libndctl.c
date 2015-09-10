@@ -3146,14 +3146,19 @@ NDCTL_EXPORT int ndctl_namespace_enable(struct ndctl_namespace *ndns)
 
 	rc = ndctl_bind(ctx, ndns->module, devname);
 
+	/*
+	 * Rescan now as successfully enabling a namespace device leads
+	 * to a new one being created, and potentially btts being attached
+	 */
+	region_refresh_children(region);
+
 	if (!ndctl_namespace_is_enabled(ndns)) {
 		struct ndctl_btt *btt = ndctl_namespace_get_btt(ndns);
 
 		if (btt && ndctl_btt_is_enabled(btt)) {
 			dbg(ctx, "%s: enabled via %s\n", devname,
 					ndctl_btt_get_devname(btt));
-			rc = 1;
-			goto out;
+			return 1;
 		}
 		err(ctx, "%s: failed to enable\n", devname);
 		return rc ? rc : -ENXIO;
@@ -3161,12 +3166,6 @@ NDCTL_EXPORT int ndctl_namespace_enable(struct ndctl_namespace *ndns)
 	rc = 0;
 	dbg(ctx, "%s: enabled\n", devname);
 
-	/*
-	 * Rescan now as successfully enabling a namespace device leads
-	 * to a new one being created, and potentially btts being attached
-	 */
- out:
-	region_refresh_children(region);
 
 	return rc;
 }
