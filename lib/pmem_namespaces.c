@@ -15,7 +15,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <linux/fs.h>
-#include <linux/ndctl.h>
 #include <ndctl/libndctl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -209,7 +208,7 @@ int test_pmem_namespaces(int log_level)
 
 	/* create our config */
 	ndctl_region_foreach(bus, region)
-		if (ndctl_region_get_nstype(region) == ND_DEVICE_NAMESPACE_PMEM) {
+		if (strcmp(ndctl_region_get_type_name(region), "pmem") == 0) {
 			pmem_region = region;
 			break;
 		}
