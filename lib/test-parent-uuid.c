@@ -30,13 +30,6 @@
 
 #include <ndctl/libndctl.h>
 
-#ifdef HAVE_NDCTL_H
-#include <linux/ndctl.h>
-#else
-#include <ndctl.h>
-#endif
-
-
 static const char *NFIT_TEST_MODULE = "nfit_test";
 static const char *PROVIDER = "nfit_test.0";
 
@@ -149,7 +142,7 @@ static int do_test(struct ndctl_ctx *ctx)
 	}
 
 	ndctl_region_foreach(bus, region)
-		if (ndctl_region_get_nstype(region) == ND_DEVICE_NAMESPACE_BLK) {
+		if (strcmp(ndctl_region_get_type_name(region), "blk") == 0) {
 			blk_region = region;
 			break;
 		}
