@@ -77,7 +77,8 @@ endif
 
 if ENABLE_DESTRUCTIVE
 ndctl_SOURCES += lib/blk_namespaces.c \
-		 lib/pmem_namespaces.c
+		 lib/pmem_namespaces.c \
+		 lib/test-pcommit.c
 ndctl_SOURCES += builtin-bat.c
 endif
 
@@ -115,12 +116,15 @@ TESTS = lib/test-libndctl lib/test-dpa-alloc lib/test-parent-uuid
 check_PROGRAMS = lib/test-libndctl lib/test-dpa-alloc lib/test-parent-uuid
 
 if ENABLE_DESTRUCTIVE
-TESTS += lib/test-blk-ns lib/test-pmem-ns
-check_PROGRAMS += lib/test-blk-ns lib/test-pmem-ns
+TESTS += lib/test-blk-ns lib/test-pmem-ns lib/test-pcommit
+check_PROGRAMS += lib/test-blk-ns lib/test-pmem-ns lib/test-pcommit
 endif
 
 lib_test_libndctl_SOURCES = lib/test-libndctl.c lib/test-core.c
 lib_test_libndctl_LDADD = lib/libndctl.la $(UUID_LIBS) $(KMOD_LIBS)
+
+lib_test_pcommit_SOURCES = lib/test-pcommit.c
+lib_test_pcommit_LDADD = lib/libndctl.la $(KMOD_LIBS)
 
 lib_test_blk_ns_SOURCES = lib/blk_namespaces.c
 lib_test_blk_ns_LDADD = lib/libndctl.la $(KMOD_LIBS)

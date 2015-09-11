@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <syslog.h>
+#include <test-pcommit.h>
 #include <test-blk-namespaces.h>
 #include <test-pmem-namespaces.h>
 #include <util/parse-options.h>
@@ -24,6 +25,11 @@ int cmd_bat(int argc, const char **argv)
 
 	if (argc)
 		usage_with_options(u, options);
+
+	rc = test_pcommit();
+	fprintf(stderr, "test_pcommit: %s\n", rc ? "FAIL" : "PASS");
+	if (rc)
+		return rc;
 
 	rc = test_blk_namespaces(loglevel);
 	fprintf(stderr, "test_blk_namespaces: %s\n", rc ? "FAIL" : "PASS");
