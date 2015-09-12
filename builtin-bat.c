@@ -1,8 +1,6 @@
 #include <stdio.h>
 #include <syslog.h>
-#include <test-pcommit.h>
-#include <test-blk-namespaces.h>
-#include <test-pmem-namespaces.h>
+#include <test.h>
 #include <util/parse-options.h>
 
 int cmd_bat(int argc, const char **argv)

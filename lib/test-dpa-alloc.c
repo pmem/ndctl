@@ -23,10 +23,9 @@
 #include <libkmod.h>
 #include <uuid/uuid.h>
 
-#include <test-core.h>
+#include <test.h>
 #include <linux/version.h>
 #include <ndctl/libndctl.h>
-#include <test-dpa-alloc.h>
 #include <ccan/array_size/array_size.h>
 
 #ifdef HAVE_NDCTL_H

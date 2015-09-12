@@ -1,10 +1,7 @@
 #include <stdio.h>
 #include <limits.h>
 #include <syslog.h>
-#include <test-core.h>
-#include <test-libndctl.h>
-#include <test-dpa-alloc.h>
-#include <test-parent-uuid.h>
+#include <test.h>
 #include <util/parse-options.h>
 
 static char *result(int rc)

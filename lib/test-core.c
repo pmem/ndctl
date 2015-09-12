@@ -1,7 +1,7 @@
 #include <linux/version.h>
-#include <test-core.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <test.h>
 
 #define KVER_STRLEN 20
 

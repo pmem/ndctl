@@ -32,8 +32,7 @@
 #else
 #include <ndctl.h>
 #endif
-#include <test-libndctl.h>
-#include <test-core.h>
+#include <test.h>
 
 #define BLKROGET _IO(0x12,94) /* get read-only status (0 = read_write) */
 #define BLKROSET _IO(0x12,93) /* set device read-only (0 = read-write) */

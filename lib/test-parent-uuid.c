@@ -25,8 +25,7 @@
 #include <libkmod.h>
 #include <uuid/uuid.h>
 #include <linux/version.h>
-#include <test-core.h>
-#include <test-parent-uuid.h>
+#include <test.h>
 
 #include <ndctl/libndctl.h>
 

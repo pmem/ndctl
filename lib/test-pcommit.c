@@ -15,7 +15,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
-#include <test-pcommit.h>
+#include <test.h>
 
 #define err(msg)\
 	fprintf(stderr, "%s:%d: %s (%s)\n", __func__, __LINE__, msg, strerror(errno))
