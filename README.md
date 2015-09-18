@@ -15,7 +15,7 @@ loaded.  To build and install nfit_test.ko:
 
 1. Obtain the kernel source.  For example,  
 `git clone -b libnvdimm-for-next
-git://git.kernel.org/pub/scm/linux/kernel/git/djbw/nvdimm.git`  
+git://git.kernel.org/pub/scm/linux/kernel/git/nvdimm/nvdimm.git`  
 
 2. Configure the kernel to make some memory available to CMA (contiguous
    memory allocator).
