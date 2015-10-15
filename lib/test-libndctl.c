@@ -717,6 +717,7 @@ static int check_btt_autodetect(struct ndctl_bus *bus,
 		rc = -ENXIO;
 		goto out;
 	}
+	close(fd);
 
 	rc = -ENXIO;
 	if (ro != namespace->ro) {
