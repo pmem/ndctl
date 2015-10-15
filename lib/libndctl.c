@@ -1016,7 +1016,7 @@ NDCTL_EXPORT struct ndctl_btt *ndctl_region_get_btt_seed(struct ndctl_region *re
 	char *path = region->region_buf;
 	int len = region->buf_len;
 	struct ndctl_btt *btt;
-	char buf[50];
+	char buf[SYSFS_ATTR_SIZE];
 
 	if (snprintf(path, len, "%s/btt_seed", region->region_path) >= len) {
 		err(ctx, "%s: buffer too small!\n",
@@ -1582,7 +1582,7 @@ NDCTL_EXPORT unsigned long long ndctl_region_get_available_size(
 	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
 	char *path = region->region_buf;
 	int len = region->buf_len;
-	char buf[50];
+	char buf[SYSFS_ATTR_SIZE];
 
 	switch (nstype) {
 	case ND_DEVICE_NAMESPACE_PMEM:
@@ -1633,7 +1633,7 @@ NDCTL_EXPORT struct ndctl_namespace *ndctl_region_get_namespace_seed(
 	char *path = region->region_buf;
 	struct ndctl_namespace *ndns;
 	int len = region->buf_len;
-	char buf[50];
+	char buf[SYSFS_ATTR_SIZE];
 
 	if (snprintf(path, len, "%s/namespace_seed", region->region_path) >= len) {
 		err(ctx, "%s: buffer too small!\n",
@@ -2944,7 +2944,7 @@ NDCTL_EXPORT struct ndctl_btt *ndctl_namespace_get_btt(struct ndctl_namespace *n
 	char *path = ndns->ndns_buf;
 	int len = ndns->buf_len;
 	struct ndctl_btt *btt;
-	char buf[50];
+	char buf[SYSFS_ATTR_SIZE];
 
 	if (snprintf(path, len, "%s/holder", ndns->ndns_path) >= len) {
 		err(ctx, "%s: buffer too small!\n",
@@ -3374,7 +3374,7 @@ static int namespace_set_size(struct ndctl_namespace *ndns,
 	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
 	char *path = ndns->ndns_buf;
 	int len = ndns->buf_len;
-	char buf[50];
+	char buf[SYSFS_ATTR_SIZE];
 
 	if (snprintf(path, len, "%s/size", ndns->ndns_path) >= len) {
 		err(ctx, "%s: buffer too small!\n",
@@ -3613,7 +3613,7 @@ NDCTL_EXPORT struct ndctl_namespace *ndctl_btt_get_namespace(struct ndctl_btt *b
 	struct ndctl_region *region = btt->region;
 	char *path = region->region_buf;
 	int len = region->buf_len;
-	char buf[50];
+	char buf[SYSFS_ATTR_SIZE];
 
 	if (btt->ndns)
 		return btt->ndns;
