@@ -128,7 +128,7 @@ static int do_test(struct ndctl_ctx *ctx)
 	int rc;
 	struct ndctl_bus *bus;
 	struct ndctl_btt *btt, *found = NULL, *_btt;
-	struct ndctl_region *region, *blk_region;
+	struct ndctl_region *region, *blk_region = NULL;
 	struct ndctl_namespace *ndns, *_ndns;
 	unsigned long long ns_size = 18874368;
 	uuid_t uuid = {0,  1,  2,  3,  4,  5,  6,  7, 8, 9, 10, 11, 12, 13, 14, 16};
