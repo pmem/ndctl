@@ -774,9 +774,6 @@ static int check_namespaces(struct ndctl_region *region,
 	void *buf = NULL, *__ndns_save;
 	char devname[50];
 
-	if (!region)
-		return -ENXIO;
-
 	if (posix_memalign(&buf, 4096, 4096) != 0)
 		return -ENOMEM;
 
