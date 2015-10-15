@@ -506,7 +506,7 @@ static int check_regions(struct ndctl_bus *bus, struct region *regions, int n)
 		if (rc)
 			return rc;
 
-		if (regions[i].namespaces)
+		if (regions[i].namespaces[0])
 			rc = check_namespaces(region, regions[i].namespaces);
 		if (rc)
 			break;
