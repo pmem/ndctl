@@ -168,32 +168,9 @@ static void handle_internal_command(int argc, const char **argv)
 	}
 }
 
-static const char *to_argv0_path(const char *argv0)
-{
-        const char *slash, *argv0_path;
-
-        if (!argv0 || !*argv0)
-                return NULL;
-        slash = argv0 + strlen(argv0);
-
-        while (argv0 <= slash && !is_dir_sep(*slash))
-                slash--;
-
-        if (slash >= argv0) {
-                argv0_path = strndup(argv0, slash - argv0);
-                return argv0_path ? slash + 1 : NULL;
-        }
-
-        return argv0;
-}
-
 int main(int argc, const char **argv)
 {
-	const char *cmd = to_argv0_path(argv[0]);
-
 	ndctl_usage_string = init_usage_string();
-	if (!cmd)
-		cmd = "ndctl-help";
 
 	/* Look for flags.. */
 	argv++;
@@ -209,10 +186,9 @@ int main(int argc, const char **argv)
 		/* printf("\n %s\n\n", ndctl_more_info_string); TODO */
 		goto out;
 	}
-	cmd = argv[0];
 	handle_internal_command(argc, argv);
 	fprintf(stderr, "Failed to run command '%s': %s\n",
-		cmd, strerror(errno));
+		argv[0], strerror(errno));
 out:
 	return 1;
 }
