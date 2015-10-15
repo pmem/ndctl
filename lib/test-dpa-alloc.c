@@ -37,7 +37,7 @@
 static const char *NFIT_TEST_MODULE = "nfit_test";
 static const char *NFIT_PROVIDER0 = "nfit_test.0";
 static const char *NFIT_PROVIDER1 = "nfit_test.1";
-#define SZ_4K 0x1000
+#define SZ_4K 0x1000UL
 #define NUM_NAMESPACES 4
 #define DEFAULT_AVAILABLE_SLOTS 1015
 
@@ -53,7 +53,7 @@ static int do_test(struct ndctl_ctx *ctx, struct ndctl_test *test)
 	unsigned int available_slots, i;
 	struct ndctl_namespace *ndns;
 	struct ndctl_dimm *dimm;
-	unsigned long long size;
+	unsigned long size;
 	struct ndctl_bus *bus;
 	char uuid_str[40];
 	int round;
@@ -142,7 +142,7 @@ static int do_test(struct ndctl_ctx *ctx, struct ndctl_test *test)
 		ndctl_namespace_disable_invalidate(ndns);
 		rc = ndctl_namespace_set_size(ndns, SZ_4K);
 		if (rc) {
-			fprintf(stderr, "failed to init %s to size: %d\n",
+			fprintf(stderr, "failed to init %s to size: %ld\n",
 					ndctl_namespace_get_devname(ndns),
 					SZ_4K);
 			return rc;
@@ -169,7 +169,7 @@ static int do_test(struct ndctl_ctx *ctx, struct ndctl_test *test)
 		size = SZ_4K * round;
 		rc = ndctl_namespace_set_size(ndns, size);
 		if (rc) {
-			fprintf(stderr, "%s: set_size: %llx failed: %d\n",
+			fprintf(stderr, "%s: set_size: %lx failed: %d\n",
 				ndctl_namespace_get_devname(ndns), size, rc);
 			return rc;
 		}
@@ -267,7 +267,7 @@ static int do_test(struct ndctl_ctx *ctx, struct ndctl_test *test)
 			i++;
 			if (sz == size)
 				continue;
-			fprintf(stderr, "%s size: %llx expected %llx\n",
+			fprintf(stderr, "%s size: %llx expected %lx\n",
 					ndctl_namespace_get_devname(ndns),
 					sz, size);
 			return -ENXIO;
