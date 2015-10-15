@@ -269,7 +269,7 @@ struct ndctl_namespace *ndctl_namespace_get_next(struct ndctl_namespace *ndns);
              ndns = ndctl_namespace_get_next(ndns))
 #define ndctl_namespace_foreach_safe(region, ndns, _ndns) \
 	for (ndns = ndctl_namespace_get_first(region), \
-	     _ndns = ndctl_namespace_get_next(ndns); \
+	     _ndns = ndns ? ndctl_namespace_get_next(ndns) : NULL; \
 	     ndns != NULL; \
 	     ndns = _ndns, \
 	     _ndns = _ndns ? ndctl_namespace_get_next(_ndns) : NULL)
@@ -315,7 +315,7 @@ struct ndctl_btt *ndctl_btt_get_next(struct ndctl_btt *btt);
              btt = ndctl_btt_get_next(btt))
 #define ndctl_btt_foreach_safe(region, btt, _btt) \
 	for (btt = ndctl_btt_get_first(region), \
-	     _btt = ndctl_btt_get_next(btt); \
+	     _btt = btt ? ndctl_btt_get_next(btt) : NULL; \
 	     btt != NULL; \
 	     btt = _btt, \
 	     _btt = _btt ? ndctl_btt_get_next(_btt) : NULL)
