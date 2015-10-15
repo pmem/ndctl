@@ -538,7 +538,7 @@ static int check_btt_create(struct ndctl_region *region, struct ndctl_namespace 
 
 		btt = get_idle_btt(region);
 		if (!btt)
-			return -ENXIO;
+			goto err;
 
 		devname = ndctl_btt_get_devname(btt);
 		ndctl_btt_set_uuid(btt, btt_s->uuid);
@@ -551,14 +551,14 @@ static int check_btt_create(struct ndctl_region *region, struct ndctl_namespace 
 					namespace->ro ? "failure" : "success",
 					ndctl_region_get_devname(region),
 					namespace->ro ? "only" : "write");
-			return -ENXIO;
+			goto err;
 		}
 
 		if (btt_seed == ndctl_region_get_btt_seed(region)
 				&& btt == btt_seed) {
 			fprintf(stderr, "%s: failed to advance btt seed\n",
 					ndctl_region_get_devname(region));
-			return -ENXIO;
+			goto err;
 		}
 
 		/* check new seed creation for BLK regions */
@@ -567,7 +567,7 @@ static int check_btt_create(struct ndctl_region *region, struct ndctl_namespace 
 					&& ndns == ns_seed) {
 				fprintf(stderr, "%s: failed to advance namespace seed\n",
 						ndctl_region_get_devname(region));
-				return -ENXIO;
+				goto err;
 			}
 		}
 
@@ -577,7 +577,7 @@ static int check_btt_create(struct ndctl_region *region, struct ndctl_namespace 
 			fprintf(stderr, "%s: failed to enable after setting rw\n",
 					devname);
 			ndctl_region_set_ro(region, 1);
-			return -ENXIO;
+			goto err;
 		}
 
 		sprintf(bdevpath, "/dev/%s", ndctl_btt_get_block_device(btt));
@@ -616,7 +616,7 @@ static int check_btt_create(struct ndctl_region *region, struct ndctl_namespace 
 			close(fd);
 
 		if (rc)
-			return rc;
+			break;
 
 		rc = ndctl_btt_delete(btt);
 		if (rc)
@@ -624,6 +624,9 @@ static int check_btt_create(struct ndctl_region *region, struct ndctl_namespace 
 	}
 	free(buf);
 	return rc;
+ err:
+	free(buf);
+	return -ENXIO;
 }
 
 static int configure_namespace(struct ndctl_region *region,
