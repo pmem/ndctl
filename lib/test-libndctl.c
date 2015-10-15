@@ -651,11 +651,12 @@ static int configure_namespace(struct ndctl_region *region,
 			fprintf(stderr, "%s: set_size failed: %d\n", devname, rc);
 	}
 
-	if (lbasize)
+	if (lbasize) {
 		rc = ndctl_namespace_set_sector_size(ndns, lbasize);
-	if (rc)
-		fprintf(stderr, "%s: set_sector_size (%lu) failed: %d\n",
-			devname, lbasize, rc);
+		if (rc)
+			fprintf(stderr, "%s: set_sector_size (%lu) failed: %d\n",
+					devname, lbasize, rc);
+	}
 
 	rc = ndctl_namespace_is_configured(ndns);
 	if (rc < 1)
