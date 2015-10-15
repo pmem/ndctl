@@ -2021,18 +2021,19 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_read(struct ndctl_cmd *cfg
 	struct ndctl_cmd *cmd;
 	size_t size;
 
-	if (!ndctl_dimm_is_cmd_supported(dimm, ND_CMD_GET_CONFIG_DATA)) {
-		dbg(ctx, "unsupported cmd\n");
-		return NULL;
-	}
-
 	if (cfg_size->type != ND_CMD_GET_CONFIG_SIZE
 			|| cfg_size->status != 0) {
 		dbg(ctx, "expected sucessfully completed cfg_size command\n");
 		return NULL;
 	}
-	if (!cfg_size->dimm || cfg_size->get_size->config_size == 0) {
+
+	if (!dimm || cfg_size->get_size->config_size == 0) {
 		dbg(ctx, "invalid cfg_size\n");
+		return NULL;
+	}
+
+	if (!ndctl_dimm_is_cmd_supported(dimm, ND_CMD_GET_CONFIG_DATA)) {
+		dbg(ctx, "unsupported cmd\n");
 		return NULL;
 	}
 
@@ -2042,7 +2043,7 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_read(struct ndctl_cmd *cfg
 	if (!cmd)
 		return NULL;
 
-	cmd->dimm = cfg_size->dimm;
+	cmd->dimm = dimm;
 	cmd->refcount = 1;
 	cmd->type = ND_CMD_GET_CONFIG_DATA;
 	cmd->size = size;
@@ -2071,11 +2072,6 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_write(struct ndctl_cmd *cf
 	struct ndctl_cmd *cmd;
 	size_t size;
 
-	if (!ndctl_dimm_is_cmd_supported(dimm, ND_CMD_SET_CONFIG_DATA)) {
-		dbg(ctx, "unsupported cmd\n");
-		return NULL;
-	}
-
 	/* enforce rmw */
 	if (cfg_read->type != ND_CMD_GET_CONFIG_DATA
 		       || cfg_read->status != 0) {
@@ -2083,8 +2079,13 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_write(struct ndctl_cmd *cf
 		return NULL;
 	}
 
-	if (!cfg_read->dimm || cfg_read->get_data->in_length == 0) {
+	if (!dimm || cfg_read->get_data->in_length == 0) {
 		dbg(ctx, "invalid cfg_read\n");
+		return NULL;
+	}
+
+	if (!ndctl_dimm_is_cmd_supported(dimm, ND_CMD_SET_CONFIG_DATA)) {
+		dbg(ctx, "unsupported cmd\n");
 		return NULL;
 	}
 
@@ -2094,7 +2095,7 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_write(struct ndctl_cmd *cf
 	if (!cmd)
 		return NULL;
 
-	cmd->dimm = cfg_read->dimm;
+	cmd->dimm = dimm;
 	ndctl_cmd_ref(cmd);
 	cmd->type = ND_CMD_SET_CONFIG_DATA;
 	cmd->size = size;
