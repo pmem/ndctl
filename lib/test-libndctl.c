@@ -1249,6 +1249,7 @@ static int check_set_config_data(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 	return 0;
 }
 
+#ifdef HAVE_NDCTL_ARS
 static int check_ars_cap(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 		struct check_cmd *check)
 {
@@ -1360,6 +1361,28 @@ static int check_ars_status(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 	check->cmd = cmd;
 	return 0;
 }
+#else
+static int check_ars_cap(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
+		struct check_cmd *check)
+{
+	fprintf(stderr, "%s: HAVE_NDCTL_ARS disabled, skipping\n", __func__);
+	return 0;
+}
+
+static int check_ars_start(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
+		struct check_cmd *check)
+{
+	fprintf(stderr, "%s: HAVE_NDCTL_ARS disabled, skipping\n", __func__);
+	return 0;
+}
+
+static int check_ars_status(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
+		struct check_cmd *check)
+{
+	fprintf(stderr, "%s: HAVE_NDCTL_ARS disabled, skipping\n", __func__);
+	return 0;
+}
+#endif
 
 #define BITS_PER_LONG 32
 static int check_commands(struct ndctl_bus *bus, struct ndctl_dimm *dimm,

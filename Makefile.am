@@ -53,6 +53,10 @@ lib_libndctl_la_SOURCES =\
 	lib/libndctl.c
 lib_libndctl_la_LIBADD = $(UDEV_LIBS) $(UUID_LIBS) $(KMOD_LIBS)
 
+if ENABLE_ARS
+lib_libndctl_la_SOURCES += lib/libndctl-ars.c
+endif
+
 bin_PROGRAMS = ndctl
 
 ndctl_SOURCES = ndctl.c \

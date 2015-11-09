@@ -13,11 +13,14 @@
 #ifndef _LIBNDCTL_PRIVATE_H_
 #define _LIBNDCTL_PRIVATE_H_
 
+#include <errno.h>
 #include <stdbool.h>
 #include <syslog.h>
+#include <string.h>
 #include <libudev.h>
 #include <libkmod.h>
 #include <uuid/uuid.h>
+#include <ccan/array_size/array_size.h>
 #ifdef HAVE_NDCTL_H
 #include <linux/ndctl.h>
 #else
@@ -116,6 +119,63 @@ struct namespace_label {
 	le32 slot;
 	le32 unused;
 };
+
+/**
+ * struct ndctl_cmd - device-specific-method (_DSM ioctl) container
+ * @dimm: set if the command is relative to a dimm, NULL otherwise
+ * @bus: set if the command is relative to a bus (like ARS), NULL otherwise
+ * @refcount: reference for passing command buffer around
+ * @type: cmd number
+ * @size: total size of the ndctl_cmd allocation
+ * @status: negative if failed, 0 if success, > 0 if never submitted
+ * @firmware_status: NFIT command output status code
+ * @iter: iterator for multi-xfer commands
+ * @source: source cmd of an inherited iter.total_buf
+ *
+ * For dynamically sized commands like 'get_config', 'set_config', or
+ * 'vendor', @size encompasses the entire buffer for the command input
+ * and response output data.
+ *
+ * A command may only specify one of @source, or @iter.total_buf, not both.
+ */
+enum {
+	READ, WRITE,
+};
+struct ndctl_cmd {
+	struct ndctl_dimm *dimm;
+	struct ndctl_bus *bus;
+	int refcount;
+	int type;
+	int size;
+	int status;
+	u32 *firmware_status;
+	struct ndctl_cmd_iter {
+		u32 *offset;
+		u8 *data; /* pointer to the data buffer location in cmd */
+		u32 max_xfer;
+		char *total_buf;
+		u32 total_xfer;
+		int dir;
+	} iter;
+	struct ndctl_cmd *source;
+	union {
+		struct nd_cmd_ars_cap ars_cap[0];
+		struct nd_cmd_ars_start ars_start[0];
+		struct nd_cmd_ars_status ars_status[0];
+		struct nd_cmd_get_config_size get_size[0];
+		struct nd_cmd_get_config_data_hdr get_data[0];
+		struct nd_cmd_set_config_hdr set_data[0];
+		struct nd_cmd_vendor_hdr vendor[0];
+		char cmd_buf[0];
+	};
+};
+
+static inline struct ndctl_bus *cmd_to_bus(struct ndctl_cmd *cmd)
+{
+	if (cmd->dimm)
+		return ndctl_dimm_get_bus(cmd->dimm);
+	return cmd->bus;
+}
 
 static inline void __attribute__((always_inline, format(printf, 2, 3)))
 ndctl_log_null(struct ndctl_ctx *ctx, const char *format, ...) {}

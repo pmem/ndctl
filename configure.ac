@@ -73,10 +73,38 @@ PKG_CHECK_MODULES([KMOD], [libkmod])
 PKG_CHECK_MODULES([UDEV], [libudev])
 PKG_CHECK_MODULES([UUID], [uuid])
 
-AC_CHECK_HEADER([linux/ndctl.h],
-		[AC_DEFINE([HAVE_NDCTL_H], [1],
-			[Define to 1 if you have <linux/ndctl.h>.])],
-		[])
+AC_ARG_ENABLE([local],
+        AS_HELP_STRING([--enable-local], [build with local ndctl.h @<:@default=system@:>@]),
+        [], [enable_local=no])
+
+AS_IF([test "x$enable_local" = "xyes"], [], [
+	AC_CHECK_HEADER([linux/ndctl.h], [
+		AC_DEFINE([HAVE_NDCTL_H], [1],
+			[Define to 1 if you have <linux/ndctl.h>.])
+		], [])
+	]
+)
+
+# when building against kernel headers check version specific features
+AC_MSG_CHECKING([for ARS support])
+AC_LANG(C)
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+			#ifdef HAVE_NDCTL_H
+			#include <linux/ndctl.h>
+			#else
+			#include "ndctl.h"
+			#endif
+			]], [[
+			int x = ARS_STATUS_MASK;
+			]]
+		)], [AC_MSG_RESULT([yes])
+		     enable_ars=yes
+		     AC_DEFINE([HAVE_NDCTL_ARS], [1],
+				[Define to 1 if ndctl.h has ARS support.])
+		], [AC_MSG_RESULT([no])]
+)
+AM_CONDITIONAL([ENABLE_ARS], [test "x$enable_ars" = "xyes"])
+
 AC_CHECK_HEADERS_ONCE([linux/version.h])
 
 AC_CHECK_FUNCS([ \
