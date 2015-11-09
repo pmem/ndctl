@@ -1873,8 +1873,8 @@ NDCTL_EXPORT unsigned int ndctl_cmd_ars_num_records(struct ndctl_cmd *ars_stat)
 	return 0;
 }
 
-NDCTL_EXPORT unsigned int ndctl_cmd_ars_get_record_addr(struct ndctl_cmd *ars_stat,
-		unsigned int rec_index)
+NDCTL_EXPORT unsigned long long ndctl_cmd_ars_get_record_addr(
+		struct ndctl_cmd *ars_stat, unsigned int rec_index)
 {
 	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(cmd_to_bus(ars_stat));
 
@@ -1890,8 +1890,8 @@ NDCTL_EXPORT unsigned int ndctl_cmd_ars_get_record_addr(struct ndctl_cmd *ars_st
 	return 0;
 }
 
-NDCTL_EXPORT unsigned int ndctl_cmd_ars_get_record_len(struct ndctl_cmd *ars_stat,
-		unsigned int rec_index)
+NDCTL_EXPORT unsigned long long ndctl_cmd_ars_get_record_len(
+		struct ndctl_cmd *ars_stat, unsigned int rec_index)
 {
 	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(cmd_to_bus(ars_stat));
 

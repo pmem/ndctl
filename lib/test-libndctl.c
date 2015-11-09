@@ -1351,9 +1351,9 @@ static int check_ars_status(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 	} while (ndctl_cmd_ars_in_progress(cmd));
 
 	for (i = 0; i < ndctl_cmd_ars_num_records(cmd); i++) {
-		fprintf(stderr, "%s: record[%d].addr: 0x%x\n", __func__, i,
+		fprintf(stderr, "%s: record[%d].addr: 0x%llx\n", __func__, i,
 			ndctl_cmd_ars_get_record_addr(cmd, i));
-		fprintf(stderr, "%s: record[%d].length: 0x%x\n", __func__, i,
+		fprintf(stderr, "%s: record[%d].length: 0x%llx\n", __func__, i,
 			ndctl_cmd_ars_get_record_len(cmd, i));
 	}
 
