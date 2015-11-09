@@ -1084,7 +1084,7 @@ NDCTL_EXPORT const char *ndctl_bus_get_provider(struct ndctl_bus *bus)
 	return bus->provider;
 }
 
-struct ndctl_ctx *ndctl_bus_get_ctx(struct ndctl_bus *bus)
+NDCTL_EXPORT struct ndctl_ctx *ndctl_bus_get_ctx(struct ndctl_bus *bus)
 {
 	return bus->ctx;
 }

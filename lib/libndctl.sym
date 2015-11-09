@@ -30,6 +30,7 @@ global:
 	ndctl_bus_get_revision;
 	ndctl_bus_get_id;
 	ndctl_bus_get_provider;
+	ndctl_bus_get_ctx;
 	ndctl_bus_wait_probe;
 	ndctl_dimm_get_first;
 	ndctl_dimm_get_next;
