@@ -52,7 +52,7 @@ Libraries for %{name}.
 %build
 echo "" > version
 ./autogen.sh
-%configure --disable-static
+%configure --disable-static --enable-local
 make %{?_smp_mflags}
 
 %install
