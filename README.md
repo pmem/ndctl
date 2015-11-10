@@ -2,6 +2,15 @@
 Utility library for managing the libnvdimm (non-volatile memory device)
 sub-system in the Linux kernel
   
+
+Build
+=====
+`./autogen.sh`  
+`./configure --enable-local`  
+`make`  
+`make check`  
+`sudo make install`  
+
 Documentation
 =============
 See the latest documentation for the NVDIMM kernel sub-system here:
@@ -21,9 +30,9 @@ git://git.kernel.org/pub/scm/linux/kernel/git/nvdimm/nvdimm.git`
    memory allocator).
 This will be used to emulate DAX.  
 `CONFIG_DMA_CMA=y`  
-`CONFIG_CMA_SIZE_MBYTES=150`  
+`CONFIG_CMA_SIZE_MBYTES=200`  
 **or**  
-`cma=150M` on the kernel command line.  
+`cma=200M` on the kernel command line.  
 
 3. Compile all components of the libnvdimm sub-system as modules:  
 `CONFIG_LIBNVDIMM=m`  
