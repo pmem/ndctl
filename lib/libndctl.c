@@ -1123,6 +1123,11 @@ NDCTL_EXPORT int ndctl_bus_wait_probe(struct ndctl_bus *bus)
 	return rc < 0 ? -ENXIO : 0;
 }
 
+static int ndctl_bind(struct ndctl_ctx *ctx, struct kmod_module *module,
+		const char *devname);
+static int ndctl_unbind(struct ndctl_ctx *ctx, const char *devpath);
+static struct kmod_module *to_module(struct ndctl_ctx *ctx, const char *alias);
+
 static int add_dimm(void *parent, int id, const char *dimm_base)
 {
 	int rc = -ENOMEM;

@@ -170,9 +170,4 @@ static inline int check_kmod(struct kmod_ctx *kmod_ctx)
 	return kmod_ctx ? 0 : -ENXIO;
 }
 
-static int ndctl_bind(struct ndctl_ctx *ctx, struct kmod_module *module,
-		const char *devname);
-static int ndctl_unbind(struct ndctl_ctx *ctx, const char *devpath);
-static struct kmod_module *to_module(struct ndctl_ctx *ctx, const char *alias);
-
 #endif /* _LIBNDCTL_PRIVATE_H_ */
