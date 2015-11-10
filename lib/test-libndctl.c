@@ -524,7 +524,7 @@ static int check_btt_create(struct ndctl_region *region, struct ndctl_namespace 
 	const char *devname;
 	char bdevpath[50];
 	void *buf = NULL;
-	ssize_t rc;
+	ssize_t rc = 0;
 
 	if (!namespace->btt_settings)
 		return 0;
