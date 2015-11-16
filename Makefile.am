@@ -122,6 +122,9 @@ check_PROGRAMS = lib/test-libndctl lib/test-dpa-alloc lib/test-parent-uuid
 if ENABLE_DESTRUCTIVE
 TESTS += lib/test-blk-ns lib/test-pmem-ns lib/test-pcommit
 check_PROGRAMS += lib/test-blk-ns lib/test-pmem-ns lib/test-pcommit
+
+TESTS += lib/test-dax-dev lib/test-dax.sh
+check_PROGRAMS += lib/test-dax-dev lib/test-dax-pmd
 endif
 
 lib_test_libndctl_SOURCES = lib/test-libndctl.c lib/test-core.c
@@ -141,3 +144,8 @@ lib_test_dpa_alloc_LDADD = lib/libndctl.la $(UUID_LIBS) $(KMOD_LIBS)
 
 lib_test_parent_uuid_SOURCES = lib/test-parent-uuid.c lib/test-core.c
 lib_test_parent_uuid_LDADD = lib/libndctl.la $(UUID_LIBS) $(KMOD_LIBS)
+
+lib_test_dax_dev_SOURCES = lib/test-dax-dev.c lib/test-core.c
+lib_test_dax_dev_LDADD = lib/libndctl.la
+
+lib_test_dax_pmd_SOURCES = lib/test-dax-pmd.c
