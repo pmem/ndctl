@@ -106,12 +106,12 @@ static int test_pmd(int fd)
 			break;
 		case 1: /* test O_DIRECT of pre-faulted address */
 			sprintf(addr, "odirect data");
-			if (write(fd2, addr, 4096) != 4096) {
+			if (pwrite(fd2, addr, 4096, 0) != 4096) {
 				faili(i);
 				rc = -ENXIO;
 			}
 			((char *) buf)[0] = 0;
-			read(fd2, buf, sizeof(buf));
+			pread(fd2, buf, 4096, 0);
 			if (strcmp(buf, "odirect data") != 0) {
 				faili(i);
 				rc = -ENXIO;
