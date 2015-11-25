@@ -123,8 +123,8 @@ if ENABLE_DESTRUCTIVE
 TESTS += lib/test-blk-ns lib/test-pmem-ns lib/test-pcommit
 check_PROGRAMS += lib/test-blk-ns lib/test-pmem-ns lib/test-pcommit
 
-TESTS += lib/test-dax-dev lib/test-dax.sh
-check_PROGRAMS += lib/test-dax-dev lib/test-dax-pmd
+TESTS += lib/test-dax-dev lib/test-dax.sh lib/test-mmap.sh
+check_PROGRAMS += lib/test-dax-dev lib/test-dax-pmd lib/test-mmap
 endif
 
 lib_test_libndctl_SOURCES = lib/test-libndctl.c lib/test-core.c
@@ -149,3 +149,4 @@ lib_test_dax_dev_SOURCES = lib/test-dax-dev.c lib/test-core.c
 lib_test_dax_dev_LDADD = lib/libndctl.la
 
 lib_test_dax_pmd_SOURCES = lib/test-dax-pmd.c
+lib_test_mmap_SOURCES = lib/test-mmap.c
