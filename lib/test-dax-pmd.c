@@ -25,8 +25,8 @@ static int test_pmd(int fd)
 	unsigned long long m_align, p_align;
 	int fd2 = -1, rc = -ENXIO;
 	struct fiemap_extent *ext;
+	void *base, *addr, *buf;
 	struct fiemap *map;
-	void *addr, *buf;
 	unsigned long i;
 
 	if (fd < 0) {
@@ -44,12 +44,12 @@ static int test_pmd(int fd)
 	if (posix_memalign(&buf, 4096, 4096) != 0)
 		goto err_memalign;
 
-        addr = mmap(NULL, 4*HPAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
-        if (addr == MAP_FAILED) {
+	base = mmap(NULL, 4*HPAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+	if (base == MAP_FAILED) {
 		fail();
 		goto err_mmap;
 	}
-	munmap(addr, 4*HPAGE_SIZE);
+	munmap(base, 4*HPAGE_SIZE);
 
 	map->fm_start = 0;
 	map->fm_length = -1;
@@ -76,12 +76,12 @@ static int test_pmd(int fd)
 		goto err_extent;
 	}
 
-	m_align = ALIGN(addr, HPAGE_SIZE) - ((unsigned long) addr);
+	m_align = ALIGN(base, HPAGE_SIZE) - ((unsigned long) base);
 	p_align = ALIGN(ext->fe_physical, HPAGE_SIZE) - ext->fe_physical;
 
 	for (i = 0; i < 3; i++) {
 		rc = -ENXIO;
-		addr = mmap((char *) addr + m_align, 2*HPAGE_SIZE,
+		addr = mmap((char *) base + m_align, 2*HPAGE_SIZE,
 				PROT_READ|PROT_WRITE, MAP_SHARED, fd,
 				ext->fe_logical + p_align);
 		if (addr == MAP_FAILED) {
@@ -96,6 +96,7 @@ static int test_pmd(int fd)
 			break;
 		}
 
+		fprintf(stderr, "%s: test: %ld\n", __func__, i);
 		rc = 0;
 		switch (i) {
 		case 0: /* test O_DIRECT of unfaulted address */
