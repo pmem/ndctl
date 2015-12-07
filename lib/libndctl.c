@@ -2477,6 +2477,24 @@ NDCTL_EXPORT unsigned long long ndctl_mapping_get_length(struct ndctl_mapping *m
 	return mapping->length;
 }
 
+NDCTL_EXPORT struct ndctl_region *ndctl_mapping_get_region(
+		struct ndctl_mapping *mapping)
+{
+	return mapping->region;
+}
+
+NDCTL_EXPORT struct ndctl_bus *ndctl_mapping_get_bus(
+		struct ndctl_mapping *mapping)
+{
+	return ndctl_mapping_get_region(mapping)->bus;
+}
+
+NDCTL_EXPORT struct ndctl_ctx *ndctl_mapping_get_ctx(
+		struct ndctl_mapping *mapping)
+{
+	return ndctl_mapping_get_bus(mapping)->ctx;
+}
+
 static struct kmod_module *to_module(struct ndctl_ctx *ctx, const char *alias)
 {
 	struct kmod_list *list = NULL;
