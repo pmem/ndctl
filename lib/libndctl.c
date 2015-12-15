@@ -2868,6 +2868,32 @@ NDCTL_EXPORT const char *ndctl_namespace_get_block_device(struct ndctl_namespace
 	return ndns->bdev ? ndns->bdev : "";
 }
 
+NDCTL_EXPORT enum ndctl_namespace_mode ndctl_namespace_get_mode(
+		struct ndctl_namespace *ndns)
+{
+	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
+	char *path = ndns->ndns_buf;
+	int len = ndns->buf_len;
+	char buf[SYSFS_ATTR_SIZE];
+
+	if (snprintf(path, len, "%s/mode", ndns->ndns_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_namespace_get_devname(ndns));
+		return -ENOMEM;
+	}
+
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		return -ENXIO;
+
+	if (strcmp("memory", buf) == 0)
+		return NDCTL_NS_MODE_MEMORY;
+	if (strcmp("raw", buf) == 0)
+		return NDCTL_NS_MODE_RAW;
+	if (strcmp("safe", buf) == 0)
+		return NDCTL_NS_MODE_SAFE;
+	return -ENXIO;
+}
+
 NDCTL_EXPORT int ndctl_namespace_is_valid(struct ndctl_namespace *ndns)
 {
 	struct ndctl_region *region = ndctl_namespace_get_region(ndns);

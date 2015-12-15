@@ -575,6 +575,7 @@ static int __check_pfn_create(struct ndctl_region *region,
 		uuid_t uuid)
 {
 	struct ndctl_pfn *pfn_seed = ndctl_region_get_pfn_seed(region);
+	enum ndctl_namespace_mode mode;
 	struct ndctl_pfn *pfn;
 	const char *devname;
 	int fd, retry = 10;
@@ -600,6 +601,12 @@ static int __check_pfn_create(struct ndctl_region *region,
 		ndctl_pfn_delete(pfn);
 		return 0;
 	}
+
+	mode = ndctl_namespace_get_mode(ndns);
+	if (mode >= 0 && mode != NDCTL_NS_MODE_MEMORY)
+		fprintf(stderr, "%s: expected memory mode got: %d\n",
+				devname, mode);
+
 	if (namespace->ro == (rc == 0)) {
 		fprintf(stderr, "%s: expected pfn enable %s, %s read-%s\n",
 				devname,
@@ -718,6 +725,7 @@ static int check_btt_create(struct ndctl_region *region, struct ndctl_namespace 
 	for (i = 0; i < btt_s->num_sector_sizes; i++) {
 		struct ndctl_namespace *ns_seed = ndctl_region_get_namespace_seed(region);
 		struct ndctl_btt *btt_seed = ndctl_region_get_btt_seed(region);
+		enum ndctl_namespace_mode mode;
 
 		btt = get_idle_btt(region);
 		if (!btt)
@@ -736,6 +744,11 @@ static int check_btt_create(struct ndctl_region *region, struct ndctl_namespace 
 					namespace->ro ? "only" : "write");
 			goto err;
 		}
+
+		mode = ndctl_namespace_get_mode(ndns);
+		if (mode >= 0 && mode != NDCTL_NS_MODE_SAFE)
+			fprintf(stderr, "%s: expected safe mode got: %d\n",
+					devname, mode);
 
 		if (btt_seed == ndctl_region_get_btt_seed(region)
 				&& btt == btt_seed) {

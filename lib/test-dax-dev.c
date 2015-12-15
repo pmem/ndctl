@@ -34,6 +34,7 @@ static int emit_e820_device(int loglevel, struct ndctl_test *test)
 	struct ndctl_bus *bus;
 	struct ndctl_region *region;
 	struct ndctl_namespace *ndns;
+	enum ndctl_namespace_mode mode;
 
 	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 3, 0)))
 		return 77;
@@ -54,6 +55,10 @@ static int emit_e820_device(int loglevel, struct ndctl_test *test)
 
 	ndns = ndctl_namespace_get_first(region);
 	if (!ndns)
+		goto out;
+
+	mode = ndctl_namespace_get_mode(ndns);
+	if (mode >= 0 && mode != NDCTL_NS_MODE_MEMORY)
 		goto out;
 
 	bdev = ndctl_namespace_get_block_device(ndns);
