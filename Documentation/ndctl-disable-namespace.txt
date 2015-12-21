@@ -1,0 +1,21 @@
+ndctl-disable-namespace(1)
+=========================
+
+NAME
+----
+ndctl-disable-namespace - disable the given namespace(s)
+
+SYNOPSIS
+--------
+[verse]
+'ndctl disable-namespace' <namespace> [<options>]
+
+include::namespace-description.txt[]
+
+OPTIONS
+-------
+include::xable-namespace-options.txt[]
+
+SEE ALSO
+--------
+linkndctl:ndctl-disable-namespace[1]

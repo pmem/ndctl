@@ -1,0 +1,6 @@
+DESCRIPTION
+-----------
+A REGION, after resolving DPA aliasing and LABEL specified boundaries,
+surfaces one or more "namespace" devices.  The arrival of a "namespace"
+device currently triggers either the nd_blk or nd_pmem driver to load
+and register a disk/block device.

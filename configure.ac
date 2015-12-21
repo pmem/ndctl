@@ -32,6 +32,16 @@ AC_PREFIX_DEFAULT([/usr])
 
 AC_PROG_SED
 AC_PROG_MKDIR_P
+AC_CHECK_PROG(ASCIIDOC, [asciidoc], [$(which asciidoc)], [missing])
+if test "x$ASCIIDOC" = xmissing; then
+       AC_MSG_ERROR([asciidoc needed to build documentation])
+fi
+AC_SUBST([ASCIIDOC])
+AC_CHECK_PROG(XMLTO, [xmlto], [$(which xmlto)], [missing])
+if test "x$XMLTO" = xmissing; then
+       AC_MSG_ERROR([xmlto needed to build documentation])
+fi
+AC_SUBST([XMLTO])
 
 AC_C_TYPEOF
 AC_DEFINE([HAVE_STATEMENT_EXPR], 1, [Define to 1 if you have statement expressions.])
@@ -130,6 +140,7 @@ AC_SUBST([my_CFLAGS])
 AC_CONFIG_HEADERS(config.h)
 AC_CONFIG_FILES([
         Makefile
+        Documentation/Makefile
 ])
 
 AC_OUTPUT

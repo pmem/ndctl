@@ -1,4 +1,5 @@
 *.o
+*.xml
 .deps/
 .libs/
 Makefile

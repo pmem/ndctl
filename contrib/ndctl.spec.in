@@ -13,6 +13,8 @@ Url:            https://github.com/pmem/ndctl
 Source0:        %{name}-git%{gitcommit}.tar.xz
 
 BuildRequires:  autoconf
+BuildRequires:  asciidoc
+BuildRequires:  xmlto
 BuildRequires:  automake
 BuildRequires:  libtool
 BuildRequires:  pkgconfig
@@ -70,6 +72,7 @@ make check
 %defattr(-,root,root)
 %license licenses/GPLv2 licenses/BSD-MIT licenses/CC0
 %{_bindir}/ndctl
+%{_mandir}/man1/*
 
 %files -n %lname
 %defattr(-,root,root)

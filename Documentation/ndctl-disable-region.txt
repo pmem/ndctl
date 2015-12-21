@@ -1,0 +1,22 @@
+ndctl-disable-region(1)
+=======================
+
+NAME
+----
+ndctl-disable-region - disable the given region(s) and all descendant namespaces
+
+SYNOPSIS
+--------
+[verse]
+'ndctl disable-region' <region> [<options>]
+
+include::region-description.txt[]
+
+OPTIONS
+-------
+<region>::
+include::xable-region-options.txt[]
+
+SEE ALSO
+--------
+linkndctl:ndctl-enable-region[1]

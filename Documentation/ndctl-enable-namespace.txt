@@ -1,0 +1,21 @@
+ndctl-enable-namespace(1)
+=========================
+
+NAME
+----
+ndctl-enable-namespace - enable the given namespace(s)
+
+SYNOPSIS
+--------
+[verse]
+'ndctl enable-namespace' <namespace> [<options>]
+
+include::namespace-description.txt[]
+
+OPTIONS
+-------
+include::xable-namespace-options.txt[]
+
+SEE ALSO
+--------
+linkndctl:ndctl-disable-namespace[1]

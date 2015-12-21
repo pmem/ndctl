@@ -1,0 +1,22 @@
+ndctl-enable-region(1)
+====================
+
+NAME
+----
+ndctl-enable-region - enable the given region(s) and all descendant namespaces
+
+SYNOPSIS
+--------
+[verse]
+'ndctl enable-region' <region> [<options>]
+
+include::region-description.txt[]
+
+OPTIONS
+-------
+<region>::
+include::xable-region-options.txt[]
+
+SEE ALSO
+--------
+linkndctl:ndctl-disable-region[1]
