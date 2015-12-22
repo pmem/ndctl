@@ -5,45 +5,21 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <builtin.h>
 #include <ccan/array_size/array_size.h>
 
 #include <util/strbuf.h>
 #include <util/util.h>
 
-static const char *ndctl_usage_string;
-
-static const char ndctl_more_info_string[] =
+const char ndctl_usage_string[] = "ndctl [--version] [--help] COMMAND [ARGS]";
+const char ndctl_more_info_string[] =
 	"See 'ndctl help COMMAND' for more information on a specific command.";
-
-struct cmd_struct {
-	const char *cmd;
-	int (*fn)(int, const char **);
-};
 
 static int cmd_version(int argc, const char **argv)
 {
 	printf("%s\n", VERSION);
 	return 0;
 }
-
-static int cmd_help(int argc, const char **argv)
-{
-	printf("\n%s\n\n", ndctl_usage_string);
-	return 0;
-}
-
-int cmd_create_nfit(int argc, const char **argv);
-int cmd_enable_namespace(int argc, const char **argv);
-int cmd_disable_namespace(int argc, const char **argv);
-int cmd_enable_region(int argc, const char **argv);
-int cmd_disable_region(int argc, const char **argv);
-int cmd_zero_labels(int argc, const char **argv);
-#ifdef ENABLE_TEST
-int cmd_test(int argc, const char **argv);
-#endif
-#ifdef ENABLE_DESTRUCTIVE
-int cmd_bat(int argc, const char **argv);
-#endif
 
 static struct cmd_struct commands[] = {
 	{ "version", cmd_version },
@@ -53,6 +29,7 @@ static struct cmd_struct commands[] = {
 	{ "enable-region", cmd_enable_region },
 	{ "disable-region", cmd_disable_region },
 	{ "zero-labels", cmd_zero_labels },
+	{ "help", cmd_help },
 	#ifdef ENABLE_TEST
 	{ "test", cmd_test },
 	#endif
@@ -60,29 +37,6 @@ static struct cmd_struct commands[] = {
 	{ "bat", cmd_bat },
 	#endif
 };
-
-/* place holder until help system is implemented */
-static char *init_usage_string(void)
-{
-	char *def = "ndctl [--version] [--help] COMMAND [ARGS]";
-	unsigned int len = strlen(def) + 1, i, p;
-	char *u;
-
-	for (i = 0; i < ARRAY_SIZE(commands); i++)
-		len += strlen(commands[i].cmd) + 2;
-	u = calloc(1, len);
-	if (!u)
-		return def;
-
-	p = sprintf(u, "%s", "ndctl [--version] [--help] ");
-	for (i = 0; i < ARRAY_SIZE(commands); i++) {
-		p += sprintf(&u[p], "%s", commands[i].cmd);
-		if ((i + 1) < ARRAY_SIZE(commands))
-			p += sprintf(&u[p], "|");
-	}
-	p = sprintf(&u[p], "%s", " [ARGS]");
-	return u;
-}
 
 static int handle_options(const char ***argv, int *argc)
 {
@@ -93,11 +47,22 @@ static int handle_options(const char ***argv, int *argc)
 		if (cmd[0] != '-')
 			break;
 
-               if (!strcmp(cmd, "--help"))
-			exit(cmd_help(*argc, *argv));
-
-		if (!strcmp(cmd, "--version"))
+		if (!strcmp(cmd, "--version") || !strcmp(cmd, "--help"))
 			break;
+
+		/*
+		 * Shortcut for '-h' and '-v' options to invoke help
+		 * and version command.
+		 */
+		if (!strcmp(cmd, "-h")) {
+			(*argv)[0] = "--help";
+			break;
+		}
+
+		if (!strcmp(cmd, "-v")) {
+			(*argv)[0] = "--version";
+			break;
+		}
 
 		if (!strcmp(cmd, "--list-cmds")) {
 			unsigned int i;
@@ -160,6 +125,12 @@ static void handle_internal_command(int argc, const char **argv)
 	const char *cmd = argv[0];
 	unsigned int i;
 
+	/* Turn "ndctl cmd --help" into "ndctl help cmd" */
+	if (argc > 1 && !strcmp(argv[1], "--help")) {
+		argv[1] = argv[0];
+		argv[0] = cmd = "help";
+	}
+
 	for (i = 0; i < ARRAY_SIZE(commands); i++) {
 		struct cmd_struct *p = commands+i;
 		if (strcmp(p->cmd, cmd))
@@ -170,8 +141,6 @@ static void handle_internal_command(int argc, const char **argv)
 
 int main(int argc, const char **argv)
 {
-	ndctl_usage_string = init_usage_string();
-
 	/* Look for flags.. */
 	argv++;
 	argc--;
@@ -183,7 +152,7 @@ int main(int argc, const char **argv)
 	} else {
 		/* The user didn't specify a command; give them help */
 		printf("\n usage: %s\n\n", ndctl_usage_string);
-		/* printf("\n %s\n\n", ndctl_more_info_string); TODO */
+		printf("\n %s\n\n", ndctl_more_info_string);
 		goto out;
 	}
 	handle_internal_command(argc, argv);

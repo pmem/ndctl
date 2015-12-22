@@ -8,6 +8,8 @@ AM_CPPFLAGS = \
 	-include $(top_builddir)/config.h \
 	-DSYSCONFDIR=\""$(sysconfdir)"\" \
 	-DLIBEXECDIR=\""$(libexecdir)"\" \
+	-DPREFIX=\""$(prefix)"\" \
+	-DNDCTL_MAN_PATH=\""$(mandir)"\" \
 	-I${top_srcdir}/lib/ndctl \
 	-I${top_srcdir}/lib \
 	-I${top_srcdir}/ \
@@ -65,6 +67,7 @@ ndctl_SOURCES = ndctl.c \
 		builtin-xable-namespace.c \
 		builtin-xable-region.c \
 		builtin-test.c \
+		builtin-help.c \
 		builtin-zero-labels.c \
 		util/parse-options.c \
 		util/parse-options.h \
