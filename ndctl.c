@@ -30,6 +30,7 @@ static struct cmd_struct commands[] = {
 	{ "enable-region", cmd_enable_region },
 	{ "disable-region", cmd_disable_region },
 	{ "zero-labels", cmd_zero_labels },
+	{ "list", cmd_list },
 	{ "help", cmd_help },
 	#ifdef ENABLE_TEST
 	{ "test", cmd_test },

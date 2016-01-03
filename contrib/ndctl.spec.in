@@ -21,6 +21,7 @@ BuildRequires:  pkgconfig
 BuildRequires:  pkgconfig(libkmod)
 BuildRequires:  pkgconfig(libudev)
 BuildRequires:  pkgconfig(uuid)
+BuildRequires:  pkgconfig(json-c)
 
 %description
 Utility library for managing the "libnvdimm" subsystem.  The "libnvdimm"

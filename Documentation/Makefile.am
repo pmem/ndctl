@@ -5,7 +5,8 @@ man1_MANS = \
 	ndctl-disable-region.1 \
 	ndctl-enable-namespace.1 \
 	ndctl-disable-namespace.1 \
-	ndctl-create-namespace.1
+	ndctl-create-namespace.1 \
+	ndctl-list.1
 
 XML_DEPS = \
 	$(top_srcdir)/version.m4 \

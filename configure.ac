@@ -82,6 +82,7 @@ AM_CONDITIONAL([ENABLE_DESTRUCTIVE], [test "x$enable_destructive" = "xyes"])
 PKG_CHECK_MODULES([KMOD], [libkmod])
 PKG_CHECK_MODULES([UDEV], [libudev])
 PKG_CHECK_MODULES([UUID], [uuid])
+PKG_CHECK_MODULES([JSON], [json-c])
 
 AC_ARG_ENABLE([local],
         AS_HELP_STRING([--enable-local], [build with local ndctl.h @<:@default=system@:>@]),

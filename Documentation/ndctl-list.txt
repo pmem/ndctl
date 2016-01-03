@@ -1,0 +1,86 @@
+ndctl-list(1)
+=============
+
+NAME
+----
+ndctl-list - dump the platform nvdimm device topology in json
+
+SYNOPSIS
+--------
+[verse]
+'ndctl list' [<options>]
+
+Walk all the nvdimm buses in the system and list all attached devices
+along with some of their major attributes.
+
+Options can be specified to limit the output to devices of a certain
+class.  Where the classes are buses, dimms, regions, and namespaces.  By
+default, 'ndctl list' with no options is equivalent to:
+[verse]
+ndctl list --namespaces --bus=all --region=all
+
+EXAMPLE
+-------
+[verse]
+# ndctl list --buses --namespaces
+
+["literal"]
+{
+  "provider":"nfit_test.1",
+  "dev":"ndbus2",
+  "namespaces":[
+    {
+      "dev":"namespace9.0",
+      "mode":"raw",
+      "size":33554432,
+      "blockdev":"pmem9"
+    }
+  ]
+}
+{
+  "provider":"nfit_test.0",
+  "dev":"ndbus1"
+}
+{
+  "provider":"e820",
+  "dev":"ndbus0",
+  "namespaces":[
+    {
+      "dev":"namespace0.0",
+      "mode":"memory",
+      "size":8589934592,
+      "blockdev":"pmem0"
+    }
+  ]
+}
+
+OPTIONS
+-------
+-r::
+--region=::
+include::xable-region-options.txt[]
+
+-B::
+--buses::
+	Include bus info in the listing
+
+-D::
+--dimms::
+	Include dimm info in the listing
+
+-R::
+--regions::
+	Include region info in the listing
+
+-N::
+--namespaces::
+	Include namespace info in the listing.  Namespace info is
+	included by default, specify '--no-namespaces' to omit.
+
+-i::
+--idle::
+	Include idle (not enabled) devices in the listing
+
+SEE ALSO
+--------
+linkndctl:ndctl-create-namespace[1]

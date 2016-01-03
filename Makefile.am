@@ -15,7 +15,8 @@ AM_CPPFLAGS = \
 	-I${top_srcdir}/ \
 	$(KMOD_CFLAGS) \
 	$(UDEV_CFLAGS) \
-	$(UUID_CFLAGS)
+	$(UUID_CFLAGS) \
+	$(JSON_CFLAGS)
 
 AM_CFLAGS = ${my_CFLAGS} \
 	-fvisibility=hidden \
@@ -66,12 +67,14 @@ ndctl_SOURCES = ndctl.c \
 		builtin-create-nfit.c \
 		builtin-xaction-namespace.c \
 		builtin-xable-region.c \
+		builtin-list.c \
 		builtin-test.c \
 		builtin-help.c \
 		builtin-zero-labels.c \
 		util/parse-options.c \
 		util/parse-options.h \
 		util/usage.c \
+		util/json.c \
 		util/size.c \
 		util/strbuf.c \
 		util/wrapper.c \
@@ -91,7 +94,7 @@ ndctl_SOURCES += test/blk_namespaces.c \
 ndctl_SOURCES += builtin-bat.c
 endif
 
-ndctl_LDADD = lib/libndctl.la $(UUID_LIBS) $(KMOD_LIBS)
+ndctl_LDADD = lib/libndctl.la $(UUID_LIBS) $(KMOD_LIBS) $(JSON_LIBS)
 
 noinst_LIBRARIES = libccan.a
 libccan_a_SOURCES = \
