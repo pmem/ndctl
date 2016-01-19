@@ -79,7 +79,7 @@ OPT_STRING('n', "name", &param.name, "name", \
 OPT_STRING('s', "size", &param.size, "size", \
 	"specify the namespace size in bytes (default: available capacity)"), \
 OPT_STRING('m', "mode", &param.mode, "operation-mode", \
-	"specify a mode for the namespace, 'safe', 'memory', or 'raw'"), \
+	"specify a mode for the namespace, 'sector', 'memory', or 'raw'"), \
 OPT_STRING('M', "map", &param.map, "memmap-location", \
 	"specify 'mem' or 'dev' for the location of the memmap"), \
 OPT_STRING('l', "sector-size", &param.sector_size, "lba-size", \
@@ -332,6 +332,8 @@ static int validate_namespace_options(struct ndctl_namespace *ndns,
 	if (param.mode) {
 		if (strcmp(param.mode, "memory") == 0)
 			p->mode = NDCTL_NS_MODE_MEMORY;
+		else if (strcmp(param.mode, "sector") == 0)
+			p->mode = NDCTL_NS_MODE_SAFE;
 		else if (strcmp(param.mode, "safe") == 0)
 			p->mode = NDCTL_NS_MODE_SAFE;
 		else

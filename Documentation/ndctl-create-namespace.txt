@@ -19,9 +19,9 @@ Create a maximally sized pmem namespace in 'memory' mode
 [verse]
 ndctl create-namespace
 
-Convert namespace0.0 to 'safe' mode
+Convert namespace0.0 to 'sector' mode
 [verse]
-ndctl create-namespace -f -e namespace0.0 --mode=safe
+ndctl create-namespace -f -e namespace0.0 --mode=sector
 
 OPTIONS
 -------
@@ -38,16 +38,24 @@ OPTIONS
 
 -m::
 --mode=::
-	- "safe": persistent memory, given that it is byte addressable,
-	  does not support sector atomicity.  The problematic aspect of
-	  sector tearing is that most applications do not know they have
-	  a atomic sector update dependency.  At least a disk rarely
-	  ever tears sectors and if it does it almost certainly returns
-	  a checksum error on access.  Persistent memory devices will
-	  always tear and always silently.  Until an application is
-	  audited to be robust in the presence of sector-tearing "safe"
-	  mode is recommended.  This imposes some performance overhead
-	  and disables the DAX capability.
+	- "raw": expose the namespace capacity directly with some
+	  limitations.  Neither a raw pmem namepace nor raw blk namespace
+	  support sector atomicity by default (see "sector" mode below).  A
+	  raw pmem namespace may have limited support for passing a DAX
+	  mapping to other syscalls.  I.e. direct-I/O to/from a DAX buffer
+	  may fail for a pmem namespace in raw mode.
+
+	- "sector" or "safe": persistent memory, given that it is byte
+	  addressable, does not support sector atomicity.  The
+	  problematic aspect of sector tearing is that most applications
+	  do not know they have a atomic sector update dependency.  At
+	  least a disk rarely ever tears sectors and if it does it
+	  almost certainly returns a checksum error on access.
+	  Persistent memory devices will always tear and always
+	  silently.  Until an application is audited to be robust in the
+	  presence of sector-tearing "safe" mode is recommended.  This
+	  imposes some performance overhead and disables the DAX
+	  capability.
 
 	- "memory": A pmem namespace in this mode supports direct I/O
 	  to/from DAX mappings.  Depending on the kernel this mode may
@@ -55,13 +63,6 @@ OPTIONS
 	  allocation is required the capacity can be allocated from
 	  "System RAM" or from a reserved portion of pmem (see the --map=
 	  option).
-
-	- "raw": expose the namespace capacity directly with some
-	  limitations.  Neither a raw pmem namepace nor raw blk namespace
-	  support sector atomicity by default (see "safe" mode below).  A
-	  raw pmem namespace may have limited support for passing a DAX
-	  mapping to other syscalls.  I.e. direct-I/O to/from a DAX buffer
-	  may fail for a pmem namespace in raw mode.
 
 -s::
 --size=::
