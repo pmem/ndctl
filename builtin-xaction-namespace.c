@@ -21,6 +21,8 @@
 #include <uuid/uuid.h>
 #include <sys/types.h>
 #include <util/size.h>
+#include <util/json.h>
+#include <json-c/json.h>
 #include <util/filter.h>
 #include <ndctl/libndctl.h>
 #include <util/parse-options.h>
@@ -275,6 +277,12 @@ static int setup_namespace(struct ndctl_region *region,
 	if (rc) {
 		error("%s: failed to enable\n",
 				ndctl_namespace_get_devname(ndns));
+	} else {
+		struct json_object *jndns = util_namespace_to_json(ndns);
+
+		if (jndns)
+			printf("%s\n", json_object_to_json_string_ext(jndns,
+						JSON_C_TO_STRING_PRETTY));
 	}
 	return rc;
 }
