@@ -2,7 +2,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <limits.h>
+#include <util/filter.h>
 #include <util/parse-options.h>
 #include <ndctl/libndctl.h>
 
@@ -39,8 +39,6 @@ static const char *parse_region_options(int argc, const char **argv,
 static int do_xable_region(const char *region_arg,
 		int (*xable_fn)(struct ndctl_region *))
 {
-	unsigned long bus_id = ULONG_MAX, id;
-	const char *provider, *region_name;
 	int rc = -ENXIO, success = 0;
 	struct ndctl_region *region;
 	struct ndctl_ctx *ctx;
@@ -53,29 +51,12 @@ static int do_xable_region(const char *region_arg,
 	if (rc < 0)
 		goto out;
 
-	if (region_bus) {
-		char *end = NULL;
-
-		bus_id = strtoul(region_bus, &end, 0);
-		if (end)
-			bus_id = ULONG_MAX;
-	}
-
         ndctl_bus_foreach(ctx, bus) {
-		provider = ndctl_bus_get_provider(bus);
-		id = ndctl_bus_get_id(bus);
-
-		if (bus_id < ULONG_MAX && bus_id != id)
-			continue;
-		else if (bus_id == ULONG_MAX && region_bus
-				&& strcmp(region_bus, provider) != 0)
+		if (!util_bus_filter(bus, region_bus))
 			continue;
 
 		ndctl_region_foreach(bus, region) {
-			region_name = ndctl_region_get_devname(region);
-
-			if (strcmp(region_arg, "all") != 0
-					&& strcmp(region_arg, region_name) != 0)
+			if (!util_region_filter(region, region_arg))
 				continue;
 			if (xable_fn(region) == 0)
 				success++;

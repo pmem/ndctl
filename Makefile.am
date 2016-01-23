@@ -74,7 +74,8 @@ ndctl_SOURCES = ndctl.c \
 		util/usage.c \
 		util/size.c \
 		util/strbuf.c \
-		util/wrapper.c
+		util/wrapper.c \
+		util/filter.c
 
 if ENABLE_TEST
 ndctl_SOURCES += test/libndctl.c \

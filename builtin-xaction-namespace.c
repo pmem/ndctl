@@ -21,6 +21,7 @@
 #include <uuid/uuid.h>
 #include <sys/types.h>
 #include <util/size.h>
+#include <util/filter.h>
 #include <ndctl/libndctl.h>
 #include <util/parse-options.h>
 #include <ccan/array_size/array_size.h>
@@ -536,11 +537,10 @@ static int namespace_reconfig(struct ndctl_region *region,
 static int do_xaction_namespace(const char *namespace,
 		enum namespace_action action)
 {
-	unsigned long bus_id = ULONG_MAX, region_id = ULONG_MAX, id;
-	const char *provider, *region_name, *ndns_name;
 	int rc = -ENXIO, success = 0;
 	struct ndctl_namespace *ndns;
 	struct ndctl_region *region;
+	const char *ndns_name;
 	struct ndctl_ctx *ctx;
 	struct ndctl_bus *bus;
 
@@ -554,40 +554,12 @@ static int do_xaction_namespace(const char *namespace,
 	if (verbose)
 		ndctl_set_log_priority(ctx, LOG_DEBUG);
 
-	if (param.bus) {
-		char *end = NULL;
-
-		bus_id = strtoul(param.bus, &end, 0);
-		if (end)
-			bus_id = ULONG_MAX;
-	}
-
-	if (param.region) {
-		char *end = NULL;
-
-		region_id = strtoul(param.region, &end, 0);
-		if (end)
-			region_id = ULONG_MAX;
-	}
-
         ndctl_bus_foreach(ctx, bus) {
-		provider = ndctl_bus_get_provider(bus);
-		id = ndctl_bus_get_id(bus);
-
-		if (bus_id < ULONG_MAX && bus_id != id)
-			continue;
-		else if (bus_id == ULONG_MAX && param.bus
-				&& strcmp(param.bus, provider) != 0)
+		if (!util_bus_filter(bus, param.bus))
 			continue;
 
 		ndctl_region_foreach(bus, region) {
-			region_name = ndctl_region_get_devname(region);
-			id = ndctl_region_get_id(region);
-
-			if (region_id < ULONG_MAX && region_id != id)
-				continue;
-			else if (region_id == ULONG_MAX && param.region
-					&& strcmp(param.region, region_name) != 0)
+			if (!util_region_filter(region, param.region))
 				continue;
 
 			if (param.type) {
