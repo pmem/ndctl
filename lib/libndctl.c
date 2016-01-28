@@ -3372,10 +3372,10 @@ NDCTL_EXPORT int ndctl_namespace_delete(struct ndctl_namespace *ndns)
         case ND_DEVICE_NAMESPACE_BLK:
 		break;
 	default:
-		dbg(ctx, "%s: nstype: %d delete failed\n",
+		dbg(ctx, "%s: nstype: %d not deletable\n",
 				ndctl_namespace_get_devname(ndns),
 				ndctl_namespace_get_type(ndns));
-		return -ENXIO;
+		return 0;
 	}
 
 	rc = namespace_set_size(ndns, 0);
