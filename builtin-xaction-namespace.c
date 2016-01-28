@@ -653,11 +653,11 @@ int cmd_enable_namespace(int argc, const char **argv)
 		return enabled;
 	} else if (enabled == 0) {
 		fprintf(stderr, "enabled 0 namespaces\n");
-		return -ENXIO;
+		return 0;
 	} else {
 		fprintf(stderr, "enabled %d namespace%s\n", enabled,
 				enabled > 1 ? "s" : "");
-		return enabled;
+		return 0;
 	}
 }
 

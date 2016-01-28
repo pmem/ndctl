@@ -82,11 +82,11 @@ int cmd_disable_region(int argc, const char **argv)
 		return disabled;
 	} else if (disabled == 0) {
 		fprintf(stderr, "disabled 0 regions\n");
-		return -ENXIO;
+		return 0;
 	} else {
 		fprintf(stderr, "disabled %d region%s\n", disabled,
 				disabled > 1 ? "s" : "");
-		return disabled;
+		return 0;
 	}
 }
 
@@ -102,10 +102,10 @@ int cmd_enable_region(int argc, const char **argv)
 		return enabled;
 	} else if (enabled == 0) {
 		fprintf(stderr, "enabled 0 regions\n");
-		return -ENXIO;
+		return 0;
 	} else {
 		fprintf(stderr, "enabled %d region%s\n", enabled,
 				enabled > 1 ? "s" : "");
-		return enabled;
+		return 0;
 	}
 }
