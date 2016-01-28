@@ -10,7 +10,7 @@ dirty() {
 }
 
 GVF=version.m4
-DEF_VER=v47
+DEF_VER=v50
 
 LF='
 '

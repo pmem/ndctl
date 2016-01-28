@@ -1,7 +1,7 @@
 /*
  * NVDIMM Firmware Interface Table - NFIT
  *
- * Copyright(c) 2013-2015 Intel Corporation. All rights reserved.
+ * Copyright(c) 2013-2016 Intel Corporation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of version 2 of the GNU General Public License as
