@@ -354,6 +354,7 @@ int ndctl_namespace_set_sector_size(struct ndctl_namespace *ndns,
 		unsigned int sector_size);
 int ndctl_namespace_get_raw_mode(struct ndctl_namespace *ndns);
 int ndctl_namespace_set_raw_mode(struct ndctl_namespace *ndns, int raw_mode);
+int ndctl_namespace_get_numa_node(struct ndctl_namespace *ndns);
 
 struct ndctl_btt;
 struct ndctl_btt *ndctl_btt_get_first(struct ndctl_region *region);
