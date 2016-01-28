@@ -13,7 +13,8 @@
 
 const char ndctl_usage_string[] = "ndctl [--version] [--help] COMMAND [ARGS]";
 const char ndctl_more_info_string[] =
-	"See 'ndctl help COMMAND' for more information on a specific command.";
+	"See 'ndctl help COMMAND' for more information on a specific command.\n"
+	" ndctl --list-cmds to see all available commands";
 
 static int cmd_version(int argc, const char **argv)
 {
@@ -71,7 +72,7 @@ static int handle_options(const char ***argv, int *argc)
 
 			for (i = 0; i < ARRAY_SIZE(commands); i++) {
 				struct cmd_struct *p = commands+i;
-				printf("%s ", p->cmd);
+				printf("%s\n", p->cmd);
 			}
 			exit(0);
 		} else {
