@@ -19,16 +19,16 @@ set -e
 mkdir -p $MNT
 trap 'err $LINENO' ERR
 
-DEV=$(lib/test-dax-dev)
+DEV=$(test/dax-dev)
 
 mkfs.ext4 $DEV
 mount $DEV $MNT -o dax
 fallocate -l 1GiB $MNT/$FILE
-lib/test-dax-pmd $MNT/$FILE
+test/dax-pmd $MNT/$FILE
 umount $MNT
 
 mkfs.xfs -f $DEV
 mount $DEV $MNT -o dax
 fallocate -l 1GiB $MNT/$FILE
-lib/test-dax-pmd $MNT/$FILE
+test/dax-pmd $MNT/$FILE
 umount $MNT

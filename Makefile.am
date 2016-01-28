@@ -73,16 +73,16 @@ ndctl_SOURCES = ndctl.c \
 		util/wrapper.c
 
 if ENABLE_TEST
-ndctl_SOURCES += lib/test-libndctl.c \
-		 lib/test-dpa-alloc.c \
-		 lib/test-parent-uuid.c \
-		 lib/test-core.c
+ndctl_SOURCES += test/libndctl.c \
+		 test/dpa-alloc.c \
+		 test/parent-uuid.c \
+		 test/core.c
 endif
 
 if ENABLE_DESTRUCTIVE
-ndctl_SOURCES += lib/blk_namespaces.c \
-		 lib/pmem_namespaces.c \
-		 lib/test-pcommit.c
+ndctl_SOURCES += test/blk_namespaces.c \
+		 test/pmem_namespaces.c \
+		 test/pcommit.c
 ndctl_SOURCES += builtin-bat.c
 endif
 
@@ -116,37 +116,37 @@ pkgconfig_DATA = lib/libndctl.pc
 EXTRA_DIST += lib/libndctl.pc.in
 CLEANFILES += lib/libndctl.pc
 
-TESTS = lib/test-libndctl lib/test-dpa-alloc lib/test-parent-uuid
-check_PROGRAMS = lib/test-libndctl lib/test-dpa-alloc lib/test-parent-uuid
+TESTS = test/libndctl test/dpa-alloc test/parent-uuid
+check_PROGRAMS = test/libndctl test/dpa-alloc test/parent-uuid
 
 if ENABLE_DESTRUCTIVE
-TESTS += lib/test-blk-ns lib/test-pmem-ns lib/test-pcommit
-check_PROGRAMS += lib/test-blk-ns lib/test-pmem-ns lib/test-pcommit
+TESTS += test/blk-ns test/pmem-ns test/pcommit
+check_PROGRAMS += test/blk-ns test/pmem-ns test/pcommit
 
-TESTS += lib/test-dax-dev lib/test-dax.sh lib/test-mmap.sh
-check_PROGRAMS += lib/test-dax-dev lib/test-dax-pmd lib/test-mmap
+TESTS += test/dax-dev test/dax.sh test/mmap.sh
+check_PROGRAMS += test/dax-dev test/dax-pmd test/mmap
 endif
 
-lib_test_libndctl_SOURCES = lib/test-libndctl.c lib/test-core.c
-lib_test_libndctl_LDADD = lib/libndctl.la $(UUID_LIBS) $(KMOD_LIBS)
+test_libndctl_SOURCES = test/libndctl.c test/core.c
+test_libndctl_LDADD = lib/libndctl.la $(UUID_LIBS) $(KMOD_LIBS)
 
-lib_test_pcommit_SOURCES = lib/test-pcommit.c
-lib_test_pcommit_LDADD = lib/libndctl.la $(KMOD_LIBS)
+test_pcommit_SOURCES = test/pcommit.c
+test_pcommit_LDADD = lib/libndctl.la $(KMOD_LIBS)
 
-lib_test_blk_ns_SOURCES = lib/blk_namespaces.c
-lib_test_blk_ns_LDADD = lib/libndctl.la $(KMOD_LIBS)
+test_blk_ns_SOURCES = test/blk_namespaces.c
+test_blk_ns_LDADD = lib/libndctl.la $(KMOD_LIBS)
 
-lib_test_pmem_ns_SOURCES = lib/pmem_namespaces.c
-lib_test_pmem_ns_LDADD = lib/libndctl.la $(KMOD_LIBS)
+test_pmem_ns_SOURCES = test/pmem_namespaces.c
+test_pmem_ns_LDADD = lib/libndctl.la $(KMOD_LIBS)
 
-lib_test_dpa_alloc_SOURCES = lib/test-dpa-alloc.c lib/test-core.c
-lib_test_dpa_alloc_LDADD = lib/libndctl.la $(UUID_LIBS) $(KMOD_LIBS)
+test_dpa_alloc_SOURCES = test/dpa-alloc.c test/core.c
+test_dpa_alloc_LDADD = lib/libndctl.la $(UUID_LIBS) $(KMOD_LIBS)
 
-lib_test_parent_uuid_SOURCES = lib/test-parent-uuid.c lib/test-core.c
-lib_test_parent_uuid_LDADD = lib/libndctl.la $(UUID_LIBS) $(KMOD_LIBS)
+test_parent_uuid_SOURCES = test/parent-uuid.c test/core.c
+test_parent_uuid_LDADD = lib/libndctl.la $(UUID_LIBS) $(KMOD_LIBS)
 
-lib_test_dax_dev_SOURCES = lib/test-dax-dev.c lib/test-core.c
-lib_test_dax_dev_LDADD = lib/libndctl.la
+test_dax_dev_SOURCES = test/dax-dev.c test/core.c
+test_dax_dev_LDADD = lib/libndctl.la
 
-lib_test_dax_pmd_SOURCES = lib/test-dax-pmd.c
-lib_test_mmap_SOURCES = lib/test-mmap.c
+test_dax_pmd_SOURCES = test/dax-pmd.c
+test_mmap_SOURCES = test/mmap.c

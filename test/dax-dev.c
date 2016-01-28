@@ -70,7 +70,7 @@ static int emit_e820_device(int loglevel, struct ndctl_test *test)
 
 	/*
 	 * Note, if the bdev goes active after this check we'll still
-	 * clobber it in the following tests, see lib/test-dax.sh.
+	 * clobber it in the following tests, see test/dax.sh.
 	 */
 	fd = open(path, O_RDWR | O_EXCL);
 	if (fd < 0)

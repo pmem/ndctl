@@ -89,7 +89,8 @@ static int test_pmd(int fd)
 			break;
 		}
 
-		fd2 = open(TEST_FILE, O_CREAT|O_TRUNC|O_DIRECT|O_RDWR);
+		fd2 = open(TEST_FILE, O_CREAT|O_TRUNC|O_DIRECT|O_RDWR,
+				DEFFILEMODE);
 		if (fd2 < 0) {
 			faili(i);
 			munmap(addr, 2*HPAGE_SIZE);
