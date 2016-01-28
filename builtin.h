@@ -10,6 +10,7 @@ struct cmd_struct {
 
 int cmd_create_nfit(int argc, const char **argv);
 int cmd_enable_namespace(int argc, const char **argv);
+int cmd_create_namespace(int argc, const char **argv);
 int cmd_disable_namespace(int argc, const char **argv);
 int cmd_enable_region(int argc, const char **argv);
 int cmd_disable_region(int argc, const char **argv);
@@ -21,6 +22,4 @@ int cmd_test(int argc, const char **argv);
 #ifdef ENABLE_DESTRUCTIVE
 int cmd_bat(int argc, const char **argv);
 #endif
-
 #endif /* _NDCTL_BUILTIN_H_ */
-

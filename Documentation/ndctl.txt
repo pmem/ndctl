@@ -32,7 +32,7 @@ namspaces) associated with an NVDIMM bus.
 
 SEE ALSO
 --------
-linkndctl:ndctl-zero-labels[1],
+linkndctl:ndctl-create-namespace[1],
 linkndctl:ndctl-enable-region[1],
 linkndctl:ndctl-disable-region[1],
 linkndctl:ndctl-enable-namespace[1],

@@ -1,0 +1,127 @@
+ndctl-create-namespace(1)
+=========================
+
+NAME
+----
+ndctl-create-namespace - provision or reconfigure a namespace
+
+SYNOPSIS
+--------
+[verse]
+'ndctl create-namespace' [<options>]
+
+include::namespace-description.txt[]
+
+EXAMPLES
+--------
+
+Create a maximally sized pmem namespace in 'memory' mode
+[verse]
+ndctl create-namespace
+
+Convert namespace0.0 to 'safe' mode
+[verse]
+ndctl create-namespace -f -e namespace0.0 --mode=safe
+
+OPTIONS
+-------
+-t::
+--type=::
+	Create a 'pmem' or 'blk' namespace (subject to available
+	capacity).  A pmem namespace supports the DAX (direct access)
+	capability to linkndctl:mmap[2] persistent memory directly into
+	a process address space.  A blk namespace access persistent
+	memory through a block-window-aperture.  Compared to pmem it
+	supports a traditional storage error model (EIO on error rather
+	than a cpu exception on a bad memory access), but it does not
+	support DAX.
+
+-m::
+--mode=::
+	- "safe": persistent memory, given that it is byte addressable,
+	  does not support sector atomicity.  The problematic aspect of
+	  sector tearing is that most applications do not know they have
+	  a atomic sector update dependency.  At least a disk rarely
+	  ever tears sectors and if it does it almost certainly returns
+	  a checksum error on access.  Persistent memory devices will
+	  always tear and always silently.  Until an application is
+	  audited to be robust in the presence of sector-tearing "safe"
+	  mode is recommended.  This imposes some performance overhead
+	  and disables the DAX capability.
+
+	- "memory": A pmem namespace in this mode supports direct I/O
+	  to/from DAX mappings.  Depending on the kernel this mode may
+	  come at the cost of allocating per-pmem-page metadata.  If that
+	  allocation is required the capacity can be allocated from
+	  "System RAM" or from a reserved portion of pmem (see the --map=
+	  option).
+
+	- "raw": expose the namespace capacity directly with some
+	  limitations.  Neither a raw pmem namepace nor raw blk namespace
+	  support sector atomicity by default (see "safe" mode below).  A
+	  raw pmem namespace may have limited support for passing a DAX
+	  mapping to other syscalls.  I.e. direct-I/O to/from a DAX buffer
+	  may fail for a pmem namespace in raw mode.
+
+-s::
+--size=::
+	For NVDIMM devices that support namespace labels, set the
+	namespace size.  Otherwise it defaults to the maximum size
+	specified by platform firmware.
+
+-e::
+--reconfig=::
+	Reconfigure an existing namespace (change the mode, sector size,
+	etc...).  All namespace parameters, save uuid, default to the
+	current attributes of the specified namespace.  The namespace is
+	then re-created with the specified modifications.  The uuid is
+	refreshed to a new value by default whenever the data layout of
+	a namespace is changed, see --uuid= to set a specific uuid.
+
+-u::
+--uuid=::
+	This option is not recommended as a new uuid should be generated
+	every time a namespace is (re-)created.  For recovery scenarios
+	however the uuid may be specified.
+
+-n::
+--name=::
+	For NVDIMM devices that support namespace labels,
+	specify a human friendly name for a namespace.  This name is
+	available as device attribute for use in udev rules or
+	elsewhere.
+
+-l::
+--sector-size::
+	Specify the logical sector size (LBA size) of the block storage
+	device associated with a namespace.
+
+-M::
+--map=::
+	A pmem namespace in "memory" mode may require allocation
+	of per-page metadata.  The allocation can be drawn from either:
+	- "mem": typical system memory
+	- "dev": persistent memory reserved from the namespace
+
+-f::
+--force::
+	Unless this option is specified a 'reconfigure
+	namespace' operation will fail if the namespace is presently
+	active.  Specifying --force causes the namespace to be disabled
+	before reconfiguring.
+
+-v::
+--verbose::
+	Emit debug messages for the namespace creation process
+
+-r::
+--region=::
+include::xable-region-options.txt[]
+
+SEE ALSO
+--------
+linkndctl:ndctl-zero-labels[1],
+linkndctl:ndctl-disable-namespace[1],
+linkndctl:ndctl-enable-namespace[1],
+http://pmem.io/documents/NVDIMM_Namespace_Spec.pdf[NVDIMM Namespace
+Specification]

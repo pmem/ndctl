@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <ccan/list/list.h>
 #include <util/parse-options.h>
+#include <util/size.h>
 
 #include <nfit.h>
 
@@ -19,50 +20,6 @@ struct spa {
 	struct list_node list;
 	unsigned long long size, offset;
 };
-
-#define SZ_1K     0x00000400
-#define SZ_1M     0x00100000
-#define SZ_1G     0x40000000
-#define SZ_1T 0x10000000000ULL
-
-static unsigned long long parse_size64(const char *str)
-{
-	unsigned long long val, check;
-	char *end;
-
-	val = strtoull(str, &end, 0);
-	if (val == ULLONG_MAX)
-		return val;
-	check = val;
-	switch (*end) {
-	case 'k':
-	case 'K':
-		val *= SZ_1K;
-		end++;
-		break;
-	case 'm':
-	case 'M':
-		val *= SZ_1M;
-		end++;
-		break;
-	case 'g':
-	case 'G':
-		val *= SZ_1G;
-		end++;
-		break;
-	case 't':
-	case 'T':
-		val *= SZ_1T;
-		end++;
-		break;
-	default:
-		break;
-	}
-
-	if (val < check || *end != '\0')
-		val = ULLONG_MAX;
-	return val;
-}
 
 static int parse_add_spa(const struct option *option, const char *__arg, int unset)
 {

@@ -64,7 +64,7 @@ bin_PROGRAMS = ndctl
 
 ndctl_SOURCES = ndctl.c \
 		builtin-create-nfit.c \
-		builtin-xable-namespace.c \
+		builtin-xaction-namespace.c \
 		builtin-xable-region.c \
 		builtin-test.c \
 		builtin-help.c \
@@ -72,8 +72,8 @@ ndctl_SOURCES = ndctl.c \
 		util/parse-options.c \
 		util/parse-options.h \
 		util/usage.c \
+		util/size.c \
 		util/strbuf.c \
-		util/strbuf.h \
 		util/wrapper.c
 
 if ENABLE_TEST

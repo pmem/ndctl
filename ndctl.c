@@ -25,6 +25,7 @@ static struct cmd_struct commands[] = {
 	{ "version", cmd_version },
 	{ "create-nfit", cmd_create_nfit },
 	{ "enable-namespace", cmd_enable_namespace },
+	{ "create-namespace", cmd_create_namespace },
 	{ "disable-namespace", cmd_disable_namespace },
 	{ "enable-region", cmd_enable_region },
 	{ "disable-region", cmd_disable_region },
