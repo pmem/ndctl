@@ -153,6 +153,7 @@ global:
 	ndctl_namespace_set_sector_size;
 	ndctl_namespace_get_raw_mode;
 	ndctl_namespace_set_raw_mode;
+	ndctl_namespace_get_numa_node;
 	ndctl_btt_get_first;
 	ndctl_btt_get_next;
 	ndctl_btt_get_ctx;
