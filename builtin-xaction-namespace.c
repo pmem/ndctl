@@ -379,7 +379,7 @@ static int validate_namespace_options(struct ndctl_namespace *ndns,
 	}
 
 	if (param.map) {
-		if (strcmp(param.map, "mem"))
+		if (!strcmp(param.map, "mem"))
 			p->loc = NDCTL_PFN_LOC_RAM;
 		else
 			p->loc = NDCTL_PFN_LOC_PMEM;
