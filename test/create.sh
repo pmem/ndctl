@@ -15,7 +15,7 @@ $NDCTL enable-region $BUS all
 
 # create pmem
 dev="x"
-json=$($NDCTL create-namespace -t pmem -m raw)
+json=$($NDCTL create-namespace $BUS -t pmem -m raw)
 eval $(echo $json | sed -e "$json2var")
 [ $dev = "x" ] && echo "fail: $LINENO" && exit 1
 [ $mode != "raw" ] && echo "fail: $LINENO" &&  exit 1
@@ -33,7 +33,7 @@ eval $(echo $json | sed -e "$json2var")
 
 # create blk
 dev="x"
-json=$($NDCTL create-namespace -t blk -m raw)
+json=$($NDCTL create-namespace $BUS -t blk -m raw)
 eval $(echo $json | sed -e "$json2var")
 [ $dev = "x" ] && echo "fail: $LINENO" && exit 1
 [ $mode != "raw" ] && echo "fail: $LINENO" &&  exit 1
