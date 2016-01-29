@@ -232,6 +232,7 @@ struct ndctl_lbasize {
  * @namespace_path: devpath for namespace device
  * @bdev: associated block_device of a namespace
  * @size: unsigned
+ * @numa_node: numa node attribute
  *
  * A 'namespace' is the resulting device after region-aliasing and
  * label-parsing is resolved.
@@ -249,6 +250,7 @@ struct ndctl_namespace {
 	char *alt_name;
 	uuid_t uuid;
 	struct ndctl_lbasize lbasize;
+	int numa_node;
 };
 
 /**
@@ -2672,6 +2674,11 @@ static int add_namespace(void *parent, int id, const char *ndns_base)
 		goto err_read;
 	ndns->raw_mode = strtoul(buf, NULL, 0);
 
+	sprintf(path, "%s/numa_node", ndns_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		goto err_read;
+	ndns->numa_node = strtol(buf, NULL, 0);
+
 	switch (ndns->type) {
 	case ND_DEVICE_NAMESPACE_BLK:
 		sprintf(path, "%s/sector_size", ndns_base);
@@ -3351,6 +3358,11 @@ NDCTL_EXPORT int ndctl_namespace_set_size(struct ndctl_namespace *ndns,
 				ndctl_namespace_get_type(ndns));
 		return -ENXIO;
 	}
+}
+
+NDCTL_EXPORT int ndctl_namespace_get_numa_node(struct ndctl_namespace *ndns)
+{
+    return ndns->numa_node;
 }
 
 NDCTL_EXPORT int ndctl_namespace_delete(struct ndctl_namespace *ndns)
