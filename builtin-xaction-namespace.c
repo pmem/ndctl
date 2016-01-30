@@ -239,6 +239,21 @@ do { \
 	} \
 } while (0)
 
+static bool do_setup_pfn(struct ndctl_namespace *ndns,
+		struct parsed_parameters *p)
+{
+	if (p->mode != NDCTL_NS_MODE_MEMORY)
+		return false;
+
+	if (ndctl_namespace_get_mode(ndns) != NDCTL_NS_MODE_MEMORY)
+		return true;
+
+	if (p->loc == NDCTL_PFN_LOC_PMEM)
+		return true;
+
+	return false;
+}
+
 static int setup_namespace(struct ndctl_region *region,
 		struct ndctl_namespace *ndns, struct parsed_parameters *p)
 {
@@ -255,8 +270,7 @@ static int setup_namespace(struct ndctl_region *region,
 		try(ndctl_namespace, set_sector_size, ndns, p->sector_size);
 
 	uuid_generate(uuid);
-	if (ndctl_namespace_get_mode(ndns) != NDCTL_NS_MODE_MEMORY
-			&& p->mode == NDCTL_NS_MODE_MEMORY) {
+	if (do_setup_pfn(ndns, p)) {
 		struct ndctl_pfn *pfn = ndctl_region_get_pfn_seed(region);
 
 		try(ndctl_pfn, set_uuid, pfn, uuid);
