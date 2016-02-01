@@ -4,14 +4,25 @@ NDCTL="./ndctl"
 BUS="-b nfit_test.0"
 json2var="s/[{}\",]//g; s/:/=/g"
 SECTOR_SIZE="4096"
+rc=77
 
 set -e
+
+err() {
+	echo "test/create: failed at line $1"
+	exit $rc
+}
+
+set -e
+trap 'err $LINENO' ERR
 
 # setup (reset nfit_test dimms)
 modprobe nfit_test
 $NDCTL disable-region $BUS all
 $NDCTL zero-labels $BUS all
 $NDCTL enable-region $BUS all
+
+rc=1
 
 # create pmem
 dev="x"

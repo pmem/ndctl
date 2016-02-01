@@ -54,7 +54,7 @@ int test_pcommit(void)
         }
 
 	fclose(cpuinfo);
-	return ENOTSUP;
+	return 77;
 }
 
 int __attribute__((weak)) main(int argc, char *argv[])
