@@ -6,7 +6,7 @@ Name:           ndctl
 Version:
 Release:        1%{?dist}
 Summary:	Manage "libnvdimm" subsystem devices (Non-volatile Memory)
-License:        GPL-2.0
+License:        GPLv2
 Group:          Hardware/Other
 Url:            https://github.com/pmem/ndctl
 # Snapshot tarball can be created using: ./make-git-shapshot.sh [gitcommit]
@@ -32,7 +32,7 @@ Firmware Interface Table).
 
 %package -n %dname
 Summary:        Development files for libndctl
-License:        LGPL-2.1+
+License:        LGPLv2
 Group:          Development/Libraries/Other
 Requires:       %{lname}%{?_isa} = %{version}-%{release}
 
@@ -43,7 +43,7 @@ developing applications that use %{name}.
 
 %package -n %lname
 Summary:        Management library for "libnvdimm" subsystem devices (Non-volatile Memory)
-License:        LGPL-2.1+
+License:        LGPLv2
 Group:          System/Libraries
 
 %description -n %lname
