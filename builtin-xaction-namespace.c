@@ -621,7 +621,7 @@ static int do_xaction_namespace(const char *namespace,
 				case ACTION_CREATE:
 					return namespace_reconfig(region, ndns);
 				}
-				if (rc == 0)
+				if (rc >= 0)
 					success++;
 			}
 		}
