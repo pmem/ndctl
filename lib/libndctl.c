@@ -3004,7 +3004,7 @@ static int ndctl_bind(struct ndctl_ctx *ctx, struct kmod_module *module,
 	closedir(dir);
 
 	if (rc) {
-		err(ctx, "%s: bind failed\n", devname);
+		dbg(ctx, "%s: bind failed\n", devname);
 		return -ENXIO;
 	}
 	return 0;
