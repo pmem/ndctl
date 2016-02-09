@@ -49,6 +49,23 @@ LIBNDCTL_CURRENT=6
 LIBNDCTL_REVISION=0
 LIBNDCTL_AGE=0
 
+noinst_SCRIPTS = rhel/ndctl.spec sles/ndctl.spec
+CLEANFILES += $(noinst_SCRIPTS)
+
+do_rhel_subst = sed -e 's,VERSION,$(VERSION),g' \
+            -e 's,DNAME,ndctl-devel,g' \
+            -e 's,LNAME,libndctl,g'
+
+do_sles_subst = sed -e 's,VERSION,$(VERSION),g' \
+            -e 's,DNAME,libndctl-devel,g' \
+            -e 's,LNAME,libndctl$(LIBNDCTL_CURRENT),g'
+
+rhel/ndctl.spec: ndctl.spec.in Makefile.am
+	$(AM_V_GEN)$(MKDIR_P) rhel; $(do_rhel_subst) < $< > $@
+
+sles/ndctl.spec: ndctl.spec.in Makefile.am
+	$(AM_V_GEN)$(MKDIR_P) sles; cat sles/header $< | $(do_sles_subst) > $@
+
 pkginclude_HEADERS = lib/ndctl/libndctl.h
 lib_LTLIBRARIES = lib/libndctl.la
 

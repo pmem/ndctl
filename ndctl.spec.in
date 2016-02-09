@@ -1,16 +1,11 @@
-%global gitcommit
-%define lname
-%define dname
-
 Name:           ndctl
-Version:
+Version:	VERSION
 Release:        1%{?dist}
 Summary:	Manage "libnvdimm" subsystem devices (Non-volatile Memory)
 License:        GPLv2
 Group:          Hardware/Other
 Url:            https://github.com/pmem/ndctl
-# Snapshot tarball can be created using: ./make-git-shapshot.sh [gitcommit]
-Source0:        %{name}-git%{gitcommit}.tar.xz
+Source0:        https://github.com/pmem/ndctl/archive/v%{version}.tar.gz
 
 BuildRequires:  autoconf
 BuildRequires:  asciidoc
@@ -26,36 +21,36 @@ BuildRequires:  pkgconfig(json-c)
 %description
 Utility library for managing the "libnvdimm" subsystem.  The "libnvdimm"
 subsystem defines a kernel device model and control message interface for
-platform NVDIMM resources like those defined by the ACPI 6.0 NFIT (NVDIMM
+platform NVDIMM resources like those defined by the ACPI 6+ NFIT (NVDIMM
 Firmware Interface Table).
 
 
-%package -n %dname
+%package -n DNAME
 Summary:        Development files for libndctl
 License:        LGPLv2
 Group:          Development/Libraries/Other
-Requires:       %{lname}%{?_isa} = %{version}-%{release}
+Requires:       LNAME%{?_isa} = %{version}-%{release}
 
-%description -n %dname
+%description -n DNAME
 The %{name}-devel package contains libraries and header files for
 developing applications that use %{name}.
 
 
-%package -n %lname
+%package -n LNAME
 Summary:        Management library for "libnvdimm" subsystem devices (Non-volatile Memory)
 License:        LGPLv2
 Group:          System/Libraries
 
-%description -n %lname
+%description -n LNAME
 Libraries for %{name}.
 
 %prep
-%setup -q %{?gitcommit:-n %{name}-git%{gitcommit}}
+%setup -q v%{version}
 
 %build
-echo "" > version
+echo "VERSION" > version
 ./autogen.sh
-%configure --disable-static --enable-local
+%configure --disable-static --enable-local --disable-silent-rules
 make %{?_smp_mflags}
 
 %install
@@ -65,9 +60,9 @@ find $RPM_BUILD_ROOT -name '*.la' -exec rm -f {} ';'
 %check
 make check
 
-%post -n %lname -p /sbin/ldconfig
+%post -n LNAME -p /sbin/ldconfig
 
-%postun -n %lname -p /sbin/ldconfig
+%postun -n LNAME -p /sbin/ldconfig
 
 %files
 %defattr(-,root,root)
@@ -75,13 +70,13 @@ make check
 %{_bindir}/ndctl
 %{_mandir}/man1/*
 
-%files -n %lname
+%files -n LNAME
 %defattr(-,root,root)
 %doc README.md
 %license COPYING licenses/BSD-MIT licenses/CC0
 %{_libdir}/libndctl.so.*
 
-%files -n %dname
+%files -n DNAME
 %defattr(-,root,root)
 %license COPYING
 %{_includedir}/ndctl/

@@ -8,6 +8,8 @@ man1_MANS = \
 	ndctl-create-namespace.1 \
 	ndctl-list.1
 
+CLEANFILES = $(man1_MANS)
+
 XML_DEPS = \
 	$(top_srcdir)/version.m4 \
 	Makefile \
