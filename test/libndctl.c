@@ -1607,9 +1607,10 @@ static int check_ars_cap(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 		return rc;
 	}
 
-	if (ndctl_cmd_ars_cap_get_size(cmd) != 256) {
-		fprintf(stderr, "%s: bus: %s expect size: %d got: %d\n",
-				__func__, ndctl_bus_get_provider(bus), 256,
+	if (ndctl_cmd_ars_cap_get_size(cmd) < sizeof(struct nd_cmd_ars_status)) {
+		fprintf(stderr, "%s: bus: %s expect size >= %zd got: %d\n",
+				__func__, ndctl_bus_get_provider(bus),
+				sizeof(struct nd_cmd_ars_status),
 				ndctl_cmd_ars_cap_get_size(cmd));
 		ndctl_cmd_unref(cmd);
 		return -ENXIO;

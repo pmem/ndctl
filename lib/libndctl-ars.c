@@ -111,8 +111,7 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_bus_cmd_new_ars_status(struct ndctl_cmd *ar
 		return NULL;
 	}
 
-	size = sizeof(*cmd) + sizeof(struct nd_cmd_ars_status) +
-			ars_cap_cmd->max_ars_out;
+	size = sizeof(*cmd) + ars_cap_cmd->max_ars_out;
 	cmd = calloc(1, size);
 	if (!cmd)
 		return NULL;
@@ -123,6 +122,7 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_bus_cmd_new_ars_status(struct ndctl_cmd *ar
 	cmd->size = size;
 	cmd->status = 1;
 	cmd->firmware_status = &cmd->ars_status->status;
+	cmd->ars_status->out_length = ars_cap_cmd->max_ars_out;
 
 	return cmd;
 }
