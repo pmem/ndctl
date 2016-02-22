@@ -1657,6 +1657,7 @@ static int check_ars_status(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 {
 	struct ndctl_cmd *cmd_ars_cap = check_cmds[ND_CMD_ARS_CAP].cmd;
 	struct ndctl_cmd *cmd;
+	unsigned long tmo = 5;
 	unsigned int i;
 	int rc;
 
@@ -1665,6 +1666,8 @@ static int check_ars_status(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 				__func__, ndctl_dimm_get_handle(dimm));
 		return -ENXIO;
 	}
+
+ retry:
 	cmd = ndctl_bus_cmd_new_ars_status(cmd_ars_cap);
 	if (!cmd) {
 		fprintf(stderr, "%s: bus: %s failed to create cmd\n",
@@ -1672,15 +1675,25 @@ static int check_ars_status(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 		return -ENOTTY;
 	}
 
-	do {
-		rc = ndctl_cmd_submit(cmd);
-		if (rc) {
-			fprintf(stderr, "%s: bus: %s failed to submit cmd: %d\n",
+	rc = ndctl_cmd_submit(cmd);
+	if (rc) {
+		fprintf(stderr, "%s: bus: %s failed to submit cmd: %d\n",
 				__func__, ndctl_bus_get_provider(bus), rc);
-			ndctl_cmd_unref(cmd);
-			return rc;
-		}
-	} while (ndctl_cmd_ars_in_progress(cmd));
+		ndctl_cmd_unref(cmd);
+		return rc;
+	}
+
+	if (!tmo) {
+		fprintf(stderr, "%s: bus: %s ars timeout\n", __func__,
+				ndctl_bus_get_provider(bus));
+		return -EIO;
+	}
+
+	if (ndctl_cmd_ars_in_progress(cmd)) {
+		tmo--;
+		sleep(1);
+		goto retry;
+	}
 
 	for (i = 0; i < ndctl_cmd_ars_num_records(cmd); i++) {
 		fprintf(stderr, "%s: record[%d].addr: 0x%llx\n", __func__, i,

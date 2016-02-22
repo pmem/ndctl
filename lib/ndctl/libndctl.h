@@ -154,7 +154,7 @@ struct ndctl_cmd *ndctl_bus_cmd_new_ars_cap(struct ndctl_bus *bus,
 struct ndctl_cmd *ndctl_bus_cmd_new_ars_start(struct ndctl_cmd *ars_cap, int type);
 struct ndctl_cmd *ndctl_bus_cmd_new_ars_status(struct ndctl_cmd *ars_cap);
 unsigned int ndctl_cmd_ars_cap_get_size(struct ndctl_cmd *ars_cap);
-unsigned int ndctl_cmd_ars_in_progress(struct ndctl_cmd *ars_status);
+int ndctl_cmd_ars_in_progress(struct ndctl_cmd *ars_status);
 unsigned int ndctl_cmd_ars_num_records(struct ndctl_cmd *ars_stat);
 unsigned long long ndctl_cmd_ars_get_record_addr(struct ndctl_cmd *ars_stat,
 		unsigned int rec_index);

@@ -141,20 +141,21 @@ NDCTL_EXPORT unsigned int ndctl_cmd_ars_cap_get_size(struct ndctl_cmd *ars_cap)
 	return 0;
 }
 
-NDCTL_EXPORT unsigned int ndctl_cmd_ars_in_progress(struct ndctl_cmd *ars_stat)
+NDCTL_EXPORT int ndctl_cmd_ars_in_progress(struct ndctl_cmd *cmd)
 {
-	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(cmd_to_bus(ars_stat));
-	int rc;
+	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(cmd_to_bus(cmd));
 
-	if (ars_stat->type == ND_CMD_ARS_STATUS && ars_stat->status == 0) {
-		rc = (((*ars_stat->firmware_status >> ARS_EXT_STATUS_SHIFT) == 1) ? 1 : 0);
-		/*
-		 * If in-progress, invalidate the ndctl_cmd, so that if we're
-		 * called again without a fresh ars_stat command, we fail.
-		 */
-		if (rc)
-			ars_stat->status = 1;
-		return rc;
+	if (cmd->type == ND_CMD_ARS_STATUS && cmd->status == 0) {
+		if (cmd->ars_status->status == 1 << 16) {
+			/*
+			 * If in-progress, invalidate the ndctl_cmd, so
+			 * that if we're called again without a fresh
+			 * ars_status command, we fail.
+			 */
+			cmd->status = 1;
+			return 1;
+		}
+		return 0;
 	}
 
 	dbg(ctx, "invalid ars_status\n");
