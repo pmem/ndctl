@@ -1903,6 +1903,8 @@ static int do_test0(struct ndctl_ctx *ctx, struct ndctl_test *test)
 	if (!bus)
 		return -ENXIO;
 
+	ndctl_bus_wait_probe(bus);
+
 	/* disable all regions so that set_config_data commands are permitted */
 	ndctl_region_foreach(bus, region)
 		ndctl_region_disable_invalidate(region);
@@ -1939,6 +1941,8 @@ static int do_test1(struct ndctl_ctx *ctx, struct ndctl_test *test)
 
 	if (!bus)
 		return -ENXIO;
+
+	ndctl_bus_wait_probe(bus);
 
 	rc = check_dimms(bus, dimms1, ARRAY_SIZE(dimms1), 0, 0, test);
 	if (rc)
