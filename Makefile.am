@@ -54,7 +54,7 @@ CLEANFILES += $(noinst_SCRIPTS)
 
 do_rhel_subst = sed -e 's,VERSION,$(VERSION),g' \
             -e 's,DNAME,ndctl-devel,g' \
-            -e 's,LNAME,libndctl,g'
+            -e 's,LNAME,ndctl-libs,g'
 
 do_sles_subst = sed -e 's,VERSION,$(VERSION),g' \
             -e 's,DNAME,libndctl-devel,g' \
