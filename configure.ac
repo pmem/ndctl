@@ -85,8 +85,8 @@ PKG_CHECK_MODULES([UUID], [uuid])
 PKG_CHECK_MODULES([JSON], [json-c])
 
 AC_ARG_ENABLE([local],
-        AS_HELP_STRING([--enable-local], [build with local ndctl.h @<:@default=system@:>@]),
-        [], [enable_local=no])
+        AS_HELP_STRING([--disable-local], [build against kernel ndctl.h @<:@default=system@:>@]),
+        [], [enable_local=yes])
 
 AS_IF([test "x$enable_local" = "xyes"], [], [
 	AC_CHECK_HEADER([linux/ndctl.h], [
