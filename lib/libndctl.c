@@ -246,7 +246,7 @@ struct ndctl_namespace {
 	char *bdev;
 	int type, id, buf_len, raw_mode;
 	int generation;
-	unsigned long long size;
+	unsigned long long resource, size;
 	char *alt_name;
 	uuid_t uuid;
 	struct ndctl_lbasize lbasize;
@@ -297,6 +297,7 @@ struct ndctl_pfn {
 	struct list_node list;
 	enum ndctl_pfn_loc loc;
 	unsigned long align;
+	unsigned long long resource, size;
 	char *pfn_path;
 	char *pfn_buf;
 	char *bdev;
@@ -2669,6 +2670,12 @@ static int add_namespace(void *parent, int id, const char *ndns_base)
 		goto err_read;
 	ndns->size = strtoull(buf, NULL, 0);
 
+	sprintf(path, "%s/resource", ndns_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		ndns->resource = ULLONG_MAX;
+	else
+		ndns->resource = strtoull(buf, NULL, 0);
+
 	sprintf(path, "%s/force_raw", ndns_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		goto err_read;
@@ -3312,6 +3319,11 @@ NDCTL_EXPORT unsigned long long ndctl_namespace_get_size(struct ndctl_namespace 
 	return ndns->size;
 }
 
+NDCTL_EXPORT unsigned long long ndctl_namespace_get_resource(struct ndctl_namespace *ndns)
+{
+	return ndns->resource;
+}
+
 static int namespace_set_size(struct ndctl_namespace *ndns,
 		unsigned long long size)
 {
@@ -3853,6 +3865,18 @@ static int add_pfn(void *parent, int id, const char *pfn_base)
 	else
 		pfn->align = strtoul(buf, NULL, 0);
 
+	sprintf(path, "%s/resource", pfn_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		pfn->resource = ULLONG_MAX;
+	else
+		pfn->resource = strtoull(buf, NULL, 0);
+
+	sprintf(path, "%s/size", pfn_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		pfn->size = ULLONG_MAX;
+	else
+		pfn->size = strtoull(buf, NULL, 0);
+
 	free(path);
 	ndctl_pfn_foreach(region, pfn_dup)
 		if (pfn->id == pfn_dup->id) {
@@ -3922,6 +3946,16 @@ NDCTL_EXPORT struct ndctl_namespace *ndctl_pfn_get_namespace(struct ndctl_pfn *p
 NDCTL_EXPORT void ndctl_pfn_get_uuid(struct ndctl_pfn *pfn, uuid_t uu)
 {
 	memcpy(uu, pfn->uuid, sizeof(uuid_t));
+}
+
+NDCTL_EXPORT unsigned long long ndctl_pfn_get_size(struct ndctl_pfn *pfn)
+{
+	return pfn->size;
+}
+
+NDCTL_EXPORT unsigned long long ndctl_pfn_get_resource(struct ndctl_pfn *pfn)
+{
+	return pfn->resource;
 }
 
 NDCTL_EXPORT int ndctl_pfn_set_uuid(struct ndctl_pfn *pfn, uuid_t uu)

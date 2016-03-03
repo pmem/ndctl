@@ -149,6 +149,7 @@ global:
 	ndctl_namespace_set_alt_name;
 	ndctl_namespace_get_size;
 	ndctl_namespace_set_size;
+	ndctl_namespace_get_resource;
 	ndctl_namespace_get_supported_sector_size;
 	ndctl_namespace_get_sector_size;
 	ndctl_namespace_get_num_sector_sizes;
@@ -197,6 +198,8 @@ global:
 	ndctl_pfn_get_location;
 	ndctl_pfn_set_location;
 	ndctl_pfn_get_align;
+	ndctl_pfn_get_size;
+	ndctl_pfn_get_resource;
 	ndctl_pfn_set_align;
 	ndctl_pfn_set_namespace;
 	ndctl_pfn_get_bus;

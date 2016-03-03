@@ -353,6 +353,7 @@ const char *ndctl_namespace_get_alt_name(struct ndctl_namespace *ndns);
 int ndctl_namespace_set_alt_name(struct ndctl_namespace *ndns,
 		const char *alt_name);
 unsigned long long ndctl_namespace_get_size(struct ndctl_namespace *ndns);
+unsigned long long ndctl_namespace_get_resource(struct ndctl_namespace *ndns);
 int ndctl_namespace_set_size(struct ndctl_namespace *ndns,
 		unsigned long long size);
 unsigned int ndctl_namespace_get_supported_sector_size(
@@ -430,6 +431,8 @@ int ndctl_pfn_set_uuid(struct ndctl_pfn *pfn, uuid_t uu);
 void ndctl_pfn_get_uuid(struct ndctl_pfn *pfn, uuid_t uu);
 int ndctl_pfn_set_align(struct ndctl_pfn *pfn, unsigned long align);
 unsigned long ndctl_pfn_get_align(struct ndctl_pfn *pfn);
+unsigned long long ndctl_pfn_get_resource(struct ndctl_pfn *pfn);
+unsigned long long ndctl_pfn_get_size(struct ndctl_pfn *pfn);
 int ndctl_pfn_set_namespace(struct ndctl_pfn *pfn, struct ndctl_namespace *ndns);
 struct ndctl_namespace *ndctl_pfn_get_namespace(struct ndctl_pfn *pfn);
 int ndctl_pfn_enable(struct ndctl_pfn *pfn);
