@@ -3880,6 +3880,8 @@ static int add_pfn(void *parent, int id, const char *pfn_base)
 	free(path);
 	ndctl_pfn_foreach(region, pfn_dup)
 		if (pfn->id == pfn_dup->id) {
+			pfn_dup->resource = pfn->resource;
+			pfn_dup->size = pfn->size;
 			free_pfn(pfn, NULL);
 			return 1;
 		}
