@@ -1,3 +1,4 @@
+#include <limits.h>
 #include <util/json.h>
 #include <uuid/uuid.h>
 #include <json-c/json.h>
@@ -76,6 +77,8 @@ bool util_namespace_active(struct ndctl_namespace *ndns)
 struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns)
 {
 	struct json_object *jndns = json_object_new_object();
+	unsigned long long size = ULLONG_MAX;
+	enum ndctl_namespace_mode mode;
 	struct json_object *jobj;
 	const char *bdev = NULL;
 	struct ndctl_btt *btt;
@@ -91,14 +94,22 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns)
 		goto err;
 	json_object_object_add(jndns, "dev", jobj);
 
-	switch (ndctl_namespace_get_mode(ndns)) {
+	btt = ndctl_namespace_get_btt(ndns);
+	pfn = ndctl_namespace_get_pfn(ndns);
+	mode = ndctl_namespace_get_mode(ndns);
+	switch (mode) {
 	case NDCTL_NS_MODE_MEMORY:
+		if (pfn) /* dynamic memory mode */
+			size = ndctl_pfn_get_size(pfn);
+		else /* native/static memory mode */
+			size = ndctl_namespace_get_size(ndns);
 		jobj = json_object_new_string("memory");
 		break;
 	case NDCTL_NS_MODE_SAFE:
 		jobj = json_object_new_string("sector");
 		break;
 	case NDCTL_NS_MODE_RAW:
+		size = ndctl_namespace_get_size(ndns);
 		jobj = json_object_new_string("raw");
 		break;
 	default:
@@ -107,13 +118,12 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns)
 	if (jobj)
 		json_object_object_add(jndns, "mode", jobj);
 
-	jobj = json_object_new_int64(ndctl_namespace_get_size(ndns));
-	if (!jobj)
-		goto err;
-	json_object_object_add(jndns, "size", jobj);
+	if (size < ULLONG_MAX) {
+		jobj = json_object_new_int64(size);
+		if (jobj)
+			json_object_object_add(jndns, "size", jobj);
+	}
 
-	btt = ndctl_namespace_get_btt(ndns);
-	pfn = ndctl_namespace_get_pfn(ndns);
 	if (btt) {
 		ndctl_btt_get_uuid(btt, uuid);
 		uuid_unparse(uuid, buf);
