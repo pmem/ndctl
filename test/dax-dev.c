@@ -32,6 +32,7 @@ static int emit_e820_device(int loglevel, struct ndctl_test *test)
 	const char *bdev;
 	struct ndctl_ctx *ctx;
 	struct ndctl_bus *bus;
+	struct ndctl_pfn *pfn;
 	struct ndctl_region *region;
 	struct ndctl_namespace *ndns;
 	enum ndctl_namespace_mode mode;
@@ -61,7 +62,11 @@ static int emit_e820_device(int loglevel, struct ndctl_test *test)
 	if (mode >= 0 && mode != NDCTL_NS_MODE_MEMORY)
 		goto out;
 
-	bdev = ndctl_namespace_get_block_device(ndns);
+	pfn = ndctl_namespace_get_pfn(ndns);
+	if (pfn)
+		bdev = ndctl_pfn_get_block_device(pfn);
+	else
+		bdev = ndctl_namespace_get_block_device(ndns);
 	if (!bdev)
 		goto out;
 
