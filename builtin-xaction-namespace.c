@@ -37,6 +37,7 @@
 static bool verbose;
 static bool force;
 static struct parameters {
+	bool do_scan;
 	const char *bus;
 	const char *map;
 	const char *type;
@@ -109,21 +110,9 @@ enum namespace_action {
 	ACTION_CREATE,
 };
 
-/*
- * parse_namespace_options - basic parsing sanity checks before we start
- * looking at actual namespace devices and available resources.
- */
-static const char *parse_namespace_options(int argc, const char **argv,
-		enum namespace_action mode, const struct option *options,
-		char *xable_usage)
+static int set_defaults(void)
 {
-	const char * const u[] = {
-		xable_usage,
-		NULL
-	};
-	int i, rc = 0;
-
-        argc = parse_options(argc, argv, options, u, 0);
+	int rc = 0;
 
 	if (param.type) {
 		if (strcmp(param.type, "pmem") == 0)
@@ -210,6 +199,28 @@ static const char *parse_namespace_options(int argc, const char **argv,
 		}
 	} else if (!param.reconfig)
 		param.sector_size = "4096";
+
+	return rc;
+}
+
+/*
+ * parse_namespace_options - basic parsing sanity checks before we start
+ * looking at actual namespace devices and available resources.
+ */
+static const char *parse_namespace_options(int argc, const char **argv,
+		enum namespace_action mode, const struct option *options,
+		char *xable_usage)
+{
+	const char * const u[] = {
+		xable_usage,
+		NULL
+	};
+	int i, rc = 0;
+
+	param.do_scan = argc == 1;
+        argc = parse_options(argc, argv, options, u, 0);
+
+	rc = set_defaults();
 
 	if (argc == 0 && mode != ACTION_CREATE) {
 		error("specify a namespace to %s, or \"all\"\n",
@@ -603,6 +614,8 @@ static int do_xaction_namespace(const char *namespace,
 					rc = 0;
 					continue;
 				}
+				if (rc == 0)
+					rc = 1;
 				goto done;
 			}
 			ndctl_namespace_foreach(region, ndns) {
@@ -619,7 +632,11 @@ static int do_xaction_namespace(const char *namespace,
 					rc = ndctl_namespace_enable(ndns);
 					break;
 				case ACTION_CREATE:
-					return namespace_reconfig(region, ndns);
+					rc = namespace_reconfig(region, ndns);
+					if (rc < 0)
+						goto done;
+					rc = 1;
+					goto done;
 				}
 				if (rc >= 0)
 					success++;
@@ -682,8 +699,25 @@ int cmd_create_namespace(int argc, const char **argv)
 			ACTION_CREATE, create_options, xable_usage);
 	int created = do_xaction_namespace(namespace, ACTION_CREATE);
 
-	if (created < 0)
+	if (created < 1 && param.do_scan) {
+		/*
+		 * In the default scan case we try pmem first and then
+		 * fallback to blk before giving up.
+		 */
+		memset(&param, 0, sizeof(param));
+		param.type = "blk";
+		set_defaults();
+		created = do_xaction_namespace(NULL, ACTION_CREATE);
+	}
+
+	if (created < 0 || (!namespace && created < 1)) {
 		fprintf(stderr, "failed to %s namespace\n", namespace
 				? "reconfigure" : "create");
-	return created;
+		if (!namespace)
+			created = -ENODEV;
+	}
+
+	if (created < 0)
+		return created;
+	return 0;
 }
