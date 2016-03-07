@@ -141,7 +141,8 @@ pkgconfig_DATA = lib/libndctl.pc
 EXTRA_DIST += lib/libndctl.pc.in
 CLEANFILES += lib/libndctl.pc
 
-TESTS = test/libndctl test/dpa-alloc test/parent-uuid test/create.sh
+TESTS = test/libndctl test/dpa-alloc test/parent-uuid test/create.sh \
+	test/clear.sh
 check_PROGRAMS = test/libndctl test/dpa-alloc test/parent-uuid
 
 if ENABLE_DESTRUCTIVE
