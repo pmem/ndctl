@@ -60,6 +60,10 @@ OPTIONS
 --region=::
 include::xable-region-options.txt[]
 
+-t::
+--type=::
+	Filter listing by region type ('pmem' or 'blk')
+
 -B::
 --buses::
 	Include bus info in the listing

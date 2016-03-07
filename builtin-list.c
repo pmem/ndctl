@@ -29,6 +29,7 @@ static struct {
 static struct {
 	const char *bus;
 	const char *region;
+	const char *type;
 } param;
 
 static int did_fail;
@@ -197,6 +198,8 @@ int cmd_list(int argc, const char **argv)
 		OPT_STRING('b', "bus", &param.bus, "bus-id", "filter by bus"),
 		OPT_STRING('r', "region", &param.region, "region-id",
 				"filter by region"),
+		OPT_STRING('t', "type", &param.type, "region-type",
+				"filter by region-type"),
 		OPT_BOOLEAN('B', "buses", &list.buses, "include bus info"),
 		OPT_BOOLEAN('D', "dimms", &list.dimms, "include dimm info"),
 		OPT_BOOLEAN('R', "regions", &list.regions,
@@ -216,13 +219,28 @@ int cmd_list(int argc, const char **argv)
 	struct json_object *jbuses = NULL;
 	struct ndctl_ctx *ctx;
 	struct ndctl_bus *bus;
+	unsigned int type = 0;
 	int i, rc;
 
         argc = parse_options(argc, argv, options, u, 0);
 	for (i = 0; i < argc; i++)
 		error("unknown parameter \"%s\"\n", argv[i]);
+	if (param.type && (strcmp(param.type, "pmem") != 0
+				&& strcmp(param.type, "blk") != 0)) {
+		error("unknown type \"%s\" must be \"pmem\" or \"blk\"\n",
+				param.type);
+		argc++;
+	}
+
 	if (argc)
 		usage_with_options(u, options);
+
+	if (param.type) {
+		if (strcmp(param.type, "pmem") == 0)
+			type = ND_DEVICE_REGION_PMEM;
+		else
+			type = ND_DEVICE_REGION_BLK;
+	}
 
 	rc = ndctl_new(&ctx);
 	if (rc < 0)
@@ -291,6 +309,9 @@ int cmd_list(int argc, const char **argv)
 			struct json_object *jregion;
 
 			if (!util_region_filter(region, param.region))
+				continue;
+
+			if (type && ndctl_region_get_type(region) != type)
 				continue;
 
 			if (!list.regions) {
