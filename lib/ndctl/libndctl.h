@@ -153,7 +153,13 @@ struct ndctl_cmd *ndctl_bus_cmd_new_ars_cap(struct ndctl_bus *bus,
 		unsigned long long address, unsigned long long len);
 struct ndctl_cmd *ndctl_bus_cmd_new_ars_start(struct ndctl_cmd *ars_cap, int type);
 struct ndctl_cmd *ndctl_bus_cmd_new_ars_status(struct ndctl_cmd *ars_cap);
+struct ndctl_range {
+	unsigned long long address;
+	unsigned long long length;
+};
 unsigned int ndctl_cmd_ars_cap_get_size(struct ndctl_cmd *ars_cap);
+int ndctl_cmd_ars_cap_get_range(struct ndctl_cmd *ars_cap,
+		struct ndctl_range *range);
 int ndctl_cmd_ars_in_progress(struct ndctl_cmd *ars_status);
 unsigned int ndctl_cmd_ars_num_records(struct ndctl_cmd *ars_stat);
 unsigned long long ndctl_cmd_ars_get_record_addr(struct ndctl_cmd *ars_stat,
@@ -161,7 +167,18 @@ unsigned long long ndctl_cmd_ars_get_record_addr(struct ndctl_cmd *ars_stat,
 unsigned long long ndctl_cmd_ars_get_record_len(struct ndctl_cmd *ars_stat,
 		unsigned int rec_index);
 
-#else
+#ifdef HAVE_NDCTL_CLEAR_ERROR
+/*
+ * clear_error requires ars_cap, so we require HAVE_NDCTL_ARS to export the
+ * clear_error capability
+ */
+struct ndctl_cmd *ndctl_bus_cmd_new_clear_error(unsigned long long address,
+		unsigned long long len, struct ndctl_cmd *ars_cap);
+unsigned long long ndctl_cmd_clear_error_get_cleared(
+		struct ndctl_cmd *clear_err);
+#define HAS_CLEAR_ERROR 1
+#endif
+#else /* HAVE_NDCTL_ARS */
 static inline struct ndctl_cmd *ndctl_bus_cmd_new_ars_cap(struct ndctl_bus *bus,
 		unsigned long long address, unsigned long long len)
 {
@@ -185,6 +202,13 @@ static inline unsigned int ndctl_cmd_ars_cap_get_size(struct ndctl_cmd *ars_cap)
 	return 0;
 }
 
+
+static inline int ndctl_cmd_ars_cap_get_range(struct ndctl_cmd *ars_cap,
+		struct ndctl_range *range)
+{
+	return -ENXIO;
+}
+
 static inline unsigned int ndctl_cmd_ars_in_progress(struct ndctl_cmd *ars_status)
 {
 	return 0;
@@ -203,6 +227,21 @@ static inline unsigned long long ndctl_cmd_ars_get_record_addr(
 
 static inline unsigned long long ndctl_cmd_ars_get_record_len(
 		struct ndctl_cmd *ars_stat, unsigned int rec_index)
+{
+	return 0;
+}
+#endif /* HAVE_NDCTL_ARS */
+
+#ifndef HAS_CLEAR_ERROR
+static inline struct ndctl_cmd *ndctl_bus_cmd_new_clear_error(
+		unsigned long long address, unsigned long long len,
+		struct ndctl_cmd *ars_cap)
+{
+	return NULL;
+}
+
+static inline unsigned long long ndctl_cmd_clear_error_get_cleared(
+		struct ndctl_cmd *clear_err)
 {
 	return 0;
 }

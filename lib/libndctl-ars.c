@@ -43,6 +43,30 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_bus_cmd_new_ars_cap(struct ndctl_bus *bus,
 	return cmd;
 }
 
+static bool is_power_of_2(unsigned int v)
+{
+	return v && ((v & (v - 1)) == 0);
+}
+
+static bool __validate_ars_cap(struct ndctl_cmd *ars_cap)
+{
+	if (ars_cap->type != ND_CMD_ARS_CAP || ars_cap->status != 0)
+		return false;
+	if ((*ars_cap->firmware_status & ARS_STATUS_MASK) != 0)
+		return false;
+	if (!is_power_of_2(ars_cap->ars_cap->clear_err_unit))
+		return false;
+	return true;
+}
+
+#define validate_ars_cap(ctx, ars_cap) \
+({ \
+	bool __valid = __validate_ars_cap(ars_cap); \
+	if (!__valid) \
+		dbg(ctx, "expected sucessfully completed ars_cap command\n"); \
+	__valid; \
+})
+
 NDCTL_EXPORT struct ndctl_cmd *ndctl_bus_cmd_new_ars_start(struct ndctl_cmd *ars_cap,
 		int type)
 {
@@ -55,14 +79,10 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_bus_cmd_new_ars_start(struct ndctl_cmd *ars
 		dbg(ctx, "unsupported cmd\n");
 		return NULL;
 	}
-	if (ars_cap->type != ND_CMD_ARS_CAP || ars_cap->status != 0) {
-		dbg(ctx, "expected sucessfully completed ars_cap command\n");
+
+	if (!validate_ars_cap(ctx, ars_cap))
 		return NULL;
-	}
-	if ((*ars_cap->firmware_status & ARS_STATUS_MASK) != 0) {
-		dbg(ctx, "expected sucessfully completed ars_cap command\n");
-		return NULL;
-	}
+
 	if (!(*ars_cap->firmware_status >> ARS_EXT_STATUS_SHIFT & type)) {
 		dbg(ctx, "ars_cap does not show requested type as supported\n");
 		return NULL;
@@ -98,14 +118,10 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_bus_cmd_new_ars_status(struct ndctl_cmd *ar
 		dbg(ctx, "unsupported cmd\n");
 		return NULL;
 	}
-	if (ars_cap->type != ND_CMD_ARS_CAP || ars_cap->status != 0) {
-		dbg(ctx, "expected sucessfully completed ars_cap command\n");
+
+	if (!validate_ars_cap(ctx, ars_cap))
 		return NULL;
-	}
-	if ((*ars_cap->firmware_status & ARS_STATUS_MASK) != 0) {
-		dbg(ctx, "expected sucessfully completed ars_cap command\n");
-		return NULL;
-	}
+
 	if (ars_cap_cmd->max_ars_out == 0) {
 		dbg(ctx, "invalid ars_cap\n");
 		return NULL;
@@ -139,6 +155,24 @@ NDCTL_EXPORT unsigned int ndctl_cmd_ars_cap_get_size(struct ndctl_cmd *ars_cap)
 
 	dbg(ctx, "invalid ars_cap\n");
 	return 0;
+}
+
+NDCTL_EXPORT int ndctl_cmd_ars_cap_get_range(struct ndctl_cmd *ars_cap,
+	struct ndctl_range *range)
+{
+	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(cmd_to_bus(ars_cap));
+
+	if (range && ars_cap->type == ND_CMD_ARS_CAP && ars_cap->status == 0) {
+		struct nd_cmd_ars_cap *cap = ars_cap->ars_cap;
+
+		dbg(ctx, "range: %llx - %llx\n", cap->address, cap->length);
+		range->address = cap->address;
+		range->length = cap->length;
+		return 0;
+	}
+
+	dbg(ctx, "invalid ars_cap\n");
+	return -EINVAL;
 }
 
 NDCTL_EXPORT int ndctl_cmd_ars_in_progress(struct ndctl_cmd *cmd)
@@ -206,3 +240,66 @@ NDCTL_EXPORT unsigned long long ndctl_cmd_ars_get_record_len(
 	dbg(ctx, "invalid ars_status\n");
 	return 0;
 }
+
+#ifdef HAVE_NDCTL_CLEAR_ERROR
+NDCTL_EXPORT struct ndctl_cmd *ndctl_bus_cmd_new_clear_error(
+		unsigned long long address, unsigned long long len,
+		struct ndctl_cmd *ars_cap)
+{
+	size_t size;
+	unsigned int mask;
+	struct nd_cmd_ars_cap *cap;
+	struct ndctl_cmd *clear_err;
+	struct ndctl_bus *bus = ars_cap->bus;
+	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
+
+	if (!ndctl_bus_is_cmd_supported(bus, ND_CMD_ARS_STATUS)) {
+		dbg(ctx, "unsupported cmd\n");
+		return NULL;
+	}
+
+	if (!validate_ars_cap(ctx, ars_cap))
+		return NULL;
+
+	cap = ars_cap->ars_cap;
+	if (address < cap->address || address > (cap->address + cap->length)
+			|| address + len > (cap->address + cap->length)) {
+		dbg(ctx, "request out of range (relative to ars_cap)\n");
+		return NULL;
+	}
+
+	mask = cap->clear_err_unit - 1;
+	if ((address | len) & mask) {
+		dbg(ctx, "request unaligned\n");
+		return NULL;
+	}
+
+	size = sizeof(*clear_err) + sizeof(struct nd_cmd_clear_error);
+	clear_err = calloc(1, size);
+	if (!clear_err)
+		return NULL;
+
+	ndctl_cmd_ref(clear_err);
+	clear_err->bus = bus;
+	clear_err->type = ND_CMD_CLEAR_ERROR;
+	clear_err->size = size;
+	clear_err->status = 1;
+	clear_err->firmware_status = &clear_err->clear_err->status;
+	clear_err->clear_err->address = address;
+	clear_err->clear_err->length = len;
+
+	return clear_err;
+}
+
+NDCTL_EXPORT unsigned long long ndctl_cmd_clear_error_get_cleared(
+		struct ndctl_cmd *clear_err)
+{
+	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(cmd_to_bus(clear_err));
+
+	if (clear_err->type == ND_CMD_CLEAR_ERROR && clear_err->status == 0)
+		return clear_err->clear_err->cleared;
+
+	dbg(ctx, "invalid clear_err\n");
+	return 0;
+}
+#endif

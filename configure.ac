@@ -125,6 +125,25 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 )
 AM_CONDITIONAL([ENABLE_ARS], [test "x$enable_ars" = "xyes"])
 
+AC_MSG_CHECKING([for CLEAR ERR support])
+AC_LANG(C)
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+			#ifdef HAVE_NDCTL_H
+			#include <linux/ndctl.h>
+			#else
+			#include "ndctl.h"
+			#endif
+			]], [[
+			int x = ND_CMD_CLEAR_ERROR;
+			]]
+		)], [AC_MSG_RESULT([yes])
+		     enable_clear_err=yes
+		     AC_DEFINE([HAVE_NDCTL_CLEAR_ERROR], [1],
+				[Define to 1 if ndctl.h has CLEAR ERR support.])
+		], [AC_MSG_RESULT([no])]
+)
+AM_CONDITIONAL([ENABLE_CLEAR_ERROR], [test "x$enable_clear_err" = "xyes"])
+
 AC_CHECK_HEADERS_ONCE([linux/version.h])
 
 AC_CHECK_FUNCS([ \

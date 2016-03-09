@@ -379,7 +379,8 @@ static unsigned long dimm_commands0 = 1UL << ND_CMD_GET_CONFIG_SIZE
 
 static unsigned long bus_commands0 = 1UL << ND_CMD_ARS_CAP
 		| 1UL << ND_CMD_ARS_START
-		| 1UL << ND_CMD_ARS_STATUS;
+		| 1UL << ND_CMD_ARS_STATUS
+		| 1UL << ND_CMD_CLEAR_ERROR;
 
 static struct ndctl_dimm *get_dimm_by_handle(struct ndctl_bus *bus, unsigned int handle)
 {
@@ -1596,7 +1597,7 @@ static int check_ars_cap(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 		return -ENXIO;
 	}
 
-	cmd = ndctl_bus_cmd_new_ars_cap(bus, 0, 64);
+	cmd = ndctl_bus_cmd_new_ars_cap(bus, 0, SZ_4K);
 	if (!cmd) {
 		fprintf(stderr, "%s: bus: %s failed to create cmd\n",
 				__func__, ndctl_bus_get_provider(bus));
@@ -1709,6 +1710,55 @@ static int check_ars_status(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 	check->cmd = cmd;
 	return 0;
 }
+
+static int check_clear_error(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
+		struct check_cmd *check)
+{
+	struct ndctl_cmd *ars_cap = check_cmds[ND_CMD_ARS_CAP].cmd;
+	struct ndctl_cmd *clear_err;
+	unsigned long long cleared;
+	struct ndctl_range range;
+	int rc;
+
+	if (check->cmd != NULL) {
+		fprintf(stderr, "%s: expected a NULL command, by default\n",
+				__func__);
+		return -ENXIO;
+	}
+
+	if (ndctl_cmd_ars_cap_get_range(ars_cap, &range)) {
+		fprintf(stderr, "failed to get ars_cap range\n");
+		return -ENXIO;
+	}
+
+	clear_err = ndctl_bus_cmd_new_clear_error(range.address, SZ_4K,
+			ars_cap);
+	if (!clear_err) {
+		fprintf(stderr, "%s: bus: %s failed to create cmd\n",
+				__func__, ndctl_bus_get_provider(bus));
+		return -ENOTTY;
+	}
+
+	rc = ndctl_cmd_submit(clear_err);
+	if (rc) {
+		fprintf(stderr, "%s: bus: %s failed to submit cmd: %d\n",
+				__func__, ndctl_bus_get_provider(bus), rc);
+		ndctl_cmd_unref(clear_err);
+		return rc;
+	}
+
+	cleared = ndctl_cmd_clear_error_get_cleared(clear_err);
+	if (cleared != SZ_4K) {
+		fprintf(stderr, "%s: bus: %s expected to clear: %d actual: %lld\n",
+				__func__, ndctl_bus_get_provider(bus), SZ_4K,
+				cleared);
+		return -ENXIO;
+	}
+
+	check->cmd = clear_err;
+	return 0;
+}
+
 #else
 static int check_ars_cap(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 		struct check_cmd *check)
@@ -1725,6 +1775,13 @@ static int check_ars_start(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 }
 
 static int check_ars_status(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
+		struct check_cmd *check)
+{
+	fprintf(stderr, "%s: HAVE_NDCTL_ARS disabled, skipping\n", __func__);
+	return 0;
+}
+
+static int check_clear_error(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 		struct check_cmd *check)
 {
 	fprintf(stderr, "%s: HAVE_NDCTL_ARS disabled, skipping\n", __func__);
@@ -1755,6 +1812,7 @@ static int check_commands(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 		[ND_CMD_ARS_CAP] = { check_ars_cap },
 		[ND_CMD_ARS_START] = { check_ars_start },
 		[ND_CMD_ARS_STATUS] = { check_ars_status },
+		[ND_CMD_CLEAR_ERROR] = { check_clear_error },
 	};
 	unsigned int i, rc = 0;
 

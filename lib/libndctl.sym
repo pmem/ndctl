@@ -69,10 +69,13 @@ global:
 	ndctl_bus_cmd_new_ars_start;
 	ndctl_bus_cmd_new_ars_status;
 	ndctl_cmd_ars_cap_get_size;
+	ndctl_cmd_ars_cap_get_range;
 	ndctl_cmd_ars_in_progress;
 	ndctl_cmd_ars_num_records;
 	ndctl_cmd_ars_get_record_addr;
 	ndctl_cmd_ars_get_record_len;
+	ndctl_bus_cmd_new_clear_error;
+	ndctl_cmd_clear_error_get_cleared;
 	ndctl_dimm_cmd_new_vendor_specific;
 	ndctl_cmd_vendor_set_input;
 	ndctl_cmd_vendor_get_output_size;

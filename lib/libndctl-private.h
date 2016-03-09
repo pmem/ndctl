@@ -159,9 +159,14 @@ struct ndctl_cmd {
 	} iter;
 	struct ndctl_cmd *source;
 	union {
+#ifdef HAVE_NDCTL_ARS
 		struct nd_cmd_ars_cap ars_cap[0];
 		struct nd_cmd_ars_start ars_start[0];
 		struct nd_cmd_ars_status ars_status[0];
+#endif
+#ifdef HAVE_NDCTL_CLEAR_ERROR
+		struct nd_cmd_clear_error clear_err[0];
+#endif
 		struct nd_cmd_get_config_size get_size[0];
 		struct nd_cmd_get_config_data_hdr get_data[0];
 		struct nd_cmd_set_config_hdr set_data[0];
