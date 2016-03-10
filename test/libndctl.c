@@ -482,11 +482,11 @@ static int check_btts(struct ndctl_region *region, struct btt **btts);
 static int check_regions(struct ndctl_bus *bus, struct region *regions, int n,
 		enum ns_mode mode)
 {
+	struct ndctl_region *region;
 	int i, rc = 0;
 
 	for (i = 0; i < n; i++) {
 		struct ndctl_interleave_set *iset;
-		struct ndctl_region *region;
 		char devname[50];
 
 		if (strcmp(regions[i].type, "pmem") == 0)
@@ -565,6 +565,10 @@ static int check_regions(struct ndctl_bus *bus, struct region *regions, int n,
 		if (rc)
 			break;
 	}
+
+	if (rc == 0)
+		ndctl_region_foreach(bus, region)
+			ndctl_region_disable_invalidate(region);
 
 	return rc;
 }
