@@ -55,7 +55,7 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_bus_cmd_new_ars_start(struct ndctl_cmd *ars
 		dbg(ctx, "unsupported cmd\n");
 		return NULL;
 	}
-	if (ars_cap->status != 0) {
+	if (ars_cap->type != ND_CMD_ARS_CAP || ars_cap->status != 0) {
 		dbg(ctx, "expected sucessfully completed ars_cap command\n");
 		return NULL;
 	}
@@ -94,11 +94,11 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_bus_cmd_new_ars_status(struct ndctl_cmd *ar
 	struct ndctl_cmd *cmd;
 	size_t size;
 
-	if (!ndctl_bus_is_cmd_supported(bus, ND_CMD_ARS_CAP)) {
+	if (!ndctl_bus_is_cmd_supported(bus, ND_CMD_ARS_STATUS)) {
 		dbg(ctx, "unsupported cmd\n");
 		return NULL;
 	}
-	if (ars_cap->status != 0) {
+	if (ars_cap->type != ND_CMD_ARS_CAP || ars_cap->status != 0) {
 		dbg(ctx, "expected sucessfully completed ars_cap command\n");
 		return NULL;
 	}
