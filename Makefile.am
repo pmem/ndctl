@@ -1,5 +1,7 @@
 EXTRA_DIST =
+if ENABLE_DOCS
 SUBDIRS = . Documentation
+endif
 CLEANFILES =
 ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
 AM_MAKEFLAGS = --no-print-directory
