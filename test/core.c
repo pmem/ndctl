@@ -1,4 +1,5 @@
 #include <linux/version.h>
+#include <sys/utsname.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <test.h>
@@ -11,6 +12,18 @@ struct ndctl_test {
 	int skip;
 };
 
+static unsigned int get_system_kver(void)
+{
+	struct utsname utsname;
+	int a, b, c;
+
+	uname(&utsname);
+
+	sscanf(utsname.release, "%d.%d.%d", &a, &b, &c);
+
+	return KERNEL_VERSION(a,b,c);
+}
+
 struct ndctl_test *ndctl_test_new(unsigned int kver)
 {
 	struct ndctl_test *test = calloc(1, sizeof(*test));
@@ -19,7 +32,7 @@ struct ndctl_test *ndctl_test_new(unsigned int kver)
 		return NULL;
 
 	if (!kver)
-		test->kver = LINUX_VERSION_CODE;
+		test->kver = get_system_kver();
 	else
 		test->kver = kver;
 
