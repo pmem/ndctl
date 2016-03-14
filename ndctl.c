@@ -159,8 +159,7 @@ int main(int argc, const char **argv)
 		goto out;
 	}
 	handle_internal_command(argc, argv);
-	fprintf(stderr, "Failed to run command '%s': %s\n",
-		argv[0], strerror(errno));
+	fprintf(stderr, "Unknown command: '%s'\n", argv[0]);
 out:
 	return 1;
 }
