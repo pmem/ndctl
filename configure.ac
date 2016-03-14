@@ -144,6 +144,27 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 )
 AM_CONDITIONAL([ENABLE_CLEAR_ERROR], [test "x$enable_clear_err" = "xyes"])
 
+AC_CONFIG_COMMANDS([gen-libndctl.h],
+		[[
+		if test "x$enable_ars" = "xyes"; then
+			enable_ars=1
+		else
+			enable_ars=0
+		fi
+		if test "x$enable_clear_err" = "xyes"; then
+			enable_clear_err=1
+		else
+			enable_clear_err=0
+		fi
+		sed -e s/HAVE_NDCTL_ARS/$enable_ars/ \
+		    -e s/HAVE_NDCTL_CLEAR_ERROR/$enable_clear_err/ \
+		< lib/ndctl/libndctl.h.in > lib/ndctl/libndctl.h
+		]],
+		[[
+		enable_ars=$enable_ars
+		enable_clear_err=$enable_clear_err
+		]])
+
 AC_CHECK_HEADERS_ONCE([linux/version.h])
 
 AC_CHECK_FUNCS([ \
