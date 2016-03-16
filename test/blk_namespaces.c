@@ -27,6 +27,7 @@
 #include <uuid/uuid.h>
 #include <linux/version.h>
 #include <test.h>
+#include <libkmod.h>
 
 /* The purpose of this test is to verify that we can successfully do I/O to
  * multiple nd_blk namespaces that have discontiguous segments.  It first
@@ -43,8 +44,6 @@
  */
 #define err(msg)\
 	fprintf(stderr, "%s:%d: %s (%s)\n", __func__, __LINE__, msg, strerror(errno))
-
-static const char *provider = "ACPI.NFIT";
 
 static struct ndctl_namespace *create_blk_namespace(int region_fraction,
 		struct ndctl_region *region)
@@ -214,9 +213,11 @@ int test_blk_namespaces(int log_level, struct ndctl_test *test)
 	char bdev[50];
 	struct ndctl_ctx *ctx;
 	struct ndctl_bus *bus;
-	struct ndctl_namespace *ndns[2], *_n;
-	struct ndctl_region *region, *blk_region = NULL;
+	struct kmod_module *mod;
 	struct ndctl_dimm *dimm;
+	struct kmod_ctx *kmod_ctx;
+	struct ndctl_namespace *ndns[2];
+	struct ndctl_region *region, *blk_region = NULL;
 
 	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 2, 0)))
 		return 77;
@@ -227,12 +228,33 @@ int test_blk_namespaces(int log_level, struct ndctl_test *test)
 
 	ndctl_set_log_priority(ctx, log_level);
 
-	bus = ndctl_bus_get_by_provider(ctx, provider);
+	kmod_ctx = kmod_new(NULL, NULL);
+	if (!kmod_ctx)
+		goto err_kmod;
+	kmod_set_log_priority(kmod_ctx, log_level);
+
+	rc = kmod_module_new_from_name(kmod_ctx, "nfit_test", &mod);
+	if (rc < 0)
+		goto err_module;
+
+	rc = kmod_module_probe_insert_module(mod, KMOD_PROBE_APPLY_BLACKLIST,
+			NULL, NULL, NULL, NULL);
+	if (rc < 0) {
+		rc = 77;
+		ndctl_test_skip(test);
+		fprintf(stderr, "nfit_test unavailable skipping tests\n");
+		goto err_module;
+	}
+
+	bus = ndctl_bus_get_by_provider(ctx, "ACPI.NFIT");
+	if (!bus)
+		bus = ndctl_bus_get_by_provider(ctx, "nfit_test.0");
+
 	if (!bus) {
 		fprintf(stderr, "%s: failed to find NFIT-provider\n", comm);
 		ndctl_test_skip(test);
 		rc = 77;
-		goto err_nobus;
+		goto err_cleanup;
 	} else {
 		fprintf(stderr, "%s: found provider: %s\n", comm,
 				ndctl_bus_get_provider(bus));
@@ -314,15 +336,21 @@ int test_blk_namespaces(int log_level, struct ndctl_test *test)
 	rc = 0;
 
  err_cleanup:
-	if (blk_region) {
-		ndctl_namespace_foreach_safe(blk_region, ndns[0], _n)
-			if (ndctl_namespace_get_size(ndns[0]) != 0)
-				disable_blk_namespace(ndns[0]);
-	}
+	/* unload nfit_test */
+	bus = ndctl_bus_get_by_provider(ctx, "nfit_test.0");
+	if (bus)
+		ndctl_region_foreach(bus, region)
+			ndctl_region_disable_invalidate(region);
+	bus = ndctl_bus_get_by_provider(ctx, "nfit_test.1");
+	if (bus)
+		ndctl_region_foreach(bus, region)
+			ndctl_region_disable_invalidate(region);
+	kmod_module_remove_module(mod, 0);
 
- err_nobus:
+ err_module:
+	kmod_unref(kmod_ctx);
+ err_kmod:
 	ndctl_unref(ctx);
-
 	return rc;
 }
 
