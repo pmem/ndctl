@@ -4,7 +4,7 @@ libdir=@libdir@
 includedir=@includedir@
 
 Name: libndctl
-Description: Device discovery and manipulation for the "nd" subsystem
+Description: Manage "libnvdimm" subsystem devices (Non-volatile Memory)
 Version: @VERSION@
 Libs: -L${libdir} -lndctl
 Libs.private:
