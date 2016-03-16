@@ -16,11 +16,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <test.h>
+#include <stdlib.h>
+#include <linux/version.h>
 
 #define err(msg)\
 	fprintf(stderr, "%s:%d: %s (%s)\n", __func__, __LINE__, msg, strerror(errno))
 
-int test_pcommit(void)
+int test_pcommit(struct ndctl_test *test)
 {
 	const char *pcommit = "pcommit";
 	const char *flags = "flags";
@@ -30,10 +32,13 @@ int test_pcommit(void)
 	FILE *cpuinfo;
 	char *token;
 
+	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 0, 0)))
+		return 77;
+
 	cpuinfo = fopen("/proc/cpuinfo", "r");
 	if (!cpuinfo) {
 		err("open");
-		return EBADF;
+		return -ENXIO;
 	}
 
         while (fgets(buffer, buffer_size, cpuinfo)) {
@@ -54,10 +59,18 @@ int test_pcommit(void)
         }
 
 	fclose(cpuinfo);
+	ndctl_test_skip(test);
 	return 77;
 }
 
 int __attribute__((weak)) main(int argc, char *argv[])
 {
-	return test_pcommit();
+	struct ndctl_test *test = ndctl_test_new(0);
+
+	if (!test) {
+		fprintf(stderr, "failed to initialize test\n");
+		return EXIT_FAILURE;
+	}
+
+	return test_pcommit(test);
 }

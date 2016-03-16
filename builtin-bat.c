@@ -1,11 +1,14 @@
 #include <stdio.h>
 #include <syslog.h>
 #include <test.h>
+#include <limits.h>
 #include <util/parse-options.h>
 
 int cmd_bat(int argc, const char **argv)
 {
 	int loglevel = LOG_DEBUG, i, rc;
+	struct ndctl_test *test;
+	bool force = false;
 	const char * const u[] = {
 		"ndctl bat [<options>]",
 		NULL
@@ -13,6 +16,8 @@ int cmd_bat(int argc, const char **argv)
 	const struct option options[] = {
 	OPT_INTEGER('l', "loglevel", &loglevel,
 		"set the log level (default LOG_DEBUG)"),
+	OPT_BOOLEAN('f', "force", &force,
+		"force run all tests regardless of required kernel"),
 	OPT_END(),
 	};
 
@@ -24,17 +29,27 @@ int cmd_bat(int argc, const char **argv)
 	if (argc)
 		usage_with_options(u, options);
 
-	rc = test_pcommit();
+	if (force)
+		test = ndctl_test_new(UINT_MAX);
+	else
+		test = ndctl_test_new(0);
+
+	if (!test) {
+		fprintf(stderr, "failed to initialize test\n");
+		return EXIT_FAILURE;
+	}
+
+	rc = test_pcommit(test);
 	fprintf(stderr, "test_pcommit: %s\n", rc ? "FAIL" : "PASS");
-	if (rc)
+	if (rc && rc != 77)
 		return rc;
 
-	rc = test_blk_namespaces(loglevel);
+	rc = test_blk_namespaces(loglevel, test);
 	fprintf(stderr, "test_blk_namespaces: %s\n", rc ? "FAIL" : "PASS");
-	if (rc)
+	if (rc && rc != 77)
 		return rc;
 
-	rc = test_pmem_namespaces(loglevel);
+	rc = test_pmem_namespaces(loglevel, test);
 	fprintf(stderr, "test_pmem_namespaces: %s\n", rc ? "FAIL" : "PASS");
-	return rc;
+	return ndctl_test_result(test, rc);
 }

@@ -25,6 +25,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <uuid/uuid.h>
+#include <linux/version.h>
 #include <test.h>
 
 /* The purpose of this test is to verify that we can successfully do I/O to
@@ -207,7 +208,7 @@ static int ns_do_io(const char *bdev)
 
 static const char *comm = "test-blk-namespaces";
 
-int test_blk_namespaces(int log_level)
+int test_blk_namespaces(int log_level, struct ndctl_test *test)
 {
 	int rc;
 	char bdev[50];
@@ -216,6 +217,9 @@ int test_blk_namespaces(int log_level)
 	struct ndctl_namespace *ndns[2], *_n;
 	struct ndctl_region *region, *blk_region = NULL;
 	struct ndctl_dimm *dimm;
+
+	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 2, 0)))
+		return 77;
 
 	rc = ndctl_new(&ctx);
 	if (rc < 0)
@@ -226,6 +230,7 @@ int test_blk_namespaces(int log_level)
 	bus = ndctl_bus_get_by_provider(ctx, provider);
 	if (!bus) {
 		fprintf(stderr, "%s: failed to find NFIT-provider\n", comm);
+		ndctl_test_skip(test);
 		rc = 77;
 		goto err_nobus;
 	} else {
@@ -323,6 +328,15 @@ int test_blk_namespaces(int log_level)
 
 int __attribute__((weak)) main(int argc, char *argv[])
 {
+	struct ndctl_test *test = ndctl_test_new(0);
+	int rc;
+
 	comm = argv[0];
-	return test_blk_namespaces(LOG_DEBUG);
+	if (!test) {
+		fprintf(stderr, "failed to initialize test\n");
+		return EXIT_FAILURE;
+	}
+
+	rc = test_blk_namespaces(LOG_DEBUG, test);
+	return ndctl_test_result(test, rc);
 }

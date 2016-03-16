@@ -25,6 +25,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <uuid/uuid.h>
+#include <linux/version.h>
 #include <test.h>
 
 #define err(msg)\
@@ -170,7 +171,7 @@ static int ns_do_io(const char *bdev)
 
 static const char *comm = "test-pmem-namespaces";
 
-int test_pmem_namespaces(int log_level)
+int test_pmem_namespaces(int log_level, struct ndctl_test *test)
 {
 	struct ndctl_region *region, *pmem_region = NULL;
 	struct ndctl_namespace *ndns;
@@ -179,6 +180,9 @@ int test_pmem_namespaces(int log_level)
 	struct ndctl_bus *bus;
 	char bdev[50];
 	int rc;
+
+	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 2, 0)))
+		return 77;
 
 	rc = ndctl_new(&ctx);
 	if (rc < 0)
@@ -189,6 +193,7 @@ int test_pmem_namespaces(int log_level)
 	bus = ndctl_bus_get_by_provider(ctx, provider);
 	if (!bus) {
 		fprintf(stderr, "%s: failed to find NFIT-provider\n", comm);
+		ndctl_test_skip(test);
 		rc = 77;
 		goto err;
 	} else
@@ -240,6 +245,15 @@ int test_pmem_namespaces(int log_level)
 
 int __attribute__((weak)) main(int argc, char *argv[])
 {
+	struct ndctl_test *test = ndctl_test_new(0);
+	int rc;
+
 	comm = argv[0];
-	return test_pmem_namespaces(LOG_DEBUG);
+	if (!test) {
+		fprintf(stderr, "failed to initialize test\n");
+		return EXIT_FAILURE;
+	}
+
+	rc = test_pmem_namespaces(LOG_DEBUG, test);
+	return ndctl_test_result(test, rc);
 }

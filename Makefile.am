@@ -97,13 +97,13 @@ ndctl_SOURCES = ndctl.c \
 		util/size.c \
 		util/strbuf.c \
 		util/wrapper.c \
-		util/filter.c
+		util/filter.c \
+		test/core.c
 
 if ENABLE_TEST
 ndctl_SOURCES += test/libndctl.c \
 		 test/dpa-alloc.c \
-		 test/parent-uuid.c \
-		 test/core.c
+		 test/parent-uuid.c
 endif
 
 if ENABLE_DESTRUCTIVE
@@ -158,13 +158,13 @@ endif
 test_libndctl_SOURCES = test/libndctl.c test/core.c
 test_libndctl_LDADD = lib/libndctl.la $(UUID_LIBS) $(KMOD_LIBS)
 
-test_pcommit_SOURCES = test/pcommit.c
+test_pcommit_SOURCES = test/pcommit.c test/core.c
 test_pcommit_LDADD = lib/libndctl.la $(KMOD_LIBS)
 
-test_blk_ns_SOURCES = test/blk_namespaces.c
+test_blk_ns_SOURCES = test/blk_namespaces.c test/core.c
 test_blk_ns_LDADD = lib/libndctl.la $(KMOD_LIBS)
 
-test_pmem_ns_SOURCES = test/pmem_namespaces.c
+test_pmem_ns_SOURCES = test/pmem_namespaces.c test/core.c
 test_pmem_ns_LDADD = lib/libndctl.la $(KMOD_LIBS)
 
 test_dpa_alloc_SOURCES = test/dpa-alloc.c test/core.c
