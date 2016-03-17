@@ -214,7 +214,7 @@ int test_blk_namespaces(int log_level)
 	char bdev[50];
 	struct ndctl_ctx *ctx;
 	struct ndctl_bus *bus;
-	struct ndctl_namespace *ndns[2];
+	struct ndctl_namespace *ndns[2], *_n;
 	struct ndctl_region *region, *blk_region = NULL;
 	struct ndctl_dimm *dimm;
 
@@ -307,7 +307,7 @@ int test_blk_namespaces(int log_level)
 
  err_cleanup:
 	if (blk_region) {
-		ndctl_namespace_foreach(blk_region, ndns[0])
+		ndctl_namespace_foreach_safe(blk_region, ndns[0], _n)
 			if (ndctl_namespace_get_size(ndns[0]) != 0)
 				disable_blk_namespace(ndns[0]);
 	}
