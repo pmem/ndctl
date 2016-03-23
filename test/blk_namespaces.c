@@ -213,9 +213,9 @@ int test_blk_namespaces(int log_level, struct ndctl_test *test)
 	char bdev[50];
 	struct ndctl_ctx *ctx;
 	struct ndctl_bus *bus;
-	struct kmod_module *mod;
 	struct ndctl_dimm *dimm;
-	struct kmod_ctx *kmod_ctx;
+	struct kmod_module *mod = NULL;
+	struct kmod_ctx *kmod_ctx = NULL;
 	struct ndctl_namespace *ndns[2];
 	struct ndctl_region *region, *blk_region = NULL;
 
@@ -228,37 +228,33 @@ int test_blk_namespaces(int log_level, struct ndctl_test *test)
 
 	ndctl_set_log_priority(ctx, log_level);
 
-	kmod_ctx = kmod_new(NULL, NULL);
-	if (!kmod_ctx)
-		goto err_kmod;
-	kmod_set_log_priority(kmod_ctx, log_level);
-
-	rc = kmod_module_new_from_name(kmod_ctx, "nfit_test", &mod);
-	if (rc < 0)
-		goto err_module;
-
-	rc = kmod_module_probe_insert_module(mod, KMOD_PROBE_APPLY_BLACKLIST,
-			NULL, NULL, NULL, NULL);
-	if (rc < 0) {
-		rc = 77;
-		ndctl_test_skip(test);
-		fprintf(stderr, "nfit_test unavailable skipping tests\n");
-		goto err_module;
-	}
-
 	bus = ndctl_bus_get_by_provider(ctx, "ACPI.NFIT");
-	if (!bus)
-		bus = ndctl_bus_get_by_provider(ctx, "nfit_test.0");
-
 	if (!bus) {
-		fprintf(stderr, "%s: failed to find NFIT-provider\n", comm);
-		ndctl_test_skip(test);
-		rc = 77;
-		goto err_cleanup;
-	} else {
-		fprintf(stderr, "%s: found provider: %s\n", comm,
-				ndctl_bus_get_provider(bus));
+		fprintf(stderr, "ACPI.NFIT unavailable falling back to nfit_test\n");
+		kmod_ctx = kmod_new(NULL, NULL);
+		if (!kmod_ctx)
+			goto err_kmod;
+		kmod_set_log_priority(kmod_ctx, log_level);
+
+		rc = kmod_module_new_from_name(kmod_ctx, "nfit_test", &mod);
+		if (rc < 0)
+			goto err_module;
+
+		rc = kmod_module_probe_insert_module(mod,
+				KMOD_PROBE_APPLY_BLACKLIST,
+				NULL, NULL, NULL, NULL);
+		ndctl_invalidate(ctx);
+		bus = ndctl_bus_get_by_provider(ctx, "nfit_test.0");
+		if (rc < 0 || !bus) {
+			rc = 77;
+			ndctl_test_skip(test);
+			fprintf(stderr, "nfit_test unavailable skipping tests\n");
+			goto err_module;
+		}
 	}
+
+	fprintf(stderr, "%s: found provider: %s\n", comm,
+			ndctl_bus_get_provider(bus));
 
 	/* get the system to a clean state */
         ndctl_region_foreach(bus, region)
@@ -345,10 +341,12 @@ int test_blk_namespaces(int log_level, struct ndctl_test *test)
 	if (bus)
 		ndctl_region_foreach(bus, region)
 			ndctl_region_disable_invalidate(region);
-	kmod_module_remove_module(mod, 0);
+	if (mod)
+		kmod_module_remove_module(mod, 0);
 
  err_module:
-	kmod_unref(kmod_ctx);
+	if (kmod_ctx)
+		kmod_unref(kmod_ctx);
  err_kmod:
 	ndctl_unref(ctx);
 	return rc;

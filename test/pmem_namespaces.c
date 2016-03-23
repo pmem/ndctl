@@ -173,10 +173,10 @@ static const char *comm = "test-pmem-namespaces";
 int test_pmem_namespaces(int log_level, struct ndctl_test *test)
 {
 	struct ndctl_region *region, *pmem_region = NULL;
+	struct kmod_ctx *kmod_ctx = NULL;
+	struct kmod_module *mod = NULL;
 	struct ndctl_namespace *ndns;
-	struct kmod_ctx *kmod_ctx;
 	struct ndctl_dimm *dimm;
-	struct kmod_module *mod;
 	struct ndctl_ctx *ctx;
 	struct ndctl_bus *bus;
 	char bdev[50];
@@ -191,36 +191,33 @@ int test_pmem_namespaces(int log_level, struct ndctl_test *test)
 
 	ndctl_set_log_priority(ctx, log_level);
 
-	kmod_ctx = kmod_new(NULL, NULL);
-	if (!kmod_ctx)
-		goto err_kmod;
-	kmod_set_log_priority(kmod_ctx, log_level);
+	bus = ndctl_bus_get_by_provider(ctx, "ACPI.NFIT");
+	if (!bus) {
+		fprintf(stderr, "ACPI.NFIT unavailable falling back to nfit_test\n");
+		kmod_ctx = kmod_new(NULL, NULL);
+		if (!kmod_ctx)
+			goto err_kmod;
+		kmod_set_log_priority(kmod_ctx, log_level);
 
-	rc = kmod_module_new_from_name(kmod_ctx, "nfit_test", &mod);
-	if (rc < 0)
-		goto err_module;
+		rc = kmod_module_new_from_name(kmod_ctx, "nfit_test", &mod);
+		if (rc < 0)
+			goto err_module;
 
-	rc = kmod_module_probe_insert_module(mod, KMOD_PROBE_APPLY_BLACKLIST,
-			NULL, NULL, NULL, NULL);
-	if (rc < 0) {
-		rc = 77;
-		ndctl_test_skip(test);
-		fprintf(stderr, "nfit_test unavailable skipping tests\n");
-		goto err_module;
+		rc = kmod_module_probe_insert_module(mod,
+				KMOD_PROBE_APPLY_BLACKLIST,
+				NULL, NULL, NULL, NULL);
+		ndctl_invalidate(ctx);
+		bus = ndctl_bus_get_by_provider(ctx, "nfit_test.0");
+		if (rc < 0 || !bus) {
+			rc = 77;
+			ndctl_test_skip(test);
+			fprintf(stderr, "nfit_test unavailable skipping tests\n");
+			goto err_module;
+		}
 	}
 
-	bus = ndctl_bus_get_by_provider(ctx, "ACPI.NFIT");
-	if (!bus)
-		bus = ndctl_bus_get_by_provider(ctx, "nfit_test.0");
-
-	if (!bus) {
-		fprintf(stderr, "%s: failed to find NFIT-provider\n", comm);
-		ndctl_test_skip(test);
-		rc = 77;
-		goto err;
-	} else
-		fprintf(stderr, "%s: found provider: %s\n", comm,
-				ndctl_bus_get_provider(bus));
+	fprintf(stderr, "%s: found provider: %s\n", comm,
+			ndctl_bus_get_provider(bus));
 
 	/* get the system to a clean state */
         ndctl_region_foreach(bus, region)
