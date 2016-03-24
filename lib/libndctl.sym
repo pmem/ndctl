@@ -11,6 +11,7 @@ global:
 	ndctl_unref;
 	ndctl_set_log_priority;
 	ndctl_new;
+	ndctl_invalidate;
 local:
         *;
 };

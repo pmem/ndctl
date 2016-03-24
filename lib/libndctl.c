@@ -584,7 +584,7 @@ static void free_region(struct ndctl_region *region)
 	free(region);
 }
 
-static void free_bus(struct ndctl_bus *bus)
+static void free_bus(struct ndctl_bus *bus, struct list_head *head)
 {
 	struct ndctl_dimm *dimm, *_d;
 	struct ndctl_region *region, *_r;
@@ -598,7 +598,8 @@ static void free_bus(struct ndctl_bus *bus)
 	}
 	list_for_each_safe(&bus->regions, region, _r, list)
 		free_region(region);
-	list_del_from(&bus->ctx->busses, &bus->list);
+	if (head)
+		list_del_from(head, &bus->list);
 	free(bus->provider);
 	free(bus->bus_path);
 	free(bus->bus_buf);
@@ -611,7 +612,7 @@ static void free_context(struct ndctl_ctx *ctx)
 	struct ndctl_bus *bus, *_b;
 
 	list_for_each_safe(&ctx->busses, bus, _b, list)
-		free_bus(bus);
+		free_bus(bus, &ctx->busses);
 	free(ctx);
 }
 
@@ -869,9 +870,9 @@ static void parse_nfit_mem_flags(struct ndctl_dimm *dimm, char *flags)
 static int add_bus(void *parent, int id, const char *ctl_base)
 {
 	int rc = -ENOMEM;
-	struct ndctl_bus *bus;
 	char buf[SYSFS_ATTR_SIZE];
 	struct ndctl_ctx *ctx = parent;
+	struct ndctl_bus *bus, *bus_dup;
 	char *path = calloc(1, strlen(ctl_base) + 100);
 
 	if (!path)
@@ -928,6 +929,14 @@ static int add_bus(void *parent, int id, const char *ctl_base)
 		goto err_read;
 	bus->buf_len = strlen(bus->bus_path) + 50;
 
+	ndctl_bus_foreach(ctx, bus_dup)
+		if (strcmp(ndctl_bus_get_provider(bus_dup),
+					ndctl_bus_get_provider(bus)) == 0) {
+			free_bus(bus, NULL);
+			free(path);
+			return 1;
+		}
+
 	list_add(&ctx->busses, &bus->list);
 
 	rc = 0;
@@ -952,6 +961,11 @@ static void busses_init(struct ndctl_ctx *ctx)
 	ctx->busses_init = 1;
 
 	device_parse(ctx, NULL, "/sys/class/nd", "ndctl", ctx, add_bus);
+}
+
+NDCTL_EXPORT void ndctl_invalidate(struct ndctl_ctx *ctx)
+{
+	ctx->busses_init = 0;
 }
 
 /**
