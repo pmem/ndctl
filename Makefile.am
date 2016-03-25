@@ -60,6 +60,7 @@ do_rhel_subst = sed -e 's,VERSION,$(VERSION),g' \
 
 do_sles_subst = sed -e 's,VERSION,$(VERSION),g' \
             -e 's,DNAME,libndctl-devel,g' \
+            -e 's,%license,%doc,g' \
             -e 's,LNAME,libndctl$(LIBNDCTL_CURRENT),g'
 
 rhel/ndctl.spec: ndctl.spec.in Makefile.am
