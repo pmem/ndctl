@@ -1847,7 +1847,7 @@ static int check_commands(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 	if (rc)
 		goto out;
 
-	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 3, 0)))
+	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 6, 0)))
 		goto out;
 
 	/* Check Bus commands */
