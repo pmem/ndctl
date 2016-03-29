@@ -47,9 +47,9 @@ SED_PROCESS = \
 %.pc: %.pc.in Makefile
 	$(SED_PROCESS)
 
-LIBNDCTL_CURRENT=6
+LIBNDCTL_CURRENT=7
 LIBNDCTL_REVISION=0
-LIBNDCTL_AGE=0
+LIBNDCTL_AGE=1
 
 noinst_SCRIPTS = rhel/ndctl.spec sles/ndctl.spec
 CLEANFILES += $(noinst_SCRIPTS)
