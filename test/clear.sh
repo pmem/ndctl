@@ -13,6 +13,15 @@ err() {
 	exit $rc
 }
 
+eval $(uname -r | awk -F. '{print "maj="$1 ";" "min="$2}')
+if [ $maj -lt 4 ]; then
+	echo "kernel $maj.$min lacks clear poison support"
+	exit $rc
+elif [ $maj -eq 4 -a $min -lt 6 ]; then
+	echo "kernel $maj.$min lacks clear poison support"
+	exit $rc
+fi
+
 set -e
 trap 'err $LINENO' ERR
 
