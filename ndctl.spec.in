@@ -65,16 +65,19 @@ make check
 %postun -n LNAME -p /sbin/ldconfig
 
 %files
+%defattr(-,root,root)
 %license licenses/GPLv2 licenses/BSD-MIT licenses/CC0
 %{_bindir}/ndctl
 %{_mandir}/man1/*
 
 %files -n LNAME
+%defattr(-,root,root)
 %doc README.md
 %license COPYING licenses/BSD-MIT licenses/CC0
 %{_libdir}/libndctl.so.*
 
 %files -n DNAME
+%defattr(-,root,root)
 %license COPYING
 %{_includedir}/ndctl/
 %{_libdir}/libndctl.so

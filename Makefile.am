@@ -56,12 +56,14 @@ CLEANFILES += $(noinst_SCRIPTS)
 
 do_rhel_subst = sed -e 's,VERSION,$(VERSION),g' \
             -e 's,DNAME,ndctl-devel,g' \
-            -e 's,LNAME,ndctl-libs,g'
+            -e '/^%defattr.*/d' \
+	    -e 's,LNAME,ndctl-libs,g'
 
 do_sles_subst = sed -e 's,VERSION,$(VERSION),g' \
             -e 's,DNAME,libndctl-devel,g' \
             -e 's,%license,%doc,g' \
-            -e 's,LNAME,libndctl$(LIBNDCTL_CURRENT),g'
+            -e 's,\(^License:.*GPL\)v2,\1-2.0,g' \
+            -e "s,LNAME,libndctl$$(($(LIBNDCTL_CURRENT) - $(LIBNDCTL_AGE))),g"
 
 rhel/ndctl.spec: ndctl.spec.in Makefile.am
 	$(AM_V_GEN)$(MKDIR_P) rhel; $(do_rhel_subst) < $< > $@
