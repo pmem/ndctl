@@ -1,22 +1,22 @@
-Name:           ndctl
+Name:		ndctl
 Version:	VERSION
-Release:        1%{?dist}
+Release:	1%{?dist}
 Summary:	Manage "libnvdimm" subsystem devices (Non-volatile Memory)
-License:        GPLv2
-Group:          Hardware/Other
-Url:            https://github.com/pmem/ndctl
-Source0:        https://github.com/pmem/ndctl/archive/v%{version}.tar.gz
+License:	GPLv2
+Group:		System Environment/Base
+Url:		https://github.com/pmem/ndctl
+Source0:	https://github.com/pmem/ndctl/archive/v%{version}.tar.gz
 
-BuildRequires:  autoconf
-BuildRequires:  asciidoc
-BuildRequires:  xmlto
-BuildRequires:  automake
-BuildRequires:  libtool
-BuildRequires:  pkgconfig
-BuildRequires:  pkgconfig(libkmod)
-BuildRequires:  pkgconfig(libudev)
-BuildRequires:  pkgconfig(uuid)
-BuildRequires:  pkgconfig(json-c)
+BuildRequires:	autoconf
+BuildRequires:	asciidoc
+BuildRequires:	xmlto
+BuildRequires:	automake
+BuildRequires:	libtool
+BuildRequires:	pkgconfig
+BuildRequires:	pkgconfig(libkmod)
+BuildRequires:	pkgconfig(libudev)
+BuildRequires:	pkgconfig(uuid)
+BuildRequires:	pkgconfig(json-c)
 
 %description
 Utility library for managing the "libnvdimm" subsystem.  The "libnvdimm"
@@ -26,10 +26,10 @@ Firmware Interface Table).
 
 
 %package -n DNAME
-Summary:        Development files for libndctl
-License:        LGPLv2
-Group:          Development/Libraries/Other
-Requires:       LNAME%{?_isa} = %{version}-%{release}
+Summary:	Development files for libndctl
+License:	LGPLv2
+Group:		Development/Libraries
+Requires:	LNAME%{?_isa} = %{version}-%{release}
 
 %description -n DNAME
 The %{name}-devel package contains libraries and header files for
@@ -37,9 +37,9 @@ developing applications that use %{name}.
 
 
 %package -n LNAME
-Summary:        Management library for "libnvdimm" subsystem devices (Non-volatile Memory)
-License:        LGPLv2
-Group:          System/Libraries
+Summary:	Management library for "libnvdimm" subsystem devices (Non-volatile Memory)
+License:	LGPLv2
+Group:		System Environment/Libraries
 
 %description -n LNAME
 Libraries for %{name}.
@@ -84,8 +84,5 @@ make check
 %{_libdir}/pkgconfig/libndctl.pc
 
 %changelog
-* Wed Sep 09 2015 dan.j.williams@intel.com
-- Stop emitting git commit info by default
-
-* Mon Aug 03 2015 dan.j.williams@intel.com
-- Initial rpm release
+* Mon Apr 04 2016 Dan Williams <dan.j.williams@intel.com> - 52-1
+- Initial rpm submission to Fedora
