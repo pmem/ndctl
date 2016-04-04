@@ -252,6 +252,85 @@ static inline unsigned long long ndctl_cmd_clear_error_get_cleared(
 }
 #endif
 
+#define HAS_SMART HAVE_NDCTL_SMART
+#if HAS_SMART == 1
+struct ndctl_cmd *ndctl_dimm_cmd_new_smart(struct ndctl_dimm *dimm);
+unsigned int ndctl_cmd_smart_get_flags(struct ndctl_cmd *cmd);
+unsigned int ndctl_cmd_smart_get_health(struct ndctl_cmd *cmd);
+unsigned int ndctl_cmd_smart_get_temperature(struct ndctl_cmd *cmd);
+unsigned int ndctl_cmd_smart_get_spares(struct ndctl_cmd *cmd);
+unsigned int ndctl_cmd_smart_get_alarm_flags(struct ndctl_cmd *cmd);
+unsigned int ndctl_cmd_smart_get_life_used(struct ndctl_cmd *cmd);
+unsigned int ndctl_cmd_smart_get_shutdown_state(struct ndctl_cmd *cmd);
+unsigned int ndctl_cmd_smart_get_vendor_size(struct ndctl_cmd *cmd);
+unsigned char *ndctl_cmd_smart_get_vendor_data(struct ndctl_cmd *cmd);
+struct ndctl_cmd *ndctl_dimm_cmd_new_smart_threshold(struct ndctl_dimm *dimm);
+unsigned int ndctl_cmd_smart_threshold_get_alarm_control(struct ndctl_cmd *cmd);
+unsigned int ndctl_cmd_smart_threshold_get_temperature(struct ndctl_cmd *cmd);
+unsigned int ndctl_cmd_smart_threshold_get_spares(struct ndctl_cmd *cmd);
+#else
+static inline struct ndctl_cmd *ndctl_dimm_cmd_new_smart(struct ndctl_dimm *dimm)
+{
+	return NULL;
+}
+static inline unsigned int ndctl_cmd_smart_get_flags(struct ndctl_cmd *cmd)
+{
+	return 0;
+}
+static inline unsigned int ndctl_cmd_smart_get_health(struct ndctl_cmd *cmd)
+{
+	return 0;
+}
+static inline unsigned int ndctl_cmd_smart_get_temperature(struct ndctl_cmd *cmd)
+{
+	return 0;
+}
+static inline unsigned int ndctl_cmd_smart_get_spares(struct ndctl_cmd *cmd)
+{
+	return 0;
+}
+static inline unsigned int ndctl_cmd_smart_get_alarm_flags(struct ndctl_cmd *cmd)
+{
+	return 0;
+}
+static inline unsigned int ndctl_cmd_smart_get_life_used(struct ndctl_cmd *cmd)
+{
+	return 0;
+}
+static inline unsigned int ndctl_cmd_smart_get_shutdown_state(struct ndctl_cmd *cmd)
+{
+	return 0;
+}
+static inline unsigned int ndctl_cmd_smart_get_vendor_size(struct ndctl_cmd *cmd)
+{
+	return 0;
+}
+static inline unsigned char *ndctl_cmd_smart_get_vendor_data(struct ndctl_cmd *cmd)
+{
+	return NULL;
+}
+static inline struct ndctl_cmd *ndctl_dimm_cmd_new_smart_threshold(
+		struct ndctl_dimm *dimm)
+{
+	return NULL;
+}
+static inline unsigned int ndctl_cmd_smart_threshold_get_alarm_control(
+		struct ndctl_cmd *cmd)
+{
+	return 0;
+}
+static inline unsigned int ndctl_cmd_smart_threshold_get_temperature(
+		struct ndctl_cmd *cmd)
+{
+	return 0;
+}
+static inline unsigned int ndctl_cmd_smart_threshold_get_spares(
+		struct ndctl_cmd *cmd)
+{
+	return 0;
+}
+#endif
+
 struct ndctl_cmd *ndctl_dimm_cmd_new_vendor_specific(struct ndctl_dimm *dimm,
 		unsigned int opcode, size_t input_size, size_t output_size);
 ssize_t ndctl_cmd_vendor_set_input(struct ndctl_cmd *cmd, void *buf,

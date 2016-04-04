@@ -144,6 +144,25 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 )
 AM_CONDITIONAL([ENABLE_CLEAR_ERROR], [test "x$enable_clear_err" = "xyes"])
 
+AC_MSG_CHECKING([for SMART support])
+AC_LANG(C)
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+			#ifdef HAVE_NDCTL_H
+			#include <linux/ndctl.h>
+			#else
+			#include "ndctl.h"
+			#endif
+			]], [[
+			int x = ND_SMART_HEALTH_VALID;
+			]]
+		)], [AC_MSG_RESULT([yes])
+		     enable_smart=yes
+		     AC_DEFINE([HAVE_NDCTL_SMART], [1],
+				[Define to 1 if ndctl.h has SMART support.])
+		], [AC_MSG_RESULT([no])]
+)
+AM_CONDITIONAL([ENABLE_SMART], [test "x$enable_smart" = "xyes"])
+
 AC_CONFIG_COMMANDS([gen-libndctl.h],
 		[[
 		if test "x$enable_ars" = "xyes"; then
@@ -151,17 +170,24 @@ AC_CONFIG_COMMANDS([gen-libndctl.h],
 		else
 			enable_ars=0
 		fi
+		if test "x$enable_smart" = "xyes"; then
+			enable_smart=1
+		else
+			enable_smart=0
+		fi
 		if test "x$enable_clear_err" = "xyes"; then
 			enable_clear_err=1
 		else
 			enable_clear_err=0
 		fi
 		sed -e s/HAVE_NDCTL_ARS/$enable_ars/ \
+		    -e s/HAVE_NDCTL_SMART/$enable_smart/ \
 		    -e s/HAVE_NDCTL_CLEAR_ERROR/$enable_clear_err/ \
 		< lib/ndctl/libndctl.h.in > lib/ndctl/libndctl.h
 		]],
 		[[
 		enable_ars=$enable_ars
+		enable_smart=$enable_smart
 		enable_clear_err=$enable_clear_err
 		]])
 

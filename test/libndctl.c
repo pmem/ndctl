@@ -377,7 +377,8 @@ static struct region regions1[] = {
 
 static unsigned long dimm_commands0 = 1UL << ND_CMD_GET_CONFIG_SIZE
 		| 1UL << ND_CMD_GET_CONFIG_DATA
-		| 1UL << ND_CMD_SET_CONFIG_DATA;
+		| 1UL << ND_CMD_SET_CONFIG_DATA | 1UL << ND_CMD_SMART
+		| 1UL << ND_CMD_SMART_THRESHOLD;
 
 static unsigned long bus_commands0 = 1UL << ND_CMD_ARS_CAP
 		| 1UL << ND_CMD_ARS_START
@@ -1586,6 +1587,122 @@ static int check_set_config_data(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 	return 0;
 }
 
+#ifdef HAVE_NDCTL_SMART
+#define __check_smart(dimm, cmd, field) ({ \
+	if (ndctl_cmd_smart_get_##field(cmd) != smart_data.field) { \
+		fprintf(stderr, "%s dimm: %#x expected field %#x got: %#x\n", \
+				__func__, ndctl_dimm_get_handle(dimm), \
+				smart_data.field, \
+				ndctl_cmd_smart_get_##field(cmd)); \
+		ndctl_cmd_unref(cmd); \
+		return -ENXIO; \
+	} \
+})
+
+static int check_smart(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
+		struct check_cmd *check)
+{
+	static const struct nd_smart_payload smart_data = {
+		.flags = ND_SMART_HEALTH_VALID | ND_SMART_TEMP_VALID
+			| ND_SMART_SPARES_VALID | ND_SMART_ALARM_VALID
+			| ND_SMART_USED_VALID | ND_SMART_SHUTDOWN_VALID,
+		.health = ND_SMART_NON_CRITICAL_HEALTH,
+		.temperature = 23 * 16,
+		.spares = 75,
+		.alarm_flags = ND_SMART_SPARE_TRIP | ND_SMART_TEMP_TRIP,
+		.life_used = 5,
+		.shutdown_state = 0,
+		.vendor_size = 0,
+	};
+	struct ndctl_cmd *cmd = ndctl_dimm_cmd_new_smart(dimm);
+	int rc;
+
+	if (!cmd) {
+		fprintf(stderr, "%s: dimm: %#x failed to create cmd\n",
+				__func__, ndctl_dimm_get_handle(dimm));
+		return -ENXIO;
+	}
+
+	rc = ndctl_cmd_submit(cmd);
+	if (rc) {
+		fprintf(stderr, "%s: dimm: %#x failed to submit cmd: %d\n",
+			__func__, ndctl_dimm_get_handle(dimm), rc);
+		ndctl_cmd_unref(cmd);
+		return rc;
+	}
+
+	__check_smart(dimm, cmd, flags);
+	__check_smart(dimm, cmd, health);
+	__check_smart(dimm, cmd, temperature);
+	__check_smart(dimm, cmd, spares);
+	__check_smart(dimm, cmd, alarm_flags);
+	__check_smart(dimm, cmd, life_used);
+	__check_smart(dimm, cmd, shutdown_state);
+	__check_smart(dimm, cmd, vendor_size);
+
+	ndctl_cmd_unref(cmd);
+	return 0;
+}
+
+#define __check_smart_threshold(dimm, cmd, field) ({ \
+	if (ndctl_cmd_smart_threshold_get_##field(cmd) != smart_t_data.field) { \
+		fprintf(stderr, "%s dimm: %#x expected field %#x got: %#x\n", \
+				__func__, ndctl_dimm_get_handle(dimm), \
+				smart_t_data.field, \
+				ndctl_cmd_smart_threshold_get_##field(cmd)); \
+		ndctl_cmd_unref(cmd); \
+		return -ENXIO; \
+	} \
+})
+
+static int check_smart_threshold(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
+		struct check_cmd *check)
+{
+	static const struct nd_smart_threshold_payload smart_t_data = {
+		.alarm_control = ND_SMART_SPARE_TRIP | ND_SMART_TEMP_TRIP,
+		.temperature = 40 * 16,
+		.spares = 5,
+	};
+	struct ndctl_cmd *cmd = ndctl_dimm_cmd_new_smart_threshold(dimm);
+	int rc;
+
+	if (!cmd) {
+		fprintf(stderr, "%s: dimm: %#x failed to create cmd\n",
+				__func__, ndctl_dimm_get_handle(dimm));
+		return -ENXIO;
+	}
+
+	rc = ndctl_cmd_submit(cmd);
+	if (rc) {
+		fprintf(stderr, "%s: dimm: %#x failed to submit cmd: %d\n",
+			__func__, ndctl_dimm_get_handle(dimm), rc);
+		ndctl_cmd_unref(cmd);
+		return rc;
+	}
+
+	__check_smart_threshold(dimm, cmd, alarm_control);
+	__check_smart_threshold(dimm, cmd, temperature);
+	__check_smart_threshold(dimm, cmd, spares);
+
+	ndctl_cmd_unref(cmd);
+	return 0;
+}
+#else
+static int check_smart(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
+		struct check_cmd *check)
+{
+	fprintf(stderr, "%s: HAVE_NDCTL_SMART disabled, skipping\n", __func__);
+	return 0;
+}
+
+static int check_smart_threshold(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
+		struct check_cmd *check)
+{
+	fprintf(stderr, "%s: HAVE_NDCTL_SMART disabled, skipping\n", __func__);
+	return 0;
+}
+#endif
+
 #ifdef HAVE_NDCTL_ARS
 static int check_ars_cap(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 		struct check_cmd *check)
@@ -1808,7 +1925,8 @@ static int check_commands(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 		[ND_CMD_GET_CONFIG_SIZE] = { check_get_config_size },
 		[ND_CMD_GET_CONFIG_DATA] = { check_get_config_data },
 		[ND_CMD_SET_CONFIG_DATA] = { check_set_config_data },
-		[ND_CMD_SMART_THRESHOLD] = { },
+		[ND_CMD_SMART] = { check_smart },
+		[ND_CMD_SMART_THRESHOLD] = { check_smart_threshold },
 	};
 	static struct check_cmd __check_bus_cmds[] = {
 		[ND_CMD_ARS_CAP] = { check_ars_cap },

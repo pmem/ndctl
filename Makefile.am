@@ -85,6 +85,10 @@ if ENABLE_ARS
 lib_libndctl_la_SOURCES += lib/libndctl-ars.c
 endif
 
+if ENABLE_SMART
+lib_libndctl_la_SOURCES += lib/libndctl-smart.c
+endif
+
 bin_PROGRAMS = ndctl
 
 ndctl_SOURCES = ndctl.c \

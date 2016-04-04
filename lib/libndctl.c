@@ -26,6 +26,7 @@
 #include <ccan/list/list.h>
 #include <ccan/minmax/minmax.h>
 #include <ccan/array_size/array_size.h>
+#include <ccan/build_assert/build_assert.h>
 
 #ifdef HAVE_NDCTL_H
 #include <linux/ndctl.h>
