@@ -126,29 +126,31 @@ struct dimm {
 			unsigned int f_restore:1;
 		};
 	};
+	int formats;
+	int format[2];
 };
 
 #define DIMM_HANDLE(n, s, i, c, d) \
 	(((n & 0xfff) << 16) | ((s & 0xf) << 12) | ((i & 0xf) << 8) \
 	 | ((c & 0xf) << 4) | (d & 0xf))
 static struct dimm dimms0[] = {
-	{ DIMM_HANDLE(0, 0, 0, 0, 0), 0, { 0 }, },
-	{ DIMM_HANDLE(0, 0, 0, 0, 1), 1, { 0 }, },
-	{ DIMM_HANDLE(0, 0, 1, 0, 0), 2, { 0 }, },
-	{ DIMM_HANDLE(0, 0, 1, 0, 1), 3, { 0 }, },
+	{ DIMM_HANDLE(0, 0, 0, 0, 0), 0, { 0 }, 2, { 0x201, 0x301, }, },
+	{ DIMM_HANDLE(0, 0, 0, 0, 1), 1, { 0 }, 2, { 0x201, 0x301, }, },
+	{ DIMM_HANDLE(0, 0, 1, 0, 0), 2, { 0 }, 2, { 0x201, 0x301, }, },
+	{ DIMM_HANDLE(0, 0, 1, 0, 1), 3, { 0 }, 2, { 0x201, 0x301, }, },
 };
 
 static struct dimm dimms1[] = {
 	{
-		DIMM_HANDLE(0, 0, 0, 0, 0), 0,
-		{
+		DIMM_HANDLE(0, 0, 0, 0, 0), 0, {
 			.f_arm = 1,
 			.f_save = 1,
 			.f_flush = 1,
 			.f_smart = 1,
 			.f_restore = 1,
 		},
-	}
+		1, { 0x101, },
+	},
 };
 
 static struct btt {
@@ -1886,7 +1888,7 @@ static int check_dimms(struct ndctl_bus *bus, struct dimm *dimms, int n,
 		unsigned long bus_commands, unsigned long dimm_commands,
 		struct ndctl_test *test)
 {
-	int i, rc;
+	int i, j, rc;
 
 	for (i = 0; i < n; i++) {
 		struct ndctl_dimm *dimm = get_dimm_by_handle(bus, dimms[i].handle);
@@ -1928,6 +1930,21 @@ static int check_dimms(struct ndctl_bus *bus, struct dimm *dimms, int n,
 					ndctl_dimm_smart_pending(dimm) ? "smart_event " : "",
 					ndctl_dimm_failed_flush(dimm) ? "flush_fail " : "");
 			return -ENXIO;
+		}
+
+		if (ndctl_dimm_get_formats(dimm) != dimms[i].formats) {
+			fprintf(stderr, "dimm%d expected formats: %d got: %d\n",
+					i, dimms[i].formats,
+					ndctl_dimm_get_formats(dimm));
+			return -ENXIO;
+		}
+		for (j = 0; j < dimms[i].formats; j++) {
+			if (ndctl_dimm_get_formatN(dimm, j) != dimms[i].format[j]) {
+				fprintf(stderr, "dimm%d expected format[%d]: %d got: %d\n",
+						i, j, dimms[i].format[j],
+						ndctl_dimm_get_formatN(dimm, j));
+				return -ENXIO;
+			}
 		}
 
 		rc = check_commands(bus, dimm, bus_commands, dimm_commands, test);

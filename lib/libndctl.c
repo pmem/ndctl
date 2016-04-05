@@ -111,12 +111,13 @@ struct ndctl_bus {
  * @vendor_id: hardware component vendor
  * @device_id: hardware device id
  * @revision_id: hardware revision id
- * @format_id: format interface code number
  * @node: system node-id
  * @socket: socket-id in the node
  * @imc: memory-controller-id in the socket
  * @channel: channel-id in the memory-controller
  * @dimm: dimm-id in the channel
+ * @formats: number of support interfaces
+ * @format: array of format interface code numbers
  */
 struct ndctl_dimm {
 	struct kmod_module *module;
@@ -126,7 +127,6 @@ struct ndctl_dimm {
 	unsigned short vendor_id;
 	unsigned short device_id;
 	unsigned short revision_id;
-	unsigned short format_id;
 	unsigned long dsm_mask;
 	char *dimm_path;
 	char *dimm_buf;
@@ -143,6 +143,8 @@ struct ndctl_dimm {
 		};
 	};
 	struct list_node list;
+	int formats;
+	int format[0];
 };
 
 /**
@@ -1179,7 +1181,7 @@ static struct kmod_module *to_module(struct ndctl_ctx *ctx, const char *alias);
 
 static int add_dimm(void *parent, int id, const char *dimm_base)
 {
-	int rc = -ENOMEM;
+	int rc, formats, i;
 	struct ndctl_dimm *dimm;
 	char buf[SYSFS_ATTR_SIZE];
 	struct ndctl_bus *bus = parent;
@@ -1189,7 +1191,13 @@ static int add_dimm(void *parent, int id, const char *dimm_base)
 	if (!path)
 		return -ENOMEM;
 
-	dimm = calloc(1, sizeof(*dimm));
+	sprintf(path, "%s/nfit/formats", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		formats = 1;
+	else
+		formats = strtoul(buf, NULL, 0);
+
+	dimm = calloc(1, sizeof(*dimm) + sizeof(int) * formats);
 	if (!dimm)
 		goto err_dimm;
 	dimm->bus = bus;
@@ -1228,7 +1236,9 @@ static int add_dimm(void *parent, int id, const char *dimm_base)
 	dimm->serial = -1;
 	dimm->device_id = -1;
 	dimm->revision_id = -1;
-	dimm->format_id = -1;
+	for (i = 0; i < formats; i++)
+		dimm->format[i] = -1;
+
 	if (!ndctl_bus_has_nfit(bus))
 		goto out;
 
@@ -1260,9 +1270,15 @@ static int add_dimm(void *parent, int id, const char *dimm_base)
 	if (sysfs_read_attr(ctx, path, buf) == 0)
 		dimm->revision_id = strtoul(buf, NULL, 0);
 
+	dimm->formats = formats;
 	sprintf(path, "%s/nfit/format", dimm_base);
 	if (sysfs_read_attr(ctx, path, buf) == 0)
-		dimm->format_id = strtoul(buf, NULL, 0);
+		dimm->format[0] = strtoul(buf, NULL, 0);
+	for (i = 1; i < formats; i++) {
+		sprintf(path, "%s/nfit/format%d", dimm_base, i);
+		if (sysfs_read_attr(ctx, path, buf) == 0)
+			dimm->format[i] = strtoul(buf, NULL, 0);
+	}
 
 	sprintf(path, "%s/nfit/flags", dimm_base);
 	if (sysfs_read_attr(ctx, path, buf) == 0)
@@ -1332,7 +1348,19 @@ NDCTL_EXPORT unsigned short ndctl_dimm_get_revision(struct ndctl_dimm *dimm)
 
 NDCTL_EXPORT unsigned short ndctl_dimm_get_format(struct ndctl_dimm *dimm)
 {
-	return dimm->format_id;
+	return dimm->format[0];
+}
+
+NDCTL_EXPORT int ndctl_dimm_get_formats(struct ndctl_dimm *dimm)
+{
+	return dimm->formats;
+}
+
+NDCTL_EXPORT int ndctl_dimm_get_formatN(struct ndctl_dimm *dimm, int i)
+{
+	if (i < dimm->formats && i >= 0)
+		return dimm->format[i];
+	return -EINVAL;
 }
 
 NDCTL_EXPORT unsigned int ndctl_dimm_get_major(struct ndctl_dimm *dimm)

@@ -121,6 +121,8 @@ unsigned short ndctl_dimm_get_vendor(struct ndctl_dimm *dimm);
 unsigned short ndctl_dimm_get_device(struct ndctl_dimm *dimm);
 unsigned short ndctl_dimm_get_revision(struct ndctl_dimm *dimm);
 unsigned short ndctl_dimm_get_format(struct ndctl_dimm *dimm);
+int ndctl_dimm_get_formats(struct ndctl_dimm *dimm);
+int ndctl_dimm_get_formatN(struct ndctl_dimm *dimm, int i);
 unsigned int ndctl_dimm_get_major(struct ndctl_dimm *dimm);
 unsigned int ndctl_dimm_get_minor(struct ndctl_dimm *dimm);
 unsigned int ndctl_dimm_get_id(struct ndctl_dimm *dimm);

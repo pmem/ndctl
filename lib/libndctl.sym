@@ -41,6 +41,8 @@ global:
 	ndctl_dimm_get_device;
 	ndctl_dimm_get_revision;
 	ndctl_dimm_get_format;
+	ndctl_dimm_get_formats;
+	ndctl_dimm_get_formatN;
 	ndctl_dimm_get_major;
 	ndctl_dimm_get_minor;
 	ndctl_dimm_get_serial;
