@@ -29,6 +29,7 @@ static struct {
 	const char *bus;
 	const char *region;
 	const char *type;
+	const char *dimm;
 } param;
 
 static int did_fail;
@@ -197,6 +198,8 @@ int cmd_list(int argc, const char **argv)
 		OPT_STRING('b', "bus", &param.bus, "bus-id", "filter by bus"),
 		OPT_STRING('r', "region", &param.region, "region-id",
 				"filter by region"),
+		OPT_STRING('d', "dimm", &param.dimm, "dimm-id",
+				"filter by dimm"),
 		OPT_STRING('t', "type", &param.type, "region-type",
 				"filter by region-type"),
 		OPT_BOOLEAN('B', "buses", &list.buses, "include bus info"),
@@ -254,7 +257,8 @@ int cmd_list(int argc, const char **argv)
 		struct ndctl_region *region;
 		struct ndctl_dimm *dimm;
 
-		if (!util_bus_filter(bus, param.bus))
+		if (!util_bus_filter(bus, param.bus)
+				|| !util_bus_filter_by_dimm(bus, param.dimm))
 			continue;
 
 		if (list.buses) {
@@ -280,6 +284,9 @@ int cmd_list(int argc, const char **argv)
 			/* are we emitting dimms? */
 			if (!list.dimms)
 				break;
+
+			if (!util_dimm_filter(dimm, param.dimm))
+				continue;
 
 			if (!list.idle && !ndctl_dimm_is_enabled(dimm))
 				continue;
@@ -330,7 +337,9 @@ int cmd_list(int argc, const char **argv)
 		ndctl_region_foreach(bus, region) {
 			struct json_object *jregion;
 
-			if (!util_region_filter(region, param.region))
+			if (!util_region_filter(region, param.region)
+					|| !util_region_filter_by_dimm(region,
+						param.dimm))
 				continue;
 
 			if (type && ndctl_region_get_type(region) != type)

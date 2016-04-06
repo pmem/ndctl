@@ -54,3 +54,86 @@ struct ndctl_region *util_region_filter(struct ndctl_region *region,
 
 	return NULL;
 }
+
+struct ndctl_dimm *util_dimm_filter(struct ndctl_dimm *dimm, const char *ident)
+{
+	char *end = NULL;
+	const char *name;
+	unsigned long dimm_id, id;
+
+	if (!ident || strcmp(ident, "all") == 0)
+		return dimm;
+
+	dimm_id = strtoul(ident, &end, 0);
+	if (end == ident || end[0])
+		dimm_id = ULONG_MAX;
+
+	name = ndctl_dimm_get_devname(dimm);
+	id = ndctl_dimm_get_id(dimm);
+
+	if (dimm_id < ULONG_MAX && dimm_id == id)
+		return dimm;
+
+	if (dimm_id == ULONG_MAX && strcmp(ident, name) == 0)
+		return dimm;
+
+	return NULL;
+}
+
+struct ndctl_bus *util_bus_filter_by_dimm(struct ndctl_bus *bus,
+		const char *ident)
+{
+	char *end = NULL;
+	const char *name;
+	struct ndctl_dimm *dimm;
+	unsigned long dimm_id, id;
+
+	if (!ident || strcmp(ident, "all") == 0)
+		return bus;
+
+	dimm_id = strtoul(ident, &end, 0);
+	if (end == ident || end[0])
+		dimm_id = ULONG_MAX;
+
+	ndctl_dimm_foreach(bus, dimm) {
+		id = ndctl_dimm_get_id(dimm);
+		name = ndctl_dimm_get_devname(dimm);
+
+		if (dimm_id < ULONG_MAX && dimm_id == id)
+			return bus;
+
+		if (dimm_id == ULONG_MAX && strcmp(ident, name) == 0)
+			return bus;
+	}
+
+	return NULL;
+}
+
+struct ndctl_region *util_region_filter_by_dimm(struct ndctl_region *region,
+		const char *ident)
+{
+	char *end = NULL;
+	const char *name;
+	struct ndctl_dimm *dimm;
+	unsigned long dimm_id, id;
+
+	if (!ident || strcmp(ident, "all") == 0)
+		return region;
+
+	dimm_id = strtoul(ident, &end, 0);
+	if (end == ident || end[0])
+		dimm_id = ULONG_MAX;
+
+	ndctl_dimm_foreach_in_region(region, dimm) {
+		id = ndctl_dimm_get_id(dimm);
+		name = ndctl_dimm_get_devname(dimm);
+
+		if (dimm_id < ULONG_MAX && dimm_id == id)
+			return region;
+
+		if (dimm_id == ULONG_MAX && strcmp(ident, name) == 0)
+			return region;
+	}
+
+	return NULL;
+}
