@@ -29,7 +29,9 @@ AM_LDFLAGS = \
 	-Wl,--gc-sections \
 	-Wl,--as-needed
 
-BUILT_SOURCES = $(top_srcdir)/version.m4
+BUILT_SOURCES = $(top_srcdir)/version.m4 $(top_srcdir)/lib/ndctl/libndctl.h
+$(top_srcdir)/lib/ndctl/libndctl.h: $(top_srcdir)/lib/ndctl/libndctl.h.in
+	touch $(top_srcdir)/version.m4
 $(top_srcdir)/version.m4: FORCE
 	$(AM_V_GEN)$(top_srcdir)/git-version-gen
 
