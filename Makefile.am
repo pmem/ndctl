@@ -109,6 +109,10 @@ ndctl_SOURCES = ndctl.c \
 		util/filter.c \
 		test/core.c
 
+if ENABLE_SMART
+ndctl_SOURCES += util/json-smart.c
+endif
+
 if ENABLE_TEST
 ndctl_SOURCES += test/libndctl.c \
 		 test/dpa-alloc.c \

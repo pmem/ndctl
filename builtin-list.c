@@ -22,6 +22,7 @@ static struct {
 	bool regions;
 	bool namespaces;
 	bool idle;
+	bool health;
 } list;
 
 static struct {
@@ -200,6 +201,7 @@ int cmd_list(int argc, const char **argv)
 				"filter by region-type"),
 		OPT_BOOLEAN('B', "buses", &list.buses, "include bus info"),
 		OPT_BOOLEAN('D', "dimms", &list.dimms, "include dimm info"),
+		OPT_BOOLEAN('H', "health", &list.health, "include dimm health"),
 		OPT_BOOLEAN('R', "regions", &list.regions,
 				"include region info"),
 		OPT_BOOLEAN('N', "namespaces", &list.namespaces,
@@ -297,6 +299,25 @@ int cmd_list(int argc, const char **argv)
 			if (!jdimm) {
 				fail("\n");
 				continue;
+			}
+
+			if (list.health) {
+				struct json_object *jhealth;
+
+				jhealth = util_dimm_health_to_json(dimm);
+				if (jhealth)
+					json_object_object_add(jdimm, "health",
+							jhealth);
+				else if (ndctl_dimm_is_cmd_supported(dimm,
+							ND_CMD_SMART)) {
+					/*
+					 * Failed to retrieve health data from
+					 * a dimm that otherwise supports smart
+					 * data retrieval commands.
+					 */
+					fail("\n");
+					continue;
+				}
 			}
 
 			/*

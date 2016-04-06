@@ -3,7 +3,7 @@ ndctl-list(1)
 
 NAME
 ----
-ndctl-list - dump the platform nvdimm device topology in json
+ndctl-list - dump the platform nvdimm device topology and attributes in json
 
 SYNOPSIS
 --------
@@ -71,6 +71,25 @@ include::xable-region-options.txt[]
 -D::
 --dimms::
 	Include dimm info in the listing
+
+-H::
+--health::
+	Include dimm health info in the listing.  For example:
+[verse]
+{
+  "dev":"nmem0",
+  "health":{
+    "health_state":"non-critical",
+    "temperature_celsius":23,
+    "spares_percentage":75,
+    "alarm_temperature":true,
+    "alarm_spares":true,
+    "temperature_threshold":40,
+    "spares_threshold":5,
+    "life_used_percentage":5,
+    "shutdown_state":"clean"
+  }
+}
 
 -R::
 --regions::
