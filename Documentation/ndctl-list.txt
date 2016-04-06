@@ -79,7 +79,7 @@ include::xable-region-options.txt[]
 -N::
 --namespaces::
 	Include namespace info in the listing.  Namespace info is
-	included by default, specify '--no-namespaces' to omit.
+	listed by default if no other options are specified to the command.
 
 -i::
 --idle::

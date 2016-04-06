@@ -22,9 +22,7 @@ static struct {
 	bool regions;
 	bool namespaces;
 	bool idle;
-} list = {
-	.namespaces = true,
-};
+} list;
 
 static struct {
 	const char *bus;
@@ -221,6 +219,9 @@ int cmd_list(int argc, const char **argv)
 	struct ndctl_bus *bus;
 	unsigned int type = 0;
 	int i, rc;
+
+	if (argc == 1)
+		list.namespaces = true;
 
         argc = parse_options(argc, argv, options, u, 0);
 	for (i = 0; i < argc; i++)
