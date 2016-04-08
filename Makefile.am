@@ -99,6 +99,7 @@ ndctl_SOURCES = ndctl.c \
 		builtin-test.c \
 		builtin-help.c \
 		builtin-zero-labels.c \
+		builtin-read-labels.c \
 		util/parse-options.c \
 		util/parse-options.h \
 		util/usage.c \

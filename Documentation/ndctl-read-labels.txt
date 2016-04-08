@@ -1,0 +1,30 @@
+ndctl-read-labels(1)
+====================
+
+NAME
+----
+ndctl-read-labels - read out the label area on a dimm or set of dimms
+
+SYNOPSIS
+--------
+[verse]
+'ndctl read-labels' <nmem0> [<nmem1>..<nmemN>] [<options>]
+
+include::labels-description.txt[]
+This command dumps the raw binary data in a dimm's label area to stdout or a
+file.  In the multi-dimm case the data is concatenated.
+
+OPTIONS
+-------
+include::labels-options.txt[]
+-o::
+	output file
+-j::
+--json::
+	parse the label data into json assuming the 'NVDIMM Namespace
+	Specification' format.
+
+SEE ALSO
+--------
+http://pmem.io/documents/NVDIMM_Namespace_Spec.pdf[NVDIMM Namespace
+Specification]

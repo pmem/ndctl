@@ -11,6 +11,21 @@
 #include <ndctl.h>
 #endif
 
+void util_display_json_array(FILE *f_out, struct json_object *jarray, int jflag)
+{
+	int len = json_object_array_length(jarray);
+
+	if (json_object_array_length(jarray) > 1)
+		fprintf(f_out, "%s\n", json_object_to_json_string_ext(jarray, jflag));
+	else if (len) {
+		struct json_object *jobj;
+
+		jobj = json_object_array_get_idx(jarray, 0);
+		fprintf(f_out, "%s\n", json_object_to_json_string_ext(jobj, jflag));
+	}
+	json_object_put(jarray);
+}
+
 struct json_object *util_bus_to_json(struct ndctl_bus *bus)
 {
 	struct json_object *jbus = json_object_new_object();

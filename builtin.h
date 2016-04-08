@@ -15,6 +15,7 @@ int cmd_disable_namespace(int argc, const char **argv);
 int cmd_enable_region(int argc, const char **argv);
 int cmd_disable_region(int argc, const char **argv);
 int cmd_zero_labels(int argc, const char **argv);
+int cmd_read_labels(int argc, const char **argv);
 int cmd_help(int argc, const char **argv);
 int cmd_list(int argc, const char **argv);
 #ifdef ENABLE_TEST

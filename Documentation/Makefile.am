@@ -1,6 +1,7 @@
 man1_MANS = \
 	ndctl.1 \
 	ndctl-zero-labels.1 \
+	ndctl-read-labels.1 \
 	ndctl-enable-region.1 \
 	ndctl-disable-region.1 \
 	ndctl-enable-namespace.1 \
@@ -15,7 +16,9 @@ XML_DEPS = \
 	Makefile \
 	region-description.txt \
 	xable-region-options.txt \
-	xable-namespace-options.txt
+	xable-namespace-options.txt \
+	labels-description.txt \
+	labels-options.txt
 
 RM ?= rm -f
 

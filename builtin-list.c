@@ -179,19 +179,6 @@ static struct json_object *region_to_json(struct ndctl_region *region)
 	return NULL;
 }
 
-static void display_array(struct json_object *jarray)
-{
-	if (json_object_array_length(jarray) > 1)
-		printf("%s\n", json_object_to_json_string_ext(jarray, jflag));
-	else {
-		struct json_object *jobj;
-
-		jobj = json_object_array_get_idx(jarray, 0);
-		printf("%s\n", json_object_to_json_string_ext(jobj, jflag));
-	}
-	json_object_put(jarray);
-}
-
 int cmd_list(int argc, const char **argv)
 {
 	const struct option options[] = {
@@ -387,7 +374,7 @@ int cmd_list(int argc, const char **argv)
 	}
 
 	if (jbuses)
-		display_array(jbuses);
+		util_display_json_array(stdout, jbuses, jflag);
 	else if ((!!jdimms + !!jregions + !!jnamespaces) > 1) {
 		struct json_object *jplatform = json_object_new_object();
 
@@ -407,11 +394,11 @@ int cmd_list(int argc, const char **argv)
 					jflag));
 		json_object_put(jplatform);
 	} else if (jdimms)
-		display_array(jdimms);
+		util_display_json_array(stdout, jdimms, jflag);
 	else if (jregions)
-		display_array(jregions);
+		util_display_json_array(stdout, jregions, jflag);
 	else if (jnamespaces)
-		display_array(jnamespaces);
+		util_display_json_array(stdout, jnamespaces, jflag);
 
 	if (did_fail)
 		return -ENOMEM;

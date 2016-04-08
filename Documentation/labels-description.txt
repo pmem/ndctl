@@ -1,0 +1,6 @@
+DESCRIPTION
+-----------
+The namespace label area is a small persistent partition of capacity
+available on some NVDIMM devices.  The label area is used to resolve
+aliasing between 'pmem' and 'blk' capacity by lineating namespace
+boundaries.
