@@ -11,6 +11,7 @@ struct cmd_struct {
 int cmd_create_nfit(int argc, const char **argv);
 int cmd_enable_namespace(int argc, const char **argv);
 int cmd_create_namespace(int argc, const char **argv);
+int cmd_destroy_namespace(int argc, const char **argv);
 int cmd_disable_namespace(int argc, const char **argv);
 int cmd_enable_region(int argc, const char **argv);
 int cmd_disable_region(int argc, const char **argv);

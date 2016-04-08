@@ -1,0 +1,27 @@
+ndctl-destroy-namespace(1)
+=========================
+
+NAME
+----
+ndctl-destroy-namespace - destroy the given namespace(s)
+
+SYNOPSIS
+--------
+[verse]
+'ndctl destroy-namespace' <namespace> [<options>]
+
+include::namespace-description.txt[]
+
+OPTIONS
+-------
+include::xable-namespace-options.txt[]
+-f::
+--force::
+	Unless this option is specified the 'destroy namespace'
+	operation will fail if the namespace is presently active.
+	Specifying --force causes the namespace to be disabled before
+	the operation is attempted.
+
+SEE ALSO
+--------
+linkndctl:ndctl-create-namespace[1]

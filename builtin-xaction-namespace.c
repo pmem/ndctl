@@ -61,11 +61,11 @@ struct parsed_parameters {
 };
 
 #define debug(fmt, ...) \
-	if (verbose) { \
+	({if (verbose) { \
 		fprintf(stderr, "%s:%d: " fmt, __func__, __LINE__, ##__VA_ARGS__); \
 	} else { \
 		do { } while (0); \
-	}
+	}})
 
 #define BASE_OPTIONS() \
 OPT_STRING('b', "bus", &param.bus, "bus-id", \
@@ -98,6 +98,13 @@ static const struct option base_options[] = {
 	OPT_END(),
 };
 
+static const struct option destroy_options[] = {
+	BASE_OPTIONS(),
+	OPT_BOOLEAN('f', "force", &force,
+			"destroy namespace even if currently active"),
+	OPT_END(),
+};
+
 static const struct option create_options[] = {
 	BASE_OPTIONS(),
 	CREATE_OPTIONS(),
@@ -108,9 +115,10 @@ enum namespace_action {
 	ACTION_ENABLE,
 	ACTION_DISABLE,
 	ACTION_CREATE,
+	ACTION_DESTROY,
 };
 
-static int set_defaults(void)
+static int set_defaults(enum namespace_action mode)
 {
 	int rc = 0;
 
@@ -124,7 +132,7 @@ static int set_defaults(void)
 				param.type);
 			rc = -EINVAL;
 		}
-	} else if (!param.reconfig)
+	} else if (!param.reconfig && mode == ACTION_CREATE)
 		param.type = "pmem";
 
 	if (param.mode) {
@@ -140,7 +148,7 @@ static int set_defaults(void)
 			error("invalid mode '%s'\n", param.mode);
 			rc = -EINVAL;
 		}
-	} else if (!param.reconfig) {
+	} else if (!param.reconfig && param.type) {
 		if (strcmp(param.type, "pmem") == 0)
 			param.mode = "memory";
 		else
@@ -220,7 +228,7 @@ static const char *parse_namespace_options(int argc, const char **argv,
 	param.do_scan = argc == 1;
         argc = parse_options(argc, argv, options, u, 0);
 
-	rc = set_defaults();
+	rc = set_defaults(mode);
 
 	if (argc == 0 && mode != ACTION_CREATE) {
 		error("specify a namespace to %s, or \"all\"\n",
@@ -498,19 +506,15 @@ static int zero_info_block(struct ndctl_namespace *ndns)
 	return rc;
 }
 
-static int namespace_reconfig(struct ndctl_region *region,
+static int namespace_destroy(struct ndctl_region *region,
 		struct ndctl_namespace *ndns)
 {
 	const char *devname = ndctl_namespace_get_devname(ndns);
 	struct ndctl_pfn *pfn = ndctl_namespace_get_pfn(ndns);
 	struct ndctl_btt *btt = ndctl_namespace_get_btt(ndns);
-	struct parsed_parameters p;
 	const char *bdev = NULL;
 	char path[50];
 	int fd, rc;
-
-	if (validate_namespace_options(ndns, &p))
-		return -EINVAL;
 
 	if (ndctl_region_get_ro(region)) {
 		error("%s: read-only, re-configuration disabled\n",
@@ -557,14 +561,29 @@ static int namespace_reconfig(struct ndctl_region *region,
 	}
 
 	rc = ndctl_namespace_delete(ndns);
-	if (rc) {
-		error("%s: failed to reclaim\n", devname);
+	if (rc)
+		debug("%s: failed to reclaim\n", devname);
+
+	return 0;
+}
+
+static int namespace_reconfig(struct ndctl_region *region,
+		struct ndctl_namespace *ndns)
+{
+	struct parsed_parameters p;
+	int rc;
+
+	if (validate_namespace_options(ndns, &p))
+		return -EINVAL;
+
+	rc = namespace_destroy(region, ndns);
+	if (rc)
 		return rc;
-	}
 
 	ndns = ndctl_region_get_namespace_seed(region);
 	if (is_namespace_active(ndns)) {
-		debug("%s: no %s namespace seed\n", devname,
+		debug("%s: no %s namespace seed\n",
+				ndctl_region_get_devname(region),
 				ndns ? "idle" : "available");
 		return -ENODEV;
 	}
@@ -575,8 +594,8 @@ static int namespace_reconfig(struct ndctl_region *region,
 static int do_xaction_namespace(const char *namespace,
 		enum namespace_action action)
 {
+	struct ndctl_namespace *ndns, *_n;
 	int rc = -ENXIO, success = 0;
-	struct ndctl_namespace *ndns;
 	struct ndctl_region *region;
 	const char *ndns_name;
 	struct ndctl_ctx *ctx;
@@ -623,7 +642,7 @@ static int do_xaction_namespace(const char *namespace,
 					rc = 1;
 				goto done;
 			}
-			ndctl_namespace_foreach(region, ndns) {
+			ndctl_namespace_foreach_safe(region, ndns, _n) {
 				ndns_name = ndctl_namespace_get_devname(ndns);
 
 				if (strcmp(namespace, "all") != 0
@@ -635,6 +654,9 @@ static int do_xaction_namespace(const char *namespace,
 					break;
 				case ACTION_ENABLE:
 					rc = ndctl_namespace_enable(ndns);
+					break;
+				case ACTION_DESTROY:
+					rc = namespace_destroy(region, ndns);
 					break;
 				case ACTION_CREATE:
 					rc = namespace_reconfig(region, ndns);
@@ -711,7 +733,7 @@ int cmd_create_namespace(int argc, const char **argv)
 		 */
 		memset(&param, 0, sizeof(param));
 		param.type = "blk";
-		set_defaults();
+		set_defaults(ACTION_CREATE);
 		created = do_xaction_namespace(NULL, ACTION_CREATE);
 	}
 
@@ -725,4 +747,25 @@ int cmd_create_namespace(int argc, const char **argv)
 	if (created < 0)
 		return created;
 	return 0;
+}
+
+int cmd_destroy_namespace(int argc , const char **argv)
+{
+	char *xable_usage = "ndctl destroy-namespace <namespace> [<options>]";
+	const char *namespace = parse_namespace_options(argc, argv,
+			ACTION_DESTROY, destroy_options, xable_usage);
+	int destroyed = do_xaction_namespace(namespace, ACTION_DESTROY);
+
+	if (destroyed < 0) {
+		fprintf(stderr, "error destroying namespaces: %s\n",
+				strerror(-destroyed));
+		return destroyed;
+	} else if (destroyed == 0) {
+		fprintf(stderr, "destroyed 0 namespaces\n");
+		return 0;
+	} else {
+		fprintf(stderr, "destroyed %d namespace%s\n", destroyed,
+				destroyed > 1 ? "s" : "");
+		return 0;
+	}
 }
