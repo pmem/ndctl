@@ -380,10 +380,20 @@ static unsigned long dimm_commands0 = 1UL << ND_CMD_GET_CONFIG_SIZE
 		| 1UL << ND_CMD_SET_CONFIG_DATA | 1UL << ND_CMD_SMART
 		| 1UL << ND_CMD_SMART_THRESHOLD;
 
-static unsigned long bus_commands0 = 1UL << ND_CMD_ARS_CAP
-		| 1UL << ND_CMD_ARS_START
-		| 1UL << ND_CMD_ARS_STATUS
-		| 1UL << ND_CMD_CLEAR_ERROR;
+#ifdef HAVE_NDCTL_CLEAR_ERROR
+#define CLEAR_ERROR_CMDS (1UL << ND_CMD_CLEAR_ERROR)
+#else
+#define CLEAR_ERROR_CMDS 0
+#endif
+
+#ifdef HAVE_NDCTL_ARS
+#define ARS_CMDS (1UL << ND_CMD_ARS_CAP | 1UL << ND_CMD_ARS_START \
+		| 1UL << ND_CMD_ARS_STATUS)
+#else
+#define ARS_CMDS 0
+#endif
+
+static unsigned long bus_commands0 = CLEAR_ERROR_CMDS | ARS_CMDS;
 
 static struct ndctl_dimm *get_dimm_by_handle(struct ndctl_bus *bus, unsigned int handle)
 {
@@ -1830,6 +1840,7 @@ static int check_ars_status(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 	return 0;
 }
 
+#ifdef HAVE_NDCTL_CLEAR_ERROR
 static int check_clear_error(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 		struct check_cmd *check)
 {
@@ -1877,36 +1888,8 @@ static int check_clear_error(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 	check->cmd = clear_err;
 	return 0;
 }
-
-#else
-static int check_ars_cap(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
-		struct check_cmd *check)
-{
-	fprintf(stderr, "%s: HAVE_NDCTL_ARS disabled, skipping\n", __func__);
-	return 0;
-}
-
-static int check_ars_start(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
-		struct check_cmd *check)
-{
-	fprintf(stderr, "%s: HAVE_NDCTL_ARS disabled, skipping\n", __func__);
-	return 0;
-}
-
-static int check_ars_status(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
-		struct check_cmd *check)
-{
-	fprintf(stderr, "%s: HAVE_NDCTL_ARS disabled, skipping\n", __func__);
-	return 0;
-}
-
-static int check_clear_error(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
-		struct check_cmd *check)
-{
-	fprintf(stderr, "%s: HAVE_NDCTL_ARS disabled, skipping\n", __func__);
-	return 0;
-}
-#endif
+#endif /* HAVE_NDCTL_CLEAR_ERROR */
+#endif /* HAVE_NDCTL_ARS */
 
 #define BITS_PER_LONG 32
 static int check_commands(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
@@ -1929,10 +1912,14 @@ static int check_commands(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 		[ND_CMD_SMART_THRESHOLD] = { check_smart_threshold },
 	};
 	static struct check_cmd __check_bus_cmds[] = {
+#ifdef HAVE_NDCTL_ARS
 		[ND_CMD_ARS_CAP] = { check_ars_cap },
 		[ND_CMD_ARS_START] = { check_ars_start },
 		[ND_CMD_ARS_STATUS] = { check_ars_status },
+#ifdef HAVE_NDCTL_CLEAR_ERROR
 		[ND_CMD_CLEAR_ERROR] = { check_clear_error },
+#endif
+#endif
 	};
 	unsigned int i, rc = 0;
 

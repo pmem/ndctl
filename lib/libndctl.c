@@ -813,7 +813,13 @@ static int to_dsm_index(const char *name, int dimm)
 		end_cmd = ND_CMD_VENDOR;
 		cmd_name_fn = nvdimm_cmd_name;
 	} else {
+		end_cmd = 0;
+#ifdef HAVE_NDCTL_ARS
+		end_cmd = ND_CMD_ARS_STATUS;
+#endif
+#ifdef HAVE_NDCTL_CLEAR_ERROR
 		end_cmd = ND_CMD_CLEAR_ERROR;
+#endif
 		cmd_name_fn = nvdimm_bus_cmd_name;
 	}
 
@@ -2143,10 +2149,14 @@ static int to_ioctl_cmd(int cmd, int dimm)
 {
 	if (!dimm) {
 		switch (cmd) {
+#ifdef HAVE_NDCTL_ARS
 		case ND_CMD_ARS_CAP:         return ND_IOCTL_ARS_CAP;
 		case ND_CMD_ARS_START:       return ND_IOCTL_ARS_START;
 		case ND_CMD_ARS_STATUS:      return ND_IOCTL_ARS_STATUS;
+#endif
+#ifdef HAVE_NDCTL_CLEAR_ERROR
 		case ND_CMD_CLEAR_ERROR:     return ND_IOCTL_CLEAR_ERROR;
+#endif
 		default:
 						       return 0;
 		};

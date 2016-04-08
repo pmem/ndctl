@@ -43,10 +43,24 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_bus_cmd_new_ars_cap(struct ndctl_bus *bus,
 	return cmd;
 }
 
+#ifdef HAVE_NDCTL_CLEAR_ERROR
 static bool is_power_of_2(unsigned int v)
 {
 	return v && ((v & (v - 1)) == 0);
 }
+
+static bool validate_clear_error(struct ndctl_cmd *ars_cap)
+{
+	if (!is_power_of_2(ars_cap->ars_cap->clear_err_unit))
+		return false;
+	return true;
+}
+#else
+static bool validate_clear_error(struct ndctl_cmd *ars_cap)
+{
+	return true;
+}
+#endif
 
 static bool __validate_ars_cap(struct ndctl_cmd *ars_cap)
 {
@@ -54,9 +68,7 @@ static bool __validate_ars_cap(struct ndctl_cmd *ars_cap)
 		return false;
 	if ((*ars_cap->firmware_status & ARS_STATUS_MASK) != 0)
 		return false;
-	if (!is_power_of_2(ars_cap->ars_cap->clear_err_unit))
-		return false;
-	return true;
+	return validate_clear_error(ars_cap);
 }
 
 #define validate_ars_cap(ctx, ars_cap) \
