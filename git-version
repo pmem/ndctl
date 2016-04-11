@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 dirty() {
 	git update-index -q --refresh
