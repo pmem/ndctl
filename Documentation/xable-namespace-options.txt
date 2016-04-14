@@ -6,3 +6,7 @@ the operation on every namespace in the system, optionally filtered by region
 -r::
 --region=::
 include::xable-region-options.txt[]
+
+-v::
+--verbose::
+	Emit debug messages for the namespace operation

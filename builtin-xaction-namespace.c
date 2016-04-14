@@ -71,7 +71,8 @@ struct parsed_parameters {
 OPT_STRING('b', "bus", &param.bus, "bus-id", \
 	"limit namespace to a bus with an id or provider of <bus-id>"), \
 OPT_STRING('r', "region", &param.region, "region-id", \
-	"limit namespace to a region with an id or name of <region-id>")
+	"limit namespace to a region with an id or name of <region-id>"), \
+OPT_BOOLEAN('v', "verbose", &verbose, "emit extra debug messages to stderr")
 
 #define CREATE_OPTIONS() \
 OPT_STRING('e', "reconfig", &param.reconfig, "reconfig namespace", \
@@ -90,8 +91,7 @@ OPT_STRING('l', "sector-size", &param.sector_size, "lba-size", \
 	"specify the logical sector size in bytes"), \
 OPT_STRING('t', "type", &param.type, "type", \
 	"specify the type of namespace to create 'pmem' or 'blk'"), \
-OPT_BOOLEAN('f', "force", &force, "reconfigure namespace even if currently active"), \
-OPT_BOOLEAN('v', "verbose", &verbose, "emit extra debug messages to stderr")
+OPT_BOOLEAN('f', "force", &force, "reconfigure namespace even if currently active")
 
 static const struct option base_options[] = {
 	BASE_OPTIONS(),
