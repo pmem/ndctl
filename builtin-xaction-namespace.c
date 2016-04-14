@@ -463,11 +463,16 @@ static int zero_info_block(struct ndctl_namespace *ndns)
 	char path[50];
 	void *buf;
 
+	ndctl_namespace_set_raw_mode(ndns, 1);
+	rc = ndctl_namespace_enable(ndns);
+	if (rc < 0) {
+		debug("%s failed to enable for zeroing, continuing\n", devname);
+		rc = 0;
+		goto out;
+	}
+
 	if (posix_memalign(&buf, 4096, 4096) != 0)
 		return -ENXIO;
-
-	ndctl_namespace_set_raw_mode(ndns, 1);
-	ndctl_namespace_enable(ndns);
 
 	sprintf(path, "/dev/%s", ndctl_namespace_get_block_device(ndns));
 	fd = open(path, O_RDWR|O_DIRECT|O_EXCL);
