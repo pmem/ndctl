@@ -553,7 +553,9 @@ static int namespace_destroy(struct ndctl_region *region,
 			 * stopping the !bdev case from racing to mount an fs or
 			 * re-enabling the namepace.
 			 */
-			return -EBUSY;
+			error("%s: %s failed exlusive open: %s\n",
+					devname, bdev, strerror(errno));
+			return -errno;
 		}
 	}
 
