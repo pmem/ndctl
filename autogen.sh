@@ -7,7 +7,9 @@ if [ -f .git/hooks/pre-commit.sample -a ! -f .git/hooks/pre-commit ] ; then
 fi
 
 $(dirname $0)/git-version-gen
-autoreconf --install --symlink
+reconf_args=''
+[ -n "$*" ] && reconf_args="$*"
+autoreconf --install --symlink $reconf_args
 
 libdir() {
         echo $(cd $1/$(gcc -print-multi-os-directory); pwd)
