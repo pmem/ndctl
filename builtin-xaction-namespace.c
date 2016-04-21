@@ -410,6 +410,8 @@ static int validate_namespace_options(struct ndctl_namespace *ndns,
 		else if (ndctl_namespace_get_type(ndns)
 				== ND_DEVICE_NAMESPACE_BLK)
 			p->sector_size = ndctl_namespace_get_sector_size(ndns);
+		else if (p->mode == NDCTL_NS_MODE_SAFE)
+				p->sector_size = 4096;
 	}
 
 	if (param.map) {
