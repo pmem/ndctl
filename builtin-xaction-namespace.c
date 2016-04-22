@@ -38,6 +38,7 @@ static bool verbose;
 static bool force;
 static struct parameters {
 	bool do_scan;
+	bool mode_default;
 	const char *bus;
 	const char *map;
 	const char *type;
@@ -153,6 +154,7 @@ static int set_defaults(enum namespace_action mode)
 			param.mode = "memory";
 		else
 			param.mode = "safe";
+		param.mode_default = true;
 	}
 
 	if (param.map) {
@@ -265,10 +267,13 @@ static bool do_setup_pfn(struct ndctl_namespace *ndns,
 	if (p->mode != NDCTL_NS_MODE_MEMORY)
 		return false;
 
-	if (ndctl_namespace_get_mode(ndns) != NDCTL_NS_MODE_MEMORY)
-		return true;
-
-	if (p->loc == NDCTL_PFN_LOC_PMEM)
+	/*
+	 * Dynamically allocated namespaces always require a pfn
+	 * instance, and a pfn device is required to place the memmap
+	 * array in device memory.
+	 */
+	if (!ndns || ndctl_namespace_get_mode(ndns) != NDCTL_NS_MODE_MEMORY
+			|| p->loc == NDCTL_PFN_LOC_PMEM)
 		return true;
 
 	return false;
@@ -330,6 +335,7 @@ static int is_namespace_active(struct ndctl_namespace *ndns)
 
 /*
  * validate_namespace_options - init parameters for setup_namespace
+ * @region: parent of the namespace to create / reconfigure
  * @ndns: specified when we are reconfiguring, NULL otherwise
  * @p: parameters to fill
  *
@@ -342,8 +348,8 @@ static int is_namespace_active(struct ndctl_namespace *ndns)
  * the target namespace we need to do basic sanity checks here for
  * pmem-only attributes specified for blk namespace and vice versa.
  */
-static int validate_namespace_options(struct ndctl_namespace *ndns,
-		struct parsed_parameters *p)
+static int validate_namespace_options(struct ndctl_region *region,
+		struct ndctl_namespace *ndns, struct parsed_parameters *p)
 {
 	int rc = 0;
 
@@ -428,6 +434,19 @@ static int validate_namespace_options(struct ndctl_namespace *ndns,
 	} else if (p->mode == NDCTL_NS_MODE_MEMORY)
 		p->loc = NDCTL_PFN_LOC_PMEM;
 
+	/* check if we need, and whether the kernel supports, pfn devices */
+	if (do_setup_pfn(ndns, p)) {
+		struct ndctl_pfn *pfn = ndctl_region_get_pfn_seed(region);
+
+		if (!pfn && param.mode_default) {
+			debug("memory mode not available\n");
+			p->mode = NDCTL_NS_MODE_RAW;
+		} else if (!pfn) {
+			error("operation failed, memory mode not available\n");
+			return -EINVAL;
+		}
+	}
+
 	return 0;
 }
 
@@ -438,7 +457,7 @@ static int namespace_create(struct ndctl_region *region)
 	struct ndctl_namespace *ndns;
 	struct parsed_parameters p;
 
-	if (validate_namespace_options(NULL, &p))
+	if (validate_namespace_options(region, NULL, &p))
 		return -EINVAL;
 
 	if (ndctl_region_get_ro(region)) {
@@ -578,7 +597,7 @@ static int namespace_reconfig(struct ndctl_region *region,
 	struct parsed_parameters p;
 	int rc;
 
-	if (validate_namespace_options(ndns, &p))
+	if (validate_namespace_options(region, ndns, &p))
 		return -EINVAL;
 
 	rc = namespace_destroy(region, ndns);
