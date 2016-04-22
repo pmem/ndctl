@@ -165,7 +165,8 @@ static int set_defaults(enum namespace_action mode)
 			rc = -EINVAL;
 		}
 
-		if (!param.reconfig && strcmp(param.mode, "memory") != 0) {
+		if (!param.reconfig && param.mode
+				&& strcmp(param.mode, "memory") != 0) {
 			error("--map only valid for a memory mode pmem namespace\n");
 			rc = -EINVAL;
 		}
