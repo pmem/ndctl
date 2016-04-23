@@ -145,6 +145,8 @@ static int set_defaults(enum namespace_action mode)
 		      /* pass */;
 		else if (strcmp(param.mode, "raw") == 0)
 		      /* pass */;
+		else if (strcmp(param.mode, "dax") == 0)
+		      /* pass */;
 		else {
 			error("invalid mode '%s'\n", param.mode);
 			rc = -EINVAL;
@@ -303,6 +305,14 @@ static int setup_namespace(struct ndctl_region *region,
 		try(ndctl_pfn, set_align, pfn, SZ_2M);
 		try(ndctl_pfn, set_namespace, pfn, ndns);
 		rc = ndctl_pfn_enable(pfn);
+	} else if (p->mode == NDCTL_NS_MODE_DAX) {
+		struct ndctl_dax *dax = ndctl_region_get_dax_seed(region);
+
+		try(ndctl_dax, set_uuid, dax, uuid);
+		try(ndctl_dax, set_location, dax, p->loc);
+		try(ndctl_dax, set_align, dax, SZ_2M);
+		try(ndctl_dax, set_namespace, dax, ndns);
+		rc = ndctl_dax_enable(dax);
 	} else if (p->mode == NDCTL_NS_MODE_SAFE) {
 		struct ndctl_btt *btt = ndctl_region_get_btt_seed(region);
 
@@ -330,6 +340,7 @@ static int is_namespace_active(struct ndctl_namespace *ndns)
 {
 	return ndns && (ndctl_namespace_is_enabled(ndns)
 		|| ndctl_namespace_get_pfn(ndns)
+		|| ndctl_namespace_get_dax(ndns)
 		|| ndctl_namespace_get_btt(ndns));
 }
 
@@ -385,6 +396,8 @@ static int validate_namespace_options(struct ndctl_region *region,
 			p->mode = NDCTL_NS_MODE_SAFE;
 		else if (strcmp(param.mode, "safe") == 0)
 			p->mode = NDCTL_NS_MODE_SAFE;
+		else if (strcmp(param.mode, "dax") == 0)
+			p->mode = NDCTL_NS_MODE_DAX;
 		else
 			p->mode = NDCTL_NS_MODE_RAW;
 
@@ -431,7 +444,7 @@ static int validate_namespace_options(struct ndctl_region *region,
 				ndctl_namespace_get_devname(ndns));
 			return -EINVAL;
 		}
-	} else if (p->mode == NDCTL_NS_MODE_MEMORY)
+	} else if (p->mode == NDCTL_NS_MODE_MEMORY || NDCTL_NS_MODE_DAX)
 		p->loc = NDCTL_PFN_LOC_PMEM;
 
 	/* check if we need, and whether the kernel supports, pfn devices */
@@ -443,6 +456,16 @@ static int validate_namespace_options(struct ndctl_region *region,
 			p->mode = NDCTL_NS_MODE_RAW;
 		} else if (!pfn) {
 			error("operation failed, memory mode not available\n");
+			return -EINVAL;
+		}
+	}
+
+	/* check if we need, and whether the kernel supports, dax devices */
+	if (p->mode == NDCTL_NS_MODE_DAX) {
+		struct ndctl_dax *dax = ndctl_region_get_dax_seed(region);
+
+		if (!dax) {
+			error("operation failed, dax mode not available\n");
 			return -EINVAL;
 		}
 	}
@@ -533,8 +556,10 @@ static int namespace_destroy(struct ndctl_region *region,
 {
 	const char *devname = ndctl_namespace_get_devname(ndns);
 	struct ndctl_pfn *pfn = ndctl_namespace_get_pfn(ndns);
+	struct ndctl_dax *dax = ndctl_namespace_get_dax(ndns);
 	struct ndctl_btt *btt = ndctl_namespace_get_btt(ndns);
 	const char *bdev = NULL;
+	bool dax_active = false;
 	char path[50];
 	int fd, rc;
 
@@ -546,12 +571,14 @@ static int namespace_destroy(struct ndctl_region *region,
 
 	if (pfn && ndctl_pfn_is_enabled(pfn))
 		bdev = ndctl_pfn_get_block_device(pfn);
+	else if (dax && ndctl_dax_is_enabled(dax))
+		dax_active = true;
 	else if (btt && ndctl_btt_is_enabled(btt))
 		bdev = ndctl_btt_get_block_device(btt);
 	else if (ndctl_namespace_is_enabled(ndns))
 		bdev = ndctl_namespace_get_block_device(ndns);
 
-	if (bdev && !force) {
+	if ((bdev || dax_active) && !force) {
 		error("%s is active, specify --force for re-configuration\n",
 				devname);
 		return -EBUSY;
@@ -578,7 +605,7 @@ static int namespace_destroy(struct ndctl_region *region,
 		}
 	}
 
-	if (pfn || btt) {
+	if (pfn || btt || dax) {
 		rc = zero_info_block(ndns);
 		if (rc)
 			return rc;

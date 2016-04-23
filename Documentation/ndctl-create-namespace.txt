@@ -64,6 +64,18 @@ OPTIONS
 	  "System RAM" or from a reserved portion of pmem (see the --map=
 	  option).
 
+	- "dax": Device DAX is the device-centric analogue of Filesystem
+	  DAX (CONFIG_FS_DAX).  It allows memory ranges to be allocated
+	  and mapped without need of an intervening file system.  Device
+	  DAX is strict, precise and predictable.  Specifically this
+	  interface:
+
+	  * Guarantees fault granularity with respect to a given page
+	    size (pte, pmd, or pud) set at configuration time.
+
+	  * Enforces deterministic behavior by being strict about what
+	    fault scenarios are supported.
+
 -s::
 --size=::
 	For NVDIMM devices that support namespace labels, set the

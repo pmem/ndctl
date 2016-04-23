@@ -88,10 +88,12 @@ bool util_namespace_active(struct ndctl_namespace *ndns)
 {
 	struct ndctl_btt *btt = ndctl_namespace_get_btt(ndns);
 	struct ndctl_pfn *pfn = ndctl_namespace_get_pfn(ndns);
+	struct ndctl_dax *dax = ndctl_namespace_get_dax(ndns);
 
 	if ((btt && ndctl_btt_is_enabled(btt))
 			|| (pfn && ndctl_pfn_is_enabled(pfn))
-			|| (!btt && !pfn
+			|| (dax && ndctl_dax_is_enabled(dax))
+			|| (!btt && !pfn && !dax
 				&& ndctl_namespace_is_enabled(ndns)))
 		return true;
 	return false;
@@ -106,6 +108,7 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns)
 	const char *bdev = NULL;
 	struct ndctl_btt *btt;
 	struct ndctl_pfn *pfn;
+	struct ndctl_dax *dax;
 	char buf[40];
 	uuid_t uuid;
 
@@ -118,6 +121,7 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns)
 	json_object_object_add(jndns, "dev", jobj);
 
 	btt = ndctl_namespace_get_btt(ndns);
+	dax = ndctl_namespace_get_dax(ndns);
 	pfn = ndctl_namespace_get_pfn(ndns);
 	mode = ndctl_namespace_get_mode(ndns);
 	switch (mode) {
@@ -127,6 +131,10 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns)
 		else /* native/static memory mode */
 			size = ndctl_namespace_get_size(ndns);
 		jobj = json_object_new_string("memory");
+		break;
+	case NDCTL_NS_MODE_DAX:
+		size = ndctl_dax_get_size(dax);
+		jobj = json_object_new_string("dax");
 		break;
 	case NDCTL_NS_MODE_SAFE:
 		jobj = json_object_new_string("sector");
@@ -169,6 +177,13 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns)
 			goto err;
 		json_object_object_add(jndns, "uuid", jobj);
 		bdev = ndctl_pfn_get_block_device(pfn);
+	} else if (dax) {
+		ndctl_dax_get_uuid(dax, uuid);
+		uuid_unparse(uuid, buf);
+		jobj = json_object_new_string(buf);
+		if (!jobj)
+			goto err;
+		json_object_object_add(jndns, "uuid", jobj);
 	} else if (ndctl_namespace_get_type(ndns) != ND_DEVICE_NAMESPACE_IO) {
 		const char *name;
 
