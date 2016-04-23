@@ -32,13 +32,23 @@ AC_PREFIX_DEFAULT([/usr])
 
 AC_PROG_SED
 AC_PROG_MKDIR_P
+
+AC_ARG_ENABLE([docs],
+        AS_HELP_STRING([--disable-docs],
+	[disable documentation build @<:@default=enabled@:>@]),
+        [], enable_docs=yes)
+AS_IF([test "x$enable_docs" = "xyes"], [
+        AC_DEFINE(ENABLE_DOCS, [1], [Documentation / man pages.])
+])
+AM_CONDITIONAL([ENABLE_DOCS], [test "x$enable_docs" = "xyes"])
+
 AC_CHECK_PROG(ASCIIDOC, [asciidoc], [$(which asciidoc)], [missing])
-if test "x$ASCIIDOC" = xmissing; then
+if test "x$ASCIIDOC" = xmissing -a "x$enable_docs" = "xyes"; then
        AC_MSG_ERROR([asciidoc needed to build documentation])
 fi
 AC_SUBST([ASCIIDOC])
 AC_CHECK_PROG(XMLTO, [xmlto], [$(which xmlto)], [missing])
-if test "x$XMLTO" = xmissing; then
+if test "x$XMLTO" = xmissing -a "x$enable_docs" = "xyes"; then
        AC_MSG_ERROR([xmlto needed to build documentation])
 fi
 AC_SUBST([XMLTO])
@@ -57,15 +67,6 @@ AC_ARG_ENABLE([logging],
 AS_IF([test "x$enable_logging" = "xyes"], [
         AC_DEFINE(ENABLE_LOGGING, [1], [System logging.])
 ])
-
-AC_ARG_ENABLE([docs],
-        AS_HELP_STRING([--disable-docs],
-	[disable documentation build @<:@default=enabled@:>@]),
-        [], enable_docs=yes)
-AS_IF([test "x$enable_docs" = "xyes"], [
-        AC_DEFINE(ENABLE_DOCS, [1], [Documentation / man pages.])
-])
-AM_CONDITIONAL([ENABLE_DOCS], [test "x$enable_docs" = "xyes"])
 
 AC_ARG_ENABLE([debug],
         AS_HELP_STRING([--enable-debug], [enable debug messages @<:@default=disabled@:>@]),
