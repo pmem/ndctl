@@ -490,8 +490,8 @@ static int zero_info_block(struct ndctl_namespace *ndns)
 {
 	const char *devname = ndctl_namespace_get_devname(ndns);
 	int fd, rc = -ENXIO;
+	void *buf = NULL;
 	char path[50];
-	void *buf;
 
 	ndctl_namespace_set_raw_mode(ndns, 1);
 	rc = ndctl_namespace_enable(ndns);

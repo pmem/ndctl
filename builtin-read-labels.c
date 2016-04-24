@@ -336,7 +336,7 @@ int cmd_read_labels(int argc, const char **argv)
 	struct ndctl_dimm *dimm;
 	struct ndctl_ctx *ctx;
 	struct ndctl_bus *bus;
-	int i, rc, count, err = 0;
+	int i, rc, count = 0, err = 0;
 	FILE *f_out = NULL;
 
         argc = parse_options(argc, argv, nmem_options, u, 0);
@@ -377,7 +377,6 @@ int cmd_read_labels(int argc, const char **argv)
 	if (rc < 0)
 		goto out;
 
-	count = 0;
         ndctl_bus_foreach(ctx, bus) {
 		if (!util_bus_filter(bus, nmem_bus))
 			continue;
