@@ -177,6 +177,21 @@ struct ndctl_cmd {
 	};
 };
 
+/* internal library helpers for conditionally defined command numbers */
+#ifdef HAVE_NDCTL_ARS
+static const int nd_cmd_ars_status = ND_CMD_ARS_STATUS;
+static const int nd_cmd_ars_cap = ND_CMD_ARS_CAP;
+#else
+static const int nd_cmd_ars_status;
+static const int nd_cmd_ars_cap;
+#endif
+
+#ifdef HAVE_NDCTL_CLEAR_ERROR
+static const int nd_cmd_clear_error = ND_CMD_CLEAR_ERROR;
+#else
+static const int nd_cmd_clear_error;
+#endif
+
 static inline struct ndctl_bus *cmd_to_bus(struct ndctl_cmd *cmd)
 {
 	if (cmd->dimm)
