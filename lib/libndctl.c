@@ -1184,9 +1184,9 @@ static struct kmod_module *to_module(struct ndctl_ctx *ctx, const char *alias);
 
 static int add_dimm(void *parent, int id, const char *dimm_base)
 {
-	int rc, formats, i;
 	struct ndctl_dimm *dimm;
 	char buf[SYSFS_ATTR_SIZE];
+	int rc = -ENOMEM, formats, i;
 	struct ndctl_bus *bus = parent;
 	struct ndctl_ctx *ctx = bus->ctx;
 	char *path = calloc(1, strlen(dimm_base) + 100);
