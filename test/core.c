@@ -19,7 +19,8 @@ static unsigned int get_system_kver(void)
 
 	uname(&utsname);
 
-	sscanf(utsname.release, "%d.%d.%d", &a, &b, &c);
+	if (sscanf(utsname.release, "%d.%d.%d", &a, &b, &c) != 3)
+		return LINUX_VERSION_CODE;
 
 	return KERNEL_VERSION(a,b,c);
 }
