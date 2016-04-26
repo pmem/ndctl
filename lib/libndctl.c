@@ -129,6 +129,7 @@ struct ndctl_dimm {
 	unsigned short device_id;
 	unsigned short revision_id;
 	unsigned long dsm_mask;
+	char *unique_id;
 	char *dimm_path;
 	char *dimm_buf;
 	int buf_len;
@@ -587,6 +588,18 @@ static void free_region(struct ndctl_region *region)
 	free(region);
 }
 
+static void free_dimm(struct ndctl_dimm *dimm)
+{
+	if (!dimm)
+		return;
+	free(dimm->unique_id);
+	free(dimm->dimm_buf);
+	free(dimm->dimm_path);
+	if (dimm->module)
+		kmod_module_unref(dimm->module);
+	free(dimm);
+}
+
 static void free_bus(struct ndctl_bus *bus, struct list_head *head)
 {
 	struct ndctl_dimm *dimm, *_d;
@@ -594,10 +607,7 @@ static void free_bus(struct ndctl_bus *bus, struct list_head *head)
 
 	list_for_each_safe(&bus->dimms, dimm, _d, list) {
 		list_del_from(&bus->dimms, &dimm->list);
-		free(dimm->dimm_path);
-		free(dimm->dimm_buf);
-		kmod_module_unref(dimm->module);
-		free(dimm);
+		free_dimm(dimm);
 	}
 	list_for_each_safe(&bus->regions, region, _r, list)
 		free_region(region);
@@ -1245,6 +1255,17 @@ static int add_dimm(void *parent, int id, const char *dimm_base)
 	if (!ndctl_bus_has_nfit(bus))
 		goto out;
 
+	/*
+	 * 'unique_id' may not be available on older kernels, so don't
+	 * fail if the read fails.
+	 */
+	sprintf(path, "%s/nfit/id", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) == 0) {
+		dimm->unique_id = strdup(buf);
+		if (!dimm->unique_id)
+			goto err_read;
+	}
+
 	sprintf(path, "%s/nfit/handle", dimm_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		goto err_read;
@@ -1293,9 +1314,7 @@ static int add_dimm(void *parent, int id, const char *dimm_base)
 	return 0;
 
  err_read:
-	free(dimm->dimm_buf);
-	free(dimm->dimm_path);
-	free(dimm);
+	free_dimm(dimm);
  err_dimm:
 	free(path);
 	return rc;
@@ -1379,6 +1398,11 @@ NDCTL_EXPORT unsigned int ndctl_dimm_get_minor(struct ndctl_dimm *dimm)
 NDCTL_EXPORT unsigned int ndctl_dimm_get_id(struct ndctl_dimm *dimm)
 {
 	return dimm->id;
+}
+
+NDCTL_EXPORT const char *ndctl_dimm_get_unique_id(struct ndctl_dimm *dimm)
+{
+	return dimm->unique_id;
 }
 
 NDCTL_EXPORT unsigned int ndctl_dimm_get_serial(struct ndctl_dimm *dimm)

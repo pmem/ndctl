@@ -47,6 +47,7 @@ global:
 	ndctl_dimm_get_minor;
 	ndctl_dimm_get_serial;
 	ndctl_dimm_get_id;
+	ndctl_dimm_get_unique_id;
 	ndctl_dimm_get_devname;
 	ndctl_dimm_get_cmd_name;
 	ndctl_dimm_has_errors;
