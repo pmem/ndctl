@@ -145,6 +145,25 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 )
 AM_CONDITIONAL([ENABLE_CLEAR_ERROR], [test "x$enable_clear_err" = "xyes"])
 
+AC_MSG_CHECKING([for device DAX support])
+AC_LANG(C)
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+			#ifdef HAVE_NDCTL_H
+			#include <linux/ndctl.h>
+			#else
+			#include "ndctl.h"
+			#endif
+			]], [[
+			int x = ND_DEVICE_NAMESPACE_DAX;
+			]]
+		)], [AC_MSG_RESULT([yes])
+		     enable_dev_dax=yes
+		     AC_DEFINE([HAVE_NDCTL_DEVICE_DAX], [1],
+				[Define to 1 if ndctl.h has device DAX support.])
+		], [AC_MSG_RESULT([no])]
+)
+AM_CONDITIONAL([ENABLE_DEV_DAX], [test "x$enable_dev_dax" = "xyes"])
+
 AC_MSG_CHECKING([for SMART support])
 AC_LANG(C)
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
@@ -181,15 +200,22 @@ AC_CONFIG_COMMANDS([gen-libndctl.h],
 		else
 			enable_clear_err=0
 		fi
+		if test "x$enable_dev_dax" = "xyes"; then
+			enable_dev_dax=1
+		else
+			enable_dev_dax=0
+		fi
 		sed -e s/HAVE_NDCTL_ARS/$enable_ars/ \
 		    -e s/HAVE_NDCTL_SMART/$enable_smart/ \
 		    -e s/HAVE_NDCTL_CLEAR_ERROR/$enable_clear_err/ \
+		    -e s/HAVE_NDCTL_DEV_DAX/$enable_dev_dax/ \
 		< lib/ndctl/libndctl.h.in > lib/ndctl/libndctl.h
 		]],
 		[[
 		enable_ars=$enable_ars
 		enable_smart=$enable_smart
 		enable_clear_err=$enable_clear_err
+		enable_dev_dax=$enable_dev_dax
 		]])
 
 AC_CHECK_HEADERS_ONCE([linux/version.h])

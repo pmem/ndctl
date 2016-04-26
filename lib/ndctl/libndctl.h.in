@@ -455,6 +455,7 @@ struct ndctl_bus *ndctl_namespace_get_bus(struct ndctl_namespace *ndns);
 struct ndctl_region *ndctl_namespace_get_region(struct ndctl_namespace *ndns);
 struct ndctl_btt *ndctl_namespace_get_btt(struct ndctl_namespace *ndns);
 struct ndctl_pfn *ndctl_namespace_get_pfn(struct ndctl_namespace *ndns);
+struct ndctl_dax *ndctl_namespace_get_dax(struct ndctl_namespace *ndns);
 unsigned int ndctl_namespace_get_id(struct ndctl_namespace *ndns);
 const char *ndctl_namespace_get_devname(struct ndctl_namespace *ndns);
 unsigned int ndctl_namespace_get_type(struct ndctl_namespace *ndns);
@@ -464,6 +465,7 @@ enum ndctl_namespace_mode {
 	NDCTL_NS_MODE_MEMORY,
 	NDCTL_NS_MODE_SAFE,
 	NDCTL_NS_MODE_RAW,
+	NDCTL_NS_MODE_DAX,
 };
 enum ndctl_namespace_mode ndctl_namespace_get_mode(
 		struct ndctl_namespace *ndns);
@@ -565,6 +567,42 @@ struct ndctl_namespace *ndctl_pfn_get_namespace(struct ndctl_pfn *pfn);
 int ndctl_pfn_enable(struct ndctl_pfn *pfn);
 int ndctl_pfn_delete(struct ndctl_pfn *pfn);
 int ndctl_pfn_is_configured(struct ndctl_pfn *pfn);
+
+#define ndctl_dax_foreach(region, dax) \
+        for (dax = ndctl_dax_get_first(region); \
+             dax != NULL; \
+             dax = ndctl_dax_get_next(dax))
+#define ndctl_dax_foreach_safe(region, dax, _dax) \
+	for (dax = ndctl_dax_get_first(region), \
+	     _dax = ndctl_dax_get_next(dax); \
+	     dax != NULL; \
+	     dax = _dax, \
+	     _dax = _dax ? ndctl_dax_get_next(_dax) : NULL)
+struct ndctl_dax *ndctl_region_get_dax_seed(struct ndctl_region *region);
+struct ndctl_dax *ndctl_namespace_get_dax(struct ndctl_namespace *ndns);
+struct ndctl_dax *ndctl_dax_get_first(struct ndctl_region *region);
+struct ndctl_dax *ndctl_dax_get_next(struct ndctl_dax *dax);
+unsigned int ndctl_dax_get_id(struct ndctl_dax *dax);
+struct ndctl_namespace *ndctl_dax_get_namespace(struct ndctl_dax *dax);
+void ndctl_dax_get_uuid(struct ndctl_dax *dax, uuid_t uu);
+unsigned long long ndctl_dax_get_size(struct ndctl_dax *dax);
+unsigned long long ndctl_dax_get_resource(struct ndctl_dax *dax);
+int ndctl_dax_set_uuid(struct ndctl_dax *dax, uuid_t uu);
+enum ndctl_pfn_loc ndctl_dax_get_location(struct ndctl_dax *dax);
+int ndctl_dax_set_location(struct ndctl_dax *dax, enum ndctl_pfn_loc loc);
+unsigned long ndctl_dax_get_align(struct ndctl_dax *dax);
+int ndctl_dax_set_align(struct ndctl_dax *dax, unsigned long align);
+int ndctl_dax_set_namespace(struct ndctl_dax *dax,
+		struct ndctl_namespace *ndns);
+struct ndctl_bus *ndctl_dax_get_bus(struct ndctl_dax *dax);
+struct ndctl_ctx *ndctl_dax_get_ctx(struct ndctl_dax *dax);
+const char *ndctl_dax_get_devname(struct ndctl_dax *dax);
+int ndctl_dax_is_valid(struct ndctl_dax *dax);
+int ndctl_dax_is_enabled(struct ndctl_dax *dax);
+struct ndctl_region *ndctl_dax_get_region(struct ndctl_dax *dax);
+int ndctl_dax_enable(struct ndctl_dax *dax);
+int ndctl_dax_delete(struct ndctl_dax *dax);
+int ndctl_dax_is_configured(struct ndctl_dax *dax);
 
 #ifdef __cplusplus
 } /* extern "C" */
