@@ -53,6 +53,7 @@ struct json_object *util_bus_to_json(struct ndctl_bus *bus)
 struct json_object *util_dimm_to_json(struct ndctl_dimm *dimm)
 {
 	struct json_object *jdimm = json_object_new_object();
+	const char *id = ndctl_dimm_get_unique_id(dimm);
 	struct json_object *jobj;
 
 	if (!jdimm)
@@ -62,6 +63,13 @@ struct json_object *util_dimm_to_json(struct ndctl_dimm *dimm)
 	if (!jobj)
 		goto err;
 	json_object_object_add(jdimm, "dev", jobj);
+
+	if (id) {
+		jobj = json_object_new_string(id);
+		if (!jobj)
+			goto err;
+		json_object_object_add(jdimm, "id", jobj);
+	}
 
 	if (!ndctl_dimm_is_enabled(dimm)) {
 		jobj = json_object_new_string("disabled");
