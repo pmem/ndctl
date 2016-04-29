@@ -40,6 +40,9 @@ global:
 	ndctl_dimm_get_vendor;
 	ndctl_dimm_get_device;
 	ndctl_dimm_get_revision;
+	ndctl_dimm_get_subsystem_vendor;
+	ndctl_dimm_get_subsystem_device;
+	ndctl_dimm_get_subsystem_revision;
 	ndctl_dimm_get_format;
 	ndctl_dimm_get_formats;
 	ndctl_dimm_get_formatN;

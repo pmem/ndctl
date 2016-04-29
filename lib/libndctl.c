@@ -128,6 +128,9 @@ struct ndctl_dimm {
 	unsigned short vendor_id;
 	unsigned short device_id;
 	unsigned short revision_id;
+	unsigned short subsystem_vendor_id;
+	unsigned short subsystem_device_id;
+	unsigned short subsystem_revision_id;
 	unsigned long dsm_mask;
 	char *unique_id;
 	char *dimm_path;
@@ -1245,10 +1248,13 @@ static int add_dimm(void *parent, int id, const char *dimm_base)
 
 	dimm->handle = -1;
 	dimm->phys_id = -1;
-	dimm->vendor_id = -1;
 	dimm->serial = -1;
+	dimm->vendor_id = -1;
 	dimm->device_id = -1;
 	dimm->revision_id = -1;
+	dimm->subsystem_vendor_id = -1;
+	dimm->subsystem_device_id = -1;
+	dimm->subsystem_revision_id = -1;
 	for (i = 0; i < formats; i++)
 		dimm->format[i] = -1;
 
@@ -1276,15 +1282,13 @@ static int add_dimm(void *parent, int id, const char *dimm_base)
 		goto err_read;
 	dimm->phys_id = strtoul(buf, NULL, 0);
 
-	sprintf(path, "%s/nfit/vendor", dimm_base);
-	if (sysfs_read_attr(ctx, path, buf) < 0)
-		dimm->vendor_id = -1;
-	else
-		dimm->vendor_id = strtoul(buf, NULL, 0);
-
 	sprintf(path, "%s/nfit/serial", dimm_base);
 	if (sysfs_read_attr(ctx, path, buf) == 0)
 		dimm->serial = strtoul(buf, NULL, 0);
+
+	sprintf(path, "%s/nfit/vendor", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) == 0)
+		dimm->vendor_id = strtoul(buf, NULL, 0);
 
 	sprintf(path, "%s/nfit/device", dimm_base);
 	if (sysfs_read_attr(ctx, path, buf) == 0)
@@ -1293,6 +1297,18 @@ static int add_dimm(void *parent, int id, const char *dimm_base)
 	sprintf(path, "%s/nfit/rev_id", dimm_base);
 	if (sysfs_read_attr(ctx, path, buf) == 0)
 		dimm->revision_id = strtoul(buf, NULL, 0);
+
+	sprintf(path, "%s/nfit/subsystem_vendor", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) == 0)
+		dimm->subsystem_vendor_id = strtoul(buf, NULL, 0);
+
+	sprintf(path, "%s/nfit/subsystem_device", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) == 0)
+		dimm->subsystem_device_id = strtoul(buf, NULL, 0);
+
+	sprintf(path, "%s/nfit/subsystem_rev_id", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) == 0)
+		dimm->subsystem_revision_id = strtoul(buf, NULL, 0);
 
 	dimm->formats = formats;
 	sprintf(path, "%s/nfit/format", dimm_base);
@@ -1366,6 +1382,24 @@ NDCTL_EXPORT unsigned short ndctl_dimm_get_device(struct ndctl_dimm *dimm)
 NDCTL_EXPORT unsigned short ndctl_dimm_get_revision(struct ndctl_dimm *dimm)
 {
 	return dimm->revision_id;
+}
+
+NDCTL_EXPORT unsigned short ndctl_dimm_get_subsystem_vendor(
+		struct ndctl_dimm *dimm)
+{
+	return dimm->subsystem_vendor_id;
+}
+
+NDCTL_EXPORT unsigned short ndctl_dimm_get_subsystem_device(
+		struct ndctl_dimm *dimm)
+{
+	return dimm->subsystem_device_id;
+}
+
+NDCTL_EXPORT unsigned short ndctl_dimm_get_subsystem_revision(
+		struct ndctl_dimm *dimm)
+{
+	return dimm->subsystem_revision_id;
 }
 
 NDCTL_EXPORT unsigned short ndctl_dimm_get_format(struct ndctl_dimm *dimm)
