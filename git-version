@@ -1,15 +1,25 @@
 #!/bin/bash
 
+to_ver() {
+	VN=$1
+	#drop leading 'ndctl-' out of the version so its a pure number
+	if [ ${VN:0:6} = "ndctl-" ]; then
+			VN=${VN:6}
+	fi
+	echo $VN
+}
+
 dirty() {
+	VN=$(to_ver $1)
 	git update-index -q --refresh
 	if test -z "$(git diff-index --name-only HEAD --)"; then
-		echo "$1"
+		echo "$VN"
 	else
-		echo "${1}.dirty"
+		echo "${VN}.dirty"
 	fi
 }
 
-DEF_VER=v52
+DEF_VER=52
 
 LF='
 '
@@ -19,10 +29,10 @@ LF='
 if test -f version; then
 	VN=$(cat version) || VN="$DEF_VER"
 elif test -d ${GIT_DIR:-.git} -o -f .git &&
-	VN=$(git describe --match "v[0-9]*" --abbrev=7 HEAD 2>/dev/null) &&
+	VN=$(git describe --match "ndctl-[0-9]*" --abbrev=7 HEAD 2>/dev/null) &&
 	case "$VN" in
 	*$LF*) (exit 1) ;;
-	v[0-9]*)
+	ndctl-[0-9]*)
 		VN="$(dirty $VN)"
 	esac; then
 	VN=$(echo "$VN" | sed -e 's/-/./g');
@@ -31,11 +41,6 @@ else
 	$(git log --oneline --abbrev=8 -n1 HEAD)
 EOF
 	VN="$(dirty ${DEF_VER}.git$COMMIT)"
-fi
-
-#drop leading 'v' out of the version so its a pure number
-if [ ${VN:0:1} = v ]; then
-	VN=${VN:1}
 fi
 
 echo $VN

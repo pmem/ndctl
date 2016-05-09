@@ -16,6 +16,6 @@ git clone $REFERENCE "$UPSTREAM" "$WORKDIR"
 
 VERSION=$(./git-version)
 DIRNAME="ndctl-${VERSION}"
-git archive --remote="$WORKDIR" --format=tar --prefix="$DIRNAME/" HEAD | gzip > $OUTDIR/"v${VERSION}.tar.gz"
+git archive --remote="$WORKDIR" --format=tar --prefix="$DIRNAME/" HEAD | gzip > $OUTDIR/"ndctl-${VERSION}.tar.gz"
 
-echo "Written $OUTDIR/v${VERSION}.tar.gz"
+echo "Written $OUTDIR/ndctl-${VERSION}.tar.gz"
