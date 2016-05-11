@@ -74,6 +74,14 @@ static int handle_options(const char ***argv, int *argc)
 
 			for (i = 0; i < ARRAY_SIZE(commands); i++) {
 				struct cmd_struct *p = commands+i;
+
+				/* filter out commands from auto-complete */
+				if (strcmp(p->cmd, "create-nfit") == 0)
+					continue;
+				if (strcmp(p->cmd, "test") == 0)
+					continue;
+				if (strcmp(p->cmd, "bat") == 0)
+					continue;
 				printf("%s\n", p->cmd);
 			}
 			exit(0);
