@@ -158,8 +158,8 @@ EXTRA_DIST += lib/libndctl.pc.in
 CLEANFILES += lib/libndctl.pc
 
 TESTS = test/libndctl test/dpa-alloc test/parent-uuid test/create.sh \
-	test/clear.sh
-check_PROGRAMS = test/libndctl test/dpa-alloc test/parent-uuid
+	test/clear.sh test/dax-errors.sh
+check_PROGRAMS = test/libndctl test/dpa-alloc test/parent-uuid test/dax-errors
 
 if ENABLE_DESTRUCTIVE
 TESTS += test/blk-ns test/pmem-ns test/pcommit
@@ -192,3 +192,4 @@ test_dax_dev_LDADD = lib/libndctl.la
 
 test_dax_pmd_SOURCES = test/dax-pmd.c
 test_mmap_SOURCES = test/mmap.c
+test_dax_errors_SOURCES = test/dax-errors.c
