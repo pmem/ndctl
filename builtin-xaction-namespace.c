@@ -603,7 +603,8 @@ static int namespace_destroy(struct ndctl_region *region,
 					devname, bdev, strerror(errno));
 			return -errno;
 		}
-	}
+	} else if (dax_active)
+		ndctl_namespace_disable_invalidate(ndns);
 
 	if (pfn || btt || dax) {
 		rc = zero_info_block(ndns);
