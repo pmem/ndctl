@@ -154,7 +154,7 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 			#include "ndctl.h"
 			#endif
 			]], [[
-			int x = ND_DEVICE_NAMESPACE_DAX;
+			int x = ND_DEVICE_DAX_PMEM;
 			]]
 		)], [AC_MSG_RESULT([yes])
 		     enable_dev_dax=yes
