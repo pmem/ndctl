@@ -13,7 +13,7 @@ man1_MANS = \
 CLEANFILES = $(man1_MANS)
 
 XML_DEPS = \
-	$(top_srcdir)/version.m4 \
+	..//version.m4 \
 	Makefile \
 	region-description.txt \
 	xable-region-options.txt \

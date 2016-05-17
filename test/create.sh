@@ -1,6 +1,6 @@
 #!/bin/bash -x
 DEV=""
-NDCTL="./ndctl"
+NDCTL="../ndctl/ndctl"
 BUS="-b nfit_test.0"
 json2var="s/[{}\",]//g; s/:/=/g"
 SECTOR_SIZE="4096"

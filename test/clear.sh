@@ -1,6 +1,6 @@
 #!/bin/bash -x
 DEV=""
-NDCTL="./ndctl"
+NDCTL="../ndctl/ndctl"
 BUS="-b nfit_test.0"
 BUS1="-b nfit_test.1"
 json2var="s/[{}\",]//g; s/:/=/g"

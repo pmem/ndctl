@@ -1,7 +1,7 @@
 #!/bin/bash -x
 
 DEV=""
-NDCTL="./ndctl"
+NDCTL="../ndctl/ndctl"
 BUS="-b nfit_test.0"
 BUS1="-b nfit_test.1"
 MNT=test_dax_mnt
@@ -83,8 +83,8 @@ echo $start_sect 8 > /sys/block/$blockdev/badblocks
 dd if=$MNT/$FILE of=/dev/null iflag=direct bs=4096 count=1 && err $LINENO || true
 
 # run the dax-errors test
-test -x test/dax-errors
-test/dax-errors $MNT/$FILE
+test -x ./dax-errors
+./dax-errors $MNT/$FILE
 
 # TODO: disable this check till we have clear-on-write in the kernel
 #if read sector len < /sys/block/$blockdev/badblocks; then

@@ -2,7 +2,7 @@
 MNT=test_mmap_mnt
 FILE=image
 DEV=""
-TEST=test/mmap
+TEST=./mmap
 
 err() {
 	rc=1
@@ -46,7 +46,7 @@ set -e
 mkdir -p $MNT
 trap 'err $LINENO' ERR
 
-DEV=$(test/dax-dev)
+DEV=$(./dax-dev)
 
 mkfs.ext4 $DEV
 mount $DEV $MNT -o dax

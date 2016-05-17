@@ -1,7 +1,7 @@
 #!/bin/bash
 MNT=test_dax_mnt
 FILE=image
-NDCTL="./ndctl"
+NDCTL="../ndctl/ndctl"
 json2var="s/[{}\",]//g; s/:/=/g"
 blockdev=""
 
@@ -21,13 +21,13 @@ set -e
 mkdir -p $MNT
 trap 'err $LINENO' ERR
 
-blockdev=$(basename $(test/dax-dev))
+blockdev=$(basename $(./dax-dev))
 dev=$(basename $(readlink -f /sys/block/$(basename $blockdev)/device))
 
 mkfs.ext4 /dev/$blockdev
 mount /dev/$blockdev $MNT -o dax
 fallocate -l 1GiB $MNT/$FILE
-test/dax-pmd $MNT/$FILE
+./dax-pmd $MNT/$FILE
 umount $MNT
 
 # convert pmem to put the memmap on the device
@@ -39,7 +39,7 @@ eval $(echo $json | sed -e "$json2var")
 mkfs.ext4 /dev/$blockdev
 mount /dev/$blockdev $MNT -o dax
 fallocate -l 1GiB $MNT/$FILE
-test/dax-pmd $MNT/$FILE
+./dax-pmd $MNT/$FILE
 umount $MNT
 
 json=$($NDCTL create-namespace -m raw -f -e $dev)
@@ -49,7 +49,7 @@ eval $(echo $json | sed -e "$json2var")
 mkfs.xfs -f /dev/$blockdev
 mount /dev/$blockdev $MNT -o dax
 fallocate -l 1GiB $MNT/$FILE
-test/dax-pmd $MNT/$FILE
+./dax-pmd $MNT/$FILE
 umount $MNT
 
 # convert pmem to put the memmap on the device
@@ -60,7 +60,7 @@ eval $(echo $json | sed -e "$json2var")
 mkfs.xfs -f /dev/$blockdev
 mount /dev/$blockdev $MNT -o dax
 fallocate -l 1GiB $MNT/$FILE
-test/dax-pmd $MNT/$FILE
+./dax-pmd $MNT/$FILE
 umount $MNT
 
 # revert namespace to raw mode

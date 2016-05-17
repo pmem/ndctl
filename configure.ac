@@ -5,7 +5,7 @@ AC_INIT([ndctl],
         [linux-nvdimm@lists.01.org],
         [ndctl],
         [https://github.com/pmem/ndctl])
-AC_CONFIG_SRCDIR([lib/libndctl.c])
+AC_CONFIG_SRCDIR([ndctl/lib/libndctl.c])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([
 	check-news
@@ -130,7 +130,7 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 			#ifdef HAVE_NDCTL_H
 			#include <linux/ndctl.h>
 			#else
-			#include "ndctl.h"
+			#include "ndctl/ndctl.h"
 			#endif
 			]], [[
 			int x = ARS_STATUS_MASK;
@@ -149,7 +149,7 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 			#ifdef HAVE_NDCTL_H
 			#include <linux/ndctl.h>
 			#else
-			#include "ndctl.h"
+			#include "ndctl/ndctl.h"
 			#endif
 			]], [[
 			int x = ND_CMD_CLEAR_ERROR;
@@ -168,7 +168,7 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 			#ifdef HAVE_NDCTL_H
 			#include <linux/ndctl.h>
 			#else
-			#include "ndctl.h"
+			#include "ndctl/ndctl.h"
 			#endif
 			]], [[
 			int x = ND_DEVICE_DAX_PMEM;
@@ -187,7 +187,7 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 			#ifdef HAVE_NDCTL_H
 			#include <linux/ndctl.h>
 			#else
-			#include "ndctl.h"
+			#include "ndctl/ndctl.h"
 			#endif
 			]], [[
 			int x = ND_SMART_HEALTH_VALID;
@@ -226,7 +226,7 @@ AC_CONFIG_COMMANDS([gen-libndctl.h],
 		    -e s/HAVE_NDCTL_SMART/$enable_smart/ \
 		    -e s/HAVE_NDCTL_CLEAR_ERROR/$enable_clear_err/ \
 		    -e s/HAVE_NDCTL_DEV_DAX/$enable_dev_dax/ \
-		< lib/ndctl/libndctl.h.in > lib/ndctl/libndctl.h
+		< ndctl/libndctl.h.in > ndctl/libndctl.h
 		]],
 		[[
 		enable_ars=$enable_ars
@@ -260,6 +260,8 @@ AC_SUBST([my_CFLAGS])
 AC_CONFIG_HEADERS(config.h)
 AC_CONFIG_FILES([
         Makefile
+        ndctl/Makefile
+        test/Makefile
         Documentation/Makefile
 ])
 
