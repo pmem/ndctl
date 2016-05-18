@@ -20,6 +20,7 @@ lib_libndctl_la_SOURCES =\
 	lib/libndctl.c
 
 lib_libndctl_la_LIBADD =\
+	../daxctl/lib/libdaxctl.la \
 	$(UDEV_LIBS) \
 	$(UUID_LIBS) \
 	$(KMOD_LIBS)
@@ -49,13 +50,6 @@ if ENABLE_SMART
 ndctl_SOURCES += util/json-smart.c
 endif
 
-if ENABLE_TEST
-ndctl_SOURCES += ../test/libndctl.c \
-		 ../test/dpa-alloc.c \
-		 ../test/parent-uuid.c \
-		 ../test/core.c
-endif
-
 if ENABLE_DESTRUCTIVE
 ndctl_SOURCES += ../test/blk_namespaces.c \
 		 ../test/pmem_namespaces.c \
@@ -69,6 +63,16 @@ ndctl_LDADD =\
 	$(UUID_LIBS) \
 	$(KMOD_LIBS) \
 	$(JSON_LIBS)
+
+if ENABLE_TEST
+ndctl_SOURCES += ../test/libndctl.c \
+		 ../test/dpa-alloc.c \
+		 ../test/parent-uuid.c \
+		 ../test/core.c
+ndctl_LDADD += ../daxctl/lib/libdaxctl.la
+endif
+
+
 
 EXTRA_DIST += lib/libndctl.sym
 

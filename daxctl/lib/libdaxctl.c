@@ -13,11 +13,15 @@
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
-#include <util/log.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <uuid/uuid.h>
 #include <ccan/list/list.h>
 #include <ccan/array_size/array_size.h>
 
+#include <util/log.h>
+#include <util/sysfs.h>
 #include <daxctl/libdaxctl.h>
 #include "libdaxctl-private.h"
 
@@ -153,4 +157,197 @@ DAXCTL_EXPORT int daxctl_get_log_priority(struct daxctl_ctx *ctx)
 DAXCTL_EXPORT void daxctl_set_log_priority(struct daxctl_ctx *ctx, int priority)
 {
 	ctx->ctx.log_priority = priority;
+}
+
+DAXCTL_EXPORT struct daxctl_ctx *daxctl_region_get_ctx(
+		struct daxctl_region *region)
+{
+	return region->ctx;
+}
+
+DAXCTL_EXPORT void daxctl_region_get_uuid(struct daxctl_region *region, uuid_t uu)
+{
+	uuid_copy(uu, region->uuid);
+}
+
+static void free_dev(struct daxctl_dev *dev, struct list_head *head)
+{
+	if (head)
+		list_del_from(head, &dev->list);
+	free(dev->dev_buf);
+	free(dev->dev_path);
+	free(dev);
+}
+
+DAXCTL_EXPORT void daxctl_region_unref(struct daxctl_region *region)
+{
+	struct daxctl_ctx *ctx = region->ctx;
+	struct daxctl_dev *dev, *_d;
+
+	if (!region)
+		return;
+	region->refcount--;
+	if (region->refcount)
+		return;
+
+	info(ctx, "region%d released\n", region->id);
+	list_for_each_safe(&region->devices, dev, _d, list)
+		free_dev(dev, &region->devices);
+	free(region->region_path);
+	free(region);
+}
+
+DAXCTL_EXPORT void daxctl_region_ref(struct daxctl_region *region)
+{
+	if (region)
+		region->refcount++;
+}
+
+DAXCTL_EXPORT struct daxctl_region *daxctl_new_region(struct daxctl_ctx *ctx,
+		int id, uuid_t uuid, const char *path)
+{
+	struct daxctl_region *region;
+	char *region_path;
+
+	region = calloc(1, sizeof(*region));
+	if (!region)
+		return NULL;
+	region->ctx = ctx;
+	region->id = id;
+	region->refcount = 1;
+	uuid_copy(region->uuid, uuid);
+	if (asprintf(&region_path, "%s/dax", path) < 0)
+		region_path = NULL;
+	region->region_path = region_path;
+	list_head_init(&region->devices);
+
+	if (!region->region_path) {
+		daxctl_region_unref(region);
+		region = NULL;
+	}
+
+	return region;
+}
+
+static int add_dax_dev(void *parent, int id, const char *daxdev_base)
+{
+	const char *devname = devpath_to_devname(daxdev_base);
+	char *path = calloc(1, strlen(daxdev_base) + 100);
+	struct daxctl_region *region = parent;
+	struct daxctl_ctx *ctx = region->ctx;
+	struct daxctl_dev *dev, *dev_dup;
+	char buf[SYSFS_ATTR_SIZE];
+	int rc = -ENOMEM;
+	struct stat st;
+
+	if (!path)
+		return -ENOMEM;
+
+	dev = calloc(1, sizeof(*dev));
+	if (!dev)
+		goto err_dev;
+	dev->id = id;
+	dev->region = region;
+
+	sprintf(path, "/dev/%s", devname);
+	if (stat(path, &st) < 0)
+		goto err_read;
+	dev->major = major(st.st_rdev);
+	dev->minor = minor(st.st_rdev);
+
+	sprintf(path, "%s/size", daxdev_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		goto err_read;
+	dev->size = strtoull(buf, NULL, 0);
+
+	dev->dev_path = strdup(daxdev_base);
+	if (!dev->dev_path)
+		goto err_read;
+
+	dev->dev_buf = calloc(1, strlen(daxdev_base) + 50);
+	if (!dev->dev_buf)
+		goto err_read;
+	dev->buf_len = strlen(daxdev_base) + 50;
+
+	daxctl_dev_foreach(region, dev_dup)
+		if (dev_dup->id == dev->id) {
+			free_dev(dev, NULL);
+			free(path);
+			return 1;
+		}
+
+	list_add(&region->devices, &dev->list);
+	free(path);
+	return 0;
+
+ err_read:
+	free(dev->dev_buf);
+	free(dev->dev_path);
+	free(dev);
+ err_dev:
+	free(path);
+	return rc;
+}
+
+DAXCTL_EXPORT int daxctl_region_get_id(struct daxctl_region *region)
+{
+	return region->id;
+}
+
+static void dax_devices_init(struct daxctl_region *region)
+{
+	struct daxctl_ctx *ctx = daxctl_region_get_ctx(region);
+	char daxdev_fmt[50];
+
+	if (region->devices_init)
+		return;
+
+	region->devices_init = 1;
+	sprintf(daxdev_fmt, "dax%d.", region->id);
+	sysfs_device_parse(ctx, region->region_path, daxdev_fmt, region,
+			add_dax_dev);
+}
+
+DAXCTL_EXPORT struct daxctl_dev *daxctl_dev_get_first(struct daxctl_region *region)
+{
+	dax_devices_init(region);
+
+	return list_top(&region->devices, struct daxctl_dev, list);
+}
+
+DAXCTL_EXPORT struct daxctl_dev *daxctl_dev_get_next(struct daxctl_dev *dev)
+{
+	struct daxctl_region *region = dev->region;
+
+	return list_next(&region->devices, dev, list);
+}
+
+DAXCTL_EXPORT struct daxctl_region *daxctl_dev_get_region(struct daxctl_dev *dev)
+{
+	return dev->region;
+}
+
+DAXCTL_EXPORT int daxctl_dev_get_id(struct daxctl_dev *dev)
+{
+	return dev->id;
+}
+
+DAXCTL_EXPORT const char *daxctl_dev_get_devname(struct daxctl_dev *dev)
+{
+	return devpath_to_devname(dev->dev_path);
+}
+
+DAXCTL_EXPORT int daxctl_dev_get_major(struct daxctl_dev *dev)
+{
+	return dev->major;
+}
+
+DAXCTL_EXPORT int daxctl_dev_get_minor(struct daxctl_dev *dev)
+{
+	return dev->minor;
+}
+
+DAXCTL_EXPORT unsigned long long daxctl_dev_get_size(struct daxctl_dev *dev)
+{
+	return dev->size;
 }

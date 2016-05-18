@@ -32,7 +32,9 @@ check_PROGRAMS +=\
 	mmap
 endif
 
-LIBNDCTL_LIB = ../ndctl/lib/libndctl.la
+LIBNDCTL_LIB =\
+       ../ndctl/lib/libndctl.la \
+       ../daxctl/lib/libdaxctl.la
 
 libndctl_SOURCES = libndctl.c core.c
 libndctl_LDADD = $(LIBNDCTL_LIB) $(UUID_LIBS) $(KMOD_LIBS)

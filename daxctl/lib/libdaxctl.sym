@@ -11,3 +11,22 @@ global:
 local:
         *;
 };
+
+LIBNDCTL_2 {
+global:
+	daxctl_region_unref;
+	daxctl_new_region;
+	daxctl_region_ref;
+	daxctl_region_unref;
+	daxctl_region_get_uuid;
+	daxctl_region_get_id;
+	daxctl_region_get_ctx;
+	daxctl_dev_get_first;
+	daxctl_dev_get_next;
+	daxctl_dev_get_region;
+	daxctl_dev_get_id;
+	daxctl_dev_get_devname;
+	daxctl_dev_get_major;
+	daxctl_dev_get_minor;
+	daxctl_dev_get_size;
+} LIBNDCTL_1;

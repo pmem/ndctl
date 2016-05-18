@@ -27,6 +27,7 @@
 
 #include <ccan/array_size/array_size.h>
 #include <ndctl/libndctl.h>
+#include <daxctl/libdaxctl.h>
 #ifdef HAVE_NDCTL_H
 #include <linux/ndctl.h>
 #else
@@ -170,6 +171,13 @@ struct pfn {
 	unsigned long aligns[4];
 };
 
+struct dax {
+	int enabled;
+	uuid_t uuid;
+	enum ndctl_pfn_loc locs[2];
+	unsigned long aligns[4];
+};
+
 static struct pfn_default {
 	int enabled;
 	uuid_t uuid;
@@ -219,11 +227,22 @@ static struct pfn pfn_settings = {
 	.aligns = { 1, SZ_1G, SZ_4K, SZ_2M, },
 };
 
+static struct dax dax_settings = {
+	.enabled = 1,
+	.uuid = {  1,  2,  3,  4,  5,  6,  7, 0,
+		   8, 9,  10, 11, 12, 13, 14, 15
+	},
+	.locs = { NDCTL_PFN_LOC_RAM, NDCTL_PFN_LOC_PMEM },
+	/* order matters, successful aligns at the end */
+	.aligns = { 1, SZ_1G, SZ_4K, SZ_2M, },
+};
+
 struct namespace {
 	unsigned int id;
 	char *type;
 	struct btt *btt_settings;
 	struct pfn *pfn_settings;
+	struct dax *dax_settings;
 	unsigned long long size;
 	uuid_t uuid;
 	int do_configure;
@@ -238,7 +257,7 @@ static unsigned long blk_sector_sizes[7] = { 512, 520, 528, 4096, 4104, 4160, 42
 static unsigned long pmem_sector_sizes[1] = { 0 };
 
 static struct namespace namespace0_pmem0 = {
-	0, "namespace_pmem", &btt_settings, &pfn_settings, SZ_18M,
+	0, "namespace_pmem", &btt_settings, &pfn_settings, &dax_settings, SZ_18M,
 	{ 1, 1, 1, 1,
 	  1, 1, 1, 1,
 	  1, 1, 1, 1,
@@ -246,7 +265,7 @@ static struct namespace namespace0_pmem0 = {
 };
 
 static struct namespace namespace1_pmem0 = {
-	0, "namespace_pmem", &btt_settings, &pfn_settings, SZ_20M,
+	0, "namespace_pmem", &btt_settings, &pfn_settings, &dax_settings, SZ_20M,
 	{ 2, 2, 2, 2,
 	  2, 2, 2, 2,
 	  2, 2, 2, 2,
@@ -254,7 +273,7 @@ static struct namespace namespace1_pmem0 = {
 };
 
 static struct namespace namespace2_blk0 = {
-	0, "namespace_blk", NULL, NULL, SZ_7M,
+	0, "namespace_blk", NULL, NULL, NULL, SZ_7M,
 	{ 3, 3, 3, 3,
 	  3, 3, 3, 3,
 	  3, 3, 3, 3,
@@ -262,7 +281,7 @@ static struct namespace namespace2_blk0 = {
 };
 
 static struct namespace namespace2_blk1 = {
-	1, "namespace_blk", NULL, NULL, SZ_11M,
+	1, "namespace_blk", NULL, NULL, NULL, SZ_11M,
 	{ 4, 4, 4, 4,
 	  4, 4, 4, 4,
 	  4, 4, 4, 4,
@@ -270,7 +289,7 @@ static struct namespace namespace2_blk1 = {
 };
 
 static struct namespace namespace3_blk0 = {
-	0, "namespace_blk", NULL, NULL, SZ_7M,
+	0, "namespace_blk", NULL, NULL, NULL, SZ_7M,
 	{ 5, 5, 5, 5,
 	  5, 5, 5, 5,
 	  5, 5, 5, 5,
@@ -278,7 +297,7 @@ static struct namespace namespace3_blk0 = {
 };
 
 static struct namespace namespace3_blk1 = {
-	1, "namespace_blk", NULL, NULL, SZ_11M,
+	1, "namespace_blk", NULL, NULL, NULL, SZ_11M,
 	{ 6, 6, 6, 6,
 	  6, 6, 6, 6,
 	  6, 6, 6, 6,
@@ -286,7 +305,7 @@ static struct namespace namespace3_blk1 = {
 };
 
 static struct namespace namespace4_blk0 = {
-	0, "namespace_blk", &btt_settings, NULL, SZ_27M,
+	0, "namespace_blk", &btt_settings, NULL, NULL, SZ_27M,
 	{ 7, 7, 7, 7,
 	  7, 7, 7, 7,
 	  7, 7, 7, 7,
@@ -294,7 +313,7 @@ static struct namespace namespace4_blk0 = {
 };
 
 static struct namespace namespace5_blk0 = {
-	0, "namespace_blk", &btt_settings, NULL, SZ_27M,
+	0, "namespace_blk", &btt_settings, NULL, NULL, SZ_27M,
 	{ 8, 8, 8, 8,
 	  8, 8, 8, 8,
 	  8, 8, 8, 8,
@@ -361,7 +380,7 @@ static struct region regions0[] = {
 };
 
 static struct namespace namespace1 = {
-	0, "namespace_io", &btt_settings, &pfn_settings, SZ_32M,
+	0, "namespace_io", &btt_settings, &pfn_settings, &dax_settings, SZ_32M,
 	{ 0, 0, 0, 0,
 	  0, 0, 0, 0,
 	  0, 0, 0, 0,
@@ -429,6 +448,17 @@ static struct ndctl_pfn *get_idle_pfn(struct ndctl_region *region)
 	return NULL;
 }
 
+static struct ndctl_dax *get_idle_dax(struct ndctl_region *region)
+{
+	struct ndctl_dax *dax;
+
+	ndctl_dax_foreach(region, dax)
+		if (!ndctl_dax_is_enabled(dax) && !ndctl_dax_is_configured(dax))
+			return dax;
+
+	return NULL;
+}
+
 static struct ndctl_namespace *get_namespace_by_id(struct ndctl_region *region,
 		struct namespace *namespace)
 {
@@ -488,7 +518,7 @@ static struct ndctl_region *get_blk_region_by_dimm_handle(struct ndctl_bus *bus,
 }
 
 enum ns_mode {
-	BTT, PFN,
+	BTT, PFN, DAX,
 };
 static int check_namespaces(struct ndctl_region *region,
 		struct namespace **namespaces, enum ns_mode mode);
@@ -585,6 +615,188 @@ static int check_regions(struct ndctl_bus *bus, struct region *regions, int n,
 		ndctl_region_foreach(bus, region)
 			ndctl_region_disable_invalidate(region);
 
+	return rc;
+}
+
+static int validate_dax(struct ndctl_dax *dax)
+{
+	/* TODO: make nfit_test namespaces dax capable */
+	struct ndctl_namespace *ndns = ndctl_dax_get_namespace(dax);
+	const char *devname = ndctl_namespace_get_devname(ndns);
+	struct ndctl_region *region = ndctl_dax_get_region(dax);
+	struct daxctl_region *dax_region = NULL;
+	uuid_t uuid, region_uuid;
+	struct daxctl_dev *dax_dev;
+	int rc = -ENXIO, fd, count;
+	char devpath[50];
+
+	dax_region = ndctl_dax_get_daxctl_region(dax);
+	if (!dax_region) {
+		fprintf(stderr, "%s: failed to retrieve daxctl_region\n",
+				devname);
+		return -ENXIO;
+	}
+
+	rc = -ENXIO;
+	ndctl_dax_get_uuid(dax, uuid);
+	daxctl_region_get_uuid(dax_region, region_uuid);
+	if (uuid_compare(uuid, region_uuid) != 0) {
+		char expect[40], actual[40];
+
+		uuid_unparse(region_uuid, actual);
+		uuid_unparse(uuid, expect);
+		fprintf(stderr, "%s: expected uuid: %s got: %s\n",
+				devname, expect, actual);
+		goto out;
+	}
+
+	if ((int) ndctl_region_get_id(region)
+			!= daxctl_region_get_id(dax_region)) {
+		fprintf(stderr, "%s: expected region id: %d got: %d\n",
+				devname, ndctl_region_get_id(region),
+				daxctl_region_get_id(dax_region));
+		goto out;
+	}
+
+	dax_dev = daxctl_dev_get_first(dax_region);
+	if (!dax_dev) {
+		fprintf(stderr, "%s: failed to find daxctl_dev\n",
+				devname);
+		goto out;
+	}
+
+	if (daxctl_dev_get_size(dax_dev) <= 0) {
+		fprintf(stderr, "%s: expected non-zero sized dax device\n",
+				devname);
+		goto out;
+	}
+
+	sprintf(devpath, "/dev/%s", daxctl_dev_get_devname(dax_dev));
+	fd = open(devpath, O_RDWR);
+	if (fd < 0) {
+		fprintf(stderr, "%s: failed to open %s\n", devname, devpath);
+		goto out;
+	}
+	close(fd);
+
+	count = 0;
+	daxctl_dev_foreach(dax_region, dax_dev)
+		count++;
+	if (count != 1) {
+		fprintf(stderr, "%s: expected 1 dax device, got %d\n",
+				devname, count);
+		rc = -ENXIO;
+		goto out;
+	}
+
+	rc = 0;
+
+ out:
+	daxctl_region_unref(dax_region);
+	return rc;
+}
+
+static int __check_dax_create(struct ndctl_region *region,
+		struct ndctl_namespace *ndns, struct namespace *namespace,
+		enum ndctl_pfn_loc loc, unsigned long align, uuid_t uuid)
+{
+	struct ndctl_dax *dax_seed = ndctl_region_get_dax_seed(region);
+	enum ndctl_namespace_mode mode;
+	struct ndctl_dax *dax;
+	const char *devname;
+	ssize_t rc;
+
+	dax = get_idle_dax(region);
+	if (!dax)
+		return -ENXIO;
+
+	devname = ndctl_dax_get_devname(dax);
+	fprintf(stderr, "%s: %s align: %ld\n", __func__, devname, align);
+	ndctl_dax_set_uuid(dax, uuid);
+	ndctl_dax_set_location(dax, loc);
+	ndctl_dax_set_align(dax, align);
+	ndctl_dax_set_namespace(dax, ndns);
+	rc = ndctl_dax_enable(dax);
+	if (align == SZ_1G) {
+		if (rc == 0) {
+			fprintf(stderr, "%s: expected dax enable failure with align: %lx\n",
+					devname, align);
+			return -ENXIO;
+		}
+		ndctl_dax_delete(dax);
+		return 0;
+	}
+
+	mode = ndctl_namespace_get_mode(ndns);
+	if (mode >= 0 && mode != NDCTL_NS_MODE_DAX)
+		fprintf(stderr, "%s: expected dax mode got: %d\n",
+				devname, mode);
+
+	if (namespace->ro == (rc == 0)) {
+		fprintf(stderr, "%s: expected dax enable %s, %s read-%s\n",
+				devname,
+				namespace->ro ? "failure" : "success",
+				ndctl_region_get_devname(region),
+				namespace->ro ? "only" : "write");
+		return -ENXIO;
+	}
+
+	if (dax_seed == ndctl_region_get_dax_seed(region)
+			&& dax == dax_seed) {
+		fprintf(stderr, "%s: failed to advance dax seed\n",
+				ndctl_region_get_devname(region));
+		return -ENXIO;
+	}
+
+	if (namespace->ro) {
+		ndctl_region_set_ro(region, 0);
+		rc = ndctl_dax_enable(dax);
+		fprintf(stderr, "%s: failed to enable after setting rw\n",
+				devname);
+		ndctl_region_set_ro(region, 1);
+		return -ENXIO;
+	}
+
+	rc = validate_dax(dax);
+	if (rc) {
+		fprintf(stderr, "%s: %s validate_dax failed\n", __func__,
+				devname);
+		return rc;
+	}
+
+	if (namespace->ro)
+		ndctl_region_set_ro(region, 1);
+
+	rc = ndctl_dax_delete(dax);
+	if (rc)
+		fprintf(stderr, "%s: failed to delete dax (%zd)\n", devname, rc);
+	return rc;
+}
+
+static int check_dax_create(struct ndctl_region *region,
+		struct ndctl_namespace *ndns, struct namespace *namespace)
+{
+	struct dax *dax_s = namespace->dax_settings;
+	unsigned int i, j;
+	void *buf = NULL;
+	int rc = 0;
+
+	if (!dax_s)
+		return 0;
+
+	for (i = 0; i < ARRAY_SIZE(dax_s->locs); i++) {
+		fprintf(stderr, "%s: %ld\n", __func__, ARRAY_SIZE(dax_s->aligns));
+		for (j = 0; j < ARRAY_SIZE(dax_s->aligns); j++) {
+			rc = __check_dax_create(region, ndns, namespace,
+					dax_s->locs[i], dax_s->aligns[j],
+					dax_s->uuid);
+			if (rc)
+				break;
+		}
+		if (rc)
+			break;
+	}
+	free(buf);
 	return rc;
 }
 
@@ -896,6 +1108,14 @@ static int configure_namespace(struct ndctl_region *region,
 		}
 	}
 
+	if (mode == DAX) {
+		rc = check_dax_create(region, ndns, namespace);
+		if (rc < 0) {
+			fprintf(stderr, "%s: failed to create dax\n", devname);
+			return rc;
+		}
+	}
+
 	rc = ndctl_namespace_enable(ndns);
 	if (rc < 0)
 		fprintf(stderr, "%s: enable: %d\n", devname, rc);
@@ -979,6 +1199,81 @@ static int check_pfn_autodetect(struct ndctl_bus *bus,
 	if (rc < 4096) {
 		rc = -ENXIO;
 		fprintf(stderr, "%s: failed to overwrite pfn on %s\n",
+				devname, bdev);
+	}
+ out:
+	ndctl_region_set_ro(region, namespace->ro);
+	ndctl_namespace_set_raw_mode(ndns, 0);
+	if (fd >= 0)
+		close(fd);
+
+	return rc;
+}
+
+static int check_dax_autodetect(struct ndctl_bus *bus,
+		struct ndctl_namespace *ndns, void *buf,
+		struct namespace *namespace)
+{
+	struct ndctl_region *region = ndctl_namespace_get_region(ndns);
+	const char *devname = ndctl_namespace_get_devname(ndns);
+	struct dax *auto_dax = namespace->dax_settings;
+	struct ndctl_dax *dax, *found = NULL;
+	ssize_t rc = -ENXIO;
+	char bdev[50];
+	int fd;
+
+	ndctl_dax_foreach(region, dax) {
+		struct ndctl_namespace *dax_ndns;
+		uuid_t uu;
+
+		ndctl_dax_get_uuid(dax, uu);
+		if (uuid_compare(uu, auto_dax->uuid) != 0)
+			continue;
+		if (!ndctl_dax_is_enabled(dax))
+			continue;
+		dax_ndns = ndctl_dax_get_namespace(dax);
+		if (strcmp(ndctl_namespace_get_devname(dax_ndns), devname) != 0)
+			continue;
+		fprintf(stderr, "%s: dax_ndns: %p ndns: %p\n", __func__,
+				dax_ndns, ndns);
+		found = dax;
+		break;
+	}
+
+	if (!found)
+		return -ENXIO;
+
+	rc = validate_dax(dax);
+	if (rc) {
+		fprintf(stderr, "%s: %s validate_dax failed\n", __func__,
+				devname);
+		return rc;
+	}
+
+	rc = -ENXIO;
+
+	/* destroy dax device */
+	ndctl_dax_delete(found);
+
+	/* clear read-write, and enable raw mode */
+	ndctl_region_set_ro(region, 0);
+	ndctl_namespace_set_raw_mode(ndns, 1);
+	ndctl_namespace_enable(ndns);
+
+	/* destroy dax metadata */
+	sprintf(bdev, "/dev/%s", ndctl_namespace_get_block_device(ndns));
+	fd = open(bdev, O_RDWR|O_DIRECT|O_EXCL);
+	if (fd < 0) {
+		fprintf(stderr, "%s: failed to open %s to destroy dax\n",
+				devname, bdev);
+		goto out;
+	}
+
+	memset(buf, 0, 4096);
+	rc = pwrite(fd, buf, 4096, 4096);
+	if (rc < 4096) {
+		rc = -ENXIO;
+		fprintf(stderr, "%s: failed to overwrite dax on %s\n",
 				devname, bdev);
 	}
  out:
@@ -1077,6 +1372,80 @@ static int check_btt_autodetect(struct ndctl_bus *bus,
 	return rc;
 }
 
+static int validate_bdev(const char *devname, struct ndctl_btt *btt,
+		struct ndctl_pfn *pfn, struct ndctl_namespace *ndns,
+		struct namespace *namespace, void *buf)
+{
+	char bdevpath[50];
+	int fd, rc, ro;
+
+	if (btt)
+		sprintf(bdevpath, "/dev/%s",
+				ndctl_btt_get_block_device(btt));
+	else if (pfn)
+		sprintf(bdevpath, "/dev/%s",
+				ndctl_pfn_get_block_device(pfn));
+	else
+		sprintf(bdevpath, "/dev/%s",
+				ndctl_namespace_get_block_device(ndns));
+
+	fd = open(bdevpath, O_RDONLY);
+	if (fd < 0) {
+		fprintf(stderr, "%s: failed to open(%s, O_RDONLY)\n",
+				devname, bdevpath);
+		return -ENXIO;
+	}
+
+	rc = ioctl(fd, BLKROGET, &ro);
+	if (rc < 0) {
+		fprintf(stderr, "%s: BLKROGET failed\n",
+				devname);
+		rc = -errno;
+		goto out;
+	}
+
+	if (namespace->ro != ro) {
+		fprintf(stderr, "%s: read-%s expected: read-%s\n",
+				devname, ro ? "only" : "write",
+				namespace->ro ? "only" : "write");
+		rc = -ENXIO;
+		goto out;
+	}
+
+	ro = 0;
+	rc = ioctl(fd, BLKROSET, &ro);
+	if (rc < 0) {
+		fprintf(stderr, "%s: BLKROSET failed\n",
+				devname);
+		rc = -errno;
+		goto out;
+	}
+
+	close(fd);
+	fd = open(bdevpath, O_RDWR|O_DIRECT);
+	if (fd < 0) {
+		fprintf(stderr, "%s: failed to open(%s, O_RDWR|O_DIRECT)\n",
+				devname, bdevpath);
+		return -ENXIO;
+	}
+	if (read(fd, buf, 4096) < 4096) {
+		fprintf(stderr, "%s: failed to read %s\n",
+				devname, bdevpath);
+		rc = -ENXIO;
+		goto out;
+	}
+	if (write(fd, buf, 4096) < 4096) {
+		fprintf(stderr, "%s: failed to write %s\n",
+				devname, bdevpath);
+		rc = -ENXIO;
+		goto out;
+	}
+	rc = 0;
+ out:
+	close(fd);
+	return rc;
+}
+
 static int check_namespaces(struct ndctl_region *region,
 		struct namespace **namespaces, enum ns_mode mode)
 {
@@ -1098,8 +1467,7 @@ static int check_namespaces(struct ndctl_region *region,
 	ndns_save = NULL;
 	for (i = 0; (namespace = namespaces[i]); i++) {
 		struct ndctl_namespace *ndns;
-		char bdevpath[50];
-		int fd = -1, ro;
+		int fd = -1;
 		uuid_t uu;
 
 		snprintf(devname, sizeof(devname), "namespace%d.%d",
@@ -1114,8 +1482,10 @@ static int check_namespaces(struct ndctl_region *region,
 		for (j = 0; j < namespace->num_sector_sizes; j++) {
 			struct btt *btt_s = NULL;
 			struct pfn *pfn_s = NULL;
+			struct dax *dax_s = NULL;
 			struct ndctl_btt *btt = NULL;
 			struct ndctl_pfn *pfn = NULL;
+			struct ndctl_dax *dax = NULL;
 
 			rc = configure_namespace(region, ndns, namespace,
 					namespace->sector_sizes[j], mode);
@@ -1167,7 +1537,21 @@ static int check_namespaces(struct ndctl_region *region,
 				}
 			}
 
-			if (!btt_s && !pfn_s && !ndctl_namespace_is_enabled(ndns)) {
+			if (mode == DAX) {
+				dax_s = namespace->do_configure > 0
+					? namespace->dax_settings : NULL;
+				dax = ndctl_namespace_get_dax(ndns);
+				if (!!dax_s != !!dax) {
+					fprintf(stderr, "%s expected dax %s by default\n",
+							devname, namespace->dax_settings
+							? "enabled" : "disabled");
+					rc = -ENXIO;
+					break;
+				}
+			}
+
+			if (!btt_s && !pfn_s && !dax_s
+					&& !ndctl_namespace_is_enabled(ndns)) {
 				fprintf(stderr, "%s: expected enabled by default\n",
 						devname);
 				rc = -ENXIO;
@@ -1204,71 +1588,16 @@ static int check_namespaces(struct ndctl_region *region,
 				break;
 			}
 
-			if (btt)
-				sprintf(bdevpath, "/dev/%s",
-						ndctl_btt_get_block_device(btt));
-			else if (pfn)
-				sprintf(bdevpath, "/dev/%s",
-						ndctl_pfn_get_block_device(pfn));
+			if (dax)
+				rc = validate_dax(dax);
 			else
-				sprintf(bdevpath, "/dev/%s",
-						ndctl_namespace_get_block_device(ndns));
-
-			fd = open(bdevpath, O_RDONLY);
-			if (fd < 0) {
-				fprintf(stderr, "%s: failed to open(%s, O_RDONLY)\n",
-						devname, bdevpath);
-				rc = -ENXIO;
+				rc = validate_bdev(devname, btt, pfn, ndns,
+						namespace, buf);
+			if (rc) {
+				fprintf(stderr, "%s: %s validate_%s failed\n",
+						__func__, devname, dax ? "dax" : "bdev");
 				break;
 			}
-
-			rc = ioctl(fd, BLKROGET, &ro);
-			if (rc < 0) {
-				fprintf(stderr, "%s: BLKROGET failed\n",
-						devname);
-				rc = -errno;
-				break;
-			}
-
-			if (namespace->ro != ro) {
-				fprintf(stderr, "%s: read-%s expected: read-%s\n",
-						devname, ro ? "only" : "write",
-						namespace->ro ? "only" : "write");
-				rc = -ENXIO;
-				break;
-			}
-
-			ro = 0;
-			rc = ioctl(fd, BLKROSET, &ro);
-			if (rc < 0) {
-				fprintf(stderr, "%s: BLKROSET failed\n",
-						devname);
-				rc = -errno;
-				break;
-			}
-
-			close(fd);
-			fd = open(bdevpath, O_RDWR|O_DIRECT);
-			if (fd < 0) {
-				fprintf(stderr, "%s: failed to open(%s, O_RDWR|O_DIRECT)\n",
-						devname, bdevpath);
-				rc = -ENXIO;
-				break;
-			}
-			if (read(fd, buf, 4096) < 4096) {
-				fprintf(stderr, "%s: failed to read %s\n",
-						devname, bdevpath);
-				rc = -ENXIO;
-				break;
-			}
-			if (write(fd, buf, 4096) < 4096) {
-				fprintf(stderr, "%s: failed to write %s\n",
-						devname, bdevpath);
-				rc = -ENXIO;
-				break;
-			}
-			close(fd);
-			fd = -1;
 
 			if (ndctl_namespace_disable_invalidate(ndns) < 0) {
 				fprintf(stderr, "%s: failed to disable\n", devname);
@@ -1296,12 +1625,18 @@ static int check_namespaces(struct ndctl_region *region,
 				break;
 			}
 
+			if (dax_s && check_dax_autodetect(bus, ndns, buf,
+						namespace) < 0) {
+				fprintf(stderr, "%s, failed dax autodetect\n", devname);
+				rc = -ENXIO;
+				break;
+			}
 
 			/*
 			 * if the namespace is being tested with a btt, there is no
 			 * point testing different sector sizes for the namespace itself
 			 */
-			if (btt_s || pfn_s)
+			if (btt_s || pfn_s || dax_s)
 				break;
 
 			/*
@@ -2120,11 +2455,15 @@ static int do_test0(struct ndctl_ctx *ctx, struct ndctl_test *test)
 	ndctl_region_foreach(bus, region)
 		ndctl_region_enable(region);
 
-	rc = check_regions(bus, regions0, ARRAY_SIZE(regions0), BTT);
+	rc = check_regions(bus, regions0, ARRAY_SIZE(regions0), DAX);
 	if (rc)
 		return rc;
 	reset_bus(bus);
-	return check_regions(bus, regions0, ARRAY_SIZE(regions0), PFN);
+	rc = check_regions(bus, regions0, ARRAY_SIZE(regions0), PFN);
+	if (rc)
+		return rc;
+	reset_bus(bus);
+	return check_regions(bus, regions0, ARRAY_SIZE(regions0), BTT);
 }
 
 static int do_test1(struct ndctl_ctx *ctx, struct ndctl_test *test)
@@ -2156,6 +2495,7 @@ int test_libndctl(int loglevel, struct ndctl_test *test)
 	struct ndctl_ctx *ctx;
 	struct kmod_module *mod;
 	struct kmod_ctx *kmod_ctx;
+	struct daxctl_ctx *daxctl_ctx;
 	int err, result = EXIT_FAILURE;
 
 	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 2, 0)))
@@ -2166,6 +2506,8 @@ int test_libndctl(int loglevel, struct ndctl_test *test)
 		exit(EXIT_FAILURE);
 
 	ndctl_set_log_priority(ctx, loglevel);
+	daxctl_ctx = ndctl_get_daxctl_ctx(ctx);
+	daxctl_set_log_priority(daxctl_ctx, loglevel);
 
 	kmod_ctx = kmod_new(NULL, NULL);
 	if (!kmod_ctx)

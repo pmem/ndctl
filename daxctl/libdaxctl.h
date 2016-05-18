@@ -33,6 +33,30 @@ void daxctl_set_log_priority(struct daxctl_ctx *ctx, int priority);
 void daxctl_set_userdata(struct daxctl_ctx *ctx, void *userdata);
 void *daxctl_get_userdata(struct daxctl_ctx *ctx);
 
+struct daxctl_region;
+struct daxctl_region *daxctl_new_region(struct daxctl_ctx *ctx, int id,
+		uuid_t uuid, const char *path);
+void daxctl_region_ref(struct daxctl_region *region);
+void daxctl_region_unref(struct daxctl_region *region);
+void daxctl_region_get_uuid(struct daxctl_region *region, uuid_t uu);
+int daxctl_region_get_id(struct daxctl_region *region);
+struct daxctl_ctx *daxctl_region_get_ctx(struct daxctl_region *region);
+
+struct daxctl_dev;
+struct daxctl_dev *daxctl_dev_get_first(struct daxctl_region *region);
+struct daxctl_dev *daxctl_dev_get_next(struct daxctl_dev *dev);
+struct daxctl_region *daxctl_dev_get_region(struct daxctl_dev *dev);
+int daxctl_dev_get_id(struct daxctl_dev *dev);
+const char *daxctl_dev_get_devname(struct daxctl_dev *dev);
+int daxctl_dev_get_major(struct daxctl_dev *dev);
+int daxctl_dev_get_minor(struct daxctl_dev *dev);
+unsigned long long daxctl_dev_get_size(struct daxctl_dev *dev);
+
+#define daxctl_dev_foreach(region, dev) \
+        for (dev = daxctl_dev_get_first(region); \
+             dev != NULL; \
+             dev = daxctl_dev_get_next(dev))
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

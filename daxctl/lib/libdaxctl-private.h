@@ -15,4 +15,26 @@
 
 #define DAXCTL_EXPORT __attribute__ ((visibility("default")))
 
+/**
+ * struct daxctl_region - container for dax_devices
+ */
+struct daxctl_region {
+	int id;
+	uuid_t uuid;
+	int refcount;
+	int devices_init;
+	char *region_path;
+	struct daxctl_ctx *ctx;
+	struct list_head devices;
+};
+
+struct daxctl_dev {
+	int id, major, minor;
+	void *dev_buf;
+	size_t buf_len;
+	char *dev_path;
+	struct list_node list;
+	unsigned long long size;
+	struct daxctl_region *region;
+};
 #endif /* _LIBDAXCTL_PRIVATE_H_ */

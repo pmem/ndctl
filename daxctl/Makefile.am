@@ -8,6 +8,8 @@ lib_LTLIBRARIES = lib/libdaxctl.la
 lib_libdaxctl_la_SOURCES =\
 	libdaxctl.h \
 	lib/libdaxctl-private.h \
+	../util/sysfs.c \
+	../util/sysfs.h \
 	../util/log.c \
 	../util/log.h \
 	lib/libdaxctl.c

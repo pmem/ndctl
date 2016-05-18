@@ -140,6 +140,7 @@ struct ndctl_ctx {
 	struct udev *udev;
 	struct udev_queue *udev_queue;
 	struct kmod_ctx *kmod_ctx;
+	struct daxctl_ctx *daxctl_ctx;
 	unsigned long timeout;
 };
 

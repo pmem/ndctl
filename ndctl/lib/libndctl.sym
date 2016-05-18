@@ -11,6 +11,7 @@ global:
 	ndctl_unref;
 	ndctl_set_log_priority;
 	ndctl_new;
+	ndctl_get_daxctl_ctx;
 	ndctl_invalidate;
 local:
         *;
@@ -261,4 +262,5 @@ global:
 	ndctl_dax_enable;
 	ndctl_dax_delete;
 	ndctl_dax_is_configured;
+	ndctl_dax_get_daxctl_region;
 } LIBNDCTL_1;

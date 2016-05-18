@@ -88,6 +88,7 @@ int __sysfs_device_parse(struct log_ctx *ctx, const char *base_path,
 	struct dirent *de;
 	DIR *dir;
 
+	log_dbg(ctx, "base: %s dev: %s\n", base_path, dev_name);
 	dir = opendir(base_path);
 	if (!dir) {
 		log_dbg(ctx, "no \"%s\" devices found\n", dev_name);

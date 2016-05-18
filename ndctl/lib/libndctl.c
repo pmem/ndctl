@@ -36,6 +36,7 @@
 
 #include <util/sysfs.h>
 #include <ndctl/libndctl.h>
+#include <daxctl/libdaxctl.h>
 #include "libndctl-private.h"
 
 static uuid_t null_uuid;
@@ -319,6 +320,7 @@ struct ndctl_pfn {
 
 struct ndctl_dax {
 	struct ndctl_pfn pfn;
+	struct daxctl_region *region;
 };
 
 /**
@@ -357,6 +359,7 @@ NDCTL_EXPORT void ndctl_set_userdata(struct ndctl_ctx *ctx, void *userdata)
  */
 NDCTL_EXPORT int ndctl_new(struct ndctl_ctx **ctx)
 {
+	struct daxctl_ctx *daxctl_ctx;
 	struct kmod_ctx *kmod_ctx;
 	struct ndctl_ctx *c;
 	struct udev *udev;
@@ -372,6 +375,10 @@ NDCTL_EXPORT int ndctl_new(struct ndctl_ctx **ctx)
 		rc = -ENXIO;
 		goto err_kmod;
 	}
+
+	rc = daxctl_new(&daxctl_ctx);
+	if (rc)
+		goto err_daxctl;
 
 	c = calloc(1, sizeof(struct ndctl_ctx));
 	if (!c) {
@@ -408,13 +415,21 @@ NDCTL_EXPORT int ndctl_new(struct ndctl_ctx **ctx)
 	}
 
 	c->kmod_ctx = kmod_ctx;
+	c->daxctl_ctx = daxctl_ctx;
 
 	return 0;
  err_ctx:
+	daxctl_unref(daxctl_ctx);
+ err_daxctl:
 	kmod_unref(kmod_ctx);
  err_kmod:
 	udev_unref(udev);
 	return rc;
+}
+
+NDCTL_EXPORT struct daxctl_ctx *ndctl_get_daxctl_ctx(struct ndctl_ctx *ctx)
+{
+	return ctx->daxctl_ctx;
 }
 
 /**
@@ -621,6 +636,7 @@ NDCTL_EXPORT struct ndctl_ctx *ndctl_unref(struct ndctl_ctx *ctx)
 	udev_queue_unref(ctx->udev_queue);
 	udev_unref(ctx->udev);
 	kmod_unref(ctx->kmod_ctx);
+	daxctl_unref(ctx->daxctl_ctx);
 	info(ctx, "context %p released\n", ctx);
 	free_context(ctx);
 	return NULL;
@@ -4476,4 +4492,24 @@ NDCTL_EXPORT int ndctl_dax_delete(struct ndctl_dax *dax)
 NDCTL_EXPORT int ndctl_dax_is_configured(struct ndctl_dax *dax)
 {
 	return ndctl_pfn_is_configured(&dax->pfn);
+}
+
+NDCTL_EXPORT struct daxctl_region *ndctl_dax_get_daxctl_region(
+		struct ndctl_dax *dax)
+{
+	struct ndctl_ctx *ctx = ndctl_dax_get_ctx(dax);
+	struct ndctl_region *region;
+	uuid_t uuid;
+	int id;
+
+	if (dax->region)
+		return dax->region;
+	region = ndctl_dax_get_region(dax);
+
+	id = ndctl_region_get_id(region);
+	ndctl_dax_get_uuid(dax, uuid);
+	dax->region = daxctl_new_region(ctx->daxctl_ctx, id, uuid,
+			dax->pfn.pfn_path);
+
+	return dax->region;
 }

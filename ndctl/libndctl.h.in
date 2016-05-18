@@ -77,6 +77,8 @@ struct ndctl_ctx;
 struct ndctl_ctx *ndctl_ref(struct ndctl_ctx *ctx);
 struct ndctl_ctx *ndctl_unref(struct ndctl_ctx *ctx);
 int ndctl_new(struct ndctl_ctx **ctx);
+struct daxctl_ctx;
+struct daxctl_ctx *ndctl_get_daxctl_ctx(struct ndctl_ctx *ctx);
 void ndctl_invalidate(struct ndctl_ctx *ctx);
 void ndctl_set_log_fn(struct ndctl_ctx *ctx,
                   void (*log_fn)(struct ndctl_ctx *ctx,
@@ -603,6 +605,7 @@ struct ndctl_region *ndctl_dax_get_region(struct ndctl_dax *dax);
 int ndctl_dax_enable(struct ndctl_dax *dax);
 int ndctl_dax_delete(struct ndctl_dax *dax);
 int ndctl_dax_is_configured(struct ndctl_dax *dax);
+struct daxctl_region *ndctl_dax_get_daxctl_region(struct ndctl_dax *dax);
 
 #ifdef __cplusplus
 } /* extern "C" */
