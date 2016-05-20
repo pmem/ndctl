@@ -1,7 +1,7 @@
 include Makefile.am.in
 
 ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
-SUBDIRS = . ndctl
+SUBDIRS = . daxctl ndctl
 if ENABLE_DOCS
 SUBDIRS += Documentation
 endif
@@ -63,3 +63,5 @@ libutil_a_SOURCES = \
 	util/strbuf.c \
 	util/wrapper.c \
 	util/filter.c
+
+nobase_include_HEADERS = daxctl/libdaxctl.h
