@@ -15,6 +15,8 @@ lib_libndctl_la_SOURCES =\
 	lib/libndctl-private.h \
 	../util/log.c \
 	../util/log.h \
+	../util/sysfs.c \
+	../util/sysfs.h \
 	lib/libndctl.c
 
 lib_libndctl_la_LIBADD =\

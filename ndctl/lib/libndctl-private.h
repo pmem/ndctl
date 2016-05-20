@@ -224,11 +224,6 @@ static inline struct ndctl_bus *cmd_to_bus(struct ndctl_cmd *cmd)
 
 #define NDCTL_EXPORT __attribute__ ((visibility("default")))
 
-static inline const char *devpath_to_devname(const char *devpath)
-{
-	return strrchr(devpath, '/') + 1;
-}
-
 static inline int check_udev(struct udev *udev)
 {
 	return udev ? 0 : -ENXIO;
