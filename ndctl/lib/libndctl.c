@@ -321,48 +321,6 @@ struct ndctl_dax {
 };
 
 /**
- * struct ndctl_ctx - library user context to find "nd" instances
- *
- * Instantiate with ndctl_new(), which takes an initial reference.  Free
- * the context by dropping the reference count to zero with
- * ndctrl_unref(), or take additional references with ndctl_ref()
- * @timeout: default library timeout in milliseconds
- */
-struct ndctl_ctx {
-	int refcount;
-	void (*log_fn)(struct ndctl_ctx *ctx,
-			int priority, const char *file, int line, const char *fn,
-			const char *format, va_list args);
-	void *userdata;
-	int log_priority;
-	struct list_head busses;
-	int busses_init;
-	struct udev *udev;
-	struct udev_queue *udev_queue;
-	struct kmod_ctx *kmod_ctx;
-	unsigned long timeout;
-};
-
-void ndctl_log(struct ndctl_ctx *ctx,
-		int priority, const char *file, int line, const char *fn,
-		const char *format, ...)
-{
-	va_list args;
-
-	va_start(args, format);
-	ctx->log_fn(ctx, priority, file, line, fn, format, args);
-	va_end(args);
-}
-
-static void log_stderr(struct ndctl_ctx *ctx,
-		int priority, const char *file, int line, const char *fn,
-		const char *format, va_list args)
-{
-	fprintf(stderr, "libndctl: %s: ", fn);
-	vfprintf(stderr, format, args);
-}
-
-/**
  * ndctl_get_userdata - retrieve stored data pointer from library context
  * @ctx: ndctl library context
  *
@@ -386,23 +344,6 @@ NDCTL_EXPORT void ndctl_set_userdata(struct ndctl_ctx *ctx, void *userdata)
 	if (ctx == NULL)
 		return;
 	ctx->userdata = userdata;
-}
-
-static int log_priority(const char *priority)
-{
-	char *endptr;
-	int prio;
-
-	prio = strtol(priority, &endptr, 10);
-	if (endptr[0] == '\0' || isspace(endptr[0]))
-		return prio;
-	if (strncmp(priority, "err", 3) == 0)
-		return LOG_ERR;
-	if (strncmp(priority, "info", 4) == 0)
-		return LOG_INFO;
-	if (strncmp(priority, "debug", 5) == 0)
-		return LOG_DEBUG;
-	return 0;
 }
 
 /**
@@ -438,18 +379,13 @@ NDCTL_EXPORT int ndctl_new(struct ndctl_ctx **ctx)
 	}
 
 	c->refcount = 1;
-	c->log_fn = log_stderr;
-	c->log_priority = LOG_ERR;
+	log_init(&c->ctx, "libndctl", "NDCTL_LOG");
 	c->udev = udev;
 	c->timeout = 5000;
 	list_head_init(&c->busses);
 
-	/* environment overwrites config */
-	env = secure_getenv("NDCTL_LOG");
-	if (env != NULL)
-		ndctl_set_log_priority(c, log_priority(env));
 	info(c, "ctx %p created\n", c);
-	dbg(c, "log_priority=%d\n", c->log_priority);
+	dbg(c, "log_priority=%d\n", c->ctx.log_priority);
 	*ctx = c;
 
 	env = secure_getenv("NDCTL_TIMEOUT");
@@ -699,13 +635,12 @@ NDCTL_EXPORT struct ndctl_ctx *ndctl_unref(struct ndctl_ctx *ctx)
  * functionality.
  */
 NDCTL_EXPORT void ndctl_set_log_fn(struct ndctl_ctx *ctx,
-		void (*log_fn)(struct ndctl_ctx *ctx,
-			int priority, const char *file,
-			int line, const char *fn,
-			const char *format, va_list args))
+                 void (*ndctl_log_fn)(struct ndctl_ctx *ctx,
+                                 int priority, const char *file, int line, const char *fn,
+                                 const char *format, va_list args))
 {
-	ctx->log_fn = log_fn;
-	info(ctx, "custom logging function %p registered\n", log_fn);
+	ctx->ctx.log_fn = (log_fn) ndctl_log_fn;
+	info(ctx, "custom logging function %p registered\n", ndctl_log_fn);
 }
 
 /**
@@ -714,7 +649,7 @@ NDCTL_EXPORT void ndctl_set_log_fn(struct ndctl_ctx *ctx,
  */
 NDCTL_EXPORT int ndctl_get_log_priority(struct ndctl_ctx *ctx)
 {
-	return ctx->log_priority;
+	return ctx->ctx.log_priority;
 }
 
 /**
@@ -725,7 +660,7 @@ NDCTL_EXPORT int ndctl_get_log_priority(struct ndctl_ctx *ctx)
  */
 NDCTL_EXPORT void ndctl_set_log_priority(struct ndctl_ctx *ctx, int priority)
 {
-	ctx->log_priority = priority;
+	ctx->ctx.log_priority = priority;
 }
 
 #define SYSFS_ATTR_SIZE 1024

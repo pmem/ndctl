@@ -13,6 +13,8 @@ lib_LTLIBRARIES = lib/libndctl.la
 lib_libndctl_la_SOURCES =\
 	libndctl.h \
 	lib/libndctl-private.h \
+	../util/log.c \
+	../util/log.h \
 	lib/libndctl.c
 
 lib_libndctl_la_LIBADD =\

@@ -19,7 +19,9 @@
 #include <string.h>
 #include <libudev.h>
 #include <libkmod.h>
+#include <util/log.h>
 #include <uuid/uuid.h>
+#include <ccan/list/list.h>
 #include <ccan/array_size/array_size.h>
 #ifdef HAVE_NDCTL_H
 #include <linux/ndctl.h>
@@ -121,6 +123,27 @@ struct namespace_label {
 };
 
 /**
+ * struct ndctl_ctx - library user context to find "nd" instances
+ *
+ * Instantiate with ndctl_new(), which takes an initial reference.  Free
+ * the context by dropping the reference count to zero with
+ * ndctrl_unref(), or take additional references with ndctl_ref()
+ * @timeout: default library timeout in milliseconds
+ */
+struct ndctl_ctx {
+	/* log_ctx must be first member for ndctl_set_log_fn compat */
+	struct log_ctx ctx;
+	int refcount;
+	void *userdata;
+	struct list_head busses;
+	int busses_init;
+	struct udev *udev;
+	struct udev_queue *udev_queue;
+	struct kmod_ctx *kmod_ctx;
+	unsigned long timeout;
+};
+
+/**
  * struct ndctl_cmd - device-specific-method (_DSM ioctl) container
  * @dimm: set if the command is relative to a dimm, NULL otherwise
  * @bus: set if the command is relative to a bus (like ARS), NULL otherwise
@@ -199,43 +222,7 @@ static inline struct ndctl_bus *cmd_to_bus(struct ndctl_cmd *cmd)
 	return cmd->bus;
 }
 
-static inline void __attribute__((always_inline, format(printf, 2, 3)))
-ndctl_log_null(struct ndctl_ctx *ctx, const char *format, ...) {}
-
-#define ndctl_log_cond(ctx, prio, arg...) \
-do { \
-	if (ndctl_get_log_priority(ctx) >= prio) \
-		ndctl_log(ctx, prio, __FILE__, __LINE__, __FUNCTION__, ## arg); \
-} while (0)
-
-#ifdef ENABLE_LOGGING
-#  ifdef ENABLE_DEBUG
-#    define dbg(ctx, arg...) ndctl_log_cond(ctx, LOG_DEBUG, ## arg)
-#  else
-#    define dbg(ctx, arg...) ndctl_log_null(ctx, ## arg)
-#  endif
-#  define info(ctx, arg...) ndctl_log_cond(ctx, LOG_INFO, ## arg)
-#  define err(ctx, arg...) ndctl_log_cond(ctx, LOG_ERR, ## arg)
-#else
-#  define dbg(ctx, arg...) ndctl_log_null(ctx, ## arg)
-#  define info(ctx, arg...) ndctl_log_null(ctx, ## arg)
-#  define err(ctx, arg...) ndctl_log_null(ctx, ## arg)
-#endif
-
-#ifndef HAVE_SECURE_GETENV
-#  ifdef HAVE___SECURE_GETENV
-#    define secure_getenv __secure_getenv
-#  else
-#    error neither secure_getenv nor __secure_getenv is available
-#  endif
-#endif
-
 #define NDCTL_EXPORT __attribute__ ((visibility("default")))
-
-void ndctl_log(struct ndctl_ctx *ctx,
-		int priority, const char *file, int line, const char *fn,
-		const char *format, ...)
-	__attribute__((format(printf, 6, 7)));
 
 static inline const char *devpath_to_devname(const char *devpath)
 {
