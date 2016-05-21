@@ -615,7 +615,7 @@ static int __check_pfn_create(struct ndctl_region *region,
 		if (rc == 0) {
 			fprintf(stderr, "%s: expected pfn enable failure with align: %lx\n",
 					devname, align);
-			return rc;
+			return -ENXIO;
 		}
 		ndctl_pfn_delete(pfn);
 		return 0;
