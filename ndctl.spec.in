@@ -17,6 +17,7 @@ BuildRequires:	pkgconfig(libkmod)
 BuildRequires:	pkgconfig(libudev)
 BuildRequires:	pkgconfig(uuid)
 BuildRequires:	pkgconfig(json-c)
+BuildRequires:	pkgconfig(bash-completion)
 
 %description
 Utility library for managing the "libnvdimm" subsystem.  The "libnvdimm"
@@ -35,14 +36,39 @@ Requires:	LNAME%{?_isa} = %{version}-%{release}
 The %{name}-devel package contains libraries and header files for
 developing applications that use %{name}.
 
+%package -n DAX_DNAME
+Summary:	Development files for libdaxctl
+License:	LGPLv2
+Group:		Development/Libraries
+Requires:	DAX_LNAME%{?_isa} = %{version}-%{release}
+
+%description -n DAX_DNAME
+The %{name}-devel package contains libraries and header files for
+developing applications that use %{name}, a library for enumerating
+"Device DAX" devices.  Device DAX is a facility for establishing DAX
+mappings of performance / feature-differentiated memory.
+
 
 %package -n LNAME
 Summary:	Management library for "libnvdimm" subsystem devices (Non-volatile Memory)
 License:	LGPLv2
 Group:		System Environment/Libraries
+Requires:	DAX_LNAME%{?_isa} = %{version}-%{release}
+
 
 %description -n LNAME
 Libraries for %{name}.
+
+%package -n DAX_LNAME
+Summary:	Management library for "Device DAX" devices
+License:	LGPLv2
+Group:		System Environment/Libraries
+
+%description -n DAX_LNAME
+Device DAX is a facility for establishing DAX mappings of performance /
+feature-differentiated memory. DAX_LNAME provides an enumeration /
+control API for these devices.
+
 
 %prep
 %setup -q ndctl-%{version}
@@ -64,11 +90,18 @@ make check
 
 %postun -n LNAME -p /sbin/ldconfig
 
+%post -n DAX_LNAME -p /sbin/ldconfig
+
+%postun -n DAX_LNAME -p /sbin/ldconfig
+
+%define bashcompdir %(pkg-config --variable=completionsdir bash-completion)
+
 %files
 %defattr(-,root,root)
 %license licenses/GPLv2 licenses/BSD-MIT licenses/CC0
 %{_bindir}/ndctl
 %{_mandir}/man1/*
+%{bashcompdir}/
 
 %files -n LNAME
 %defattr(-,root,root)
@@ -76,12 +109,26 @@ make check
 %license COPYING licenses/BSD-MIT licenses/CC0
 %{_libdir}/libndctl.so.*
 
+%files -n DAX_LNAME
+%defattr(-,root,root)
+%doc README.md
+%license COPYING licenses/BSD-MIT licenses/CC0
+%{_libdir}/libdaxctl.so.*
+
 %files -n DNAME
 %defattr(-,root,root)
 %license COPYING
 %{_includedir}/ndctl/
 %{_libdir}/libndctl.so
 %{_libdir}/pkgconfig/libndctl.pc
+
+%files -n DAX_DNAME
+%defattr(-,root,root)
+%license COPYING
+%{_includedir}/daxctl/
+%{_libdir}/libdaxctl.so
+%{_libdir}/pkgconfig/libdaxctl.pc
+
 
 %changelog
 * Mon Apr 04 2016 Dan Williams <dan.j.williams@intel.com> - 52-1
