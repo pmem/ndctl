@@ -1,0 +1,330 @@
+# ndctl bash and zsh completion
+
+# Taken from perf's completion script.
+
+__my_reassemble_comp_words_by_ref()
+{
+	local exclude i j first
+	# Which word separators to exclude?
+	exclude="${1//[^$COMP_WORDBREAKS]}"
+	cword_=$COMP_CWORD
+	if [ -z "$exclude" ]; then
+		words_=("${COMP_WORDS[@]}")
+		return
+	fi
+	# List of word completion separators has shrunk;
+	# re-assemble words to complete.
+	for ((i=0, j=0; i < ${#COMP_WORDS[@]}; i++, j++)); do
+		# Append each nonempty word consisting of just
+		# word separator characters to the current word.
+		first=t
+		while
+			[ $i -gt 0 ] &&
+			[ -n "${COMP_WORDS[$i]}" ] &&
+			# word consists of excluded word separators
+			[ "${COMP_WORDS[$i]//[^$exclude]}" = "${COMP_WORDS[$i]}" ]
+		do
+			# Attach to the previous token,
+			# unless the previous token is the command name.
+			if [ $j -ge 2 ] && [ -n "$first" ]; then
+				((j--))
+			fi
+			first=
+			words_[$j]=${words_[j]}${COMP_WORDS[i]}
+			if [ $i = $COMP_CWORD ]; then
+				cword_=$j
+			fi
+			if (($i < ${#COMP_WORDS[@]} - 1)); then
+				((i++))
+			else
+				# Done.
+				return
+			fi
+		done
+		words_[$j]=${words_[j]}${COMP_WORDS[i]}
+		if [ $i = $COMP_CWORD ]; then
+			cword_=$j
+		fi
+	done
+}
+
+# Define preload_get_comp_words_by_ref="false", if the function
+# __ndctl_get_comp_words_by_ref() is required instead.
+preload_get_comp_words_by_ref="true"
+
+if [ $preload_get_comp_words_by_ref = "true" ]; then
+	type _get_comp_words_by_ref &>/dev/null ||
+	preload_get_comp_words_by_ref="false"
+fi
+[ $preload_get_comp_words_by_ref = "true" ] ||
+__ndctl_get_comp_words_by_ref()
+{
+	local exclude cur_ words_ cword_
+	if [ "$1" = "-n" ]; then
+		exclude=$2
+		shift 2
+	fi
+	__my_reassemble_comp_words_by_ref "$exclude"
+	cur_=${words_[cword_]}
+	while [ $# -gt 0 ]; do
+		case "$1" in
+		cur)
+			cur=$cur_
+			;;
+		prev)
+			prev=${words_[$cword_-1]}
+			;;
+		words)
+			words=("${words_[@]}")
+			;;
+		cword)
+			cword=$cword_
+			;;
+		esac
+		shift
+	done
+}
+
+__ndctlcomp()
+{
+	local i=0
+
+	COMPREPLY=( $( compgen -W "$1" -- "$2" ) )
+	for cword in "${COMPREPLY[@]}"; do
+		if [[ "$cword" == @(--bus|--region|--type|--mode|--size|--dimm|--reconfig|--uuid|--name|--sector-size|--map) ]]; then
+			COMPREPLY[$i]="${cword}="
+		else
+			COMPREPLY[$i]="${cword} "
+		fi
+		((i++))
+	done
+}
+
+__ndctl_get_buses()
+{
+	local opts="--buses $*"
+	echo "$(ndctl list $opts | grep -E "^\s*\"provider\":" | cut -d\" -f4)"
+}
+
+__ndctl_get_regions()
+{
+	local opts="--regions $*"
+	[ -n "$bus_filter" ] && opts="$opts --bus=$bus_filter"
+	echo "$(ndctl list $opts | grep -E "^\s*\"dev\":" | cut -d\" -f4)"
+}
+
+__ndctl_get_ns()
+{
+	opts="--namespaces $*"
+	[ -n "$bus_filter" ] && opts="$opts --bus=$bus_filter"
+	[ -n "$reg_filter" ] && opts="$opts --bus=$reg_filter"
+	echo "$(ndctl list $opts | grep -E "^\s*\"dev\":" | cut -d\" -f4)"
+}
+
+__ndctl_get_dimms()
+{
+	# when listing dimms, always list idle ones too
+	opts="--dimms -i $*"
+	[ -n "$bus_filter" ] && opts="$opts --bus=$bus_filter"
+	echo "$(ndctl list $opts | grep -E "^\s*\"dev\":" | cut -d\" -f4)"
+}
+
+__ndctl_comp_options()
+{
+	local cur=$1
+	local opts
+
+	if [[ "$cur" == *=* ]]; then
+		local cur_subopt=${cur%%=*}
+		case $cur_subopt in
+		--bus)
+			opts=$(__ndctl_get_buses)
+			;;
+		--region)
+			opts=$(__ndctl_get_regions)
+			;;
+		--dimm)
+			opts=$(__ndctl_get_dimms)
+			;;
+		--reconfig)
+			# It is ok to reconfig disabled namespaces
+			opts=$(__ndctl_get_ns -i)
+			;;
+		--type)
+			opts="pmem blk"
+			;;
+		--mode)
+			opts="raw sector memory dax"
+			;;
+		--map)
+			opts="mem dev"
+			;;
+		*)
+			return
+			;;
+		esac
+		__ndctlcomp "$opts" "${cur##*=}"
+	fi
+}
+
+__ndctl_comp_non_option_args()
+{
+	local subcmd=$1
+	local cur=$2
+	local opts
+
+	case $subcmd in
+	enable-namespace)
+		opts="$(__ndctl_get_ns -i) all"
+		;;
+	disable-namespace)
+		;&
+	destroy-namespace)
+		opts="$(__ndctl_get_ns) all"
+		;;
+	enable-region)
+		opts="$(__ndctl_get_regions -i) all"
+		;;
+	disable-region)
+		opts="$(__ndctl_get_regions) all"
+		;;
+	read-labels)
+		;&
+	zero-labels)
+		opts="$(__ndctl_get_dimms) all"
+		;;
+	*)
+		return
+		;;
+	esac
+	__ndctlcomp "$opts" "$cur"
+}
+
+__ndctl_prev_skip_opts ()
+{
+	local i cmd_ cmds_
+
+	let i=cword-1
+	cmds_=$($cmd $1 --list-cmds)
+	prev_skip_opts=()
+	while [ $i -ge 0 ]; do
+		if [[ ${words[i]} == $1 ]]; then
+			return
+		fi
+		for cmd_ in $cmds_; do
+			if [[ ${words[i]} == $cmd_ ]]; then
+				prev_skip_opts=${words[i]}
+				return
+			fi
+		done
+		((i--))
+	done
+}
+
+bus_filter=''
+reg_filter=''
+
+__ndctl_init_filters()
+{
+	bus_filter=''
+	reg_filter=''
+
+	for __word in "${words[@]}"; do
+		if [[ "$__word" =~ --bus=(.*) ]]; then
+			bus_filter="${BASH_REMATCH[1]}"
+			# lets make sure this is in the list of buses
+			local buses=$(__ndctl_get_buses)
+			[[ "$buses" == *"$bus_filter"* ]] || bus_filter=''
+		fi
+		if [[ "$__word" =~ --region=(.*) ]]; then
+			reg_filter="${BASH_REMATCH[1]}"
+			# lets make sure this is in the list of regions
+			local regions=$(__ndctl_get_regions -i)
+			[[ "$regions" == *"$reg_filter"* ]] || reg_filter=''
+		fi
+	done
+}
+
+__ndctl_main()
+{
+	local cmd subcmd
+
+	cmd=${words[0]}
+	COMPREPLY=()
+
+	__ndctl_init_filters
+
+	# Skip options backward and find the last ndctl command
+	__ndctl_prev_skip_opts
+	subcmd=$prev_skip_opts
+	# List ndctl subcommands or long options
+	if [ -z $subcmd ]; then
+		if [[ $cur == --* ]]; then
+			cmds="--version --help --list-cmds"
+		else
+			cmds=$($cmd --list-cmds)
+		fi
+		__ndctlcomp "$cmds" "$cur"
+	else
+		# List long option names
+		if [[ $cur == --* ]];  then
+			opts=$($cmd $subcmd --list-opts)
+			__ndctlcomp "$opts" "$cur"
+			__ndctl_comp_options "$cur"
+		else
+			[ -z "$subcmd" ] && return
+			__ndctl_comp_non_option_args "$subcmd" "$cur"
+		fi
+	fi
+}
+
+if [[ -n ${ZSH_VERSION-} ]]; then
+	autoload -U +X compinit && compinit
+
+	__ndctlcomp()
+	{
+		emulate -L zsh
+
+		local c IFS=$' \t\n'
+		local -a array
+
+		for c in ${=1}; do
+			case $c in
+			--*=*|*.) ;;
+			*) c="$c " ;;
+			esac
+			array[${#array[@]}+1]="$c"
+		done
+
+		compset -P '*[=:]'
+		compadd -Q -S '' -a -- array && _ret=0
+	}
+
+	_ndctl()
+	{
+		local _ret=1 cur cword prev
+		cur=${words[CURRENT]}
+		prev=${words[CURRENT-1]}
+		let cword=CURRENT-1
+		emulate ksh -c __ndctl_main
+		let _ret && _default && _ret=0
+		return _ret
+	}
+
+	compdef _ndctl ndctl
+	return
+fi
+
+type ndctl &>/dev/null &&
+_ndctl()
+{
+	local cur words cword prev
+	if [ $preload_get_comp_words_by_ref = "true" ]; then
+		_get_comp_words_by_ref -n =: cur words cword prev
+	else
+		__ndctl_get_comp_words_by_ref -n =: cur words cword prev
+	fi
+	__ndctl_main
+} &&
+
+complete -o nospace -F _ndctl ndctl 2>/dev/null

@@ -89,6 +89,11 @@ if ENABLE_SMART
 lib_libndctl_la_SOURCES += lib/libndctl-smart.c
 endif
 
+if ENABLE_BASH_COMPLETION
+bashcompletiondir = $(BASH_COMPLETION_DIR)
+dist_bashcompletion_DATA = contrib/ndctl
+endif
+
 bin_PROGRAMS = ndctl
 
 ndctl_SOURCES = ndctl.c \
