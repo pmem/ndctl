@@ -179,6 +179,11 @@ static struct json_object *region_to_json(struct ndctl_region *region)
 	return NULL;
 }
 
+static int num_list_flags(void)
+{
+	return list.buses + list.dimms + list.regions + list.namespaces;
+}
+
 int cmd_list(int argc, const char **argv)
 {
 	const struct option options[] = {
@@ -212,9 +217,6 @@ int cmd_list(int argc, const char **argv)
 	unsigned int type = 0;
 	int i, rc;
 
-	if (argc == 1)
-		list.namespaces = true;
-
         argc = parse_options(argc, argv, options, u, 0);
 	for (i = 0; i < argc; i++)
 		error("unknown parameter \"%s\"\n", argv[i]);
@@ -227,6 +229,15 @@ int cmd_list(int argc, const char **argv)
 
 	if (argc)
 		usage_with_options(u, options);
+
+	if (num_list_flags() == 0) {
+		list.buses = !!param.bus;
+		list.regions = !!param.region;
+		list.dimms = !!param.dimm;
+	}
+
+	if (num_list_flags() == 0)
+		list.namespaces = true;
 
 	if (param.type) {
 		if (strcmp(param.type, "pmem") == 0)
