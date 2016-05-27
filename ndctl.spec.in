@@ -131,5 +131,9 @@ make check
 
 
 %changelog
+* Fri May 27 2016 Dan Williams <dan.j.williams@intel.com> - 53-1
+- add daxctl-libs + daxctl-devel packages
+- add bash completion
+
 * Mon Apr 04 2016 Dan Williams <dan.j.williams@intel.com> - 52-1
 - Initial rpm submission to Fedora
