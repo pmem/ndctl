@@ -52,8 +52,7 @@ endif
 
 if ENABLE_DESTRUCTIVE
 ndctl_SOURCES += ../test/blk_namespaces.c \
-		 ../test/pmem_namespaces.c \
-		 ../test/pcommit.c
+		 ../test/pmem_namespaces.c
 ndctl_SOURCES += builtin-bat.c
 endif
 

@@ -18,5 +18,4 @@ int test_dpa_alloc(int loglevel, struct ndctl_test *test);
 int test_libndctl(int loglevel, struct ndctl_test *test);
 int test_blk_namespaces(int loglevel, struct ndctl_test *test);
 int test_pmem_namespaces(int loglevel, struct ndctl_test *test);
-int test_pcommit(struct ndctl_test *test);
 #endif /* __TEST_H__ */

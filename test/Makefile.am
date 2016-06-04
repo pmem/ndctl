@@ -18,7 +18,6 @@ if ENABLE_DESTRUCTIVE
 TESTS +=\
 	blk-ns \
 	pmem-ns \
-	pcommit \
 	dax-dev \
 	dax.sh \
 	mmap.sh
@@ -26,7 +25,6 @@ TESTS +=\
 check_PROGRAMS +=\
 	blk-ns \
 	pmem-ns \
-	pcommit \
 	dax-dev \
 	dax-pmd \
 	mmap
@@ -38,9 +36,6 @@ LIBNDCTL_LIB =\
 
 libndctl_SOURCES = libndctl.c core.c
 libndctl_LDADD = $(LIBNDCTL_LIB) $(UUID_LIBS) $(KMOD_LIBS)
-
-pcommit_SOURCES = pcommit.c core.c
-pcommit_LDADD = $(LIBNDCTL_LIB) $(KMOD_LIBS)
 
 blk_ns_SOURCES = blk_namespaces.c core.c
 blk_ns_LDADD = $(LIBNDCTL_LIB) $(KMOD_LIBS)

@@ -39,11 +39,6 @@ int cmd_bat(int argc, const char **argv)
 		return EXIT_FAILURE;
 	}
 
-	rc = test_pcommit(test);
-	fprintf(stderr, "test_pcommit: %s\n", rc ? "FAIL" : "PASS");
-	if (rc && rc != 77)
-		return rc;
-
 	rc = test_blk_namespaces(loglevel, test);
 	fprintf(stderr, "test_blk_namespaces: %s\n", rc ? "FAIL" : "PASS");
 	if (rc && rc != 77)
