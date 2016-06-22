@@ -3,6 +3,7 @@
 #include <uuid/uuid.h>
 #include <json-c/json.h>
 #include <ndctl/libndctl.h>
+#include <daxctl/libdaxctl.h>
 #include <ccan/array_size/array_size.h>
 
 #ifdef HAVE_NDCTL_H
@@ -99,6 +100,39 @@ bool util_namespace_active(struct ndctl_namespace *ndns)
 	return false;
 }
 
+static json_object *util_daxctl_region_to_json(struct daxctl_region *region)
+{
+	struct json_object *jdaxdevs = json_object_new_array();
+	struct json_object *jobj;
+	struct daxctl_dev *dev;
+
+	if (!jdaxdevs)
+		return NULL;
+
+	daxctl_dev_foreach(region, dev) {
+		const char *devname = daxctl_dev_get_devname(dev);
+		struct json_object *jdev = json_object_new_object();
+
+		if (!devname || !jdev)
+			continue;
+		jobj = json_object_new_string(devname);
+		if (jobj)
+			json_object_object_add(jdev, "chardev", jobj);
+
+		jobj = json_object_new_int64(daxctl_dev_get_size(dev));
+		if (jobj)
+			json_object_object_add(jdev, "size", jobj);
+
+		json_object_array_add(jdaxdevs, jdev);
+	}
+
+	if (json_object_array_length(jdaxdevs) < 1) {
+		json_object_put(jdaxdevs);
+		return NULL;
+	}
+	return jdaxdevs;
+}
+
 struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns)
 {
 	struct json_object *jndns = json_object_new_object();
@@ -178,12 +212,18 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns)
 		json_object_object_add(jndns, "uuid", jobj);
 		bdev = ndctl_pfn_get_block_device(pfn);
 	} else if (dax) {
+		struct daxctl_region *dax_region;
+
 		ndctl_dax_get_uuid(dax, uuid);
 		uuid_unparse(uuid, buf);
 		jobj = json_object_new_string(buf);
 		if (!jobj)
 			goto err;
 		json_object_object_add(jndns, "uuid", jobj);
+		dax_region = ndctl_dax_get_daxctl_region(dax);
+		jobj = util_daxctl_region_to_json(dax_region);
+		if (jobj)
+			json_object_object_add(jndns, "daxdevs", jobj);
 	} else if (ndctl_namespace_get_type(ndns) != ND_DEVICE_NAMESPACE_IO) {
 		const char *name;
 
