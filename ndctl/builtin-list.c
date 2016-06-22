@@ -30,6 +30,7 @@ static struct {
 	const char *region;
 	const char *type;
 	const char *dimm;
+	const char *namespace;
 } param;
 
 static int did_fail;
@@ -54,6 +55,9 @@ static struct json_object *list_namespaces(struct ndctl_region *region,
 		/* are we emitting namespaces? */
 		if (!list.namespaces)
 			break;
+
+		if (!util_namespace_filter(ndns, param.namespace))
+			continue;
 
 		if (!list.idle && !util_namespace_active(ndns))
 			continue;
@@ -192,6 +196,8 @@ int cmd_list(int argc, const char **argv)
 				"filter by region"),
 		OPT_STRING('d', "dimm", &param.dimm, "dimm-id",
 				"filter by dimm"),
+		OPT_STRING('n', "namespace", &param.namespace, "namespace-id",
+				"filter by namespace"),
 		OPT_STRING('t', "type", &param.type, "region-type",
 				"filter by region-type"),
 		OPT_BOOLEAN('B', "buses", &list.buses, "include bus info"),

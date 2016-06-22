@@ -68,6 +68,12 @@ include::xable-region-options.txt[]
 [verse]
 # ndctl list --dimm=nmem0 --namespaces
 
+-n::
+--namespace=::
+	An 'namespaceX.Y' device name, or namespace region plus id tuple
+	'X.Y'. Limit the namespace list to the single identified device
+	if present.
+
 -t::
 --type=::
 	Filter listing by region type ('pmem' or 'blk')

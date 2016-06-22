@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <limits.h>
@@ -51,6 +52,26 @@ struct ndctl_region *util_region_filter(struct ndctl_region *region,
 
 	if (region_id == ULONG_MAX && strcmp(ident, name) == 0)
 		return region;
+
+	return NULL;
+}
+
+struct ndctl_namespace *util_namespace_filter(struct ndctl_namespace *ndns,
+		const char *ident)
+{
+	struct ndctl_region *region = ndctl_namespace_get_region(ndns);
+	unsigned long region_id, ndns_id;
+
+	if (!ident || strcmp(ident, "all") == 0)
+		return ndns;
+
+	if (strcmp(ident, ndctl_namespace_get_devname(ndns)) == 0)
+		return ndns;
+
+	if (sscanf(ident, "%ld.%ld", &region_id, &ndns_id) == 2
+			&& ndctl_region_get_id(region) == region_id
+			&& ndctl_namespace_get_id(ndns) == ndns_id)
+		return ndns;
 
 	return NULL;
 }
