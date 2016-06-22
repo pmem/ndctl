@@ -7,6 +7,8 @@ Group:		System Environment/Base
 Url:		https://github.com/pmem/ndctl
 Source0:	https://github.com/pmem/%{name}/archive/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
 
+Requires:	LNAME%{?_isa} = %{version}-%{release}
+Requires:	DAX_LNAME%{?_isa} = %{version}-%{release}
 BuildRequires:	autoconf
 BuildRequires:	asciidoc
 BuildRequires:	xmlto
