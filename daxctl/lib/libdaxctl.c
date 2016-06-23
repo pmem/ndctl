@@ -181,7 +181,7 @@ static void free_dev(struct daxctl_dev *dev, struct list_head *head)
 
 DAXCTL_EXPORT void daxctl_region_unref(struct daxctl_region *region)
 {
-	struct daxctl_ctx *ctx = region->ctx;
+	struct daxctl_ctx *ctx;
 	struct daxctl_dev *dev, *_d;
 
 	if (!region)
@@ -190,6 +190,7 @@ DAXCTL_EXPORT void daxctl_region_unref(struct daxctl_region *region)
 	if (region->refcount)
 		return;
 
+	ctx = region->ctx;
 	info(ctx, "region%d released\n", region->id);
 	list_for_each_safe(&region->devices, dev, _d, list)
 		free_dev(dev, &region->devices);
