@@ -448,7 +448,8 @@ static int validate_namespace_options(struct ndctl_region *region,
 				ndctl_namespace_get_devname(ndns));
 			return -EINVAL;
 		}
-	} else if (p->mode == NDCTL_NS_MODE_MEMORY || NDCTL_NS_MODE_DAX)
+	} else if (p->mode == NDCTL_NS_MODE_MEMORY
+			|| p->mode == NDCTL_NS_MODE_DAX)
 		p->loc = NDCTL_PFN_LOC_PMEM;
 
 	/* check if we need, and whether the kernel supports, pfn devices */
