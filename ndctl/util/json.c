@@ -167,6 +167,8 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns)
 		jobj = json_object_new_string("memory");
 		break;
 	case NDCTL_NS_MODE_DAX:
+		if (!dax)
+			goto err;
 		size = ndctl_dax_get_size(dax);
 		jobj = json_object_new_string("dax");
 		break;
