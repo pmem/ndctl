@@ -787,6 +787,12 @@ static int check_dax_create(struct ndctl_region *region,
 	for (i = 0; i < ARRAY_SIZE(dax_s->locs); i++) {
 		fprintf(stderr, "%s: %ld\n", __func__, ARRAY_SIZE(dax_s->aligns));
 		for (j = 0; j < ARRAY_SIZE(dax_s->aligns); j++) {
+			/*
+			 * The kernel enforces invalidating the previous
+			 * info block when the current uuid is does not
+			 * validate with the contents of the info block.
+			 */
+			dax_s->uuid[0]++;
 			rc = __check_dax_create(region, ndns, namespace,
 					dax_s->locs[i], dax_s->aligns[j],
 					dax_s->uuid);
@@ -923,6 +929,12 @@ static int check_pfn_create(struct ndctl_region *region,
 
 	for (i = 0; i < ARRAY_SIZE(pfn_s->locs); i++) {
 		for (j = 0; j < ARRAY_SIZE(pfn_s->aligns); j++) {
+			/*
+			 * The kernel enforces invalidating the previous
+			 * info block when the current uuid is does not
+			 * validate with the contents of the info block.
+			 */
+			pfn_s->uuid[0]++;
 			rc = __check_pfn_create(region, ndns, namespace, buf,
 					pfn_s->locs[i], pfn_s->aligns[j],
 					pfn_s->uuid);
