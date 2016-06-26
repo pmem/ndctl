@@ -21,8 +21,9 @@ set -e
 mkdir -p $MNT
 trap 'err $LINENO' ERR
 
-blockdev=$(basename $(./dax-dev))
-dev=$(basename $(readlink -f /sys/block/$(basename $blockdev)/device))
+dev=$(./dax-dev)
+json=$($NDCTL list -N -n $dev)
+eval $(echo $json | sed -e "$json2var")
 
 mkfs.ext4 /dev/$blockdev
 mount /dev/$blockdev $MNT -o dax

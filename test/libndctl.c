@@ -223,8 +223,6 @@ static struct pfn pfn_settings = {
 		   8, 9,  10, 11, 12, 13, 14, 15
 	},
 	.locs = { NDCTL_PFN_LOC_RAM, NDCTL_PFN_LOC_PMEM },
-	/* order matters, successful aligns at the end */
-	.aligns = { 1, SZ_1G, SZ_4K, SZ_2M, },
 };
 
 static struct dax dax_settings = {
@@ -233,8 +231,6 @@ static struct dax dax_settings = {
 		   8, 9,  10, 11, 12, 13, 14, 15
 	},
 	.locs = { NDCTL_PFN_LOC_RAM, NDCTL_PFN_LOC_PMEM },
-	/* order matters, successful aligns at the end */
-	.aligns = { 1, SZ_1G, SZ_4K, SZ_2M, },
 };
 
 struct namespace {
@@ -698,7 +694,7 @@ static int validate_dax(struct ndctl_dax *dax)
 
 static int __check_dax_create(struct ndctl_region *region,
 		struct ndctl_namespace *ndns, struct namespace *namespace,
-		enum ndctl_pfn_loc loc, unsigned long align, uuid_t uuid)
+		enum ndctl_pfn_loc loc, uuid_t uuid)
 {
 	struct ndctl_dax *dax_seed = ndctl_region_get_dax_seed(region);
 	enum ndctl_namespace_mode mode;
@@ -711,20 +707,18 @@ static int __check_dax_create(struct ndctl_region *region,
 		return -ENXIO;
 
 	devname = ndctl_dax_get_devname(dax);
-	fprintf(stderr, "%s: %s align: %ld\n", __func__, devname, align);
 	ndctl_dax_set_uuid(dax, uuid);
 	ndctl_dax_set_location(dax, loc);
-	ndctl_dax_set_align(dax, align);
+	/*
+	 * nfit_test uses vmalloc()'d resources so the only feasible
+	 * alignment is PAGE_SIZE
+	 */
+	ndctl_dax_set_align(dax, SZ_4K);
 	ndctl_dax_set_namespace(dax, ndns);
 	rc = ndctl_dax_enable(dax);
-	if (align == SZ_1G) {
-		if (rc == 0) {
-			fprintf(stderr, "%s: expected dax enable failure with align: %lx\n",
-					devname, align);
-			return -ENXIO;
-		}
-		ndctl_dax_delete(dax);
-		return 0;
+	if (rc) {
+		fprintf(stderr, "%s: failed to enable dax\n", devname);
+		return rc;
 	}
 
 	mode = ndctl_namespace_get_mode(ndns);
@@ -777,28 +771,22 @@ static int check_dax_create(struct ndctl_region *region,
 		struct ndctl_namespace *ndns, struct namespace *namespace)
 {
 	struct dax *dax_s = namespace->dax_settings;
-	unsigned int i, j;
 	void *buf = NULL;
+	unsigned int i;
 	int rc = 0;
 
 	if (!dax_s)
 		return 0;
 
 	for (i = 0; i < ARRAY_SIZE(dax_s->locs); i++) {
-		fprintf(stderr, "%s: %ld\n", __func__, ARRAY_SIZE(dax_s->aligns));
-		for (j = 0; j < ARRAY_SIZE(dax_s->aligns); j++) {
-			/*
-			 * The kernel enforces invalidating the previous
-			 * info block when the current uuid is does not
-			 * validate with the contents of the info block.
-			 */
-			dax_s->uuid[0]++;
-			rc = __check_dax_create(region, ndns, namespace,
-					dax_s->locs[i], dax_s->aligns[j],
-					dax_s->uuid);
-			if (rc)
-				break;
-		}
+		/*
+		 * The kernel enforces invalidating the previous info
+		 * block when the current uuid is does not validate with
+		 * the contents of the info block.
+		 */
+		dax_s->uuid[0]++;
+		rc = __check_dax_create(region, ndns, namespace,
+				dax_s->locs[i], dax_s->uuid);
 		if (rc)
 			break;
 	}
@@ -808,8 +796,7 @@ static int check_dax_create(struct ndctl_region *region,
 
 static int __check_pfn_create(struct ndctl_region *region,
 		struct ndctl_namespace *ndns, struct namespace *namespace,
-		void *buf, enum ndctl_pfn_loc loc, unsigned long align,
-		uuid_t uuid)
+		void *buf, enum ndctl_pfn_loc loc, uuid_t uuid)
 {
 	struct ndctl_pfn *pfn_seed = ndctl_region_get_pfn_seed(region);
 	enum ndctl_namespace_mode mode;
@@ -826,17 +813,16 @@ static int __check_pfn_create(struct ndctl_region *region,
 	devname = ndctl_pfn_get_devname(pfn);
 	ndctl_pfn_set_uuid(pfn, uuid);
 	ndctl_pfn_set_location(pfn, loc);
-	ndctl_pfn_set_align(pfn, align);
+	/*
+	 * nfit_test uses vmalloc()'d resources so the only feasible
+	 * alignment is PAGE_SIZE
+	 */
+	ndctl_pfn_set_align(pfn, SZ_4K);
 	ndctl_pfn_set_namespace(pfn, ndns);
 	rc = ndctl_pfn_enable(pfn);
-	if (align == SZ_1G) {
-		if (rc == 0) {
-			fprintf(stderr, "%s: expected pfn enable failure with align: %lx\n",
-					devname, align);
-			return -ENXIO;
-		}
-		ndctl_pfn_delete(pfn);
-		return 0;
+	if (rc) {
+		fprintf(stderr, "%s: failed to enable pfn\n", devname);
+		return rc;
 	}
 
 	mode = ndctl_namespace_get_mode(ndns);
@@ -917,8 +903,8 @@ static int check_pfn_create(struct ndctl_region *region,
 		struct ndctl_namespace *ndns, struct namespace *namespace)
 {
 	struct pfn *pfn_s = namespace->pfn_settings;
-	unsigned int i, j;
 	void *buf = NULL;
+	unsigned int i;
 	int rc = 0;
 
 	if (!pfn_s)
@@ -928,19 +914,14 @@ static int check_pfn_create(struct ndctl_region *region,
 		return -ENXIO;
 
 	for (i = 0; i < ARRAY_SIZE(pfn_s->locs); i++) {
-		for (j = 0; j < ARRAY_SIZE(pfn_s->aligns); j++) {
-			/*
-			 * The kernel enforces invalidating the previous
-			 * info block when the current uuid is does not
-			 * validate with the contents of the info block.
-			 */
-			pfn_s->uuid[0]++;
-			rc = __check_pfn_create(region, ndns, namespace, buf,
-					pfn_s->locs[i], pfn_s->aligns[j],
-					pfn_s->uuid);
-			if (rc)
-				break;
-		}
+		/*
+		 * The kernel enforces invalidating the previous info
+		 * block when the current uuid is does not validate with
+		 * the contents of the info block.
+		 */
+		pfn_s->uuid[0]++;
+		rc = __check_pfn_create(region, ndns, namespace, buf,
+				pfn_s->locs[i], pfn_s->uuid);
 		if (rc)
 			break;
 	}

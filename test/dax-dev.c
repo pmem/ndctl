@@ -32,6 +32,7 @@ static int emit_e820_device(int loglevel, struct ndctl_test *test)
 	const char *bdev;
 	struct ndctl_ctx *ctx;
 	struct ndctl_bus *bus;
+	struct ndctl_dax *dax;
 	struct ndctl_pfn *pfn;
 	struct ndctl_region *region;
 	struct ndctl_namespace *ndns;
@@ -62,11 +63,14 @@ static int emit_e820_device(int loglevel, struct ndctl_test *test)
 	if (mode >= 0 && mode != NDCTL_NS_MODE_MEMORY)
 		goto out;
 
+	/* if device-dax mode already established it might contain user data */
 	pfn = ndctl_namespace_get_pfn(ndns);
-	if (pfn)
-		bdev = ndctl_pfn_get_block_device(pfn);
-	else
-		bdev = ndctl_namespace_get_block_device(ndns);
+	dax = ndctl_namespace_get_dax(ndns);
+	if (dax || pfn)
+		goto out;
+
+	/* device is unconfigured, assume that was on purpose */
+	bdev = ndctl_namespace_get_block_device(ndns);
 	if (!bdev)
 		goto out;
 
@@ -75,18 +79,22 @@ static int emit_e820_device(int loglevel, struct ndctl_test *test)
 
 	/*
 	 * Note, if the bdev goes active after this check we'll still
-	 * clobber it in the following tests, see test/dax.sh.
+	 * clobber it in the following tests, see test/dax.sh and
+	 * test/device-dax.sh.
 	 */
 	fd = open(path, O_RDWR | O_EXCL);
 	if (fd < 0)
 		goto out;
 	err = 0;
-	fprintf(stdout, "%s\n", path);
 
  out:
-	if (err)
+	if (err) {
 		fprintf(stderr, "%s: failed to find usable victim device\n",
 				__func__);
+		ndctl_test_skip(test);
+		err = 77;
+	} else
+		fprintf(stdout, "%s\n", ndctl_namespace_get_devname(ndns));
 	ndctl_unref(ctx);
 	return err;
 }

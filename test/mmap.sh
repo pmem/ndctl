@@ -3,6 +3,8 @@ MNT=test_mmap_mnt
 FILE=image
 DEV=""
 TEST=./mmap
+NDCTL="../ndctl/ndctl"
+json2var="s/[{}\",]//g; s/:/=/g"
 
 err() {
 	rc=1
@@ -46,7 +48,10 @@ set -e
 mkdir -p $MNT
 trap 'err $LINENO' ERR
 
-DEV=$(./dax-dev)
+dev=$(./dax-dev)
+json=$($NDCTL list -N -n $dev)
+eval $(echo $json | sed -e "$json2var")
+DEV="/dev/${blockdev}"
 
 mkfs.ext4 $DEV
 mount $DEV $MNT -o dax

@@ -20,6 +20,7 @@ TESTS +=\
 	pmem-ns \
 	dax-dev \
 	dax.sh \
+	device-dax.sh \
 	mmap.sh
 
 check_PROGRAMS +=\
@@ -27,6 +28,7 @@ check_PROGRAMS +=\
 	pmem-ns \
 	dax-dev \
 	dax-pmd \
+	device-dax \
 	mmap
 endif
 
@@ -55,3 +57,4 @@ dax_dev_LDADD = $(LIBNDCTL_LIB)
 dax_pmd_SOURCES = dax-pmd.c
 mmap_SOURCES = mmap.c
 dax_errors_SOURCES = dax-errors.c
+device_dax_SOURCES = device-dax.c
