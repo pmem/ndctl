@@ -1460,7 +1460,6 @@ static int check_namespaces(struct ndctl_region *region,
 	ndns_save = NULL;
 	for (i = 0; (namespace = namespaces[i]); i++) {
 		struct ndctl_namespace *ndns;
-		int fd = -1;
 		uuid_t uu;
 
 		snprintf(devname, sizeof(devname), "namespace%d.%d",
@@ -1651,8 +1650,6 @@ static int check_namespaces(struct ndctl_region *region,
 				break;
 			}
 		}
-		if (fd >= 0)
-			close(fd);
 		namespace->do_configure = 0;
 
 		__ndns_save = realloc(ndns_save,
