@@ -442,7 +442,8 @@ static int validate_namespace_options(struct ndctl_region *region,
 		else
 			p->loc = NDCTL_PFN_LOC_PMEM;
 
-		if (ndns && p->mode != NDCTL_NS_MODE_MEMORY) {
+		if (ndns && p->mode != NDCTL_NS_MODE_MEMORY
+			&& p->mode != NDCTL_NS_MODE_DAX) {
 			debug("%s: --map= only valid for memory mode namespace\n",
 				ndctl_namespace_get_devname(ndns));
 			return -EINVAL;
