@@ -403,9 +403,12 @@ static int validate_namespace_options(struct ndctl_region *region,
 
 		if (ndns && ndctl_namespace_get_type(ndns)
 				== ND_DEVICE_NAMESPACE_BLK
-				&& p->mode == NDCTL_NS_MODE_MEMORY) {
-			debug("%s: blk namespace do not support memory mode\n",
-					ndctl_namespace_get_devname(ndns));
+				&& (p->mode == NDCTL_NS_MODE_MEMORY
+					|| p->mode == NDCTL_NS_MODE_DAX)) {
+			debug("%s: blk namespace do not support %s mode\n",
+					ndctl_namespace_get_devname(ndns),
+					p->mode == NDCTL_NS_MODE_MEMORY
+					? "memory" : "dax");
 				return -EINVAL;
 		}
 	} else if (ndns)
