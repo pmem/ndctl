@@ -110,6 +110,8 @@ __ndctl_get_regions()
 {
 	local opts="--regions $*"
 	[ -n "$bus_filter" ] && opts="$opts --bus=$bus_filter"
+	[ -n "$type_filter" ] && opts="$opts --type=$type_filter"
+	[ -n "$idle_filter" ] && opts="$opts --idle"
 	echo "$(ndctl list $opts | grep -E "^\s*\"dev\":" | cut -d\" -f4)"
 }
 
@@ -118,6 +120,8 @@ __ndctl_get_ns()
 	opts="--namespaces $*"
 	[ -n "$bus_filter" ] && opts="$opts --bus=$bus_filter"
 	[ -n "$reg_filter" ] && opts="$opts --bus=$reg_filter"
+	[ -n "$type_filter" ] && opts="$opts --type=$type_filter"
+	[ -n "$idle_filter" ] && opts="$opts --idle"
 	echo "$(ndctl list $opts | grep -E "^\s*\"dev\":" | cut -d\" -f4)"
 }
 
@@ -147,7 +151,7 @@ __ndctl_comp_options()
 			opts=$(__ndctl_get_dimms)
 			;;
 		--namespace)
-			opts=$(__ndctl_get_ns -i)
+			opts=$(__ndctl_get_ns)
 			;;
 		--reconfig)
 			# It is ok to reconfig disabled namespaces
@@ -155,9 +159,15 @@ __ndctl_comp_options()
 			;;
 		--type)
 			opts="pmem blk"
+			if [[ "$mode_filter" == @(dax|memory) ]]; then
+				opts="pmem"
+			fi
 			;;
 		--mode)
 			opts="raw sector memory dax"
+			if [[ "$type_filter" == "blk" ]]; then
+				opts="raw sector"
+			fi
 			;;
 		--map)
 			opts="mem dev"
@@ -224,13 +234,13 @@ __ndctl_prev_skip_opts ()
 	done
 }
 
-bus_filter=''
-reg_filter=''
-
 __ndctl_init_filters()
 {
 	bus_filter=''
 	reg_filter=''
+	type_filter=''
+	idle_filter=''
+	mode_filter=''
 
 	for __word in "${words[@]}"; do
 		if [[ "$__word" =~ --bus=(.*) ]]; then
@@ -244,6 +254,15 @@ __ndctl_init_filters()
 			# lets make sure this is in the list of regions
 			local regions=$(__ndctl_get_regions -i)
 			[[ "$regions" == *"$reg_filter"* ]] || reg_filter=''
+		fi
+		if [[ "$__word" =~ --idle ]]; then
+			idle_filter="1"
+		fi
+		if [[ "$__word" =~ --type=(.*) ]]; then
+			type_filter="${BASH_REMATCH[1]}"
+		fi
+		if [[ "$__word" =~ --mode=(.*) ]]; then
+			mode_filter="${BASH_REMATCH[1]}"
 		fi
 	done
 }
