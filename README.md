@@ -26,19 +26,25 @@ loaded.  To build and install nfit_test.ko:
 `git clone -b libnvdimm-for-next
 git://git.kernel.org/pub/scm/linux/kernel/git/nvdimm/nvdimm.git`  
 
-2. Configure the kernel to make some memory available to CMA (contiguous
-   memory allocator).
-This will be used to emulate DAX.  
+2. Skip to step 3 if the kernel version is >= v4.8.  Otherwise, for
+   kernel versions < v4.8, configure the kernel to make some memory
+   available to CMA (contiguous memory allocator). This will be used to
+   emulate DAX.  
 `CONFIG_DMA_CMA=y`  
 `CONFIG_CMA_SIZE_MBYTES=200`  
 **or**  
 `cma=200M` on the kernel command line.  
 
-3. Compile all components of the libnvdimm sub-system as modules:  
+3. Compile the libnvdimm sub-system as a module, make sure "zone device"
+   memory is enabled, and enable the btt, pfn, and dax features of the
+   sub-system:  
+`CONFIG_ZONE_DEVICE=y`  
 `CONFIG_LIBNVDIMM=m`  
 `CONFIG_BLK_DEV_PMEM=m`  
 `CONFIG_ND_BLK=m`  
-`CONFIG_ND_BTT=m`  
+`CONFIG_BTT=y`  
+`CONFIG_NVDIMM_PFN=y`  
+`CONFIG_NVDIMM_DAX=y`  
 
 4. Build and install the unit test enabled libnvdimm modules in the
    following order.  The unit test modules need to be in place prior to
