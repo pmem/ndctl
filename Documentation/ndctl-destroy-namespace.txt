@@ -22,11 +22,6 @@ include::xable-namespace-options.txt[]
 	Specifying --force causes the namespace to be disabled before
 	the operation is attempted.
 
--v::
---verbose::
-	Emit debug messages for the namespace destruction operation
-
-
 SEE ALSO
 --------
 linkndctl:ndctl-create-namespace[1]
