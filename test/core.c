@@ -14,12 +14,16 @@ struct ndctl_test {
 
 static unsigned int get_system_kver(void)
 {
+	const char *kver = getenv("KVER");
 	struct utsname utsname;
 	int a, b, c;
 
-	uname(&utsname);
+	if (!kver) {
+		uname(&utsname);
+		kver = utsname.release;
+	}
 
-	if (sscanf(utsname.release, "%d.%d.%d", &a, &b, &c) != 3)
+	if (sscanf(kver, "%d.%d.%d", &a, &b, &c) != 3)
 		return LINUX_VERSION_CODE;
 
 	return KERNEL_VERSION(a,b,c);
