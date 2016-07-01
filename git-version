@@ -38,9 +38,13 @@ elif test -d ${GIT_DIR:-.git} -o -f .git &&
 	VN=$(echo "$VN" | sed -e 's/-/./g');
 else
 	read COMMIT COMMIT_SUBJECT <<EOF
-	$(git log --oneline --abbrev=8 -n1 HEAD)
+	$(git log --oneline --abbrev=8 -n1 HEAD 2>/dev/null)
 EOF
-	VN="$(dirty ${DEF_VER}.git$COMMIT)"
+	if [ -z $COMMIT ]; then
+		VN="${DEF_VER}+"
+	else
+		VN="$(dirty ${DEF_VER}.git$COMMIT)"
+	fi
 fi
 
 echo $VN
