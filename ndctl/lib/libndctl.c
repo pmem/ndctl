@@ -133,6 +133,8 @@ struct ndctl_dimm {
 	unsigned short subsystem_vendor_id;
 	unsigned short subsystem_device_id;
 	unsigned short subsystem_revision_id;
+	unsigned short manufacturing_date;
+	unsigned char manufacturing_location;
 	unsigned long dsm_mask;
 	char *unique_id;
 	char *dimm_path;
@@ -1168,6 +1170,8 @@ static int add_dimm(void *parent, int id, const char *dimm_base)
 	dimm->subsystem_vendor_id = -1;
 	dimm->subsystem_device_id = -1;
 	dimm->subsystem_revision_id = -1;
+	dimm->manufacturing_date = -1;
+	dimm->manufacturing_location = -1;
 	for (i = 0; i < formats; i++)
 		dimm->format[i] = -1;
 
@@ -1180,9 +1184,17 @@ static int add_dimm(void *parent, int id, const char *dimm_base)
 	 */
 	sprintf(path, "%s/nfit/id", dimm_base);
 	if (sysfs_read_attr(ctx, path, buf) == 0) {
+		unsigned int b[9];
+
 		dimm->unique_id = strdup(buf);
 		if (!dimm->unique_id)
 			goto err_read;
+		if (sscanf(dimm->unique_id, "%02x%02x-%02x-%02x%02x-%02x%02x%02x%02x",
+					&b[0], &b[1], &b[2], &b[3], &b[4],
+					&b[5], &b[6], &b[7], &b[8]) == 9) {
+			dimm->manufacturing_date = b[3] << 8 | b[4];
+			dimm->manufacturing_location = b[2];
+		}
 	}
 
 	sprintf(path, "%s/nfit/handle", dimm_base);
@@ -1313,6 +1325,18 @@ NDCTL_EXPORT unsigned short ndctl_dimm_get_subsystem_revision(
 		struct ndctl_dimm *dimm)
 {
 	return dimm->subsystem_revision_id;
+}
+
+NDCTL_EXPORT unsigned short ndctl_dimm_get_manufacturing_date(
+		struct ndctl_dimm *dimm)
+{
+	return dimm->manufacturing_date;
+}
+
+NDCTL_EXPORT unsigned char ndctl_dimm_get_manufacturing_location(
+		struct ndctl_dimm *dimm)
+{
+	return dimm->manufacturing_location;
 }
 
 NDCTL_EXPORT unsigned short ndctl_dimm_get_format(struct ndctl_dimm *dimm)

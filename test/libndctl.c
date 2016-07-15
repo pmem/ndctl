@@ -118,6 +118,8 @@ struct dimm {
 	unsigned int handle;
 	unsigned int phys_id;
 	unsigned int subsystem_vendor;
+	unsigned short manufacturing_date;
+	unsigned char manufacturing_location;
 	union {
 		unsigned long flags;
 		struct {
@@ -136,15 +138,15 @@ struct dimm {
 	(((n & 0xfff) << 16) | ((s & 0xf) << 12) | ((i & 0xf) << 8) \
 	 | ((c & 0xf) << 4) | (d & 0xf))
 static struct dimm dimms0[] = {
-	{ DIMM_HANDLE(0, 0, 0, 0, 0), 0, 0, { 0 }, 2, { 0x201, 0x301, }, },
-	{ DIMM_HANDLE(0, 0, 0, 0, 1), 1, 0, { 0 }, 2, { 0x201, 0x301, }, },
-	{ DIMM_HANDLE(0, 0, 1, 0, 0), 2, 0, { 0 }, 2, { 0x201, 0x301, }, },
-	{ DIMM_HANDLE(0, 0, 1, 0, 1), 3, 0, { 0 }, 2, { 0x201, 0x301, }, },
+	{ DIMM_HANDLE(0, 0, 0, 0, 0), 0, 0, 2016, 10, { 0 }, 2, { 0x201, 0x301, }, },
+	{ DIMM_HANDLE(0, 0, 0, 0, 1), 1, 0, 2016, 10, { 0 }, 2, { 0x201, 0x301, }, },
+	{ DIMM_HANDLE(0, 0, 1, 0, 0), 2, 0, 2016, 10, { 0 }, 2, { 0x201, 0x301, }, },
+	{ DIMM_HANDLE(0, 0, 1, 0, 1), 3, 0, 2016, 10, { 0 }, 2, { 0x201, 0x301, }, },
 };
 
 static struct dimm dimms1[] = {
 	{
-		DIMM_HANDLE(0, 0, 0, 0, 0), 0, 0, {
+		DIMM_HANDLE(0, 0, 0, 0, 0), 0, 0, 2016, 10, {
 			.f_arm = 1,
 			.f_save = 1,
 			.f_flush = 1,
@@ -2383,6 +2385,14 @@ static int check_dimms(struct ndctl_bus *bus, struct dimm *dimms, int n,
 			fprintf(stderr, "dimm%d expected subsystem vendor: %d got: %d\n",
 					i, dimms[i].subsystem_vendor,
 					ndctl_dimm_get_subsystem_vendor(dimm));
+			return -ENXIO;
+		}
+
+		if (ndctl_dimm_get_manufacturing_date(dimm)
+				!= dimms[i].manufacturing_date) {
+			fprintf(stderr, "dimm%d expected manufacturing date: %d got: %d\n",
+					i, dimms[i].manufacturing_date,
+					ndctl_dimm_get_manufacturing_date(dimm));
 			return -ENXIO;
 		}
 

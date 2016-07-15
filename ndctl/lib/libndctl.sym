@@ -41,6 +41,8 @@ global:
 	ndctl_dimm_get_vendor;
 	ndctl_dimm_get_device;
 	ndctl_dimm_get_revision;
+	ndctl_dimm_get_manufacturing_date;
+	ndctl_dimm_get_manufacturing_location;
 	ndctl_dimm_get_subsystem_vendor;
 	ndctl_dimm_get_subsystem_device;
 	ndctl_dimm_get_subsystem_revision;
