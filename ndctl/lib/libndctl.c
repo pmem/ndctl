@@ -2122,6 +2122,8 @@ NDCTL_EXPORT int ndctl_dimm_zero_labels(struct ndctl_dimm *dimm)
 
 NDCTL_EXPORT void ndctl_cmd_unref(struct ndctl_cmd *cmd)
 {
+	if (!cmd)
+		return;
 	if (--cmd->refcount == 0) {
 		if (cmd->source)
 			ndctl_cmd_unref(cmd->source);
