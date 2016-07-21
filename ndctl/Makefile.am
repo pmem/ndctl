@@ -58,6 +58,7 @@ endif
 
 ndctl_LDADD =\
 	lib/libndctl.la \
+	../daxctl/lib/libdaxctl.la \
 	../libutil.a \
 	$(UUID_LIBS) \
 	$(KMOD_LIBS) \
@@ -68,7 +69,6 @@ ndctl_SOURCES += ../test/libndctl.c \
 		 ../test/dpa-alloc.c \
 		 ../test/parent-uuid.c \
 		 ../test/core.c
-ndctl_LDADD += ../daxctl/lib/libdaxctl.la
 endif
 
 

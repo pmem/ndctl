@@ -100,7 +100,8 @@ bool util_namespace_active(struct ndctl_namespace *ndns)
 	return false;
 }
 
-static json_object *util_daxctl_region_to_json(struct daxctl_region *region)
+static json_object *util_daxctl_region_to_json(struct daxctl_region *region,
+		bool include_idle)
 {
 	struct json_object *jdaxdevs = json_object_new_array();
 	struct json_object *jobj;
@@ -111,8 +112,12 @@ static json_object *util_daxctl_region_to_json(struct daxctl_region *region)
 
 	daxctl_dev_foreach(region, dev) {
 		const char *devname = daxctl_dev_get_devname(dev);
-		struct json_object *jdev = json_object_new_object();
+		struct json_object *jdev;
 
+		if (daxctl_dev_get_size(dev) == 0 && !include_idle)
+			continue;
+
+		jdev = json_object_new_object();
 		if (!devname || !jdev)
 			continue;
 		jobj = json_object_new_string(devname);
@@ -133,7 +138,8 @@ static json_object *util_daxctl_region_to_json(struct daxctl_region *region)
 	return jdaxdevs;
 }
 
-struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns)
+struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
+		bool include_idle)
 {
 	struct json_object *jndns = json_object_new_object();
 	unsigned long long size = ULLONG_MAX;
@@ -223,7 +229,7 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns)
 			goto err;
 		json_object_object_add(jndns, "uuid", jobj);
 		dax_region = ndctl_dax_get_daxctl_region(dax);
-		jobj = util_daxctl_region_to_json(dax_region);
+		jobj = util_daxctl_region_to_json(dax_region, include_idle);
 		if (jobj)
 			json_object_object_add(jndns, "daxdevs", jobj);
 	} else if (ndctl_namespace_get_type(ndns) != ND_DEVICE_NAMESPACE_IO) {

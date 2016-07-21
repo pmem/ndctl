@@ -74,7 +74,7 @@ static struct json_object *list_namespaces(struct ndctl_region *region,
 						jnamespaces);
 		}
 
-		jndns = util_namespace_to_json(ndns);
+		jndns = util_namespace_to_json(ndns, list.idle);
 		if (!jndns) {
 			fail("\n");
 			continue;
