@@ -271,6 +271,7 @@ struct ndctl_namespace {
  * struct ndctl_btt - stacked block device provided sector atomicity
  * @module: kernel module (nd_btt)
  * @lbasize: sector size info
+ * @size: usable size of the btt after removing metadata etc
  * @ndns: host namespace for the btt instance
  * @region: parent region
  * @btt_path: btt devpath
@@ -284,6 +285,7 @@ struct ndctl_btt {
 	struct ndctl_namespace *ndns;
 	struct list_node list;
 	struct ndctl_lbasize lbasize;
+	unsigned long long size;
 	char *btt_path;
 	char *btt_buf;
 	char *bdev;
@@ -3616,9 +3618,16 @@ static int add_btt(void *parent, int id, const char *btt_base)
 	if (parse_lbasize_supported(ctx, devname, buf, &btt->lbasize) < 0)
 		goto err_read;
 
+	sprintf(path, "%s/size", btt_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		btt->size = ULLONG_MAX;
+	else
+		btt->size = strtoull(buf, NULL, 0);
+
 	free(path);
 	ndctl_btt_foreach(region, btt_dup)
 		if (btt->id == btt_dup->id) {
+			btt_dup->size = btt->size;
 			free_btt(btt, NULL);
 			return 1;
 		}
@@ -3705,6 +3714,11 @@ NDCTL_EXPORT struct ndctl_namespace *ndctl_btt_get_namespace(struct ndctl_btt *b
 NDCTL_EXPORT void ndctl_btt_get_uuid(struct ndctl_btt *btt, uuid_t uu)
 {
 	memcpy(uu, btt->uuid, sizeof(uuid_t));
+}
+
+NDCTL_EXPORT unsigned long long ndctl_btt_get_size(struct ndctl_btt *btt)
+{
+	return btt->size;
 }
 
 NDCTL_EXPORT int ndctl_btt_set_uuid(struct ndctl_btt *btt, uuid_t uu)

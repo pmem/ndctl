@@ -521,6 +521,7 @@ unsigned int ndctl_btt_get_sector_size(struct ndctl_btt *btt);
 int ndctl_btt_get_num_sector_sizes(struct ndctl_btt *btt);
 struct ndctl_namespace *ndctl_btt_get_namespace(struct ndctl_btt *btt);
 void ndctl_btt_get_uuid(struct ndctl_btt *btt, uuid_t uu);
+unsigned long long ndctl_btt_get_size(struct ndctl_btt *btt);
 int ndctl_btt_is_enabled(struct ndctl_btt *btt);
 int ndctl_btt_is_valid(struct ndctl_btt *btt);
 const char *ndctl_btt_get_devname(struct ndctl_btt *btt);

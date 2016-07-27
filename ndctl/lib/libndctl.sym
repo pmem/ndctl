@@ -196,6 +196,7 @@ global:
 	ndctl_btt_get_num_sector_sizes;
 	ndctl_btt_get_namespace;
 	ndctl_btt_get_uuid;
+	ndctl_btt_get_size;
 	ndctl_btt_is_enabled;
 	ndctl_btt_is_valid;
 	ndctl_btt_get_devname;
