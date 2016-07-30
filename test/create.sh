@@ -44,7 +44,7 @@ eval $(echo $json | sed -e "$json2var")
 
 # create blk
 dev="x"
-json=$($NDCTL create-namespace $BUS -t blk -m raw)
+json=$($NDCTL create-namespace $BUS -t blk -m raw -s 17M)
 eval $(echo $json | sed -e "$json2var")
 [ $dev = "x" ] && echo "fail: $LINENO" && exit 1
 [ $mode != "raw" ] && echo "fail: $LINENO" &&  exit 1
