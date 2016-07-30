@@ -92,19 +92,19 @@ AS_IF([test "x$enable_debug" = "xyes"], [
         AC_DEFINE(ENABLE_DEBUG, [1], [Debug messages.])
 ])
 
-AC_ARG_ENABLE([test],
-        AS_HELP_STRING([--enable-test], [enable ndctl test command @<:@default=disabled@:>@]),
-        [], [enable_test=no])
-AS_IF([test "x$enable_test" = "xyes"],
-	[AC_DEFINE([ENABLE_TEST], [1], [ndctl test support])])
-AM_CONDITIONAL([ENABLE_TEST], [test "x$enable_test" = "xyes"])
-
 AC_ARG_ENABLE([destructive],
         AS_HELP_STRING([--enable-destructive], [enable destructive functional tests @<:@default=disabled@:>@]),
         [], [enable_destructive=no])
 AS_IF([test "x$enable_destructive" = "xyes"],
 	[AC_DEFINE([ENABLE_DESTRUCTIVE], [1], [destructive functional tests support])])
 AM_CONDITIONAL([ENABLE_DESTRUCTIVE], [test "x$enable_destructive" = "xyes"])
+
+AC_ARG_ENABLE([test],
+        AS_HELP_STRING([--enable-test], [enable ndctl test command @<:@default=disabled@:>@]),
+        [], [enable_test=$enable_destructive])
+AS_IF([test "x$enable_test" = "xyes"],
+	[AC_DEFINE([ENABLE_TEST], [1], [ndctl test support])])
+AM_CONDITIONAL([ENABLE_TEST], [test "x$enable_test" = "xyes"])
 
 PKG_CHECK_MODULES([KMOD], [libkmod])
 PKG_CHECK_MODULES([UDEV], [libudev])
