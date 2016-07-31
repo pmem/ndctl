@@ -29,6 +29,14 @@
 #include <linux/version.h>
 #include <test.h>
 
+#include <ccan/array_size/array_size.h>
+
+#ifdef HAVE_NDCTL_H
+#include <linux/ndctl.h>
+#else
+#include <ndctl.h>
+#endif
+
 #define err(msg)\
 	fprintf(stderr, "%s:%d: %s (%s)\n", __func__, __LINE__, msg, strerror(errno))
 
@@ -192,6 +200,16 @@ int test_pmem_namespaces(int log_level, struct ndctl_test *test)
 	ndctl_set_log_priority(ctx, log_level);
 
 	bus = ndctl_bus_get_by_provider(ctx, "ACPI.NFIT");
+	if (bus) {
+		/* skip this bus if no label-enabled PMEM regions */
+		ndctl_region_foreach(bus, region)
+			if (ndctl_region_get_nstype(region)
+					== ND_DEVICE_NAMESPACE_PMEM)
+				break;
+		if (!region)
+			bus = NULL;
+	}
+
 	if (!bus) {
 		fprintf(stderr, "ACPI.NFIT unavailable falling back to nfit_test\n");
 		kmod_ctx = kmod_new(NULL, NULL);
