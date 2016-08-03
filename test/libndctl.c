@@ -2251,6 +2251,11 @@ static int check_commands(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 	};
 	unsigned int i, rc = 0;
 
+	/* the kernel did not start emulating smart data until 4.7 */
+	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 7, 0)))
+		dimm_commands &= ~((1 << ND_CMD_SMART)
+				| (1 << ND_CMD_SMART_THRESHOLD));
+
 	/* Check DIMM commands */
 	check_cmds = __check_dimm_cmds;
 	for (i = 0; i < BITS_PER_LONG; i++) {
@@ -2365,35 +2370,44 @@ static int check_dimms(struct ndctl_bus *bus, struct dimm *dimms, int n,
 			return -ENXIO;
 		}
 
-		if (ndctl_dimm_get_formats(dimm) != dimms[i].formats) {
-			fprintf(stderr, "dimm%d expected formats: %d got: %d\n",
-					i, dimms[i].formats,
-					ndctl_dimm_get_formats(dimm));
-			return -ENXIO;
+		if (ndctl_test_attempt(test, KERNEL_VERSION(4, 7, 0))) {
+			if (ndctl_dimm_get_formats(dimm) != dimms[i].formats) {
+				fprintf(stderr, "dimm%d expected formats: %d got: %d\n",
+						i, dimms[i].formats,
+						ndctl_dimm_get_formats(dimm));
+				return -ENXIO;
+			}
+			for (j = 0; j < dimms[i].formats; j++) {
+				if (ndctl_dimm_get_formatN(dimm, j) != dimms[i].format[j]) {
+					fprintf(stderr,
+						"dimm%d expected format[%d]: %d got: %d\n",
+							i, j, dimms[i].format[j],
+							ndctl_dimm_get_formatN(dimm, j));
+					return -ENXIO;
+				}
+			}
 		}
-		for (j = 0; j < dimms[i].formats; j++) {
-			if (ndctl_dimm_get_formatN(dimm, j) != dimms[i].format[j]) {
-				fprintf(stderr, "dimm%d expected format[%d]: %d got: %d\n",
-						i, j, dimms[i].format[j],
-						ndctl_dimm_get_formatN(dimm, j));
+
+		if (ndctl_test_attempt(test, KERNEL_VERSION(4, 7, 0))) {
+			if (ndctl_dimm_get_subsystem_vendor(dimm)
+					!= dimms[i].subsystem_vendor) {
+				fprintf(stderr,
+					"dimm%d expected subsystem vendor: %d got: %d\n",
+						i, dimms[i].subsystem_vendor,
+						ndctl_dimm_get_subsystem_vendor(dimm));
 				return -ENXIO;
 			}
 		}
 
-		if (ndctl_dimm_get_subsystem_vendor(dimm)
-				!= dimms[i].subsystem_vendor) {
-			fprintf(stderr, "dimm%d expected subsystem vendor: %d got: %d\n",
-					i, dimms[i].subsystem_vendor,
-					ndctl_dimm_get_subsystem_vendor(dimm));
-			return -ENXIO;
-		}
-
-		if (ndctl_dimm_get_manufacturing_date(dimm)
-				!= dimms[i].manufacturing_date) {
-			fprintf(stderr, "dimm%d expected manufacturing date: %d got: %d\n",
-					i, dimms[i].manufacturing_date,
-					ndctl_dimm_get_manufacturing_date(dimm));
-			return -ENXIO;
+		if (ndctl_test_attempt(test, KERNEL_VERSION(4, 8, 0))) {
+			if (ndctl_dimm_get_manufacturing_date(dimm)
+					!= dimms[i].manufacturing_date) {
+				fprintf(stderr,
+					"dimm%d expected manufacturing date: %d got: %d\n",
+						i, dimms[i].manufacturing_date,
+						ndctl_dimm_get_manufacturing_date(dimm));
+				return -ENXIO;
+			}
 		}
 
 		rc = check_commands(bus, dimm, bus_commands, dimm_commands, test);
@@ -2455,10 +2469,12 @@ static int do_test0(struct ndctl_ctx *ctx, struct ndctl_test *test)
 	ndctl_region_foreach(bus, region)
 		ndctl_region_enable(region);
 
-	rc = check_regions(bus, regions0, ARRAY_SIZE(regions0), DAX);
-	if (rc)
-		return rc;
-	reset_bus(bus);
+	if (ndctl_test_attempt(test, KERNEL_VERSION(4, 7, 0))) {
+		rc = check_regions(bus, regions0, ARRAY_SIZE(regions0), DAX);
+		if (rc)
+			return rc;
+		reset_bus(bus);
+	}
 	rc = check_regions(bus, regions0, ARRAY_SIZE(regions0), PFN);
 	if (rc)
 		return rc;

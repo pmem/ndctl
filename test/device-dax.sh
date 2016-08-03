@@ -1,12 +1,22 @@
 #!/bin/bash
 NDCTL="../ndctl/ndctl"
 json2var="s/[{}\",]//g; s/:/=/g; s/\]//g"
+rc=77
 
 err() {
 	rc=$?
 	echo "device-dax: failed at line $1"
 	exit $rc
 }
+
+eval $(uname -r | awk -F. '{print "maj="$1 ";" "min="$2}')
+if [ $maj -lt 4 ]; then
+	echo "kernel $maj.$min lacks device-dax"
+	exit $rc
+elif [ $maj -eq 4 -a $min -lt 7 ]; then
+	echo "kernel $maj.$min lacks device-dax"
+	exit $rc
+fi
 
 set -e -x
 trap 'err $LINENO' ERR

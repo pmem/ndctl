@@ -23,6 +23,15 @@ err() {
 	exit $rc
 }
 
+eval $(uname -r | awk -F. '{print "maj="$1 ";" "min="$2}')
+if [ $maj -lt 4 ]; then
+	echo "kernel $maj.$min lacks dax error handling"
+	exit $rc
+elif [ $maj -eq 4 -a $min -lt 7 ]; then
+	echo "kernel $maj.$min lacks dax error handling"
+	exit $rc
+fi
+
 set -e
 mkdir -p $MNT
 trap 'err $LINENO' ERR
