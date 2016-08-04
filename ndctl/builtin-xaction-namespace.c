@@ -210,8 +210,13 @@ static int set_defaults(enum namespace_action mode)
 			error("'pmem' namespaces do not support setting 'sector size'\n");
 			rc = -EINVAL;
 		}
-	} else if (!param.reconfig)
-		param.sector_size = "4096";
+	} else if (!param.reconfig
+			&& ((param.type && strcmp(param.type, "blk") == 0)
+				|| (param.mode
+					&& strcmp(param.mode, "safe") == 0))) {
+			/* default sector size for blk-type or safe-mode */
+			param.sector_size = "4096";
+	}
 
 	return rc;
 }
@@ -415,14 +420,44 @@ static int validate_namespace_options(struct ndctl_region *region,
 		p->mode = ndctl_namespace_get_mode(ndns);
 
 	if (param.sector_size) {
-		p->sector_size = parse_size64(param.sector_size);
+		struct ndctl_btt *btt;
+		int num, i;
 
-		if (ndns && p->mode != NDCTL_NS_MODE_SAFE
-				&& ndctl_namespace_get_type(ndns)
-				== ND_DEVICE_NAMESPACE_PMEM) {
-			debug("%s: does not support sector_size modification\n",
-					ndctl_namespace_get_devname(ndns));
+		p->sector_size = parse_size64(param.sector_size);
+		btt = ndctl_region_get_btt_seed(region);
+		if (p->mode == NDCTL_NS_MODE_SAFE) {
+			if (!btt) {
+				debug("%s: does not support 'sector' mode\n",
+						ndctl_region_get_devname(region));
 				return -EINVAL;
+			}
+			num = ndctl_btt_get_num_sector_sizes(btt);
+			for (i = 0; i < num; i++)
+				if (ndctl_btt_get_supported_sector_size(btt, i)
+						== p->sector_size)
+					break;
+			if (i >= num) {
+				debug("%s: does not support btt sector_size %lu\n",
+						ndctl_region_get_devname(region),
+						p->sector_size);
+				return -EINVAL;
+			}
+		} else {
+			struct ndctl_namespace *seed = ndns;
+
+			if (!seed)
+				seed = ndctl_region_get_namespace_seed(region);
+			num = ndctl_namespace_get_num_sector_sizes(seed);
+			for (i = 0; i < num; i++)
+				if (ndctl_namespace_get_supported_sector_size(seed, i)
+						== p->sector_size)
+					break;
+			if (i >= num) {
+				debug("%s: does not support namespace sector_size %lu\n",
+						ndctl_region_get_devname(region),
+						p->sector_size);
+				return -EINVAL;
+			}
 		}
 	} else if (ndns) {
 		struct ndctl_btt *btt = ndctl_namespace_get_btt(ndns);
