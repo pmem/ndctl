@@ -25,12 +25,11 @@
 #include <linux/version.h>
 #include <ndctl/libndctl.h>
 
-static int emit_e820_device(int loglevel, struct ndctl_test *test)
+struct ndctl_namespace *ndctl_get_test_dev(struct ndctl_ctx *ctx)
 {
-	int err, fd;
 	char path[256];
 	const char *bdev;
-	struct ndctl_ctx *ctx;
+	int fd, rc = -ENXIO;
 	struct ndctl_bus *bus;
 	struct ndctl_dax *dax;
 	struct ndctl_pfn *pfn;
@@ -38,15 +37,6 @@ static int emit_e820_device(int loglevel, struct ndctl_test *test)
 	struct ndctl_namespace *ndns;
 	enum ndctl_namespace_mode mode;
 
-	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 3, 0)))
-		return 77;
-
-	err = ndctl_new(&ctx);
-	if (err < 0)
-		return err;
-
-	ndctl_set_log_priority(ctx, loglevel);
-	err = -ENXIO;
 	bus = ndctl_bus_get_by_provider(ctx, "e820");
 	if (!bus)
 		goto out;
@@ -85,16 +75,38 @@ static int emit_e820_device(int loglevel, struct ndctl_test *test)
 	fd = open(path, O_RDWR | O_EXCL);
 	if (fd < 0)
 		goto out;
-	err = 0;
+	close(fd);
+	rc = 0;
 
  out:
-	if (err) {
+	return rc ? NULL : ndns;
+}
+
+static int emit_e820_device(int loglevel, struct ndctl_test *test)
+{
+	int err;
+	struct ndctl_ctx *ctx;
+	struct ndctl_namespace *ndns;
+
+	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 3, 0)))
+		return 77;
+
+	err = ndctl_new(&ctx);
+	if (err < 0)
+		return err;
+
+	ndctl_set_log_priority(ctx, loglevel);
+
+	ndns = ndctl_get_test_dev(ctx);
+	if (!ndns) {
 		fprintf(stderr, "%s: failed to find usable victim device\n",
 				__func__);
 		ndctl_test_skip(test);
 		err = 77;
-	} else
+	} else {
 		fprintf(stdout, "%s\n", ndctl_namespace_get_devname(ndns));
+		err = 0;
+	}
 	ndctl_unref(ctx);
 	return err;
 }
