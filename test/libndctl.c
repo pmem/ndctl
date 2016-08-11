@@ -623,9 +623,9 @@ static int validate_dax(struct ndctl_dax *dax)
 	const char *devname = ndctl_namespace_get_devname(ndns);
 	struct ndctl_region *region = ndctl_dax_get_region(dax);
 	struct daxctl_region *dax_region = NULL;
+	int rc = -ENXIO, fd, count, dax_expect;
+	struct daxctl_dev *dax_dev, *seed;
 	uuid_t uuid, region_uuid;
-	struct daxctl_dev *dax_dev;
-	int rc = -ENXIO, fd, count;
 	char devpath[50];
 
 	dax_region = ndctl_dax_get_daxctl_region(dax);
@@ -663,7 +663,8 @@ static int validate_dax(struct ndctl_dax *dax)
 		goto out;
 	}
 
-	if (daxctl_dev_get_size(dax_dev) <= 0) {
+	seed = daxctl_region_get_dev_seed(dax_region);
+	if (dax_dev != seed && daxctl_dev_get_size(dax_dev) <= 0) {
 		fprintf(stderr, "%s: expected non-zero sized dax device\n",
 				devname);
 		goto out;
@@ -680,9 +681,11 @@ static int validate_dax(struct ndctl_dax *dax)
 	count = 0;
 	daxctl_dev_foreach(dax_region, dax_dev)
 		count++;
-	if (count != 1) {
-		fprintf(stderr, "%s: expected 1 dax device, got %d\n",
-				devname, count);
+	dax_expect = seed ? 2 : 1;
+	if (count != dax_expect) {
+		fprintf(stderr, "%s: expected %d dax device%s, got %d\n",
+				devname, dax_expect, dax_expect == 1 ? "" : "s",
+				count);
 		rc = -ENXIO;
 		goto out;
 	}
