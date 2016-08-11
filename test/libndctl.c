@@ -2505,10 +2505,9 @@ static do_test_fn do_test[] = {
 	do_test1,
 };
 
-int test_libndctl(int loglevel, struct ndctl_test *test)
+int test_libndctl(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx)
 {
 	unsigned int i;
-	struct ndctl_ctx *ctx;
 	struct kmod_module *mod;
 	struct kmod_ctx *kmod_ctx;
 	struct daxctl_ctx *daxctl_ctx;
@@ -2517,17 +2516,13 @@ int test_libndctl(int loglevel, struct ndctl_test *test)
 	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 2, 0)))
 		return 77;
 
-	err = ndctl_new(&ctx);
-	if (err < 0)
-		exit(EXIT_FAILURE);
-
 	ndctl_set_log_priority(ctx, loglevel);
 	daxctl_ctx = ndctl_get_daxctl_ctx(ctx);
 	daxctl_set_log_priority(daxctl_ctx, loglevel);
 
 	kmod_ctx = kmod_new(NULL, NULL);
 	if (!kmod_ctx)
-		goto err_kmod;
+		return result;
 	kmod_set_log_priority(kmod_ctx, loglevel);
 
 	err = kmod_module_new_from_name(kmod_ctx, NFIT_TEST_MODULE, &mod);
@@ -2558,14 +2553,13 @@ int test_libndctl(int loglevel, struct ndctl_test *test)
 
  err_module:
 	kmod_unref(kmod_ctx);
- err_kmod:
-	ndctl_unref(ctx);
 	return result;
 }
 
 int __attribute__((weak)) main(int argc, char *argv[])
 {
 	struct ndctl_test *test = ndctl_test_new(0);
+	struct ndctl_ctx *ctx;
 	int rc;
 
 	if (!test) {
@@ -2573,6 +2567,10 @@ int __attribute__((weak)) main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	rc = test_libndctl(LOG_DEBUG, test);
+	rc = ndctl_new(&ctx);
+	if (rc)
+		return ndctl_test_result(test, rc);
+	rc = test_libndctl(LOG_DEBUG, test, ctx);
+	ndctl_unref(ctx);
 	return ndctl_test_result(test, rc);
 }

@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <builtin.h>
+#include <ndctl/libndctl.h>
 #include <ccan/array_size/array_size.h>
 
 #include <util/strbuf.h>
@@ -16,7 +17,7 @@ const char ndctl_more_info_string[] =
 	"See 'ndctl help COMMAND' for more information on a specific command.\n"
 	" ndctl --list-cmds to see all available commands";
 
-static int cmd_version(int argc, const char **argv)
+static int cmd_version(int argc, const char **argv, struct ndctl_ctx *ctx)
 {
 	printf("%s\n", VERSION);
 	return 0;
@@ -101,8 +102,18 @@ static int run_builtin(struct cmd_struct *p, int argc, const char **argv)
 {
 	int status;
 	struct stat st;
+	struct ndctl_ctx *ctx;
 
-	status = p->fn(argc, argv);
+	/*
+	 * Yes, establishing the ndctl context here makes this code less
+	 * generic, but it allows for unit testing the top level
+	 * interface to the built-in commands.
+	 */
+	status = ndctl_new(&ctx);
+	if (status)
+		return status;
+	status = p->fn(argc, argv, ctx);
+	ndctl_unref(ctx);
 
 	if (status)
 		return status & 0xff;

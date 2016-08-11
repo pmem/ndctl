@@ -684,20 +684,15 @@ static int namespace_reconfig(struct ndctl_region *region,
 }
 
 static int do_xaction_namespace(const char *namespace,
-		enum namespace_action action)
+		enum namespace_action action, struct ndctl_ctx *ctx)
 {
 	struct ndctl_namespace *ndns, *_n;
 	int rc = -ENXIO, success = 0;
 	struct ndctl_region *region;
 	const char *ndns_name;
-	struct ndctl_ctx *ctx;
 	struct ndctl_bus *bus;
 
 	if (!namespace && action != ACTION_CREATE)
-		return rc;
-
-	rc = ndctl_new(&ctx);
-	if (rc < 0)
 		return rc;
 
 	if (verbose)
@@ -732,7 +727,7 @@ static int do_xaction_namespace(const char *namespace,
 				}
 				if (rc == 0)
 					rc = 1;
-				goto done;
+				return rc;
 			}
 			ndctl_namespace_foreach_safe(region, ndns, _n) {
 				ndns_name = ndctl_namespace_get_devname(ndns);
@@ -753,9 +748,8 @@ static int do_xaction_namespace(const char *namespace,
 				case ACTION_CREATE:
 					rc = namespace_reconfig(region, ndns);
 					if (rc < 0)
-						goto done;
-					rc = 1;
-					goto done;
+						return rc;
+					return 1;
 				}
 				if (rc >= 0)
 					success++;
@@ -764,17 +758,15 @@ static int do_xaction_namespace(const char *namespace,
 	}
 
 	rc = success;
- done:
-	ndctl_unref(ctx);
 	return rc;
 }
 
-int cmd_disable_namespace(int argc, const char **argv)
+int cmd_disable_namespace(int argc, const char **argv, struct ndctl_ctx *ctx)
 {
 	char *xable_usage = "ndctl disable-namespace <namespace> [<options>]";
 	const char *namespace = parse_namespace_options(argc, argv,
 			ACTION_DISABLE, base_options, xable_usage);
-	int disabled = do_xaction_namespace(namespace, ACTION_DISABLE);
+	int disabled = do_xaction_namespace(namespace, ACTION_DISABLE, ctx);
 
 	if (disabled < 0) {
 		fprintf(stderr, "error disabling namespaces: %s\n",
@@ -790,12 +782,12 @@ int cmd_disable_namespace(int argc, const char **argv)
 	}
 }
 
-int cmd_enable_namespace(int argc, const char **argv)
+int cmd_enable_namespace(int argc, const char **argv, struct ndctl_ctx *ctx)
 {
 	char *xable_usage = "ndctl enable-namespace <namespace> [<options>]";
 	const char *namespace = parse_namespace_options(argc, argv,
 			ACTION_ENABLE, base_options, xable_usage);
-	int enabled = do_xaction_namespace(namespace, ACTION_ENABLE);
+	int enabled = do_xaction_namespace(namespace, ACTION_ENABLE, ctx);
 
 	if (enabled < 0) {
 		fprintf(stderr, "error enabling namespaces: %s\n",
@@ -811,12 +803,12 @@ int cmd_enable_namespace(int argc, const char **argv)
 	}
 }
 
-int cmd_create_namespace(int argc, const char **argv)
+int cmd_create_namespace(int argc, const char **argv, struct ndctl_ctx *ctx)
 {
 	char *xable_usage = "ndctl create-namespace [<options>]";
 	const char *namespace = parse_namespace_options(argc, argv,
 			ACTION_CREATE, create_options, xable_usage);
-	int created = do_xaction_namespace(namespace, ACTION_CREATE);
+	int created = do_xaction_namespace(namespace, ACTION_CREATE, ctx);
 
 	if (created < 1 && param.do_scan) {
 		/*
@@ -826,7 +818,7 @@ int cmd_create_namespace(int argc, const char **argv)
 		memset(&param, 0, sizeof(param));
 		param.type = "blk";
 		set_defaults(ACTION_CREATE);
-		created = do_xaction_namespace(NULL, ACTION_CREATE);
+		created = do_xaction_namespace(NULL, ACTION_CREATE, ctx);
 	}
 
 	if (created < 0 || (!namespace && created < 1)) {
@@ -841,12 +833,12 @@ int cmd_create_namespace(int argc, const char **argv)
 	return 0;
 }
 
-int cmd_destroy_namespace(int argc , const char **argv)
+int cmd_destroy_namespace(int argc , const char **argv, struct ndctl_ctx *ctx)
 {
 	char *xable_usage = "ndctl destroy-namespace <namespace> [<options>]";
 	const char *namespace = parse_namespace_options(argc, argv,
 			ACTION_DESTROY, destroy_options, xable_usage);
-	int destroyed = do_xaction_namespace(namespace, ACTION_DESTROY);
+	int destroyed = do_xaction_namespace(namespace, ACTION_DESTROY, ctx);
 
 	if (destroyed < 0) {
 		fprintf(stderr, "error destroying namespaces: %s\n",

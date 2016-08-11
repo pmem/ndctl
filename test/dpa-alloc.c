@@ -290,9 +290,8 @@ static int do_test(struct ndctl_ctx *ctx, struct ndctl_test *test)
 	return 0;
 }
 
-int test_dpa_alloc(int loglevel, struct ndctl_test *test)
+int test_dpa_alloc(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx)
 {
-	struct ndctl_ctx *ctx;
 	struct kmod_module *mod;
 	struct kmod_ctx *kmod_ctx;
 	int err, result = EXIT_FAILURE;
@@ -300,15 +299,11 @@ int test_dpa_alloc(int loglevel, struct ndctl_test *test)
 	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 2, 0)))
 		return 77;
 
-	err = ndctl_new(&ctx);
-	if (err < 0)
-		exit(EXIT_FAILURE);
-
 	ndctl_set_log_priority(ctx, loglevel);
 
 	kmod_ctx = kmod_new(NULL, NULL);
 	if (!kmod_ctx)
-		goto err_kmod;
+		return result;
 
 	err = kmod_module_new_from_name(kmod_ctx, NFIT_TEST_MODULE, &mod);
 	if (err < 0)
@@ -331,14 +326,13 @@ int test_dpa_alloc(int loglevel, struct ndctl_test *test)
 
  err_module:
 	kmod_unref(kmod_ctx);
- err_kmod:
-	ndctl_unref(ctx);
 	return result;
 }
 
 int __attribute__((weak)) main(int argc, char *argv[])
 {
 	struct ndctl_test *test = ndctl_test_new(0);
+	struct ndctl_ctx *ctx;
 	int rc;
 
 	if (!test) {
@@ -346,6 +340,11 @@ int __attribute__((weak)) main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	rc = test_dpa_alloc(LOG_DEBUG, test);
+	rc = ndctl_new(&ctx);
+	if (rc)
+		return ndctl_test_result(test, rc);
+
+	rc = test_dpa_alloc(LOG_DEBUG, test, ctx);
+	ndctl_unref(ctx);
 	return ndctl_test_result(test, rc);
 }

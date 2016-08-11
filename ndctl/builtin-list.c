@@ -188,7 +188,7 @@ static int num_list_flags(void)
 	return list.buses + list.dimms + list.regions + list.namespaces;
 }
 
-int cmd_list(int argc, const char **argv)
+int cmd_list(int argc, const char **argv, struct ndctl_ctx *ctx)
 {
 	const struct option options[] = {
 		OPT_STRING('b', "bus", &param.bus, "bus-id", "filter by bus"),
@@ -218,10 +218,9 @@ int cmd_list(int argc, const char **argv)
 	struct json_object *jregions = NULL;
 	struct json_object *jdimms = NULL;
 	struct json_object *jbuses = NULL;
-	struct ndctl_ctx *ctx;
 	struct ndctl_bus *bus;
 	unsigned int type = 0;
-	int i, rc;
+	int i;
 
         argc = parse_options(argc, argv, options, u, 0);
 	for (i = 0; i < argc; i++)
@@ -251,10 +250,6 @@ int cmd_list(int argc, const char **argv)
 		else
 			type = ND_DEVICE_REGION_BLK;
 	}
-
-	rc = ndctl_new(&ctx);
-	if (rc < 0)
-		return rc;
 
 	ndctl_bus_foreach(ctx, bus) {
 		struct json_object *jbus = NULL;

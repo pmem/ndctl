@@ -214,11 +214,11 @@ static int ns_do_io(const char *bdev)
 
 static const char *comm = "test-blk-namespaces";
 
-int test_blk_namespaces(int log_level, struct ndctl_test *test)
+int test_blk_namespaces(int log_level, struct ndctl_test *test,
+		struct ndctl_ctx *ctx)
 {
-	int rc;
 	char bdev[50];
-	struct ndctl_ctx *ctx;
+	int rc = -ENXIO;
 	struct ndctl_bus *bus;
 	struct ndctl_dimm *dimm;
 	struct kmod_module *mod = NULL;
@@ -228,10 +228,6 @@ int test_blk_namespaces(int log_level, struct ndctl_test *test)
 
 	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 2, 0)))
 		return 77;
-
-	rc = ndctl_new(&ctx);
-	if (rc < 0)
-		return rc;
 
 	ndctl_set_log_priority(ctx, log_level);
 
@@ -250,7 +246,7 @@ int test_blk_namespaces(int log_level, struct ndctl_test *test)
 		fprintf(stderr, "ACPI.NFIT unavailable falling back to nfit_test\n");
 		kmod_ctx = kmod_new(NULL, NULL);
 		if (!kmod_ctx)
-			goto err_kmod;
+			return rc;
 		kmod_set_log_priority(kmod_ctx, log_level);
 
 		rc = kmod_module_new_from_name(kmod_ctx, "nfit_test", &mod);
@@ -282,7 +278,7 @@ int test_blk_namespaces(int log_level, struct ndctl_test *test)
                 if (rc < 0) {
                         fprintf(stderr, "failed to zero %s\n",
                                         ndctl_dimm_get_devname(dimm));
-                        return rc;
+			goto err_module;
                 }
         }
 
@@ -364,14 +360,13 @@ int test_blk_namespaces(int log_level, struct ndctl_test *test)
  err_module:
 	if (kmod_ctx)
 		kmod_unref(kmod_ctx);
- err_kmod:
-	ndctl_unref(ctx);
 	return rc;
 }
 
 int __attribute__((weak)) main(int argc, char *argv[])
 {
 	struct ndctl_test *test = ndctl_test_new(0);
+	struct ndctl_ctx *ctx;
 	int rc;
 
 	comm = argv[0];
@@ -380,6 +375,11 @@ int __attribute__((weak)) main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	rc = test_blk_namespaces(LOG_DEBUG, test);
+	rc = ndctl_new(&ctx);
+	if (rc)
+		return ndctl_test_result(test, rc);
+
+	rc = test_blk_namespaces(LOG_DEBUG, test, ctx);
+	ndctl_unref(ctx);
 	return ndctl_test_result(test, rc);
 }

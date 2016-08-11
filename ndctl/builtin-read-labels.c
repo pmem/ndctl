@@ -315,7 +315,7 @@ static int do_read_dimm(FILE *f_out, struct ndctl_dimm *dimm, const char **argv,
 	return rc;
 }
 
-int cmd_read_labels(int argc, const char **argv)
+int cmd_read_labels(int argc, const char **argv, struct ndctl_ctx *ctx)
 {
 	const char *nmem_bus = NULL, *output = NULL;
 	bool verbose = false, json = false;
@@ -334,7 +334,6 @@ int cmd_read_labels(int argc, const char **argv)
 	};
 	struct json_object *jdimms = NULL;
 	struct ndctl_dimm *dimm;
-	struct ndctl_ctx *ctx;
 	struct ndctl_bus *bus;
 	int i, rc, count = 0, err = 0;
 	FILE *f_out = NULL;
@@ -373,10 +372,6 @@ int cmd_read_labels(int argc, const char **argv)
 		}
 	}
 
-	rc = ndctl_new(&ctx);
-	if (rc < 0)
-		goto out;
-
         ndctl_bus_foreach(ctx, bus) {
 		if (!util_bus_filter(bus, nmem_bus))
 			continue;
@@ -395,8 +390,6 @@ int cmd_read_labels(int argc, const char **argv)
 	if (jdimms)
 
 	fprintf(stderr, "read %d nmem%s\n", count, count > 1 ? "s" : "");
-
-	ndctl_unref(ctx);
 
  out:
 	if (jdimms) {

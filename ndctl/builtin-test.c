@@ -14,7 +14,7 @@ static char *result(int rc)
 		return "PASS";
 }
 
-int cmd_test(int argc, const char **argv)
+int cmd_test(int argc, const char **argv, struct ndctl_ctx *ctx)
 {
 	struct ndctl_test *test;
 	int loglevel = LOG_DEBUG, i, rc;
@@ -44,17 +44,17 @@ int cmd_test(int argc, const char **argv)
 	else
 		test = ndctl_test_new(0);
 
-	rc = test_libndctl(loglevel, test);
+	rc = test_libndctl(loglevel, test, ctx);
 	fprintf(stderr, "test-libndctl: %s\n", result(rc));
 	if (rc && rc != 77)
 		return rc;
 
-	rc = test_dpa_alloc(loglevel, test);
+	rc = test_dpa_alloc(loglevel, test, ctx);
 	fprintf(stderr, "test-dpa-alloc: %s\n", result(rc));
 	if (rc && rc != 77)
 		return rc;
 
-	rc = test_parent_uuid(loglevel, test);
+	rc = test_parent_uuid(loglevel, test, ctx);
 	fprintf(stderr, "test-parent-uuid: %s\n", result(rc));
 
 	return ndctl_test_result(test, rc);

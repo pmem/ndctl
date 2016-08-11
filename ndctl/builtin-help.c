@@ -137,7 +137,7 @@ static int show_man_page(const char *ndctl_cmd)
 	return -1;
 }
 
-int cmd_help(int argc, const char **argv)
+int cmd_help(int argc, const char **argv, struct ndctl_ctx *ctx)
 {
 	const char * const builtin_help_subcommands[] = {
 		"enable-region", "disable-region", "zero-labels",

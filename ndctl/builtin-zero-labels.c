@@ -29,7 +29,7 @@ static int do_zero_dimm(struct ndctl_dimm *dimm, const char **argv, int argc,
 	return rc;
 }
 
-int cmd_zero_labels(int argc, const char **argv)
+int cmd_zero_labels(int argc, const char **argv, struct ndctl_ctx *ctx)
 {
 	const char *nmem_bus = NULL;
 	bool verbose = false;
@@ -44,7 +44,6 @@ int cmd_zero_labels(int argc, const char **argv)
 		NULL
 	};
 	struct ndctl_dimm *dimm;
-	struct ndctl_ctx *ctx;
 	struct ndctl_bus *bus;
 	int i, rc, count, err = 0;
 
@@ -64,10 +63,6 @@ int cmd_zero_labels(int argc, const char **argv)
 		}
 	}
 
-	rc = ndctl_new(&ctx);
-	if (rc < 0)
-		return rc;
-
 	count = 0;
         ndctl_bus_foreach(ctx, bus) {
 		if (!util_bus_filter(bus, nmem_bus))
@@ -84,8 +79,6 @@ int cmd_zero_labels(int argc, const char **argv)
 	rc = err;
 
 	fprintf(stderr, "zeroed %d nmem%s\n", count, count > 1 ? "s" : "");
-
-	ndctl_unref(ctx);
 
 	/*
 	 * 0 if all dimms zeroed, count if at least 1 dimm zeroed, < 0

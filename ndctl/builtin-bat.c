@@ -4,7 +4,7 @@
 #include <limits.h>
 #include <util/parse-options.h>
 
-int cmd_bat(int argc, const char **argv)
+int cmd_bat(int argc, const char **argv, struct ndctl_ctx *ctx)
 {
 	int loglevel = LOG_DEBUG, i, rc;
 	struct ndctl_test *test;
@@ -39,12 +39,12 @@ int cmd_bat(int argc, const char **argv)
 		return EXIT_FAILURE;
 	}
 
-	rc = test_blk_namespaces(loglevel, test);
+	rc = test_blk_namespaces(loglevel, test, ctx);
 	fprintf(stderr, "test_blk_namespaces: %s\n", rc ? "FAIL" : "PASS");
 	if (rc && rc != 77)
 		return rc;
 
-	rc = test_pmem_namespaces(loglevel, test);
+	rc = test_pmem_namespaces(loglevel, test, ctx);
 	fprintf(stderr, "test_pmem_namespaces: %s\n", rc ? "FAIL" : "PASS");
 	return ndctl_test_result(test, rc);
 }
