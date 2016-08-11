@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <syslog.h>
 #include <string.h>
+#include <signal.h>
+#include <setjmp.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
 #include <sys/types.h>
@@ -16,6 +18,8 @@
 
 #include <ndctl/builtin.h>
 #include <test.h>
+
+static sigjmp_buf sj_env;
 
 static int create_namespace(int argc, const char **argv, struct ndctl_ctx *ctx)
 {
@@ -47,15 +51,30 @@ static int setup_device_dax(struct ndctl_namespace *ndns)
 	return create_namespace(argc, argv, ctx);
 }
 
+static void sigbus(int sig, siginfo_t *siginfo, void *d)
+{
+	siglongjmp(sj_env, 1);
+}
+
 static int test_device_dax(int loglevel, struct ndctl_test *test,
 		struct ndctl_ctx *ctx)
 {
 	int fd, rc, *p;
 	char *buf, path[100];
+	struct sigaction act;
 	struct ndctl_dax *dax;
 	struct daxctl_dev *dev;
 	struct ndctl_namespace *ndns;
 	struct daxctl_region *dax_region;
+
+	memset (&act, 0, sizeof(act));
+	act.sa_sigaction = sigbus;
+	act.sa_flags = SA_SIGINFO;
+
+	if (sigaction(SIGBUS, &act, 0)) {
+		perror("sigaction");
+		return 1;
+	}
 
 	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 7, 0)))
 		return 77;
@@ -105,8 +124,23 @@ static int test_device_dax(int loglevel, struct ndctl_test *test,
 		return rc;
 	}
 
+	/* test fault after device-dax instance disabled */
+	if (sigsetjmp(sj_env, 1)) {
+		/* got sigbus, success */
+		close(fd);
+		return 0;
+	}
+
+	rc = EXIT_SUCCESS;
+	*p = 0xff;
+	if (ndctl_test_attempt(test, KERNEL_VERSION(4, 9, 0))) {
+		/* after 4.9 this test will properly get sigbus above */
+		rc = EXIT_FAILURE;
+		fprintf(stderr, "%s: failed to unmap after reset\n",
+				daxctl_dev_get_devname(dev));
+	}
 	close(fd);
-	return 0;
+	return rc;
 }
 
 int __attribute__((weak)) main(int argc, char *argv[])
