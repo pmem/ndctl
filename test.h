@@ -12,6 +12,7 @@ int __ndctl_test_attempt(struct ndctl_test *test, unsigned int kver,
 void __ndctl_test_skip(struct ndctl_test *test, const char *caller, int line);
 #define ndctl_test_skip(t) __ndctl_test_skip(t, __func__, __LINE__)
 struct ndctl_namespace *ndctl_get_test_dev(struct ndctl_ctx *ctx);
+void builtin_xaction_namespace_reset(void);
 
 struct ndctl_ctx;
 int test_parent_uuid(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx);

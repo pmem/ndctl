@@ -51,6 +51,18 @@ static struct parameters {
 	const char *sector_size;
 } param;
 
+void builtin_xaction_namespace_reset(void)
+{
+	/*
+	 * Initialize parameter data for the unit test case where
+	 * multiple calls to cmd_<action>_namespace() are made without
+	 * an intervening exit().
+	 */
+	verbose = false;
+	force = false;
+	memset(&param, 0, sizeof(param));
+}
+
 #define NSLABEL_NAME_LEN 64
 struct parsed_parameters {
 	enum ndctl_pfn_loc loc;
