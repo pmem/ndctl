@@ -18,10 +18,13 @@
 /**
  * struct daxctl_region - container for dax_devices
  */
+#define REGION_BUF_SIZE 50
 struct daxctl_region {
 	int id;
 	uuid_t uuid;
 	int refcount;
+	size_t buf_len;
+	void *region_buf;
 	int devices_init;
 	char *region_path;
 	struct daxctl_ctx *ctx;

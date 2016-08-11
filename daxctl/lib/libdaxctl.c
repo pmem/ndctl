@@ -191,10 +191,11 @@ DAXCTL_EXPORT void daxctl_region_unref(struct daxctl_region *region)
 		return;
 
 	ctx = region->ctx;
-	info(ctx, "region%d released\n", region->id);
+	dbg(ctx, "%s: %s\n", __func__, daxctl_region_get_devname(region));
 	list_for_each_safe(&region->devices, dev, _d, list)
 		free_dev(dev, &region->devices);
 	free(region->region_path);
+	free(region->region_buf);
 	free(region);
 }
 
@@ -208,7 +209,6 @@ DAXCTL_EXPORT struct daxctl_region *daxctl_new_region(struct daxctl_ctx *ctx,
 		int id, uuid_t uuid, const char *path)
 {
 	struct daxctl_region *region;
-	char *region_path;
 
 	region = calloc(1, sizeof(*region));
 	if (!region)
@@ -217,15 +217,17 @@ DAXCTL_EXPORT struct daxctl_region *daxctl_new_region(struct daxctl_ctx *ctx,
 	region->id = id;
 	region->refcount = 1;
 	uuid_copy(region->uuid, uuid);
-	if (asprintf(&region_path, "%s/dax", path) < 0)
-		region_path = NULL;
-	region->region_path = region_path;
+	region->region_path = strdup(path);
 	list_head_init(&region->devices);
+	region->buf_len = strlen(region->region_path) + REGION_BUF_SIZE;
+	region->region_buf = calloc(1, region->buf_len);
 
-	if (!region->region_path) {
+	if (!region->region_path || !region->region_buf) {
 		daxctl_region_unref(region);
 		region = NULL;
 	}
+
+	dbg(ctx, "%s: %s\n", __func__, daxctl_region_get_devname(region));
 
 	return region;
 }
@@ -295,18 +297,53 @@ DAXCTL_EXPORT int daxctl_region_get_id(struct daxctl_region *region)
 	return region->id;
 }
 
+DAXCTL_EXPORT const char *daxctl_region_get_devname(struct daxctl_region *region)
+{
+        return devpath_to_devname(region->region_path);
+}
+
+DAXCTL_EXPORT unsigned long long daxctl_region_get_available_size(
+		struct daxctl_region *region)
+{
+	struct daxctl_ctx *ctx = daxctl_region_get_ctx(region);
+	char *path = region->region_buf;
+	char buf[SYSFS_ATTR_SIZE], *end;
+	int len = region->buf_len;
+	unsigned long long avail;
+
+	if (snprintf(path, len, "%s/dax_region/available_size",
+				region->region_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				daxctl_region_get_devname(region));
+		return 0;
+	}
+
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		return 0;
+
+	avail = strtoull(buf, &end, 0);
+	if (buf[0] && *end == '\0')
+		return avail;
+	return 0;
+}
+
 static void dax_devices_init(struct daxctl_region *region)
 {
 	struct daxctl_ctx *ctx = daxctl_region_get_ctx(region);
 	char daxdev_fmt[50];
+	char *region_path;
 
 	if (region->devices_init)
 		return;
 
 	region->devices_init = 1;
 	sprintf(daxdev_fmt, "dax%d.", region->id);
-	sysfs_device_parse(ctx, region->region_path, daxdev_fmt, region,
-			add_dax_dev);
+	if (asprintf(&region_path, "%s/dax", region->region_path) < 0)
+		region_path = NULL;
+	if (region_path)
+		sysfs_device_parse(ctx, region_path, daxdev_fmt, region,
+				add_dax_dev);
+	free(region_path);
 }
 
 DAXCTL_EXPORT struct daxctl_dev *daxctl_dev_get_first(struct daxctl_region *region)

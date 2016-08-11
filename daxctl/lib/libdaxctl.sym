@@ -30,3 +30,9 @@ global:
 	daxctl_dev_get_minor;
 	daxctl_dev_get_size;
 } LIBNDCTL_1;
+
+LIBDAXCTL_3 {
+global:
+	daxctl_region_get_available_size;
+	daxctl_region_get_devname;
+} LIBNDCTL_2;
