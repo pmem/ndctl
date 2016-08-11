@@ -20,7 +20,7 @@ TESTS +=\
 	pmem-ns \
 	dax-dev \
 	dax.sh \
-	device-dax.sh \
+	device-dax \
 	mmap.sh
 
 check_PROGRAMS +=\
@@ -57,4 +57,13 @@ dax_dev_LDADD = $(LIBNDCTL_LIB)
 dax_pmd_SOURCES = dax-pmd.c
 mmap_SOURCES = mmap.c
 dax_errors_SOURCES = dax-errors.c
-device_dax_SOURCES = device-dax.c
+device_dax_SOURCES = \
+		device-dax.c \
+		dax-dev.c \
+		core.c \
+		../ndctl/builtin-xaction-namespace.c \
+		../ndctl/util/json.c
+device_dax_LDADD = \
+		$(LIBNDCTL_LIB) \
+		$(JSON_LIBS) \
+		../libutil.a
