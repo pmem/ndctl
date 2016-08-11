@@ -44,6 +44,7 @@ struct daxctl_ctx *daxctl_region_get_ctx(struct daxctl_region *region);
 unsigned long long daxctl_region_get_available_size(
 		struct daxctl_region *region);
 const char *daxctl_region_get_devname(struct daxctl_region *region);
+struct daxctl_dev *daxctl_region_get_dev_seed(struct daxctl_region *region);
 
 struct daxctl_dev;
 struct daxctl_dev *daxctl_dev_get_first(struct daxctl_region *region);

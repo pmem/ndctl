@@ -327,6 +327,30 @@ DAXCTL_EXPORT unsigned long long daxctl_region_get_available_size(
 	return 0;
 }
 
+DAXCTL_EXPORT struct daxctl_dev *daxctl_region_get_dev_seed(
+		struct daxctl_region *region)
+{
+	struct daxctl_ctx *ctx = daxctl_region_get_ctx(region);
+	char *path = region->region_buf;
+	int len = region->buf_len;
+	char buf[SYSFS_ATTR_SIZE];
+	struct daxctl_dev *dev;
+
+	if (snprintf(path, len, "%s/dax_region/seed", region->region_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				daxctl_region_get_devname(region));
+		return NULL;
+	}
+
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		return NULL;
+
+	daxctl_dev_foreach(region, dev)
+		if (strcmp(buf, daxctl_dev_get_devname(dev)) == 0)
+			return dev;
+	return NULL;
+}
+
 static void dax_devices_init(struct daxctl_region *region)
 {
 	struct daxctl_ctx *ctx = daxctl_region_get_ctx(region);
