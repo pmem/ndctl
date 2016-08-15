@@ -2254,8 +2254,11 @@ static int check_commands(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 	};
 	unsigned int i, rc = 0;
 
-	/* the kernel did not start emulating smart data until 4.7 */
-	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 7, 0)))
+	/*
+	 * The kernel did not start emulating v1.2 namespace spec smart data
+	 * until 4.9.
+	 */
+	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 9, 0)))
 		dimm_commands &= ~((1 << ND_CMD_SMART)
 				| (1 << ND_CMD_SMART_THRESHOLD));
 
