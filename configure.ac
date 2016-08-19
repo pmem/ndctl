@@ -33,23 +33,6 @@ AC_PREFIX_DEFAULT([/usr])
 AC_PROG_SED
 AC_PROG_MKDIR_P
 
-AC_ARG_WITH([bash-completion-dir],
-	AS_HELP_STRING([--with-bash-completion-dir[=PATH]],
-		[Install the bash auto-completion script in this directory. @<:@default=yes@:>@]),
-	[],
-	[with_bash_completion_dir=yes])
-
-if test "x$with_bash_completion_dir" = "xyes"; then
-	PKG_CHECK_MODULES([BASH_COMPLETION], [bash-completion >= 2.0],
-		[BASH_COMPLETION_DIR="`pkg-config --variable=completionsdir bash-completion`"],
-		[BASH_COMPLETION_DIR="$datadir/bash-completion/completions"])
-else
-	BASH_COMPLETION_DIR="$with_bash_completion_dir"
-fi
-
-AC_SUBST([BASH_COMPLETION_DIR])
-AM_CONDITIONAL([ENABLE_BASH_COMPLETION],[test "x$with_bash_completion_dir" != "xno"])
-
 AC_ARG_ENABLE([docs],
         AS_HELP_STRING([--disable-docs],
 	[disable documentation build @<:@default=enabled@:>@]),
@@ -110,6 +93,23 @@ PKG_CHECK_MODULES([KMOD], [libkmod])
 PKG_CHECK_MODULES([UDEV], [libudev])
 PKG_CHECK_MODULES([UUID], [uuid])
 PKG_CHECK_MODULES([JSON], [json-c])
+
+AC_ARG_WITH([bash-completion-dir],
+	AS_HELP_STRING([--with-bash-completion-dir[=PATH]],
+		[Install the bash auto-completion script in this directory. @<:@default=yes@:>@]),
+	[],
+	[with_bash_completion_dir=yes])
+
+if test "x$with_bash_completion_dir" = "xyes"; then
+	PKG_CHECK_MODULES([BASH_COMPLETION], [bash-completion >= 2.0],
+		[BASH_COMPLETION_DIR="`pkg-config --variable=completionsdir bash-completion`"],
+		[BASH_COMPLETION_DIR="$datadir/bash-completion/completions"])
+else
+	BASH_COMPLETION_DIR="$with_bash_completion_dir"
+fi
+
+AC_SUBST([BASH_COMPLETION_DIR])
+AM_CONDITIONAL([ENABLE_BASH_COMPLETION],[test "x$with_bash_completion_dir" != "xno"])
 
 AC_ARG_ENABLE([local],
         AS_HELP_STRING([--disable-local], [build against kernel ndctl.h @<:@default=system@:>@]),
