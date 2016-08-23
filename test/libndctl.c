@@ -21,8 +21,11 @@
 #include <limits.h>
 #include <syslog.h>
 #include <libkmod.h>
+#include <sys/wait.h>
 #include <uuid/uuid.h>
+#include <sys/types.h>
 #include <sys/ioctl.h>
+#include <sys/select.h>
 #include <linux/version.h>
 
 #include <ccan/array_size/array_size.h>
@@ -1783,6 +1786,7 @@ static int check_btts(struct ndctl_region *region, struct btt **btts)
 struct check_cmd {
 	int (*check_fn)(struct ndctl_bus *bus, struct ndctl_dimm *dimm, struct check_cmd *check);
 	struct ndctl_cmd *cmd;
+	struct ndctl_test *test;
 };
 
 static struct check_cmd *check_cmds;
@@ -2005,12 +2009,44 @@ static int check_smart_threshold(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 		.spares = 5,
 	};
 	struct ndctl_cmd *cmd = ndctl_dimm_cmd_new_smart_threshold(dimm);
-	int rc;
+	struct timeval tm;
+	fd_set fds;
+	int rc, fd;
 
 	if (!cmd) {
 		fprintf(stderr, "%s: dimm: %#x failed to create cmd\n",
 				__func__, ndctl_dimm_get_handle(dimm));
 		return -ENXIO;
+	}
+
+	fd = ndctl_dimm_get_health_eventfd(dimm);
+	FD_ZERO(&fds);
+	tm.tv_sec = 0;
+	tm.tv_usec = 500;
+	rc = select(fd + 1, NULL, NULL, &fds, &tm);
+	if (rc) {
+		fprintf(stderr, "%s: expected health event timeout\n",
+				ndctl_dimm_get_devname(dimm));
+		return -ENXIO;
+	}
+
+	/*
+	 * Starting with v4.9 smart threshold requests trigger the file
+	 * descriptor returned by ndctl_dimm_get_health_eventfd().
+	 */
+	if (ndctl_test_attempt(check->test, KERNEL_VERSION(4, 9, 0))) {
+		int pid = fork();
+
+		if (pid == 0) {
+			FD_ZERO(&fds);
+			FD_SET(fd, &fds);
+			tm.tv_sec = 1;
+			tm.tv_usec = 0;
+			rc = select(fd + 1, NULL, NULL, &fds, &tm);
+			if (rc != 1 || !FD_ISSET(fd, &fds))
+				exit(EXIT_FAILURE);
+			exit(EXIT_SUCCESS);
+		}
 	}
 
 	rc = ndctl_cmd_submit(cmd);
@@ -2019,6 +2055,15 @@ static int check_smart_threshold(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 			__func__, ndctl_dimm_get_handle(dimm), rc);
 		ndctl_cmd_unref(cmd);
 		return rc;
+	}
+
+	if (ndctl_test_attempt(check->test, KERNEL_VERSION(4, 9, 0))) {
+		wait(&rc);
+		if (WEXITSTATUS(rc) == EXIT_FAILURE) {
+			fprintf(stderr, "%s: expect health event trigger\n",
+					ndctl_dimm_get_devname(dimm));
+			return -ENXIO;
+		}
 	}
 
 	__check_smart_threshold(dimm, cmd, alarm_control);
@@ -2235,12 +2280,15 @@ static int check_commands(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 	 * check_set_config_data can assume that both
 	 * check_get_config_size and check_get_config_data have run
 	 */
-	static struct check_cmd __check_dimm_cmds[] = {
+	struct check_cmd __check_dimm_cmds[] = {
 		[ND_CMD_GET_CONFIG_SIZE] = { check_get_config_size },
 		[ND_CMD_GET_CONFIG_DATA] = { check_get_config_data },
 		[ND_CMD_SET_CONFIG_DATA] = { check_set_config_data },
 		[ND_CMD_SMART] = { check_smart },
-		[ND_CMD_SMART_THRESHOLD] = { check_smart_threshold },
+		[ND_CMD_SMART_THRESHOLD] = {
+			.check_fn = check_smart_threshold,
+			.test = test,
+		},
 	};
 	static struct check_cmd __check_bus_cmds[] = {
 #ifdef HAVE_NDCTL_ARS
