@@ -143,6 +143,7 @@ int ndctl_dimm_failed_arm(struct ndctl_dimm *dimm);
 int ndctl_dimm_failed_restore(struct ndctl_dimm *dimm);
 int ndctl_dimm_smart_pending(struct ndctl_dimm *dimm);
 int ndctl_dimm_failed_flush(struct ndctl_dimm *dimm);
+int ndctl_dimm_get_health_eventfd(struct ndctl_dimm *dimm);
 unsigned int ndctl_dimm_handle_get_node(struct ndctl_dimm *dimm);
 unsigned int ndctl_dimm_handle_get_socket(struct ndctl_dimm *dimm);
 unsigned int ndctl_dimm_handle_get_imc(struct ndctl_dimm *dimm);

@@ -62,6 +62,7 @@ global:
 	ndctl_dimm_failed_restore;
 	ndctl_dimm_smart_pending;
 	ndctl_dimm_failed_flush;
+	ndctl_dimm_get_health_eventfd;
 	ndctl_dimm_is_cmd_supported;
 	ndctl_dimm_handle_get_node;
 	ndctl_dimm_handle_get_socket;

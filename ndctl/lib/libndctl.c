@@ -139,6 +139,7 @@ struct ndctl_dimm {
 	char *unique_id;
 	char *dimm_path;
 	char *dimm_buf;
+	int health_eventfd;
 	int buf_len;
 	int id;
 	union {
@@ -591,6 +592,8 @@ static void free_dimm(struct ndctl_dimm *dimm)
 	free(dimm->dimm_path);
 	if (dimm->module)
 		kmod_module_unref(dimm->module);
+	if (dimm->health_eventfd > -1)
+		close(dimm->health_eventfd);
 	free(dimm);
 }
 
@@ -1169,6 +1172,7 @@ static int add_dimm(void *parent, int id, const char *dimm_base)
 	dimm->vendor_id = -1;
 	dimm->device_id = -1;
 	dimm->revision_id = -1;
+	dimm->health_eventfd = -1;
 	dimm->subsystem_vendor_id = -1;
 	dimm->subsystem_device_id = -1;
 	dimm->subsystem_revision_id = -1;
@@ -1250,6 +1254,8 @@ static int add_dimm(void *parent, int id, const char *dimm_base)
 	sprintf(path, "%s/nfit/flags", dimm_base);
 	if (sysfs_read_attr(ctx, path, buf) == 0)
 		parse_nfit_mem_flags(dimm, buf);
+
+	dimm->health_eventfd = open(path, O_RDONLY|O_CLOEXEC);
  out:
 	list_add(&bus->dimms, &dimm->list);
 	free(path);
@@ -1427,6 +1433,11 @@ NDCTL_EXPORT int ndctl_dimm_is_cmd_supported(struct ndctl_dimm *dimm,
 		int cmd)
 {
 	return !!(dimm->dsm_mask & (1ULL << cmd));
+}
+
+NDCTL_EXPORT int ndctl_dimm_get_health_eventfd(struct ndctl_dimm *dimm)
+{
+	return dimm->health_eventfd;
 }
 
 NDCTL_EXPORT unsigned int ndctl_dimm_handle_get_node(struct ndctl_dimm *dimm)
