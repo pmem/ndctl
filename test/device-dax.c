@@ -113,6 +113,12 @@ static int test_device_dax(int loglevel, struct ndctl_test *test,
 		return -ENXIO;
 	}
 
+	buf = mmap(NULL, 2UL << 20, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
+	if (buf != MAP_FAILED) {
+		fprintf(stderr, "%s: expected MAP_PRIVATE failure\n", path);
+		return -ENXIO;
+	}
+
 	buf = mmap(NULL, 2UL << 20, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
 	p = (int *) (buf + (1UL << 20));
 	*p = 0;
