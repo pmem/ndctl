@@ -42,9 +42,12 @@ eval $(echo $json | sed -e "$json2var")
 [ $sector_size != $SECTOR_SIZE ] && echo "fail: $LINENO" &&  exit 1
 [ $mode != "sector" ] && echo "fail: $LINENO" &&  exit 1
 
+# free capacity for blk creation
+$NDCTL destroy-namespace -f $dev
+
 # create blk
 dev="x"
-json=$($NDCTL create-namespace $BUS -t blk -m raw -s 17M)
+json=$($NDCTL create-namespace $BUS -t blk -m raw -v)
 eval $(echo $json | sed -e "$json2var")
 [ $dev = "x" ] && echo "fail: $LINENO" && exit 1
 [ $mode != "raw" ] && echo "fail: $LINENO" &&  exit 1
