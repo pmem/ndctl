@@ -117,6 +117,16 @@ static int test_device_dax(int loglevel, struct ndctl_test *test,
 	p = (int *) (buf + (1UL << 20));
 	*p = 0;
 
+	if (ndctl_test_attempt(test, KERNEL_VERSION(4, 9, 0))) {
+		/* prior to 4.8-final this crashes */
+		rc = test_dax_directio(fd, NULL, 0);
+		if (rc) {
+			fprintf(stderr, "%s: failed dax direct-i/o\n",
+					ndctl_namespace_get_devname(ndns));
+			return rc;
+		}
+	}
+
 	rc = reset_device_dax(ndns);
 	if (rc < 0) {
 		fprintf(stderr, "%s: failed to reset device-dax instance\n",

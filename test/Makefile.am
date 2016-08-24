@@ -60,6 +60,7 @@ dax_errors_SOURCES = dax-errors.c
 device_dax_SOURCES = \
 		device-dax.c \
 		dax-dev.c \
+		dax-pmd.c \
 		core.c \
 		../ndctl/builtin-xaction-namespace.c \
 		../ndctl/util/json.c

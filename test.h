@@ -16,7 +16,7 @@ void builtin_xaction_namespace_reset(void);
 
 struct ndctl_ctx;
 int test_parent_uuid(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx);
-int test_direct_io(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx);
+int test_dax_directio(int dax_fd, void *dax_addr, off_t offset);
 int test_dpa_alloc(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx);
 int test_libndctl(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx);
 int test_blk_namespaces(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx);
