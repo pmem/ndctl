@@ -937,6 +937,68 @@ static int check_pfn_create(struct ndctl_region *region,
 	return rc;
 }
 
+static int check_btt_size(struct ndctl_btt *btt)
+{
+	struct ndctl_namespace *ndns = ndctl_btt_get_namespace(btt);
+	unsigned long long ns_size = ndctl_namespace_get_size(ndns);
+	unsigned long sect_size = ndctl_btt_get_sector_size(btt);
+	unsigned long long actual, expect;
+	int size_select, sect_select;
+	unsigned long long expect_table[][2] = {
+		[0] = {
+			[0] = 0x11b4400,
+			[1] = 0x8da2000,
+		},
+		[1] = {
+			[0] = 0x13b0400,
+			[1] = 0x9d82000,
+		},
+		[2] = {
+			[0] = 0x1aa2600,
+			[1] = 0xd513000,
+		},
+	};
+
+	if (sect_size >= SZ_4K)
+		sect_select = 1;
+	else if (sect_size >= 512)
+		sect_select = 0;
+	else {
+		fprintf(stderr, "%s: %s unexpected sector size: %lx\n",
+				__func__, ndctl_btt_get_devname(btt),
+				sect_size);
+		return -ENXIO;
+	}
+
+	switch (ns_size) {
+	case SZ_18M:
+		size_select = 0;
+		break;
+	case SZ_20M:
+		size_select = 1;
+		break;
+	case SZ_27M:
+		size_select = 2;
+		break;
+	default:
+		fprintf(stderr, "%s: %s unexpected namespace size: %llx\n",
+				__func__, ndctl_namespace_get_devname(ndns),
+				ns_size);
+		break;
+	}
+
+	expect = expect_table[size_select][sect_select];
+	actual = ndctl_btt_get_size(btt);
+	if (expect != actual) {
+		fprintf(stderr, "%s: namespace: %s unexpected size: %llx (expected: %llx)\n",
+				ndctl_btt_get_devname(btt),
+				ndctl_namespace_get_devname(ndns), actual, expect);
+		return -ENXIO;
+	}
+
+	return 0;
+}
+
 static int check_btt_create(struct ndctl_region *region, struct ndctl_namespace *ndns,
 		struct namespace *namespace)
 {
@@ -981,6 +1043,10 @@ static int check_btt_create(struct ndctl_region *region, struct ndctl_namespace 
 		if (mode >= 0 && mode != NDCTL_NS_MODE_SAFE)
 			fprintf(stderr, "%s: expected safe mode got: %d\n",
 					devname, mode);
+
+		rc = check_btt_size(btt);
+		if (rc)
+			goto err;
 
 		if (btt_seed == ndctl_region_get_btt_seed(region)
 				&& btt == btt_seed) {
