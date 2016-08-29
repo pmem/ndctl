@@ -100,7 +100,7 @@ make check
 
 %files
 %defattr(-,root,root)
-%license licenses/GPLv2 licenses/BSD-MIT licenses/CC0
+%license util/COPYING licenses/BSD-MIT licenses/CC0
 %{_bindir}/ndctl
 %{_mandir}/man1/*
 %{bashcompdir}/
