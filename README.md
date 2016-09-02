@@ -49,8 +49,8 @@ git://git.kernel.org/pub/scm/linux/kernel/git/nvdimm/nvdimm.git`
 4. Build and install the unit test enabled libnvdimm modules in the
    following order.  The unit test modules need to be in place prior to
    the `depmod` that runs during the final `modules_install`  
-`make M=tools/testing/nvdimm/`  
-`sudo make M=tools/testing/nvdimm/ modules_install`  
+`make M=tools/testing/nvdimm`  
+`sudo make M=tools/testing/nvdimm modules_install`  
 `sudo make modules_install`
 
 5. Now run `make check` in the ndctl source directory, or `ndctl test`,
