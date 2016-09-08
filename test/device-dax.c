@@ -60,12 +60,12 @@ static int test_device_dax(int loglevel, struct ndctl_test *test,
 		struct ndctl_ctx *ctx)
 {
 	int fd, rc, *p;
-	char *buf, path[100];
 	struct sigaction act;
 	struct ndctl_dax *dax;
 	struct daxctl_dev *dev;
 	struct ndctl_namespace *ndns;
 	struct daxctl_region *dax_region;
+	char *buf, path[100], data[4096];
 
 	memset (&act, 0, sizeof(act));
 	act.sa_sigaction = sigbus;
@@ -123,13 +123,35 @@ static int test_device_dax(int loglevel, struct ndctl_test *test,
 	p = (int *) (buf + (1UL << 20));
 	*p = 0;
 
+	/*
+	 * Prior to 4.8-final these tests cause crashes, or are
+	 * otherwise not supported.
+	 */
 	if (ndctl_test_attempt(test, KERNEL_VERSION(4, 9, 0))) {
-		/* prior to 4.8-final this crashes */
+		int fd2;
+
 		rc = test_dax_directio(fd, NULL, 0);
 		if (rc) {
 			fprintf(stderr, "%s: failed dax direct-i/o\n",
 					ndctl_namespace_get_devname(ndns));
 			return rc;
+		}
+
+		fd2 = open("/proc/self/smaps", O_RDONLY);
+		if (fd2 < 0) {
+			fprintf(stderr, "%s: failed smaps open\n",
+					ndctl_namespace_get_devname(ndns));
+			return -ENXIO;
+		}
+
+		do {
+			rc = read(fd2, data, sizeof(data));
+		} while (rc > 0);
+
+		if (rc) {
+			fprintf(stderr, "%s: failed smaps retrieval\n",
+					ndctl_namespace_get_devname(ndns));
+			return -ENXIO;
 		}
 	}
 
