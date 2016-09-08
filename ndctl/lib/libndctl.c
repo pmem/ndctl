@@ -1152,10 +1152,10 @@ static int add_dimm(void *parent, int id, const char *dimm_base)
 		goto err_read;
 	dimm->dsm_mask = parse_commands(buf, 1);
 
-        dimm->dimm_buf = calloc(1, strlen(dimm_base) + 50);
-        if (!dimm->dimm_buf)
-                goto err_read;
-        dimm->buf_len = strlen(dimm_base) + 50;
+	dimm->dimm_buf = calloc(1, strlen(dimm_base) + 50);
+	if (!dimm->dimm_buf)
+		goto err_read;
+	dimm->buf_len = strlen(dimm_base) + 50;
 
 	dimm->dimm_path = strdup(dimm_base);
 	if (!dimm->dimm_path)
