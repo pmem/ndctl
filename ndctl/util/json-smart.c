@@ -120,7 +120,7 @@ struct json_object *util_dimm_health_to_json(struct ndctl_dimm *dimm)
 	}
 
 	if (flags & ND_SMART_ALARM_VALID) {
-		unsigned int alarm_flags = ndctl_cmd_smart_get_spares(cmd);
+		unsigned int alarm_flags = ndctl_cmd_smart_get_alarm_flags(cmd);
 		bool temp_flag = !!(alarm_flags & ND_SMART_TEMP_TRIP);
 		bool spares_flag = !!(alarm_flags & ND_SMART_SPARE_TRIP);
 
