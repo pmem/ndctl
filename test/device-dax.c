@@ -76,9 +76,6 @@ static int test_device_dax(int loglevel, struct ndctl_test *test,
 		return 1;
 	}
 
-	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 7, 0)))
-		return 77;
-
 	ndctl_set_log_priority(ctx, loglevel);
 
 	ndns = ndctl_get_test_dev(ctx);
@@ -87,6 +84,9 @@ static int test_device_dax(int loglevel, struct ndctl_test *test,
 				__func__);
 		return 77;
 	}
+
+	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 7, 0)))
+		return 77;
 
 	rc = setup_device_dax(ndns);
 	if (rc < 0) {
