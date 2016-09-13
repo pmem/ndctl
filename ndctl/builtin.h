@@ -16,6 +16,8 @@ int cmd_destroy_namespace(int argc, const char **argv, struct ndctl_ctx *ctx);
 int cmd_disable_namespace(int argc, const char **argv, struct ndctl_ctx *ctx);
 int cmd_enable_region(int argc, const char **argv, struct ndctl_ctx *ctx);
 int cmd_disable_region(int argc, const char **argv, struct ndctl_ctx *ctx);
+int cmd_enable_dimm(int argc, const char **argv, struct ndctl_ctx *ctx);
+int cmd_disable_dimm(int argc, const char **argv, struct ndctl_ctx *ctx);
 int cmd_zero_labels(int argc, const char **argv, struct ndctl_ctx *ctx);
 int cmd_read_labels(int argc, const char **argv, struct ndctl_ctx *ctx);
 int cmd_list(int argc, const char **argv, struct ndctl_ctx *ctx);

@@ -4,6 +4,8 @@ man1_MANS = \
 	ndctl-read-labels.1 \
 	ndctl-enable-region.1 \
 	ndctl-disable-region.1 \
+	ndctl-enable-dimm.1 \
+	ndctl-disable-dimm.1 \
 	ndctl-enable-namespace.1 \
 	ndctl-disable-namespace.1 \
 	ndctl-create-namespace.1 \
@@ -17,6 +19,8 @@ XML_DEPS = \
 	Makefile \
 	region-description.txt \
 	xable-region-options.txt \
+	dimm-description.txt \
+	xable-dimm-options.txt \
 	xable-namespace-options.txt \
 	labels-description.txt \
 	labels-options.txt

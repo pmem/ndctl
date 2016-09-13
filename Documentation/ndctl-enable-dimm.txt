@@ -1,0 +1,22 @@
+ndctl-enable-dimm(1)
+====================
+
+NAME
+----
+ndctl-enable-dimm - enable one more dimms
+
+SYNOPSIS
+--------
+[verse]
+'ndctl enable-dimm' <dimm> [<options>]
+
+include::dimm-description.txt[]
+
+OPTIONS
+-------
+<dimm>::
+include::xable-dimm-options.txt[]
+
+SEE ALSO
+--------
+linkndctl:ndctl-disable-dimm[1]
