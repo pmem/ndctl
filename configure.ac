@@ -260,7 +260,8 @@ AC_SUBST([my_CFLAGS])
 AC_CONFIG_HEADERS(config.h)
 AC_CONFIG_FILES([
         Makefile
-        daxctl/Makefile
+        daxctl/lib/Makefile
+        ndctl/lib/Makefile
         ndctl/Makefile
         test/Makefile
         Documentation/Makefile

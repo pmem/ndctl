@@ -1,39 +1,5 @@
 include $(top_srcdir)/Makefile.am.in
 
-BUILT_SOURCES = libndctl.h
-lib/libndctl.h: libndctl.h.in
-	touch $(top_srcdir)/version.m4
-
-%.pc: %.pc.in Makefile
-	$(SED_PROCESS)
-
-pkginclude_HEADERS = libndctl.h
-lib_LTLIBRARIES = lib/libndctl.la
-
-lib_libndctl_la_SOURCES =\
-	libndctl.h \
-	lib/libndctl-private.h \
-	../util/log.c \
-	../util/log.h \
-	../util/sysfs.c \
-	../util/sysfs.h \
-	lib/libndctl.c
-
-lib_libndctl_la_LIBADD =\
-	../daxctl/lib/libdaxctl.la \
-	$(UDEV_LIBS) \
-	$(UUID_LIBS) \
-	$(KMOD_LIBS)
-
-if ENABLE_ARS
-lib_libndctl_la_SOURCES += lib/libndctl-ars.c
-endif
-
-if ENABLE_SMART
-lib_libndctl_la_SOURCES += lib/libndctl-smart.c
-lib_libndctl_la_SOURCES += lib/libndctl-hpe1.c
-endif
-
 bin_PROGRAMS = ndctl
 
 ndctl_SOURCES = ndctl.c \
@@ -72,17 +38,3 @@ ndctl_SOURCES += ../test/libndctl.c \
 		 ../test/parent-uuid.c \
 		 ../test/core.c
 endif
-
-
-
-EXTRA_DIST += lib/libndctl.sym
-
-lib_libndctl_la_LDFLAGS = $(AM_LDFLAGS) \
-	-version-info $(LIBNDCTL_CURRENT):$(LIBNDCTL_REVISION):$(LIBNDCTL_AGE) \
-	-Wl,--version-script=$(top_srcdir)/ndctl/lib/libndctl.sym
-lib_libndctl_la_DEPENDENCIES = lib/libndctl.sym
-
-pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = lib/libndctl.pc
-EXTRA_DIST += lib/libndctl.pc.in
-CLEANFILES += lib/libndctl.pc
