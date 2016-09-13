@@ -2,6 +2,7 @@ include $(top_srcdir)/Makefile.am.in
 
 TESTS =\
 	libndctl \
+	dsm-fail \
 	dpa-alloc \
 	parent-uuid \
 	create.sh \
@@ -10,6 +11,7 @@ TESTS =\
 
 check_PROGRAMS =\
 	libndctl \
+	dsm-fail \
 	dpa-alloc \
 	parent-uuid \
 	dax-errors
@@ -38,6 +40,14 @@ LIBNDCTL_LIB =\
 
 libndctl_SOURCES = libndctl.c core.c
 libndctl_LDADD = $(LIBNDCTL_LIB) $(UUID_LIBS) $(KMOD_LIBS)
+
+dsm_fail_SOURCES =\
+	dsm-fail.c \
+	core.c \
+	../util/log.c \
+	../util/sysfs.c
+
+dsm_fail_LDADD = $(LIBNDCTL_LIB) $(KMOD_LIBS)
 
 blk_ns_SOURCES = blk_namespaces.c core.c
 blk_ns_LDADD = $(LIBNDCTL_LIB) $(KMOD_LIBS)

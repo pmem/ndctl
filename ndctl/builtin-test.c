@@ -49,6 +49,11 @@ int cmd_test(int argc, const char **argv, struct ndctl_ctx *ctx)
 	if (rc && rc != 77)
 		return rc;
 
+	rc = test_dsm_fail(loglevel, test, ctx);
+	fprintf(stderr, "test-dsm-fail: %s\n", result(rc));
+	if (rc && rc != 77)
+		return rc;
+
 	rc = test_dpa_alloc(loglevel, test, ctx);
 	fprintf(stderr, "test-dpa-alloc: %s\n", result(rc));
 	if (rc && rc != 77)

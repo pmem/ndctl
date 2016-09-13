@@ -34,6 +34,9 @@ ndctl_LDADD =\
 
 if ENABLE_TEST
 ndctl_SOURCES += ../test/libndctl.c \
+		 ../test/dsm-fail.c \
+		 ../util/log.c \
+		 ../util/sysfs.c \
 		 ../test/dpa-alloc.c \
 		 ../test/parent-uuid.c \
 		 ../test/core.c
