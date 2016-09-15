@@ -552,7 +552,7 @@ static int namespace_create(struct ndctl_region *region)
 		p.size = available;
 
 	ndns = ndctl_region_get_namespace_seed(region);
-	if (is_namespace_active(ndns)) {
+	if (!ndns || is_namespace_active(ndns)) {
 		debug("%s: no %s namespace seed\n", devname,
 				ndns ? "idle" : "available");
 		return -ENODEV;
@@ -685,7 +685,7 @@ static int namespace_reconfig(struct ndctl_region *region,
 		return rc;
 
 	ndns = ndctl_region_get_namespace_seed(region);
-	if (is_namespace_active(ndns)) {
+	if (!ndns || is_namespace_active(ndns)) {
 		debug("%s: no %s namespace seed\n",
 				ndctl_region_get_devname(region),
 				ndns ? "idle" : "available");
