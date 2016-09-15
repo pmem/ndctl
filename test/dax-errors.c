@@ -17,6 +17,8 @@
 
 static sigjmp_buf sj_env;
 static int sig_count;
+/* buf is global in order to avoid gcc memcpy optimization */
+static void *buf;
 
 static void sigbus_hdl(int sig, siginfo_t *siginfo, void *ptr)
 {
@@ -27,7 +29,7 @@ static void sigbus_hdl(int sig, siginfo_t *siginfo, void *ptr)
 
 static int test_dax_read_err(int fd)
 {
-	void *base, *buf;
+	void *base;
 	int rc = 0;
 
 	if (fd < 0) {
