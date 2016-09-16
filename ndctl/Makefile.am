@@ -31,6 +31,7 @@ endif
 
 if ENABLE_SMART
 lib_libndctl_la_SOURCES += lib/libndctl-smart.c
+lib_libndctl_la_SOURCES += lib/libndctl-hpe1.c
 endif
 
 bin_PROGRAMS = ndctl

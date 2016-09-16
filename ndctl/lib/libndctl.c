@@ -1248,6 +1248,8 @@ static int add_dimm(void *parent, int id, const char *dimm_base)
 	sprintf(path, "%s/nfit/family", dimm_base);
 	if (sysfs_read_attr(ctx, path, buf) == 0)
 		dimm->dsm_family = strtoul(buf, NULL, 0);
+	if (dimm->dsm_family == NVDIMM_FAMILY_HPE1)
+		dimm->smart_ops = hpe1_smart_ops;
 
 	dimm->formats = formats;
 	sprintf(path, "%s/nfit/format", dimm_base);

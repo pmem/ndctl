@@ -220,8 +220,10 @@ struct ndctl_smart_ops {
 
 #if HAS_SMART == 1
 struct ndctl_smart_ops * const intel_smart_ops;
+struct ndctl_smart_ops * const hpe1_smart_ops;
 #else
 static struct ndctl_smart_ops * const intel_smart_ops = NULL;
+static struct ndctl_smart_ops * const hpe1_smart_ops = NULL;
 #endif
 
 /* internal library helpers for conditionally defined command numbers */
