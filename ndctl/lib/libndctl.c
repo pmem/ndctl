@@ -136,6 +136,7 @@ struct ndctl_dimm {
 	unsigned short subsystem_revision_id;
 	unsigned short manufacturing_date;
 	unsigned char manufacturing_location;
+	unsigned long dsm_family;
 	unsigned long dsm_mask;
 	char *unique_id;
 	char *dimm_path;
@@ -1180,6 +1181,7 @@ static int add_dimm(void *parent, int id, const char *dimm_base)
 	dimm->subsystem_revision_id = -1;
 	dimm->manufacturing_date = -1;
 	dimm->manufacturing_location = -1;
+	dimm->dsm_family = -1;
 	for (i = 0; i < formats; i++)
 		dimm->format[i] = -1;
 
@@ -1242,6 +1244,10 @@ static int add_dimm(void *parent, int id, const char *dimm_base)
 	sprintf(path, "%s/nfit/subsystem_rev_id", dimm_base);
 	if (sysfs_read_attr(ctx, path, buf) == 0)
 		dimm->subsystem_revision_id = strtoul(buf, NULL, 0);
+
+	sprintf(path, "%s/nfit/family", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) == 0)
+		dimm->dsm_family = strtoul(buf, NULL, 0);
 
 	dimm->formats = formats;
 	sprintf(path, "%s/nfit/format", dimm_base);
