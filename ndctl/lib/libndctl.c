@@ -722,7 +722,7 @@ static int to_dsm_index(const char *name, int dimm)
 	int i, end_cmd;
 
 	if (dimm) {
-		end_cmd = ND_CMD_VENDOR;
+		end_cmd = ND_CMD_CALL;
 		cmd_name_fn = nvdimm_cmd_name;
 	} else {
 		end_cmd = nd_cmd_clear_error;
@@ -2194,6 +2194,7 @@ static int to_ioctl_cmd(int cmd, int dimm)
 	case ND_CMD_GET_CONFIG_DATA:        return ND_IOCTL_GET_CONFIG_DATA;
 	case ND_CMD_SET_CONFIG_DATA:        return ND_IOCTL_SET_CONFIG_DATA;
 	case ND_CMD_VENDOR:                 return ND_IOCTL_VENDOR;
+	case ND_CMD_CALL:                   return ND_IOCTL_CALL;
 	case ND_CMD_VENDOR_EFFECT_LOG_SIZE:
 	case ND_CMD_VENDOR_EFFECT_LOG:
 	default:
