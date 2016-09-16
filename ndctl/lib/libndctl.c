@@ -125,6 +125,7 @@ struct ndctl_bus {
 struct ndctl_dimm {
 	struct kmod_module *module;
 	struct ndctl_bus *bus;
+	struct ndctl_smart_ops *smart_ops;
 	unsigned int handle, major, minor, serial;
 	unsigned short phys_id;
 	unsigned short vendor_id;
@@ -1166,6 +1167,7 @@ static int add_dimm(void *parent, int id, const char *dimm_base)
 		goto err_read;
 	dimm->module = to_module(ctx, buf);
 
+	dimm->smart_ops = intel_smart_ops;
 	dimm->handle = -1;
 	dimm->phys_id = -1;
 	dimm->serial = -1;
@@ -1468,6 +1470,11 @@ NDCTL_EXPORT unsigned int ndctl_dimm_handle_get_dimm(struct ndctl_dimm *dimm)
 NDCTL_EXPORT struct ndctl_bus *ndctl_dimm_get_bus(struct ndctl_dimm *dimm)
 {
 	return dimm->bus;
+}
+
+NDCTL_EXPORT struct ndctl_smart_ops *ndctl_dimm_get_smart_ops(struct ndctl_dimm *dimm)
+{
+	return dimm->smart_ops;
 }
 
 NDCTL_EXPORT struct ndctl_ctx *ndctl_dimm_get_ctx(struct ndctl_dimm *dimm)

@@ -201,6 +201,29 @@ struct ndctl_cmd {
 	};
 };
 
+struct ndctl_smart_ops {
+	struct ndctl_cmd *(*new_smart)(struct ndctl_dimm *);
+	unsigned int (*smart_get_flags)(struct ndctl_cmd *);
+	unsigned int (*smart_get_health)(struct ndctl_cmd *);
+	unsigned int (*smart_get_temperature)(struct ndctl_cmd *);
+	unsigned int (*smart_get_spares)(struct ndctl_cmd *);
+	unsigned int (*smart_get_alarm_flags)(struct ndctl_cmd *);
+	unsigned int (*smart_get_life_used)(struct ndctl_cmd *);
+	unsigned int (*smart_get_shutdown_state)(struct ndctl_cmd *);
+	unsigned int (*smart_get_vendor_size)(struct ndctl_cmd *);
+	unsigned char *(*smart_get_vendor_data)(struct ndctl_cmd *);
+	struct ndctl_cmd *(*new_smart_threshold)(struct ndctl_dimm *);
+	unsigned int (*smart_threshold_get_alarm_control)(struct ndctl_cmd *);
+	unsigned int (*smart_threshold_get_temperature)(struct ndctl_cmd *);
+	unsigned int (*smart_threshold_get_spares)(struct ndctl_cmd *);
+};
+
+#if HAS_SMART == 1
+struct ndctl_smart_ops * const intel_smart_ops;
+#else
+static struct ndctl_smart_ops * const intel_smart_ops = NULL;
+#endif
+
 /* internal library helpers for conditionally defined command numbers */
 #ifdef HAVE_NDCTL_ARS
 static const int nd_cmd_ars_status = ND_CMD_ARS_STATUS;
