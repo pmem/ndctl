@@ -217,14 +217,19 @@ DAXCTL_EXPORT struct daxctl_region *daxctl_new_region(struct daxctl_ctx *ctx,
 	region->id = id;
 	region->refcount = 1;
 	uuid_copy(region->uuid, uuid);
+
 	region->region_path = strdup(path);
+	if (!region->region_path) {
+		free(region);
+		return NULL;
+	}
+
 	list_head_init(&region->devices);
 	region->buf_len = strlen(region->region_path) + REGION_BUF_SIZE;
 	region->region_buf = calloc(1, region->buf_len);
-
-	if (!region->region_path || !region->region_buf) {
+	if (!region->region_buf) {
 		daxctl_region_unref(region);
-		region = NULL;
+		return NULL;
 	}
 
 	dbg(ctx, "%s: %s\n", __func__, daxctl_region_get_devname(region));
