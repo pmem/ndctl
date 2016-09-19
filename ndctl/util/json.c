@@ -179,6 +179,8 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 		jobj = json_object_new_string("dax");
 		break;
 	case NDCTL_NS_MODE_SAFE:
+		if (!btt)
+			goto err;
 		jobj = json_object_new_string("sector");
 		size = ndctl_btt_get_size(btt);
 		break;
