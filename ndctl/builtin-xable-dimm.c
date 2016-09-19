@@ -67,7 +67,7 @@ static int do_xable_dimm(const char *dimm_arg,
 
 	rc = success;
 	if (!success && skip)
-		rc = EBUSY;
+		rc = -EBUSY;
  out:
 	dimm_bus = NULL;
 	return rc;
