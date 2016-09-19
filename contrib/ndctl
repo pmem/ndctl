@@ -127,8 +127,7 @@ __ndctl_get_ns()
 
 __ndctl_get_dimms()
 {
-	# when listing dimms, always list idle ones too
-	opts="--dimms -i $*"
+	opts="--dimms $*"
 	[ -n "$bus_filter" ] && opts="$opts --bus=$bus_filter"
 	echo "$(ndctl list $opts | grep -E "^\s*\"dev\":" | cut -d\" -f4)"
 }
@@ -148,7 +147,7 @@ __ndctl_comp_options()
 			opts=$(__ndctl_get_regions)
 			;;
 		--dimm)
-			opts=$(__ndctl_get_dimms)
+			opts=$(__ndctl_get_dimms -i)
 			;;
 		--namespace)
 			opts=$(__ndctl_get_ns)
@@ -201,10 +200,16 @@ __ndctl_comp_non_option_args()
 	disable-region)
 		opts="$(__ndctl_get_regions) all"
 		;;
+	enable-dimm)
+		opts="$(__ndctl_get_dimms -i) all"
+		;;
+	disable-dimm)
+		opts="$(__ndctl_get_dimms) all"
+		;;
 	read-labels)
 		;&
 	zero-labels)
-		opts="$(__ndctl_get_dimms) all"
+		opts="$(__ndctl_get_dimms -i) all"
 		;;
 	*)
 		return
