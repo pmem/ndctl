@@ -984,7 +984,7 @@ static int check_btt_size(struct ndctl_btt *btt)
 		fprintf(stderr, "%s: %s unexpected namespace size: %llx\n",
 				__func__, ndctl_namespace_get_devname(ndns),
 				ns_size);
-		break;
+		return -ENXIO;
 	}
 
 	expect = expect_table[size_select][sect_select];
