@@ -13,14 +13,16 @@ err() {
 	exit $rc
 }
 
-eval $(uname -r | awk -F. '{print "maj="$1 ";" "min="$2}')
-if [ $maj -lt 4 ]; then
-	echo "kernel $maj.$min lacks clear poison support"
-	exit $rc
-elif [ $maj -eq 4 -a $min -lt 6 ]; then
-	echo "kernel $maj.$min lacks clear poison support"
-	exit $rc
-fi
+check_min_kver()
+{
+	local ver="$1"
+	: "${KVER:=$(uname -r)}"
+
+	[ -n "$ver" ] || return 1
+	[[ "$ver" == "$(echo -e "$ver\n$KVER" | sort -V | head -1)" ]]
+}
+
+check_min_kver "4.6" || { echo "kernel $KVER lacks clear poison support"; exit $rc; }
 
 set -e
 trap 'err $LINENO' ERR
@@ -67,6 +69,18 @@ fi
 if read sector len < /sys/block/$blockdev/badblocks; then
 	# fail if reading badblocks returns data
 	echo "fail: $LINENO" && exit 1
+fi
+
+if check_min_kver "4.9.0"; then
+	# check for re-appearance of stale badblocks from poison_list
+	$NDCTL disable-region $BUS all
+	$NDCTL enable-region $BUS all
+
+	# since we have cleared the errors, a disable/reenable shouldn't bring them back
+	if read sector len < /sys/block/$blockdev/badblocks; then
+		# fail if reading badblocks returns data
+		echo "fail: $LINENO" && exit 1
+	fi
 fi
 
 $NDCTL disable-region $BUS all
