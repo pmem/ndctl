@@ -39,5 +39,6 @@ ndctl_SOURCES += ../test/libndctl.c \
 		 ../util/sysfs.c \
 		 ../test/dpa-alloc.c \
 		 ../test/parent-uuid.c \
+		 ../test/multi-pmem.c \
 		 ../test/core.c
 endif

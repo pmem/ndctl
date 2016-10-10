@@ -5,6 +5,7 @@ TESTS =\
 	dsm-fail \
 	dpa-alloc \
 	parent-uuid \
+	multi-pmem \
 	create.sh \
 	clear.sh \
 	dax-errors.sh
@@ -14,6 +15,7 @@ check_PROGRAMS =\
 	dsm-fail \
 	dpa-alloc \
 	parent-uuid \
+	multi-pmem \
 	dax-errors
 
 if ENABLE_DESTRUCTIVE
@@ -75,6 +77,16 @@ device_dax_SOURCES = \
 		../ndctl/builtin-xaction-namespace.c \
 		../ndctl/util/json.c
 device_dax_LDADD = \
+		$(LIBNDCTL_LIB) \
+		$(JSON_LIBS) \
+		../libutil.a
+
+multi_pmem_SOURCES = \
+		multi-pmem.c \
+		core.c \
+		../ndctl/builtin-xaction-namespace.c \
+		../ndctl/util/json.c
+multi_pmem_LDADD = \
 		$(LIBNDCTL_LIB) \
 		$(JSON_LIBS) \
 		../libutil.a
