@@ -33,12 +33,6 @@ enum {
 };
 
 /* NDN_HPE1_CMD_SMART */
-struct ndn_hpe1_smart {
-	__u32 in_valid_flags;
-	__u32 status;
-	__u8 data[124];
-} __attribute__((packed));
-
 /* ndn_hpe1_smart.in_valid_flags / ndn_hpe1_smart_data.out_valid_flags */
 #define NDN_HPE1_SMART_HEALTH_VALID	(1 << 0)
 #define NDN_HPE1_SMART_TEMP_VALID	(1 << 1)
@@ -112,12 +106,16 @@ struct ndn_hpe1_smart_data {
 	__u8	vnd_spec_data[60];
 } __attribute__((packed));
 
-/* NDN_HPE1_CMD_SMART_THRESHOLD */
-struct ndn_hpe1_smart_threshold {
+struct ndn_hpe1_smart {
+	__u32 in_valid_flags;
 	__u32 status;
-	__u8 data[32];
+	union {
+		__u8 buf[124];
+		struct ndn_hpe1_smart_data data[0];
+	};
 } __attribute__((packed));
 
+/* NDN_HPE1_CMD_SMART_THRESHOLD */
 struct ndn_hpe1_smart_threshold_data {
 	__u16	threshold_alarm_ctl;
 	__u16	temp_threshold;
@@ -132,6 +130,14 @@ struct ndn_hpe1_smart_threshold_data {
 	__u8	es_temperr_threshold;
 	__u8	res3[4];
 	__u64	res4;
+} __attribute__((packed));
+
+struct ndn_hpe1_smart_threshold {
+	__u32 status;
+	union {
+		__u8 buf[32];
+		struct ndn_hpe1_smart_threshold_data data[0];
+	};
 } __attribute__((packed));
 
 /* NDN_HPE1_CMD_GET_CONFIG_SIZE */

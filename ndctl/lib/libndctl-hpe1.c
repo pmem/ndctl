@@ -19,11 +19,9 @@
 
 #include "ndctl-hpe1.h"
 
-#define CMD_HPE1(_c) ((struct ndn_pkg_hpe1 *)((_c)->cmd_buf))
-#define CMD_HPE1_SMART(_c) \
-	((struct ndn_hpe1_smart_data *)(CMD_HPE1(_c)->u.smart.data))
-#define CMD_HPE1_SMART_THRESH(_c) \
-	((struct ndn_hpe1_smart_threshold_data *)(CMD_HPE1(_c)->u.thresh.data))
+#define CMD_HPE1(_c) ((_c)->hpe1)
+#define CMD_HPE1_SMART(_c) (CMD_HPE1(_c)->u.smart.data)
+#define CMD_HPE1_SMART_THRESH(_c) (CMD_HPE1(_c)->u.thresh.data)
 
 static struct ndctl_cmd *hpe1_dimm_cmd_new_smart(struct ndctl_dimm *dimm)
 {

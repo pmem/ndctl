@@ -31,6 +31,7 @@
 #include <ndctl/libndctl.h>
 #include <ccan/endian/endian.h>
 #include <ccan/short_types/short_types.h>
+#include "ndctl-hpe1.h"
 
 #define SZ_16M 0x01000000
 
@@ -191,6 +192,7 @@ struct ndctl_cmd {
 #ifdef HAVE_NDCTL_CLEAR_ERROR
 		struct nd_cmd_clear_error clear_err[0];
 #endif
+		struct ndn_pkg_hpe1 hpe1[0];
 		struct nd_cmd_smart smart[0];
 		struct nd_cmd_smart_threshold smart_t[0];
 		struct nd_cmd_get_config_size get_size[0];
