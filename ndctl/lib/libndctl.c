@@ -1968,6 +1968,7 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_read(struct ndctl_cmd *cfg
 	cmd->get_data->in_length = cfg_size->get_size->max_xfer;
 	cmd->firmware_status = &cmd->get_data->status;
 	cmd->iter.offset = &cmd->get_data->in_offset;
+	cmd->iter.xfer = &cmd->get_data->in_length;
 	cmd->iter.max_xfer = cfg_size->get_size->max_xfer;
 	cmd->iter.data = cmd->get_data->out_buf;
 	cmd->iter.total_xfer = cfg_size->get_size->config_size;
@@ -2021,6 +2022,7 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_write(struct ndctl_cmd *cf
 	cmd->firmware_status = (u32 *) (cmd->cmd_buf
 		+ sizeof(struct nd_cmd_set_config_hdr) + cfg_read->iter.max_xfer);
 	cmd->iter.offset = &cmd->set_data->in_offset;
+	cmd->iter.xfer = &cmd->set_data->in_length;
 	cmd->iter.max_xfer = cfg_read->iter.max_xfer;
 	cmd->iter.data = cmd->set_data->in_buf;
 	cmd->iter.total_xfer = cfg_read->iter.total_xfer;
@@ -2229,19 +2231,21 @@ static int do_cmd(int fd, int ioctl_cmd, struct ndctl_cmd *cmd)
 	}
 
 	for (offset = 0; offset < iter->total_xfer; offset += iter->max_xfer) {
+		*(cmd->iter.xfer) = min(iter->total_xfer - offset,
+				iter->max_xfer);
+		*(cmd->iter.offset) = offset;
 		if (iter->dir == WRITE)
 			memcpy(iter->data, iter->total_buf + offset,
-					iter->max_xfer);
-		*(cmd->iter.offset) = offset;
+					*(cmd->iter.xfer));
 		rc = ioctl(fd, ioctl_cmd, cmd->cmd_buf);
 		if (rc < 0)
 			break;
 
 		if (iter->dir == READ)
 			memcpy(iter->total_buf + offset, iter->data,
-					iter->max_xfer - rc);
+					*(cmd->iter.xfer) - rc);
 		if (*(cmd->firmware_status) || rc) {
-			rc = offset + iter->max_xfer - rc;
+			rc = offset + *(cmd->iter.xfer) - rc;
 			break;
 		}
 	}
