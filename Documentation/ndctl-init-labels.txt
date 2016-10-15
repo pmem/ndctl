@@ -1,0 +1,83 @@
+ndctl-init-labels(1)
+====================
+
+NAME
+----
+ndctl-init-labels - initialize the label data area on a dimm or set of dimms
+
+SYNOPSIS
+--------
+[verse]
+'ndctl init-labels' <nmem0> [<nmem1>..<nmemN>] [<options>]
+
+include::labels-description.txt[]
+By default, and in kernels prior to v4.10, the kernel only honors labels
+when a DIMM aliases PMEM and BLK capacity. Starting with v4.10 the
+kernel will honor labels for sub-dividing PMEM if all the DIMMs in an
+interleave set / region have a valid namespace index block.
+
+This command can be used to initialize the namespace index block if it
+is missing or reinitialize it if it is damaged.  Note that
+reinitialization effectively destroys all existing namespace labels on
+the DIMM.
+
+EXAMPLE
+-------
+Find the DIMMs that comprise a given region:
+[verse]
+# ndctl list -RD --region=region1
+{
+  "dimms":[
+    {
+      "dev":"nmem0",
+      "id":"8680-56341200"
+    }
+  ],
+  "regions":[
+    {
+      "dev":"region1",
+      "size":268435456,
+      "available_size":0,
+      "type":"pmem",
+      "mappings":[
+        {
+          "dimm":"nmem0",
+          "offset":13958643712,
+          "length":268435456
+        }
+      ]
+    }
+  ]
+}
+
+Disable that region so the DIMM label area can be written from
+userspace:
+[verse]
+# ndctl disable-region region1
+
+Initialize labels:
+[verse]
+# ndctl init-labels nmem0
+
+Re-enable the region:
+[verse]
+# ndctl enable-region region1
+
+Create a namespace in that region:
+[verse]
+# ndctl create-namespace --region=region1
+
+OPTIONS
+-------
+include::labels-options.txt[]
+-o::
+	output file
+-f::
+--force::
+	parse the label data into json assuming the 'NVDIMM Namespace
+	Specification' format.
+
+SEE ALSO
+--------
+http://pmem.io/documents/NVDIMM_Namespace_Spec.pdf[NVDIMM Namespace
+Specification]
