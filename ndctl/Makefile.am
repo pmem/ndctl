@@ -6,11 +6,10 @@ ndctl_SOURCES = ndctl.c \
 		builtin-create-nfit.c \
 		builtin-xaction-namespace.c \
 		builtin-xable-region.c \
-		builtin-xable-dimm.c \
+		builtin-dimm.c \
 		builtin-list.c \
 		builtin-test.c \
 		builtin-help.c \
-		builtin-labels.c \
 		util/json.c
 
 if ENABLE_SMART

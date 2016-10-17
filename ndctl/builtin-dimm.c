@@ -70,6 +70,22 @@ struct action_context {
 	FILE *f_out;
 };
 
+static int action_disable(struct ndctl_dimm *dimm, struct action_context *actx)
+{
+	if (ndctl_dimm_is_active(dimm)) {
+		fprintf(stderr, "%s is active, skipping...\n",
+				ndctl_dimm_get_devname(dimm));
+		return -EBUSY;
+	}
+
+	return ndctl_dimm_disable(dimm);
+}
+
+static int action_enable(struct ndctl_dimm *dimm, struct action_context *actx)
+{
+	return ndctl_dimm_enable(dimm);
+}
+
 static int action_zero(struct ndctl_dimm *dimm, struct action_context *actx)
 {
 	return ndctl_dimm_zero_labels(dimm);
@@ -335,7 +351,7 @@ static const struct option read_options[] = {
 	OPT_END(),
 };
 
-static const struct option zero_options[] = {
+static const struct option base_options[] = {
 	BASE_OPTIONS(),
 	OPT_END(),
 };
@@ -496,10 +512,30 @@ int cmd_read_labels(int argc, const char **argv, struct ndctl_ctx *ctx)
 
 int cmd_zero_labels(int argc, const char **argv, struct ndctl_ctx *ctx)
 {
-	int count = dimm_action(argc, argv, ctx, action_zero, zero_options,
+	int count = dimm_action(argc, argv, ctx, action_zero, base_options,
 			"ndctl zero-labels <nmem0> [<nmem1>..<nmemN>] [<options>]");
 
 	fprintf(stderr, "zeroed %d nmem%s\n", count >= 0 ? count : 0,
+			count > 1 ? "s" : "");
+	return count >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_disable_dimm(int argc, const char **argv, struct ndctl_ctx *ctx)
+{
+	int count = dimm_action(argc, argv, ctx, action_disable, base_options,
+			"ndctl disable-dimm <nmem0> [<nmem1>..<nmemN>] [<options>]");
+
+	fprintf(stderr, "disabled %d nmem%s\n", count >= 0 ? count : 0,
+			count > 1 ? "s" : "");
+	return count >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_enable_dimm(int argc, const char **argv, struct ndctl_ctx *ctx)
+{
+	int count = dimm_action(argc, argv, ctx, action_enable, base_options,
+			"ndctl enable-dimm <nmem0> [<nmem1>..<nmemN>] [<options>]");
+
+	fprintf(stderr, "enabled %d nmem%s\n", count >= 0 ? count : 0,
 			count > 1 ? "s" : "");
 	return count >= 0 ? 0 : EXIT_FAILURE;
 }
