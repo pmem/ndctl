@@ -3,6 +3,7 @@ man1_MANS = \
 	ndctl-zero-labels.1 \
 	ndctl-read-labels.1 \
 	ndctl-init-labels.1 \
+	ndctl-check-labels.1 \
 	ndctl-enable-region.1 \
 	ndctl-disable-region.1 \
 	ndctl-enable-dimm.1 \

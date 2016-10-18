@@ -652,7 +652,7 @@ static struct parameters {
 	bool verbose;
 } param;
 
-static int action_init(struct ndctl_dimm *dimm, struct action_context *actx)
+static int __action_init(struct ndctl_dimm *dimm, int chk_only)
 {
 	struct nvdimm_data __ndd, *ndd = &__ndd;
 	struct ndctl_cmd *cmd_read;
@@ -686,13 +686,19 @@ static int action_init(struct ndctl_dimm *dimm, struct action_context *actx)
 	 * another administrative action, the kernel will fail writes to
 	 * the label area.
 	 */
-	if (ndctl_dimm_is_active(dimm)) {
+	if (!chk_only && ndctl_dimm_is_active(dimm)) {
 		err(ndd, "regions active, abort label write\n");
 		rc = -EBUSY;
 		goto out;
 	}
 
-	if (label_validate(ndd) >= 0 && !param.force) {
+	rc = label_validate(ndd);
+	if (chk_only) {
+		rc = rc >= 0 ? 0 : -ENXIO;
+		goto out;
+	}
+
+	if (rc >= 0 && !param.force) {
 		err(ndd, "error: labels already initialized\n");
 		rc = -EBUSY;
 		goto out;
@@ -721,6 +727,17 @@ static int action_init(struct ndctl_dimm *dimm, struct action_context *actx)
 	free(ndd->data);
 	return rc;
 }
+
+static int action_init(struct ndctl_dimm *dimm, struct action_context *actx)
+{
+	return __action_init(dimm, 0);
+}
+
+static int action_check(struct ndctl_dimm *dimm, struct action_context *actx)
+{
+	return __action_init(dimm, 1);
+}
+
 
 #define BASE_OPTIONS() \
 OPT_STRING('b', "bus", &param.bus, "bus-id", \
@@ -924,6 +941,16 @@ int cmd_init_labels(int argc, const char **argv, struct ndctl_ctx *ctx)
 
 	fprintf(stderr, "initialized %d nmem%s\n", count >= 0 ? count : 0,
 			count > 1 ? "s" : "");
+	return count >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_check_labels(int argc, const char **argv, struct ndctl_ctx *ctx)
+{
+	int count = dimm_action(argc, argv, ctx, action_check, base_options,
+			"ndctl check-labels <nmem0> [<nmem1>..<nmemN>] [<options>]");
+
+	fprintf(stderr, "successfully verified %d nmem%s\n",
+			count >= 0 ? count : 0, count > 1 ? "s" : "");
 	return count >= 0 ? 0 : EXIT_FAILURE;
 }
 

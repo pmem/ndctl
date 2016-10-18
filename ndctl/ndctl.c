@@ -37,6 +37,7 @@ static struct cmd_struct commands[] = {
 	{ "zero-labels", cmd_zero_labels },
 	{ "read-labels", cmd_read_labels },
 	{ "init-labels", cmd_init_labels },
+	{ "check-labels", cmd_check_labels },
 	{ "list", cmd_list },
 	{ "help", cmd_help },
 	#ifdef ENABLE_TEST

@@ -1,0 +1,25 @@
+ndctl-check-labels(1)
+====================
+
+NAME
+----
+ndctl-check-labels - determine if the given dimms have a valid namespace index block
+
+SYNOPSIS
+--------
+[verse]
+'ndctl check-labels' <nmem0> [<nmem1>..<nmemN>] [<options>]
+
+include::labels-description.txt[]
+In addition to checking if a label area has a valid index block, running
+this command in verbose mode reports the reason the index block is
+deemed invalid.
+
+OPTIONS
+-------
+include::labels-options.txt[]
+
+SEE ALSO
+--------
+http://pmem.io/documents/NVDIMM_Namespace_Spec.pdf[NVDIMM Namespace
+Specification]

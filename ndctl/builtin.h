@@ -21,6 +21,7 @@ int cmd_disable_dimm(int argc, const char **argv, struct ndctl_ctx *ctx);
 int cmd_zero_labels(int argc, const char **argv, struct ndctl_ctx *ctx);
 int cmd_read_labels(int argc, const char **argv, struct ndctl_ctx *ctx);
 int cmd_init_labels(int argc, const char **argv, struct ndctl_ctx *ctx);
+int cmd_check_labels(int argc, const char **argv, struct ndctl_ctx *ctx);
 int cmd_list(int argc, const char **argv, struct ndctl_ctx *ctx);
 int cmd_help(int argc, const char **argv, struct ndctl_ctx *ctx);
 #ifdef ENABLE_TEST
