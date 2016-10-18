@@ -2057,6 +2057,15 @@ NDCTL_EXPORT ssize_t ndctl_cmd_cfg_read_get_data(struct ndctl_cmd *cfg_read,
 	return len;
 }
 
+NDCTL_EXPORT ssize_t ndctl_cmd_cfg_read_get_size(struct ndctl_cmd *cfg_read)
+{
+	if (cfg_read->type != ND_CMD_GET_CONFIG_DATA || cfg_read->status > 0)
+		return -EINVAL;
+	if (cfg_read->status < 0)
+		return cfg_read->status;
+	return cfg_read->iter.total_xfer;
+}
+
 NDCTL_EXPORT ssize_t ndctl_cmd_cfg_write_set_data(struct ndctl_cmd *cfg_write,
 		void *buf, unsigned int len, unsigned int offset)
 {
