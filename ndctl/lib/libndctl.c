@@ -1707,11 +1707,11 @@ NDCTL_EXPORT unsigned long long ndctl_region_get_available_size(
 	if (snprintf(path, len, "%s/available_size", region->region_path) >= len) {
 		err(ctx, "%s: buffer too small!\n",
 				ndctl_region_get_devname(region));
-		return -ENOMEM;
+		return ULLONG_MAX;
 	}
 
 	if (sysfs_read_attr(ctx, path, buf) < 0)
-		return -ENXIO;
+		return ULLONG_MAX;
 
 	return strtoull(buf, NULL, 0);
 }
@@ -2519,11 +2519,11 @@ NDCTL_EXPORT unsigned long ndctl_dimm_get_available_labels(
 	if (snprintf(path, len, "%s/available_slots", dimm->dimm_path) >= len) {
 		err(ctx, "%s: buffer too small!\n",
 				ndctl_dimm_get_devname(dimm));
-		return -ENOMEM;
+		return ULONG_MAX;
 	}
 
 	if (sysfs_read_attr(ctx, path, buf) < 0)
-		return 0;
+		return ULONG_MAX;
 
 	return strtoul(buf, NULL, 0);
 }
