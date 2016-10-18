@@ -284,46 +284,62 @@ static int dump_bin(FILE *f_out, struct ndctl_cmd *cmd_read, ssize_t size)
 	return 0;
 }
 
-static int action_read(struct ndctl_dimm *dimm, struct action_context *actx)
+static struct ndctl_cmd *read_labels(struct ndctl_dimm *dimm)
 {
 	struct ndctl_bus *bus = ndctl_dimm_get_bus(dimm);
 	struct ndctl_cmd *cmd_size, *cmd_read;
-	ssize_t size;
 	int rc;
 
 	rc = ndctl_bus_wait_probe(bus);
 	if (rc < 0)
-		return rc;
+		return NULL;
 
 	cmd_size = ndctl_dimm_cmd_new_cfg_size(dimm);
 	if (!cmd_size)
-		return -ENOTTY;
+		return NULL;
 	rc = ndctl_cmd_submit(cmd_size);
 	if (rc || ndctl_cmd_get_firmware_status(cmd_size))
 		goto out_size;
 
 	cmd_read = ndctl_dimm_cmd_new_cfg_read(cmd_size);
-	if (!cmd_read) {
-		rc = -ENOTTY;
+	if (!cmd_read)
 		goto out_size;
-	}
 	rc = ndctl_cmd_submit(cmd_read);
 	if (rc || ndctl_cmd_get_firmware_status(cmd_read))
 		goto out_read;
 
-	size = ndctl_cmd_cfg_size_get_size(cmd_size);
-	if (actx->jdimms) {
-		struct json_object *jdimm = dump_json(dimm, cmd_read, size);
-		if (!jdimm)
-			return -ENOMEM;
-		json_object_array_add(actx->jdimms, jdimm);
-	} else
-		rc = dump_bin(actx->f_out, cmd_read, size);
+	ndctl_cmd_unref(cmd_size);
+	return cmd_read;
 
  out_read:
 	ndctl_cmd_unref(cmd_read);
  out_size:
 	ndctl_cmd_unref(cmd_size);
+	return NULL;
+}
+
+static int action_read(struct ndctl_dimm *dimm, struct action_context *actx)
+{
+	struct ndctl_cmd *cmd_read;
+	ssize_t size;
+	int rc = 0;
+
+	cmd_read = read_labels(dimm);
+	if (!cmd_read)
+		return -ENXIO;
+
+	size = ndctl_cmd_cfg_read_get_size(cmd_read);
+	if (actx->jdimms) {
+		struct json_object *jdimm = dump_json(dimm, cmd_read, size);
+
+		if (jdimm)
+			json_object_array_add(actx->jdimms, jdimm);
+		else
+			rc = -ENOMEM;
+	} else
+		rc = dump_bin(actx->f_out, cmd_read, size);
+
+	ndctl_cmd_unref(cmd_read);
 
 	return rc;
 }
