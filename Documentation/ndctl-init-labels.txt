@@ -70,12 +70,11 @@ Create a namespace in that region:
 OPTIONS
 -------
 include::labels-options.txt[]
--o::
-	output file
 -f::
 --force::
-	parse the label data into json assuming the 'NVDIMM Namespace
-	Specification' format.
+	Force initialization of the label space even if there appears to
+	be an existing / valid namespace index.  Warning, this will
+	destroy all defined namespaces on the dimm.
 
 SEE ALSO
 --------
