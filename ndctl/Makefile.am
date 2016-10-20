@@ -7,6 +7,7 @@ ndctl_SOURCES = ndctl.c \
 		builtin-xaction-namespace.c \
 		builtin-xable-region.c \
 		builtin-dimm.c \
+		 ../util/log.c \
 		builtin-list.c \
 		builtin-test.c \
 		builtin-help.c \
@@ -33,7 +34,6 @@ ndctl_LDADD =\
 if ENABLE_TEST
 ndctl_SOURCES += ../test/libndctl.c \
 		 ../test/dsm-fail.c \
-		 ../util/log.c \
 		 ../util/sysfs.c \
 		 ../test/dpa-alloc.c \
 		 ../test/parent-uuid.c \
