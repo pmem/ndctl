@@ -206,6 +206,10 @@ __ndctl_comp_non_option_args()
 	disable-dimm)
 		opts="$(__ndctl_get_dimms) all"
 		;;
+	init-labels)
+		;&
+	check-labels)
+		;&
 	read-labels)
 		;&
 	zero-labels)
