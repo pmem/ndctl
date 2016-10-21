@@ -663,6 +663,9 @@ static int __action_init(struct ndctl_dimm *dimm, int chk_only)
 		return -ENXIO;
 
 	size = ndctl_cmd_cfg_read_get_size(cmd_read);
+	if (size < 0)
+		return size;
+
 	ndd->data = malloc(size);
 	if (!ndd->data)
 		return -ENOMEM;
