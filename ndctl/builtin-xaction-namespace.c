@@ -319,7 +319,14 @@ static int setup_namespace(struct ndctl_region *region,
 
 		try(ndctl_pfn, set_uuid, pfn, uuid);
 		try(ndctl_pfn, set_location, pfn, p->loc);
-		try(ndctl_pfn, set_align, pfn, SZ_2M);
+
+		/*
+		 * TODO: when we allow setting a non-default alignment
+		 * we'll need to check for "has_align" earlier and fail
+		 * non-default attempts on older kernels.
+		 */
+		if (ndctl_pfn_has_align(pfn))
+			try(ndctl_pfn, set_align, pfn, SZ_2M);
 		try(ndctl_pfn, set_namespace, pfn, ndns);
 		rc = ndctl_pfn_enable(pfn);
 	} else if (p->mode == NDCTL_NS_MODE_DAX) {
@@ -327,6 +334,7 @@ static int setup_namespace(struct ndctl_region *region,
 
 		try(ndctl_dax, set_uuid, dax, uuid);
 		try(ndctl_dax, set_location, dax, p->loc);
+		/* device-dax assumes 'align' attribute present */
 		try(ndctl_dax, set_align, dax, SZ_2M);
 		try(ndctl_dax, set_namespace, dax, ndns);
 		rc = ndctl_dax_enable(dax);
