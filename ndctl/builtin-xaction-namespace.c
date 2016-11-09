@@ -790,7 +790,7 @@ int cmd_disable_namespace(int argc, const char **argv, struct ndctl_ctx *ctx)
 	} else {
 		fprintf(stderr, "disabled %d namespace%s\n", disabled,
 				disabled > 1 ? "s" : "");
-		return disabled;
+		return 0;
 	}
 }
 
