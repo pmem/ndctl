@@ -79,8 +79,10 @@ OPTIONS
 -s::
 --size=::
 	For NVDIMM devices that support namespace labels, set the
-	namespace size.  Otherwise it defaults to the maximum size
-	specified by platform firmware.
+	namespace size in bytes.  Otherwise it defaults to the maximum
+	size specified by platform firmware.  This option supports the
+	suffixes "k" or "K" for KiB, "m" or "M" for MiB, "g" or "G" for
+	GiB and "t" or "T" for TiB.
 
 -e::
 --reconfig=::
