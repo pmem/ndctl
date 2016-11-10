@@ -566,6 +566,7 @@ int ndctl_pfn_set_location(struct ndctl_pfn *pfn, enum ndctl_pfn_loc loc);
 enum ndctl_pfn_loc ndctl_pfn_get_location(struct ndctl_pfn *pfn);
 int ndctl_pfn_set_uuid(struct ndctl_pfn *pfn, uuid_t uu);
 void ndctl_pfn_get_uuid(struct ndctl_pfn *pfn, uuid_t uu);
+int ndctl_pfn_has_align(struct ndctl_pfn *pfn);
 int ndctl_pfn_set_align(struct ndctl_pfn *pfn, unsigned long align);
 unsigned long ndctl_pfn_get_align(struct ndctl_pfn *pfn);
 unsigned long long ndctl_pfn_get_resource(struct ndctl_pfn *pfn);

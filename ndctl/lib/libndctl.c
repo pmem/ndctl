@@ -4231,6 +4231,22 @@ NDCTL_EXPORT unsigned long ndctl_pfn_get_align(struct ndctl_pfn *pfn)
 	return pfn->align;
 }
 
+NDCTL_EXPORT int ndctl_pfn_has_align(struct ndctl_pfn *pfn)
+{
+	struct ndctl_ctx *ctx = ndctl_pfn_get_ctx(pfn);
+	char *path = pfn->pfn_buf;
+	int len = pfn->buf_len;
+	struct stat st;
+
+	if (snprintf(path, len, "%s/align", pfn->pfn_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_pfn_get_devname(pfn));
+		return 0;
+	}
+
+	return stat(path, &st) == 0;
+}
+
 NDCTL_EXPORT int ndctl_pfn_set_align(struct ndctl_pfn *pfn, unsigned long align)
 {
 	struct ndctl_ctx *ctx = ndctl_pfn_get_ctx(pfn);

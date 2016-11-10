@@ -231,6 +231,7 @@ global:
 	ndctl_pfn_get_align;
 	ndctl_pfn_get_size;
 	ndctl_pfn_get_resource;
+	ndctl_pfn_has_align;
 	ndctl_pfn_set_align;
 	ndctl_pfn_set_namespace;
 	ndctl_pfn_get_bus;
