@@ -2612,6 +2612,13 @@ static int do_test1(struct ndctl_ctx *ctx, struct ndctl_test *test)
 
 	ndctl_bus_wait_probe(bus);
 
+	/*
+	 * Starting with v4.10 the dimm on nfit_test.1 gets a unique
+	 * handle.
+	 */
+	if (ndctl_test_attempt(test, KERNEL_VERSION(4, 10, 0)))
+		dimms1[0].handle = DIMM_HANDLE(1, 0, 0, 0, 0);
+
 	rc = check_dimms(bus, dimms1, ARRAY_SIZE(dimms1), 0, 0, test);
 	if (rc)
 		return rc;
