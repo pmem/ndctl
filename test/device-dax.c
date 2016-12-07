@@ -201,22 +201,22 @@ static int test_device_dax(int loglevel, struct ndctl_test *test,
 	}
 
 	sprintf(path, "/dev/%s", daxctl_dev_get_devname(dev));
-	fd = open(path, O_RDWR);
+	fd = open(path, O_RDONLY);
 	if (fd < 0) {
-		fprintf(stderr, "%s: failed to open device-dax instance\n",
+		fprintf(stderr, "%s: failed to open(O_RDONLY) device-dax instance\n",
 				daxctl_dev_get_devname(dev));
 		rc = -ENXIO;
 		goto out;
 	}
 
-	buf = mmap(NULL, VERIFY_SIZE, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
+	buf = mmap(NULL, VERIFY_SIZE, PROT_READ, MAP_PRIVATE, fd, 0);
 	if (buf != MAP_FAILED) {
 		fprintf(stderr, "%s: expected MAP_PRIVATE failure\n", path);
 		rc = -ENXIO;
 		goto out;
 	}
 
-	buf = mmap(NULL, VERIFY_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+	buf = mmap(NULL, VERIFY_SIZE, PROT_READ, MAP_SHARED, fd, 0);
 	if (buf == MAP_FAILED) {
 		fprintf(stderr, "%s: expected MAP_SHARED success\n", path);
 		return -ENXIO;
@@ -225,6 +225,24 @@ static int test_device_dax(int loglevel, struct ndctl_test *test,
 	rc = verify_data(dev, buf, salt, test);
 	if (rc)
 		goto out;
+
+	/* upgrade to a writable mapping */
+	close(fd);
+	munmap(buf, VERIFY_SIZE);
+	fd = open(path, O_RDWR);
+	if (fd < 0) {
+		fprintf(stderr, "%s: failed to open(O_RDWR) device-dax instance\n",
+				daxctl_dev_get_devname(dev));
+		rc = -ENXIO;
+		goto out;
+	}
+
+	buf = mmap(NULL, VERIFY_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+	if (buf == MAP_FAILED) {
+		fprintf(stderr, "%s: expected PROT_WRITE + MAP_SHARED success\n",
+				path);
+		return -ENXIO;
+	}
 
 	/*
 	 * Prior to 4.8-final these tests cause crashes, or are
