@@ -98,7 +98,8 @@ int __sysfs_device_parse(struct log_ctx *ctx, const char *base_path,
 	while ((de = readdir(dir)) != NULL) {
 		char *dev_path;
 		char fmt[20];
-		int id, rc;
+		void *dev;
+		int id;
 
 		sprintf(fmt, "%s%%d", dev_name);
 		if (de->d_ino == 0)
@@ -111,16 +112,14 @@ int __sysfs_device_parse(struct log_ctx *ctx, const char *base_path,
 			continue;
 		}
 
-		rc = add_dev(parent, id, dev_path);
+		dev = add_dev(parent, id, dev_path);
 		free(dev_path);
-		if (rc < 0) {
+		if (!dev) {
 			add_errors++;
-			log_err(ctx, "%s%d: add_dev() failed: %d\n",
-					dev_name, id, rc);
-		} else if (rc == 0) {
-			log_dbg(ctx, "%s%d: added\n", dev_name, id);
+			log_err(ctx, "%s%d: add_dev() failed\n",
+					dev_name, id);
 		} else
-			log_dbg(ctx, "%s%d: duplicate\n", dev_name, id);
+			log_dbg(ctx, "%s%d: processed\n", dev_name, id);
 	}
 	closedir(dir);
 

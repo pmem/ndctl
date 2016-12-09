@@ -15,7 +15,7 @@
 
 #include <string.h>
 
-typedef int (*add_dev_fn)(void *parent, int id, const char *dev_path);
+typedef void *(*add_dev_fn)(void *parent, int id, const char *dev_path);
 
 #define SYSFS_ATTR_SIZE 1024
 

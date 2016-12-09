@@ -238,7 +238,7 @@ DAXCTL_EXPORT struct daxctl_region *daxctl_new_region(struct daxctl_ctx *ctx,
 	return region;
 }
 
-static int add_dax_dev(void *parent, int id, const char *daxdev_base)
+static void *add_dax_dev(void *parent, int id, const char *daxdev_base)
 {
 	const char *devname = devpath_to_devname(daxdev_base);
 	char *path = calloc(1, strlen(daxdev_base) + 100);
@@ -246,11 +246,10 @@ static int add_dax_dev(void *parent, int id, const char *daxdev_base)
 	struct daxctl_ctx *ctx = region->ctx;
 	struct daxctl_dev *dev, *dev_dup;
 	char buf[SYSFS_ATTR_SIZE];
-	int rc = -ENOMEM;
 	struct stat st;
 
 	if (!path)
-		return -ENOMEM;
+		return NULL;
 
 	dev = calloc(1, sizeof(*dev));
 	if (!dev)
@@ -282,12 +281,12 @@ static int add_dax_dev(void *parent, int id, const char *daxdev_base)
 		if (dev_dup->id == dev->id) {
 			free_dev(dev, NULL);
 			free(path);
-			return 1;
+			return dev_dup;
 		}
 
 	list_add(&region->devices, &dev->list);
 	free(path);
-	return 0;
+	return dev;
 
  err_read:
 	free(dev->dev_buf);
@@ -295,7 +294,7 @@ static int add_dax_dev(void *parent, int id, const char *daxdev_base)
 	free(dev);
  err_dev:
 	free(path);
-	return rc;
+	return NULL;
 }
 
 DAXCTL_EXPORT int daxctl_region_get_id(struct daxctl_region *region)
