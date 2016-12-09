@@ -1,4 +1,4 @@
-LIBNDCTL_1 {
+LIBDAXCTL_1 {
 global:
 	daxctl_get_userdata;
 	daxctl_set_userdata;
@@ -12,7 +12,7 @@ local:
         *;
 };
 
-LIBNDCTL_2 {
+LIBDAXCTL_2 {
 global:
 	daxctl_region_unref;
 	daxctl_new_region;
@@ -29,11 +29,17 @@ global:
 	daxctl_dev_get_major;
 	daxctl_dev_get_minor;
 	daxctl_dev_get_size;
-} LIBNDCTL_1;
+} LIBDAXCTL_1;
 
 LIBDAXCTL_3 {
 global:
 	daxctl_region_get_available_size;
 	daxctl_region_get_devname;
 	daxctl_region_get_dev_seed;
-} LIBNDCTL_2;
+} LIBDAXCTL_2;
+
+LIBDAXCTL_4 {
+global:
+	daxctl_region_get_size;
+	daxctl_region_get_align;
+} LIBDAXCTL_3;
