@@ -135,6 +135,7 @@ struct ndctl_ctx {
 	/* log_ctx must be first member for ndctl_set_log_fn compat */
 	struct log_ctx ctx;
 	int refcount;
+	int regions_init;
 	void *userdata;
 	struct list_head busses;
 	int busses_init;

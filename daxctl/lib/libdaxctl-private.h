@@ -28,9 +28,10 @@ struct daxctl_region {
 	void *region_buf;
 	int devices_init;
 	char *region_path;
-	unsigned int align;
+	unsigned long align;
 	unsigned long long size;
 	struct daxctl_ctx *ctx;
+	struct list_node list;
 	struct list_head devices;
 };
 

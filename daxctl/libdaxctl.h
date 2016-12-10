@@ -36,6 +36,8 @@ void *daxctl_get_userdata(struct daxctl_ctx *ctx);
 struct daxctl_region;
 struct daxctl_region *daxctl_new_region(struct daxctl_ctx *ctx, int id,
 		uuid_t uuid, const char *path);
+struct daxctl_region *daxctl_region_get_first(struct daxctl_ctx *ctx);
+struct daxctl_region *daxctl_region_get_next(struct daxctl_region *region);
 void daxctl_region_ref(struct daxctl_region *region);
 void daxctl_region_unref(struct daxctl_region *region);
 void daxctl_region_get_uuid(struct daxctl_region *region, uuid_t uu);
@@ -44,7 +46,7 @@ struct daxctl_ctx *daxctl_region_get_ctx(struct daxctl_region *region);
 unsigned long long daxctl_region_get_available_size(
 		struct daxctl_region *region);
 unsigned long long daxctl_region_get_size(struct daxctl_region *region);
-unsigned int daxctl_region_get_align(struct daxctl_region *region);
+unsigned long daxctl_region_get_align(struct daxctl_region *region);
 const char *daxctl_region_get_devname(struct daxctl_region *region);
 struct daxctl_dev *daxctl_region_get_dev_seed(struct daxctl_region *region);
 
@@ -62,6 +64,12 @@ unsigned long long daxctl_dev_get_size(struct daxctl_dev *dev);
         for (dev = daxctl_dev_get_first(region); \
              dev != NULL; \
              dev = daxctl_dev_get_next(dev))
+
+
+#define daxctl_region_foreach(ctx, region) \
+        for (region = daxctl_region_get_first(ctx); \
+             region != NULL; \
+             region = daxctl_region_get_next(region))
 
 #ifdef __cplusplus
 } /* extern "C" */

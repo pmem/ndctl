@@ -42,4 +42,6 @@ LIBDAXCTL_4 {
 global:
 	daxctl_region_get_size;
 	daxctl_region_get_align;
+	daxctl_region_get_first;
+	daxctl_region_get_next;
 } LIBDAXCTL_3;

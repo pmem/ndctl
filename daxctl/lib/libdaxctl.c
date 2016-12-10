@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <dirent.h>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -39,6 +40,8 @@ struct daxctl_ctx {
 	struct log_ctx ctx;
 	int refcount;
 	void *userdata;
+	int regions_init;
+	struct list_head regions;
 };
 
 /**
@@ -88,6 +91,7 @@ DAXCTL_EXPORT int daxctl_new(struct daxctl_ctx **ctx)
 	info(c, "ctx %p created\n", c);
 	dbg(c, "log_priority=%d\n", c->ctx.log_priority);
 	*ctx = c;
+	list_head_init(&c->regions);
 
 	return 0;
 }
@@ -180,10 +184,23 @@ static void free_dev(struct daxctl_dev *dev, struct list_head *head)
 	free(dev);
 }
 
+static void free_region(struct daxctl_region *region, struct list_head *head)
+{
+	struct daxctl_dev *dev, *_d;
+
+	list_for_each_safe(&region->devices, dev, _d, list)
+		free_dev(dev, &region->devices);
+	if (head)
+		list_del_from(head, &region->list);
+	free(region->region_path);
+	free(region->region_buf);
+	free(region->devname);
+	free(region);
+}
+
 DAXCTL_EXPORT void daxctl_region_unref(struct daxctl_region *region)
 {
 	struct daxctl_ctx *ctx;
-	struct daxctl_dev *dev, *_d;
 
 	if (!region)
 		return;
@@ -193,12 +210,7 @@ DAXCTL_EXPORT void daxctl_region_unref(struct daxctl_region *region)
 
 	ctx = region->ctx;
 	dbg(ctx, "%s: %s\n", __func__, daxctl_region_get_devname(region));
-	list_for_each_safe(&region->devices, dev, _d, list)
-		free_dev(dev, &region->devices);
-	free(region->region_path);
-	free(region->region_buf);
-	free(region->devname);
-	free(region);
+	free_region(region, &ctx->regions);
 }
 
 DAXCTL_EXPORT void daxctl_region_ref(struct daxctl_region *region)
@@ -209,12 +221,17 @@ DAXCTL_EXPORT void daxctl_region_ref(struct daxctl_region *region)
 
 static void *add_dax_region(void *parent, int id, const char *base)
 {
-	char *path = calloc(1, strlen(base) + 100);
+	struct daxctl_region *region, *region_dup;
 	const char *attrs = "dax_region";
 	struct daxctl_ctx *ctx = parent;
-	struct daxctl_region *region;
 	char buf[SYSFS_ATTR_SIZE];
+	char *path;
 
+	daxctl_region_foreach(ctx, region_dup)
+		if (region_dup->id == id)
+			return region_dup;
+
+	path = calloc(1, strlen(base) + 100);
 	if (!path)
 		return NULL;
 
@@ -247,6 +264,8 @@ static void *add_dax_region(void *parent, int id, const char *base)
 	if (!region->region_buf)
 		goto err_read;
 	region->buf_len = strlen(path) + REGION_BUF_SIZE;
+
+	list_add(&ctx->regions, &region->list);
 
 	free(path);
 	return region;
@@ -339,7 +358,7 @@ DAXCTL_EXPORT int daxctl_region_get_id(struct daxctl_region *region)
 	return region->id;
 }
 
-DAXCTL_EXPORT unsigned int daxctl_region_get_align(struct daxctl_region *region)
+DAXCTL_EXPORT unsigned long daxctl_region_get_align(struct daxctl_region *region)
 {
 	return region->align;
 }
@@ -426,6 +445,44 @@ static void dax_devices_init(struct daxctl_region *region)
 	free(region_path);
 }
 
+static void dax_regions_init(struct daxctl_ctx *ctx)
+{
+	struct dirent *de;
+	DIR *dir;
+
+	if (ctx->regions_init)
+		return;
+
+	ctx->regions_init = 1;
+
+	dir = opendir("/sys/class/dax");
+	if (!dir) {
+		dbg(ctx, "no dax regions found\n");
+		return;
+	}
+
+	while ((de = readdir(dir)) != NULL) {
+		struct daxctl_region *region;
+		int id, region_id;
+		char *dev_path;
+
+		if (de->d_ino == 0)
+			continue;
+		if (sscanf(de->d_name, "dax%d.%d", &region_id, &id) != 2)
+			continue;
+		if (asprintf(&dev_path, "/sys/class/dax/%s/device", de->d_name) < 0) {
+			err(ctx, "dax region path allocation failure\n");
+			continue;
+		}
+
+		region = add_dax_region(ctx, region_id, dev_path);
+		free(dev_path);
+		if (!region)
+			err(ctx, "add_dax_region() for %s failed\n", de->d_name);
+	}
+	closedir(dir);
+}
+
 DAXCTL_EXPORT struct daxctl_dev *daxctl_dev_get_first(struct daxctl_region *region)
 {
 	dax_devices_init(region);
@@ -438,6 +495,22 @@ DAXCTL_EXPORT struct daxctl_dev *daxctl_dev_get_next(struct daxctl_dev *dev)
 	struct daxctl_region *region = dev->region;
 
 	return list_next(&region->devices, dev, list);
+}
+
+DAXCTL_EXPORT struct daxctl_region *daxctl_region_get_first(
+		struct daxctl_ctx *ctx)
+{
+	dax_regions_init(ctx);
+
+	return list_top(&ctx->regions, struct daxctl_region, list);
+}
+
+DAXCTL_EXPORT struct daxctl_region *daxctl_region_get_next(
+		struct daxctl_region *region)
+{
+	struct daxctl_ctx *ctx = region->ctx;
+
+	return list_next(&ctx->regions, region, list);
 }
 
 DAXCTL_EXPORT struct daxctl_region *daxctl_dev_get_region(struct daxctl_dev *dev)
