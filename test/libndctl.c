@@ -625,9 +625,12 @@ static int validate_dax(struct ndctl_dax *dax)
 	struct ndctl_namespace *ndns = ndctl_dax_get_namespace(dax);
 	const char *devname = ndctl_namespace_get_devname(ndns);
 	struct ndctl_region *region = ndctl_dax_get_region(dax);
-	struct daxctl_region *dax_region = NULL;
+	struct ndctl_ctx *ctx = ndctl_dax_get_ctx(dax);
+	struct ndctl_test *test = ndctl_get_private_data(ctx);
+	struct daxctl_region *dax_region = NULL, *found;
 	int rc = -ENXIO, fd, count, dax_expect;
 	struct daxctl_dev *dax_dev, *seed;
+	struct daxctl_ctx *dax_ctx;
 	uuid_t uuid, region_uuid;
 	char devpath[50];
 
@@ -636,6 +639,35 @@ static int validate_dax(struct ndctl_dax *dax)
 		fprintf(stderr, "%s: failed to retrieve daxctl_region\n",
 				devname);
 		return -ENXIO;
+	}
+
+	dax_ctx = ndctl_get_daxctl_ctx(ctx);
+	count = 0;
+	daxctl_region_foreach(dax_ctx, found)
+		if (found == dax_region)
+			count++;
+	if (count != 1) {
+		fprintf(stderr, "%s: failed to iterate to single region instance\n",
+				devname);
+		return -ENXIO;
+	}
+
+	if (ndctl_test_attempt(test, KERNEL_VERSION(4, 10, 0))) {
+		if (daxctl_region_get_size(dax_region)
+				!= ndctl_dax_get_size(dax)) {
+			fprintf(stderr, "%s: expect size: %llu != %llu\n",
+					devname, ndctl_dax_get_size(dax),
+					daxctl_region_get_size(dax_region));
+			return -ENXIO;
+		}
+
+		if (daxctl_region_get_align(dax_region)
+				!= ndctl_dax_get_align(dax)) {
+			fprintf(stderr, "%s: expect align: %lu != %lu\n",
+					devname, ndctl_dax_get_align(dax),
+					daxctl_region_get_align(dax_region));
+			return -ENXIO;
+		}
 	}
 
 	rc = -ENXIO;
@@ -2646,6 +2678,7 @@ int test_libndctl(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx)
 	ndctl_set_log_priority(ctx, loglevel);
 	daxctl_ctx = ndctl_get_daxctl_ctx(ctx);
 	daxctl_set_log_priority(daxctl_ctx, loglevel);
+	ndctl_set_private_data(ctx, test);
 
 	kmod_ctx = kmod_new(NULL, NULL);
 	if (!kmod_ctx)
