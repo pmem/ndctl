@@ -263,6 +263,7 @@ AC_CONFIG_FILES([
         daxctl/lib/Makefile
         ndctl/lib/Makefile
         ndctl/Makefile
+        daxctl/Makefile
         test/Makefile
         Documentation/Makefile
 ])

@@ -38,6 +38,18 @@ Requires:	LNAME%{?_isa} = %{version}-%{release}
 The %{name}-devel package contains libraries and header files for
 developing applications that use %{name}.
 
+%package -n daxctl
+Summary:	Manage Device-DAX instances
+License:	GPLv2
+Group:		System Environment/Base
+Requires:	DAX_LNAME%{?_isa} = %{version}-%{release}
+
+%description -n daxctl
+The daxctl utility provides enumeration and provisioning commands for
+the Linux kernel Device-DAX facility. This facility enables DAX mappings
+of performance / feature differentiated memory without need of a
+filesystem.
+
 %package -n DAX_DNAME
 Summary:	Development files for libdaxctl
 License:	LGPLv2

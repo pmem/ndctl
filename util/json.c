@@ -1,5 +1,6 @@
 #include <limits.h>
 #include <util/json.h>
+#include <util/filter.h>
 #include <uuid/uuid.h>
 #include <json-c/json.h>
 #include <ndctl/libndctl.h>
@@ -100,42 +101,109 @@ bool util_namespace_active(struct ndctl_namespace *ndns)
 	return false;
 }
 
-static json_object *util_daxctl_region_to_json(struct daxctl_region *region,
-		bool include_idle)
+struct json_object *util_daxctl_dev_to_json(struct daxctl_dev *dev)
 {
-	struct json_object *jdaxdevs = json_object_new_array();
-	struct json_object *jobj;
+	const char *devname = daxctl_dev_get_devname(dev);
+	struct json_object *jdev, *jobj;
+
+	jdev = json_object_new_object();
+	if (!devname || !jdev)
+		return NULL;
+
+	jobj = json_object_new_string(devname);
+	if (jobj)
+		json_object_object_add(jdev, "chardev", jobj);
+
+	jobj = json_object_new_int64(daxctl_dev_get_size(dev));
+	if (jobj)
+		json_object_object_add(jdev, "size", jobj);
+
+	return jdev;
+}
+
+struct json_object *util_daxctl_devs_to_list(struct daxctl_region *region,
+		struct json_object *jdevs, const char *ident, bool include_idle)
+{
 	struct daxctl_dev *dev;
 
-	if (!jdaxdevs)
-		return NULL;
-
 	daxctl_dev_foreach(region, dev) {
-		const char *devname = daxctl_dev_get_devname(dev);
 		struct json_object *jdev;
 
-		if (daxctl_dev_get_size(dev) == 0 && !include_idle)
+		if (!util_daxctl_dev_filter(dev, ident))
 			continue;
 
-		jdev = json_object_new_object();
-		if (!devname || !jdev)
+		if (!include_idle && !daxctl_dev_get_size(dev))
 			continue;
-		jobj = json_object_new_string(devname);
-		if (jobj)
-			json_object_object_add(jdev, "chardev", jobj);
 
-		jobj = json_object_new_int64(daxctl_dev_get_size(dev));
-		if (jobj)
-			json_object_object_add(jdev, "size", jobj);
+		if (!jdevs) {
+			jdevs = json_object_new_array();
+			if (!jdevs)
+				return NULL;
+		}
 
-		json_object_array_add(jdaxdevs, jdev);
+		jdev = util_daxctl_dev_to_json(dev);
+		if (!jdev) {
+			json_object_put(jdevs);
+			return NULL;
+		}
+
+		json_object_array_add(jdevs, jdev);
 	}
 
-	if (json_object_array_length(jdaxdevs) < 1) {
-		json_object_put(jdaxdevs);
+	return jdevs;
+}
+
+struct json_object *util_daxctl_region_to_json(struct daxctl_region *region,
+		bool include_devs, const char *ident, bool include_idle)
+{
+	unsigned long align;
+	struct json_object *jregion, *jobj;
+	unsigned long long available_size, size;
+
+	jregion = json_object_new_object();
+	if (!jregion)
 		return NULL;
+
+	jobj = json_object_new_int(daxctl_region_get_id(region));
+	if (!jobj)
+		goto err;
+	json_object_object_add(jregion, "id", jobj);
+
+	size = daxctl_region_get_size(region);
+	if (size < ULLONG_MAX) {
+		jobj = json_object_new_int64(size);
+		if (!jobj)
+			goto err;
+		json_object_object_add(jregion, "size", jobj);
 	}
-	return jdaxdevs;
+
+	available_size = daxctl_region_get_available_size(region);
+	if (available_size) {
+		jobj = json_object_new_int64(available_size);
+		if (!jobj)
+			goto err;
+		json_object_object_add(jregion, "available_size", jobj);
+	}
+
+	align = daxctl_region_get_align(region);
+	if (align < ULONG_MAX) {
+		jobj = json_object_new_int64(align);
+		if (!jobj)
+			goto err;
+		json_object_object_add(jregion, "align", jobj);
+	}
+
+	if (!include_devs)
+		return jregion;
+
+	jobj = util_daxctl_devs_to_list(region, NULL, ident, include_idle);
+	if (jobj)
+		json_object_object_add(jregion, "devices", jobj);
+
+	return jregion;
+ err:
+	json_object_put(jregion);
+	return NULL;
 }
 
 struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
@@ -233,9 +301,10 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 		json_object_object_add(jndns, "uuid", jobj);
 		if (include_dax) {
 			dax_region = ndctl_dax_get_daxctl_region(dax);
-			jobj = util_daxctl_region_to_json(dax_region, include_idle);
+			jobj = util_daxctl_region_to_json(dax_region,
+					true, NULL, include_idle);
 			if (jobj)
-				json_object_object_add(jndns, "daxdevs", jobj);
+				json_object_object_add(jndns, "daxregion", jobj);
 		}
 	} else if (ndctl_namespace_get_type(ndns) != ND_DEVICE_NAMESPACE_IO) {
 		const char *name;

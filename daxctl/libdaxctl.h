@@ -15,6 +15,7 @@
 
 #include <stdarg.h>
 #include <unistd.h>
+#include <uuid.h>
 
 #ifdef __cplusplus
 extern "C" {

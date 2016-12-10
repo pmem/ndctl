@@ -22,7 +22,7 @@
 #include <ndctl.h>
 #endif
 
-#include <ndctl/builtin.h>
+#include <builtin.h>
 #include <test.h>
 
 #define NUM_NAMESPACES 4

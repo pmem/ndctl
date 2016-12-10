@@ -4,6 +4,7 @@
 #include <limits.h>
 #include <util/filter.h>
 #include <ndctl/libndctl.h>
+#include <daxctl/libdaxctl.h>
 
 struct ndctl_bus *util_bus_filter(struct ndctl_bus *bus, const char *ident)
 {
@@ -155,6 +156,26 @@ struct ndctl_region *util_region_filter_by_dimm(struct ndctl_region *region,
 		if (dimm_id == ULONG_MAX && strcmp(ident, name) == 0)
 			return region;
 	}
+
+	return NULL;
+}
+
+struct daxctl_dev *util_daxctl_dev_filter(struct daxctl_dev *dev,
+		const char *ident)
+{
+	struct daxctl_region *region = daxctl_dev_get_region(dev);
+	int region_id, dev_id;
+
+	if (!ident || strcmp(ident, "all") == 0)
+		return dev;
+
+	if (strcmp(ident, daxctl_dev_get_devname(dev)) == 0)
+		return dev;
+
+	if (sscanf(ident, "%d.%d", &region_id, &dev_id) == 2
+			&& daxctl_region_get_id(region) == region_id
+			&& daxctl_dev_get_id(dev) == dev_id)
+		return dev;
 
 	return NULL;
 }

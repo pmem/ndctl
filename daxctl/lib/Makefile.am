@@ -15,6 +15,9 @@ libdaxctl_la_SOURCES =\
 	../../util/log.h \
 	libdaxctl.c
 
+libdaxctl_la_LIBADD =\
+	$(UUID_LIBS)
+
 EXTRA_DIST += libdaxctl.sym
 
 libdaxctl_la_LDFLAGS = $(AM_LDFLAGS) \
