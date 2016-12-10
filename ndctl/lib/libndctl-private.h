@@ -144,6 +144,7 @@ struct ndctl_ctx {
 	struct kmod_ctx *kmod_ctx;
 	struct daxctl_ctx *daxctl_ctx;
 	unsigned long timeout;
+	void *private_data;
 };
 
 /**

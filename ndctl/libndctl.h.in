@@ -77,6 +77,8 @@ struct ndctl_ctx;
 struct ndctl_ctx *ndctl_ref(struct ndctl_ctx *ctx);
 struct ndctl_ctx *ndctl_unref(struct ndctl_ctx *ctx);
 int ndctl_new(struct ndctl_ctx **ctx);
+void ndctl_set_private_data(struct ndctl_ctx *ctx, void *data);
+void *ndctl_get_private_data(struct ndctl_ctx *ctx);
 struct daxctl_ctx;
 struct daxctl_ctx *ndctl_get_daxctl_ctx(struct ndctl_ctx *ctx);
 void ndctl_invalidate(struct ndctl_ctx *ctx);

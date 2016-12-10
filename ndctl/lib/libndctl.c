@@ -434,6 +434,16 @@ NDCTL_EXPORT int ndctl_new(struct ndctl_ctx **ctx)
 	return rc;
 }
 
+NDCTL_EXPORT void ndctl_set_private_data(struct ndctl_ctx *ctx, void *data)
+{
+	ctx->private_data = data;
+}
+
+NDCTL_EXPORT void *ndctl_get_private_data(struct ndctl_ctx *ctx)
+{
+	return ctx->private_data;
+}
+
 NDCTL_EXPORT struct daxctl_ctx *ndctl_get_daxctl_ctx(struct ndctl_ctx *ctx)
 {
 	return ctx->daxctl_ctx;

@@ -12,6 +12,8 @@ global:
 	ndctl_set_log_priority;
 	ndctl_new;
 	ndctl_get_daxctl_ctx;
+	ndctl_set_private_data;
+	ndctl_get_private_data;
 	ndctl_invalidate;
 local:
         *;
