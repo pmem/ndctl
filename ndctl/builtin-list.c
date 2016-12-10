@@ -188,7 +188,7 @@ static int num_list_flags(void)
 	return list.buses + list.dimms + list.regions + list.namespaces;
 }
 
-int cmd_list(int argc, const char **argv, struct ndctl_ctx *ctx)
+int cmd_list(int argc, const char **argv, void *ctx)
 {
 	const struct option options[] = {
 		OPT_STRING('b', "bus", &param.bus, "bus-id", "filter by bus"),

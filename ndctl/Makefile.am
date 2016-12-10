@@ -10,7 +10,6 @@ ndctl_SOURCES = ndctl.c \
 		 ../util/log.c \
 		builtin-list.c \
 		builtin-test.c \
-		builtin-help.c \
 		util/json.c
 
 if ENABLE_SMART

@@ -9,18 +9,45 @@
 #include <ndctl/libndctl.h>
 #include <ccan/array_size/array_size.h>
 
+#include <util/parse-options.h>
 #include <util/strbuf.h>
 #include <util/util.h>
+#include <util/main.h>
 
 const char ndctl_usage_string[] = "ndctl [--version] [--help] COMMAND [ARGS]";
 const char ndctl_more_info_string[] =
 	"See 'ndctl help COMMAND' for more information on a specific command.\n"
 	" ndctl --list-cmds to see all available commands";
 
-static int cmd_version(int argc, const char **argv, struct ndctl_ctx *ctx)
+static int cmd_version(int argc, const char **argv, void *ctx)
 {
 	printf("%s\n", VERSION);
 	return 0;
+}
+
+static int cmd_help(int argc, const char **argv, void *ctx)
+{
+	const char * const builtin_help_subcommands[] = {
+		"enable-region", "disable-region", "zero-labels",
+		"enable-namespace", "disable-namespace", NULL };
+	struct option builtin_help_options[] = {
+		OPT_END(),
+	};
+	const char *builtin_help_usage[] = {
+		"ndctl help [command]",
+		NULL
+	};
+
+	argc = parse_options_subcommand(argc, argv, builtin_help_options,
+			builtin_help_subcommands, builtin_help_usage, 0);
+
+	if (!argv[0]) {
+		printf("\n usage: %s\n\n", ndctl_usage_string);
+		printf("\n %s\n\n", ndctl_more_info_string);
+		return 0;
+	}
+
+	return help_show_man_page(argv[0], "ndctl", "NDCTL_MAN_VIEWER");
 }
 
 static struct cmd_struct commands[] = {
@@ -48,131 +75,16 @@ static struct cmd_struct commands[] = {
 	#endif
 };
 
-static int handle_options(const char ***argv, int *argc)
-{
-	int handled = 0;
-
-	while (*argc > 0) {
-		const char *cmd = (*argv)[0];
-		if (cmd[0] != '-')
-			break;
-
-		if (!strcmp(cmd, "--version") || !strcmp(cmd, "--help"))
-			break;
-
-		/*
-		 * Shortcut for '-h' and '-v' options to invoke help
-		 * and version command.
-		 */
-		if (!strcmp(cmd, "-h")) {
-			(*argv)[0] = "--help";
-			break;
-		}
-
-		if (!strcmp(cmd, "-v")) {
-			(*argv)[0] = "--version";
-			break;
-		}
-
-		if (!strcmp(cmd, "--list-cmds")) {
-			unsigned int i;
-
-			for (i = 0; i < ARRAY_SIZE(commands); i++) {
-				struct cmd_struct *p = commands+i;
-
-				/* filter out commands from auto-complete */
-				if (strcmp(p->cmd, "create-nfit") == 0)
-					continue;
-				if (strcmp(p->cmd, "test") == 0)
-					continue;
-				if (strcmp(p->cmd, "bat") == 0)
-					continue;
-				printf("%s\n", p->cmd);
-			}
-			exit(0);
-		} else {
-			fprintf(stderr, "Unknown option: %s\n", cmd);
-			usage(ndctl_usage_string);
-		}
-
-		(*argv)++;
-		(*argc)--;
-		handled++;
-	}
-	return handled;
-}
-
-static int run_builtin(struct cmd_struct *p, int argc, const char **argv)
-{
-	int status;
-	struct stat st;
-	struct ndctl_ctx *ctx;
-
-	/*
-	 * Yes, establishing the ndctl context here makes this code less
-	 * generic, but it allows for unit testing the top level
-	 * interface to the built-in commands.
-	 */
-	status = ndctl_new(&ctx);
-	if (status)
-		return status;
-	status = p->fn(argc, argv, ctx);
-	ndctl_unref(ctx);
-
-	if (status)
-		return status & 0xff;
-
-	/* Somebody closed stdout? */
-	if (fstat(fileno(stdout), &st))
-		return 0;
-	/* Ignore write errors for pipes and sockets.. */
-	if (S_ISFIFO(st.st_mode) || S_ISSOCK(st.st_mode))
-		return 0;
-
-	status = 1;
-	/* Check for ENOSPC and EIO errors.. */
-	if (fflush(stdout)) {
-		fprintf(stderr, "write failure on standard output: %s", strerror(errno));
-		goto out;
-	}
-	if (ferror(stdout)) {
-		fprintf(stderr, "unknown write failure on standard output");
-		goto out;
-	}
-	if (fclose(stdout)) {
-		fprintf(stderr, "close failed on standard output: %s", strerror(errno));
-		goto out;
-	}
-	status = 0;
-out:
-	return status;
-}
-
-static void handle_internal_command(int argc, const char **argv)
-{
-	const char *cmd = argv[0];
-	unsigned int i;
-
-	/* Turn "ndctl cmd --help" into "ndctl help cmd" */
-	if (argc > 1 && !strcmp(argv[1], "--help")) {
-		argv[1] = argv[0];
-		argv[0] = cmd = "help";
-	}
-
-	for (i = 0; i < ARRAY_SIZE(commands); i++) {
-		struct cmd_struct *p = commands+i;
-		if (strcmp(p->cmd, cmd))
-			continue;
-		exit(run_builtin(p, argc, argv));
-	}
-}
-
 int main(int argc, const char **argv)
 {
+	struct ndctl_ctx *ctx;
+	int rc;
+
 	/* Look for flags.. */
 	argv++;
 	argc--;
-	handle_options(&argv, &argc);
+	main_handle_options(&argv, &argc, ndctl_usage_string, commands,
+			ARRAY_SIZE(commands));
 
 	if (argc > 0) {
 		if (!prefixcmp(argv[0], "--"))
@@ -183,7 +95,13 @@ int main(int argc, const char **argv)
 		printf("\n %s\n\n", ndctl_more_info_string);
 		goto out;
 	}
-	handle_internal_command(argc, argv);
+
+	rc = ndctl_new(&ctx);
+	if (rc)
+		goto out;
+	main_handle_internal_command(argc, argv, ctx, commands,
+			ARRAY_SIZE(commands));
+	ndctl_unref(ctx);
 	fprintf(stderr, "Unknown command: '%s'\n", argv[0]);
 out:
 	return 1;

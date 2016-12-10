@@ -23,7 +23,7 @@
 
 static sigjmp_buf sj_env;
 
-static int create_namespace(int argc, const char **argv, struct ndctl_ctx *ctx)
+static int create_namespace(int argc, const char **argv, void *ctx)
 {
 	builtin_xaction_namespace_reset();
 	return cmd_create_namespace(argc, argv, ctx);

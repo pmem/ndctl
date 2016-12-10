@@ -56,16 +56,16 @@ static void exec_man_man(const char *path, const char *page)
 		strerror_r(errno, sbuf, sizeof(sbuf)));
 }
 
-static char *cmd_to_page(const char *ndctl_cmd, char **page)
+static char *cmd_to_page(const char *cmd, char **page, const char *util_name)
 {
 	int rc;
 
-	if (!ndctl_cmd)
-		rc = asprintf(page, "ndctl");
-	else if (!prefixcmp(ndctl_cmd, "ndctl"))
-		rc = asprintf(page, "%s", ndctl_cmd);
+	if (!cmd)
+		rc = asprintf(page, "%s", util_name);
+	else if (!prefixcmp(cmd, util_name))
+		rc = asprintf(page, "%s", cmd);
 	else
-		rc = asprintf(page, "ndctl-%s", ndctl_cmd);
+		rc = asprintf(page, "%s-%s", util_name, cmd);
 
 	if (rc < 0)
 		return NULL;
@@ -119,12 +119,13 @@ static void exec_viewer(const char *name, const char *page)
 		warning("'%s': unknown man viewer.", name);
 }
 
-static int show_man_page(const char *ndctl_cmd)
+int help_show_man_page(const char *cmd, const char *util_name,
+		const char *viewer)
 {
-	const char *fallback = getenv("NDCTL_MAN_VIEWER");
+	const char *fallback = getenv(viewer);
 	char *page;
 
-	page = cmd_to_page(ndctl_cmd, &page);
+	page = cmd_to_page(cmd, &page, util_name);
 	if (!page)
 		return -1;
 	setup_man_path();
@@ -135,29 +136,4 @@ static int show_man_page(const char *ndctl_cmd)
 	pr_err("no man viewer handled the request");
 	free(page);
 	return -1;
-}
-
-int cmd_help(int argc, const char **argv, struct ndctl_ctx *ctx)
-{
-	const char * const builtin_help_subcommands[] = {
-		"enable-region", "disable-region", "zero-labels",
-		"enable-namespace", "disable-namespace", NULL };
-	struct option builtin_help_options[] = {
-		OPT_END(),
-	};
-	const char *builtin_help_usage[] = {
-		"ndctl help [command]",
-		NULL
-	};
-
-	argc = parse_options_subcommand(argc, argv, builtin_help_options,
-			builtin_help_subcommands, builtin_help_usage, 0);
-
-	if (!argv[0]) {
-		printf("\n usage: %s\n\n", ndctl_usage_string);
-		printf("\n %s\n\n", ndctl_more_info_string);
-		return 0;
-	}
-
-	return show_man_page(argv[0]);
 }

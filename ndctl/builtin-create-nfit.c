@@ -164,7 +164,7 @@ static int write_nfit(struct nfit *nfit, const char *file, int force)
 }
 
 struct ndctl_ctx;
-int cmd_create_nfit(int argc, const char **argv, struct ndctl_ctx *ctx)
+int cmd_create_nfit(int argc, const char **argv, void *ctx)
 {
 	int i, rc = -ENXIO, force = 0;
 	const char * const u[] = {

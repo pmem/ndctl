@@ -781,7 +781,7 @@ static int do_xaction_namespace(const char *namespace,
 	return rc;
 }
 
-int cmd_disable_namespace(int argc, const char **argv, struct ndctl_ctx *ctx)
+int cmd_disable_namespace(int argc, const char **argv, void *ctx)
 {
 	char *xable_usage = "ndctl disable-namespace <namespace> [<options>]";
 	const char *namespace = parse_namespace_options(argc, argv,
@@ -802,7 +802,7 @@ int cmd_disable_namespace(int argc, const char **argv, struct ndctl_ctx *ctx)
 	}
 }
 
-int cmd_enable_namespace(int argc, const char **argv, struct ndctl_ctx *ctx)
+int cmd_enable_namespace(int argc, const char **argv, void *ctx)
 {
 	char *xable_usage = "ndctl enable-namespace <namespace> [<options>]";
 	const char *namespace = parse_namespace_options(argc, argv,
@@ -823,7 +823,7 @@ int cmd_enable_namespace(int argc, const char **argv, struct ndctl_ctx *ctx)
 	}
 }
 
-int cmd_create_namespace(int argc, const char **argv, struct ndctl_ctx *ctx)
+int cmd_create_namespace(int argc, const char **argv, void *ctx)
 {
 	char *xable_usage = "ndctl create-namespace [<options>]";
 	const char *namespace = parse_namespace_options(argc, argv,
@@ -853,7 +853,7 @@ int cmd_create_namespace(int argc, const char **argv, struct ndctl_ctx *ctx)
 	return 0;
 }
 
-int cmd_destroy_namespace(int argc , const char **argv, struct ndctl_ctx *ctx)
+int cmd_destroy_namespace(int argc , const char **argv, void *ctx)
 {
 	char *xable_usage = "ndctl destroy-namespace <namespace> [<options>]";
 	const char *namespace = parse_namespace_options(argc, argv,

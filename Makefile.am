@@ -64,6 +64,8 @@ libutil_a_SOURCES = \
 	util/parse-options.h \
 	util/usage.c \
 	util/size.c \
+	util/main.c \
+	util/help.c \
 	util/strbuf.c \
 	util/wrapper.c \
 	util/filter.c
