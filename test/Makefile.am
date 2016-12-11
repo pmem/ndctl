@@ -75,7 +75,7 @@ device_dax_SOURCES = \
 		dax-pmd.c \
 		core.c \
 		../ndctl/builtin-xaction-namespace.c \
-		../ndctl/util/json.c
+		../util/json.c
 device_dax_LDADD = \
 		$(LIBNDCTL_LIB) \
 		$(JSON_LIBS) \
@@ -85,7 +85,7 @@ multi_pmem_SOURCES = \
 		multi-pmem.c \
 		core.c \
 		../ndctl/builtin-xaction-namespace.c \
-		../ndctl/util/json.c
+		../util/json.c
 multi_pmem_LDADD = \
 		$(LIBNDCTL_LIB) \
 		$(JSON_LIBS) \

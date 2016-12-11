@@ -10,7 +10,7 @@ ndctl_SOURCES = ndctl.c \
 		 ../util/log.c \
 		builtin-list.c \
 		builtin-test.c \
-		util/json.c
+		../util/json.c
 
 if ENABLE_SMART
 ndctl_SOURCES += util/json-smart.c
