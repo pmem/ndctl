@@ -30,6 +30,7 @@ static struct {
 	const char *region;
 	const char *type;
 	const char *dimm;
+	const char *mode;
 	const char *namespace;
 } param;
 
@@ -43,6 +44,25 @@ do { \
 			VERSION, __func__, __LINE__, ##__VA_ARGS__); \
 } while (0)
 
+static enum ndctl_namespace_mode mode_to_type(const char *mode)
+{
+	if (!mode)
+		return -ENXIO;
+
+	if (strcasecmp(param.mode, "memory") == 0)
+		return NDCTL_NS_MODE_MEMORY;
+	else if (strcasecmp(param.mode, "sector") == 0)
+		return NDCTL_NS_MODE_SAFE;
+	else if (strcasecmp(param.mode, "safe") == 0)
+		return NDCTL_NS_MODE_SAFE;
+	else if (strcasecmp(param.mode, "dax") == 0)
+		return NDCTL_NS_MODE_DAX;
+	else if (strcasecmp(param.mode, "raw") == 0)
+		return NDCTL_NS_MODE_RAW;
+
+	return NDCTL_NS_MODE_UNKNOWN;
+}
+
 static struct json_object *list_namespaces(struct ndctl_region *region,
 		struct json_object *container, struct json_object *jnamespaces,
 		bool continue_array)
@@ -50,6 +70,7 @@ static struct json_object *list_namespaces(struct ndctl_region *region,
 	struct ndctl_namespace *ndns;
 
 	ndctl_namespace_foreach(region, ndns) {
+		enum ndctl_namespace_mode mode = ndctl_namespace_get_mode(ndns);
 		struct json_object *jndns;
 
 		/* are we emitting namespaces? */
@@ -57,6 +78,9 @@ static struct json_object *list_namespaces(struct ndctl_region *region,
 			break;
 
 		if (!util_namespace_filter(ndns, param.namespace))
+			continue;
+
+		if (param.mode && mode_to_type(param.mode) != mode)
 			continue;
 
 		if (!list.idle && !util_namespace_active(ndns))
@@ -197,7 +221,9 @@ int cmd_list(int argc, const char **argv, void *ctx)
 		OPT_STRING('d', "dimm", &param.dimm, "dimm-id",
 				"filter by dimm"),
 		OPT_STRING('n', "namespace", &param.namespace, "namespace-id",
-				"filter by namespace"),
+				"filter by namespace id"),
+		OPT_STRING('m', "mode", &param.mode, "namespace-mode",
+				"filter by namespace mode"),
 		OPT_STRING('t', "type", &param.type, "region-type",
 				"filter by region-type"),
 		OPT_BOOLEAN('B', "buses", &list.buses, "include bus info"),
@@ -249,6 +275,11 @@ int cmd_list(int argc, const char **argv, void *ctx)
 			type = ND_DEVICE_REGION_PMEM;
 		else
 			type = ND_DEVICE_REGION_BLK;
+	}
+
+	if (mode_to_type(param.mode) == NDCTL_NS_MODE_UNKNOWN) {
+		error("invalid mode: '%s'\n", param.mode);
+		return -EINVAL;
 	}
 
 	ndctl_bus_foreach(ctx, bus) {

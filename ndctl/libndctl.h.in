@@ -475,6 +475,7 @@ enum ndctl_namespace_mode {
 	NDCTL_NS_MODE_SAFE,
 	NDCTL_NS_MODE_RAW,
 	NDCTL_NS_MODE_DAX,
+	NDCTL_NS_MODE_UNKNOWN,
 };
 enum ndctl_namespace_mode ndctl_namespace_get_mode(
 		struct ndctl_namespace *ndns);
