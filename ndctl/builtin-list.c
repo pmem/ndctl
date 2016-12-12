@@ -23,6 +23,7 @@ static struct {
 	bool namespaces;
 	bool idle;
 	bool health;
+	bool dax;
 } list;
 
 static struct {
@@ -98,7 +99,7 @@ static struct json_object *list_namespaces(struct ndctl_region *region,
 						jnamespaces);
 		}
 
-		jndns = util_namespace_to_json(ndns, list.idle);
+		jndns = util_namespace_to_json(ndns, list.idle, list.dax);
 		if (!jndns) {
 			fail("\n");
 			continue;
@@ -233,6 +234,8 @@ int cmd_list(int argc, const char **argv, void *ctx)
 				"include region info"),
 		OPT_BOOLEAN('N', "namespaces", &list.namespaces,
 				"include namespace info (default)"),
+		OPT_BOOLEAN('X', "device-dax", &list.dax,
+				"include device-dax info"),
 		OPT_BOOLEAN('i', "idle", &list.idle, "include idle devices"),
 		OPT_END(),
 	};
@@ -265,6 +268,8 @@ int cmd_list(int argc, const char **argv, void *ctx)
 		list.buses = !!param.bus;
 		list.regions = !!param.region;
 		list.dimms = !!param.dimm;
+		if (list.dax && !param.mode)
+			param.mode = "dax";
 	}
 
 	if (num_list_flags() == 0)

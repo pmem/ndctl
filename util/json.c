@@ -139,7 +139,7 @@ static json_object *util_daxctl_region_to_json(struct daxctl_region *region,
 }
 
 struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
-		bool include_idle)
+		bool include_idle, bool include_dax)
 {
 	struct json_object *jndns = json_object_new_object();
 	unsigned long long size = ULLONG_MAX;
@@ -231,10 +231,12 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 		if (!jobj)
 			goto err;
 		json_object_object_add(jndns, "uuid", jobj);
-		dax_region = ndctl_dax_get_daxctl_region(dax);
-		jobj = util_daxctl_region_to_json(dax_region, include_idle);
-		if (jobj)
-			json_object_object_add(jndns, "daxdevs", jobj);
+		if (include_dax) {
+			dax_region = ndctl_dax_get_daxctl_region(dax);
+			jobj = util_daxctl_region_to_json(dax_region, include_idle);
+			if (jobj)
+				json_object_object_add(jndns, "daxdevs", jobj);
+		}
 	} else if (ndctl_namespace_get_type(ndns) != ND_DEVICE_NAMESPACE_IO) {
 		const char *name;
 
