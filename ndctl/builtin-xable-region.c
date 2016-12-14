@@ -6,11 +6,16 @@
 #include <util/parse-options.h>
 #include <ndctl/libndctl.h>
 
-static const char *region_bus;
+static struct {
+	const char *bus;
+	const char *type;
+} param;
 
 static const struct option region_options[] = {
-	OPT_STRING('b', "bus", &region_bus, "bus-id",
+	OPT_STRING('b', "bus", &param.bus, "bus-id",
 			"<region> must be on a bus with an id/provider of <bus-id>"),
+	OPT_STRING('t', "type", &param.type, "region-type",
+			"<region> must be of the specified type"),
 	OPT_END(),
 };
 
@@ -33,6 +38,20 @@ static const char *parse_region_options(int argc, const char **argv,
 		usage_with_options(u, region_options);
 		return NULL; /* we won't return from usage_with_options() */
 	}
+
+	if (param.type) {
+		if (strcmp(param.type, "pmem") == 0)
+			/* pass */;
+		else if (strcmp(param.type, "blk") == 0)
+			/* pass */;
+		else {
+			error("unknown region type '%s', should be 'pmem' or 'blk'\n",
+					param.type);
+			usage_with_options(u, region_options);
+			return NULL;
+		}
+	}
+
 	return argv[0];
 }
 
@@ -47,10 +66,14 @@ static int do_xable_region(const char *region_arg,
 		goto out;
 
         ndctl_bus_foreach(ctx, bus) {
-		if (!util_bus_filter(bus, region_bus))
+		if (!util_bus_filter(bus, param.bus))
 			continue;
 
 		ndctl_region_foreach(bus, region) {
+			const char *type = ndctl_region_get_type_name(region);
+
+			if (param.type && strcmp(param.type, type) != 0)
+				continue;
 			if (!util_region_filter(region, region_arg))
 				continue;
 			if (xable_fn(region) == 0)
@@ -60,7 +83,7 @@ static int do_xable_region(const char *region_arg,
 
 	rc = success;
  out:
-	region_bus = NULL;
+	param.bus = NULL;
 	return rc;
 }
 
