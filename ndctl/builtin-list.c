@@ -173,6 +173,9 @@ static struct json_object *region_to_json(struct ndctl_region *region)
 		if (!list.dimms)
 			break;
 
+		if (!util_dimm_filter(dimm, param.dimm))
+			continue;
+
 		if (!list.idle && !ndctl_dimm_is_enabled(dimm))
 			continue;
 
