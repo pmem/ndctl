@@ -208,18 +208,7 @@ int test_pmem_namespaces(int log_level, struct ndctl_test *test,
 
 	if (!bus) {
 		fprintf(stderr, "ACPI.NFIT unavailable falling back to nfit_test\n");
-		kmod_ctx = kmod_new(NULL, NULL);
-		if (!kmod_ctx)
-			return rc;
-		kmod_set_log_priority(kmod_ctx, log_level);
-
-		rc = kmod_module_new_from_name(kmod_ctx, "nfit_test", &mod);
-		if (rc < 0)
-			goto err_module;
-
-		rc = kmod_module_probe_insert_module(mod,
-				KMOD_PROBE_APPLY_BLACKLIST,
-				NULL, NULL, NULL, NULL);
+		rc = nfit_test_init(&kmod_ctx, &mod, log_level);
 		ndctl_invalidate(ctx);
 		bus = ndctl_bus_get_by_provider(ctx, "nfit_test.0");
 		if (rc < 0 || !bus) {

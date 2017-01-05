@@ -1,6 +1,8 @@
 #include <linux/version.h>
 #include <sys/utsname.h>
+#include <libkmod.h>
 #include <stdlib.h>
+#include <errno.h>
 #include <stdio.h>
 #include <test.h>
 
@@ -95,4 +97,27 @@ int ndctl_test_get_attempted(struct ndctl_test *test)
 int ndctl_test_get_skipped(struct ndctl_test *test)
 {
 	return test->skip;
+}
+
+int nfit_test_init(struct kmod_ctx **ctx, struct kmod_module **mod,
+		int log_level)
+{
+	int rc;
+
+	*ctx = kmod_new(NULL, NULL);
+	if (!*ctx)
+		return -ENXIO;
+	kmod_set_log_priority(*ctx, log_level);
+
+	rc = kmod_module_new_from_name(*ctx, "nfit_test", mod);
+	if (rc < 0) {
+		kmod_unref(*ctx);
+		return rc;
+	}
+
+	rc = kmod_module_probe_insert_module(*mod, KMOD_PROBE_APPLY_BLACKLIST,
+			NULL, NULL, NULL, NULL);
+	if (rc)
+		kmod_unref(*ctx);
+	return rc;
 }

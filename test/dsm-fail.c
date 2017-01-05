@@ -171,29 +171,18 @@ int test_dsm_fail(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx)
 	int result = EXIT_FAILURE, err;
 
 	ndctl_set_log_priority(ctx, loglevel);
-	kmod_ctx = kmod_new(NULL, NULL);
-	if (!kmod_ctx)
-		return result;
-	kmod_set_log_priority(kmod_ctx, loglevel);
-
-	err = kmod_module_new_from_name(kmod_ctx, "nfit_test", &mod);
-	if (err < 0)
-		goto err_module;
-
-	err = kmod_module_probe_insert_module(mod, KMOD_PROBE_APPLY_BLACKLIST,
-			NULL, NULL, NULL, NULL);
+	err = nfit_test_init(&kmod_ctx, &mod, loglevel);
 	if (err < 0) {
 		result = 77;
 		ndctl_test_skip(test);
 		fprintf(stderr, "%s unavailable skipping tests\n",
 				"nfit_test");
-		goto err_module;
+		return result;
 	}
 
 	result = do_test(ctx, test);
 	kmod_module_remove_module(mod, 0);
 
- err_module:
 	kmod_unref(kmod_ctx);
 	return result;
 }

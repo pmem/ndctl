@@ -64,7 +64,7 @@ parent_uuid_SOURCES = parent-uuid.c core.c
 parent_uuid_LDADD = $(LIBNDCTL_LIB) $(UUID_LIBS) $(KMOD_LIBS)
 
 dax_dev_SOURCES = dax-dev.c core.c
-dax_dev_LDADD = $(LIBNDCTL_LIB)
+dax_dev_LDADD = $(LIBNDCTL_LIB) $(KMOD_LIBS)
 
 dax_pmd_SOURCES = dax-pmd.c
 mmap_SOURCES = mmap.c
@@ -78,6 +78,7 @@ device_dax_SOURCES = \
 		../util/json.c
 device_dax_LDADD = \
 		$(LIBNDCTL_LIB) \
+		$(KMOD_LIBS) \
 		$(JSON_LIBS) \
 		../libutil.a
 

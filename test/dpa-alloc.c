@@ -34,7 +34,6 @@
 #include <ndctl.h>
 #endif
 
-static const char *NFIT_TEST_MODULE = "nfit_test";
 static const char *NFIT_PROVIDER0 = "nfit_test.0";
 static const char *NFIT_PROVIDER1 = "nfit_test.1";
 #define SZ_4K 0x1000UL
@@ -300,31 +299,17 @@ int test_dpa_alloc(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx)
 		return 77;
 
 	ndctl_set_log_priority(ctx, loglevel);
-
-	kmod_ctx = kmod_new(NULL, NULL);
-	if (!kmod_ctx)
-		return result;
-
-	err = kmod_module_new_from_name(kmod_ctx, NFIT_TEST_MODULE, &mod);
-	if (err < 0)
-		goto err_module;
-
-	err = kmod_module_probe_insert_module(mod, KMOD_PROBE_APPLY_BLACKLIST,
-			NULL, NULL, NULL, NULL);
+	err = nfit_test_init(&kmod_ctx, &mod, loglevel);
 	if (err < 0) {
-		result = 77;
 		ndctl_test_skip(test);
-		fprintf(stderr, "%s unavailable skipping tests\n",
-				NFIT_TEST_MODULE);
-		goto err_module;
+		fprintf(stderr, "nfit_test unavailable skipping tests\n");
+		return 77;
 	}
 
 	err = do_test(ctx, test);
 	if (err == 0)
 		result = EXIT_SUCCESS;
 	kmod_module_remove_module(mod, 0);
-
- err_module:
 	kmod_unref(kmod_ctx);
 	return result;
 }
