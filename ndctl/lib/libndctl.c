@@ -2780,9 +2780,8 @@ static void *add_namespace(void *parent, int id, const char *ndns_base)
 	ndns->raw_mode = strtoul(buf, NULL, 0);
 
 	sprintf(path, "%s/numa_node", ndns_base);
-	if (sysfs_read_attr(ctx, path, buf) < 0)
-		goto err_read;
-	ndns->numa_node = strtol(buf, NULL, 0);
+	if (sysfs_read_attr(ctx, path, buf) == 0)
+		ndns->numa_node = strtol(buf, NULL, 0);
 
 	switch (ndns->type) {
 	case ND_DEVICE_NAMESPACE_BLK:
