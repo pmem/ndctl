@@ -40,30 +40,33 @@ LIBNDCTL_LIB =\
        ../ndctl/lib/libndctl.la \
        ../daxctl/lib/libdaxctl.la
 
-libndctl_SOURCES = libndctl.c core.c
-libndctl_LDADD = $(LIBNDCTL_LIB) $(UUID_LIBS) $(KMOD_LIBS)
-
-dsm_fail_SOURCES =\
-	dsm-fail.c \
+testcore =\
 	core.c \
 	../util/log.c \
 	../util/sysfs.c
 
+libndctl_SOURCES = libndctl.c $(testcore)
+libndctl_LDADD = $(LIBNDCTL_LIB) $(UUID_LIBS) $(KMOD_LIBS)
+
+dsm_fail_SOURCES =\
+	dsm-fail.c \
+	$(testcore)
+
 dsm_fail_LDADD = $(LIBNDCTL_LIB) $(KMOD_LIBS)
 
-blk_ns_SOURCES = blk_namespaces.c core.c
+blk_ns_SOURCES = blk_namespaces.c $(testcore)
 blk_ns_LDADD = $(LIBNDCTL_LIB) $(KMOD_LIBS)
 
-pmem_ns_SOURCES = pmem_namespaces.c core.c
+pmem_ns_SOURCES = pmem_namespaces.c $(testcore)
 pmem_ns_LDADD = $(LIBNDCTL_LIB) $(KMOD_LIBS)
 
-dpa_alloc_SOURCES = dpa-alloc.c core.c
+dpa_alloc_SOURCES = dpa-alloc.c $(testcore)
 dpa_alloc_LDADD = $(LIBNDCTL_LIB) $(UUID_LIBS) $(KMOD_LIBS)
 
-parent_uuid_SOURCES = parent-uuid.c core.c
+parent_uuid_SOURCES = parent-uuid.c $(testcore)
 parent_uuid_LDADD = $(LIBNDCTL_LIB) $(UUID_LIBS) $(KMOD_LIBS)
 
-dax_dev_SOURCES = dax-dev.c core.c
+dax_dev_SOURCES = dax-dev.c $(testcore)
 dax_dev_LDADD = $(LIBNDCTL_LIB) $(KMOD_LIBS)
 
 dax_pmd_SOURCES = dax-pmd.c
@@ -73,7 +76,7 @@ device_dax_SOURCES = \
 		device-dax.c \
 		dax-dev.c \
 		dax-pmd.c \
-		core.c \
+		$(testcore) \
 		../ndctl/builtin-xaction-namespace.c \
 		../util/json.c
 device_dax_LDADD = \
@@ -84,7 +87,7 @@ device_dax_LDADD = \
 
 multi_pmem_SOURCES = \
 		multi-pmem.c \
-		core.c \
+		$(testcore) \
 		../ndctl/builtin-xaction-namespace.c \
 		../util/json.c
 multi_pmem_LDADD = \

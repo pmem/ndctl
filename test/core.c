@@ -6,6 +6,10 @@
 #include <stdio.h>
 #include <test.h>
 
+#include <util/log.h>
+#include <util/sysfs.h>
+#include <ccan/array_size/array_size.h>
+
 #define KVER_STRLEN 20
 
 struct ndctl_test {
@@ -103,11 +107,83 @@ int nfit_test_init(struct kmod_ctx **ctx, struct kmod_module **mod,
 		int log_level)
 {
 	int rc;
+	unsigned int i;
+	struct log_ctx log_ctx;
+	const char *list[] = {
+		"nfit",
+		"dax",
+		"dax_pmem",
+		"libnvdimm",
+		"nd_blk",
+		"nd_btt",
+		"nd_e820",
+		"nd_pmem",
+	};
+
+	log_init(&log_ctx, "test/init", "NDCTL_TEST");
+	log_ctx.log_priority = log_level;
 
 	*ctx = kmod_new(NULL, NULL);
 	if (!*ctx)
 		return -ENXIO;
 	kmod_set_log_priority(*ctx, log_level);
+
+	/*
+	 * Check that all nfit, libnvdimm, and device-dax modules are
+	 * the mocked versions. If they are loaded, check that they have
+	 * the "out-of-tree" kernel taint, otherwise check that they
+	 * come from the "/lib/modules/<KVER>/extra" directory.
+	 */
+	for (i = 0; i < ARRAY_SIZE(list); i++) {
+		char attr[SYSFS_ATTR_SIZE];
+		const char *name = list[i];
+		const char *path;
+		char buf[100];
+		int state;
+
+		rc = kmod_module_new_from_name(*ctx, name, mod);
+		if (rc) {
+			log_err(&log_ctx, "%s.ko: missing\n", name);
+			break;
+		}
+
+		path = kmod_module_get_path(*mod);
+		if (!path) {
+			log_err(&log_ctx, "%s.ko: failed to get path\n", name);
+			break;
+		}
+
+		if (!strstr(path, "/extra/")) {
+			log_err(&log_ctx, "%s.ko: appears to be production version: %s\n",
+					name, path);
+			break;
+		}
+
+		state = kmod_module_get_initstate(*mod);
+		if (state == KMOD_MODULE_LIVE) {
+			sprintf(buf, "/sys/module/%s/taint", name);
+			rc = __sysfs_read_attr(&log_ctx, buf, attr);
+			if (rc < 0) {
+				log_err(&log_ctx, "%s.ko: failed to read %s\n",
+						name, buf);
+				break;
+			}
+
+			if (strcmp(attr, "O") != 0) {
+				log_err(&log_ctx, "%s.ko: expected taint: O got: %s\n",
+						name, attr);
+				break;
+			}
+		} else if (state == KMOD_MODULE_BUILTIN) {
+			log_err(&log_ctx, "%s: must be built as a module\n", name);
+			break;
+		}
+	}
+
+	if (i < ARRAY_SIZE(list)) {
+		kmod_unref(*ctx);
+		return -ENXIO;
+	}
 
 	rc = kmod_module_new_from_name(*ctx, "nfit_test", mod);
 	if (rc < 0) {
