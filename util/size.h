@@ -12,5 +12,6 @@
 #define SZ_1T 0x10000000000ULL
 
 unsigned long long parse_size64(const char *str);
+unsigned long long __parse_size64(const char *str, unsigned long long *units);
 
 #endif /* _NDCTL_SIZE_H_ */

@@ -26,6 +26,7 @@
 #include <util/filter.h>
 #include <ndctl/libndctl.h>
 #include <util/parse-options.h>
+#include <ccan/minmax/minmax.h>
 #include <ccan/array_size/array_size.h>
 
 #ifdef HAVE_NDCTL_H
@@ -396,6 +397,8 @@ static int validate_namespace_options(struct ndctl_region *region,
 		struct ndctl_namespace *ndns, struct parsed_parameters *p)
 {
 	const char *region_name = ndctl_region_get_devname(region);
+	unsigned long long size_align, units = 1;
+	unsigned int ways;
 	int rc = 0;
 
 	memset(p, 0, sizeof(*p));
@@ -406,7 +409,7 @@ static int validate_namespace_options(struct ndctl_region *region,
 	}
 
 	if (param.size)
-		p->size = parse_size64(param.size);
+		p->size = __parse_size64(param.size, &units);
 	else if (ndns)
 		p->size = ndctl_namespace_get_size(ndns);
 
@@ -498,6 +501,41 @@ static int validate_namespace_options(struct ndctl_region *region,
 			error("unsupported align: %s\n", param.align);
 			return -ENXIO;
 		}
+
+		/*
+		 * 'raw' and 'sector' mode namespaces don't support an
+		 * alignment attribute.
+		 */
+		if (p->mode == NDCTL_NS_MODE_MEMORY
+				|| p->mode == NDCTL_NS_MODE_DAX)
+			size_align = p->align;
+		else
+			size_align = SZ_4K;
+	}
+
+	/* (re-)validate that the size satisfies the alignment */
+	ways = ndctl_region_get_interleave_ways(region);
+	size_align = max(units, size_align) * ways;
+	if (p->size % size_align) {
+		char *suffix = "";
+
+		if (units == SZ_1K)
+			suffix = "K";
+		else if (units == SZ_1M)
+			suffix = "M";
+		else if (units == SZ_1G)
+			suffix = "G";
+		else if (units == SZ_1T)
+			suffix = "T";
+
+		p->size /= size_align;
+		p->size++;
+		p->size *= size_align;
+		p->size /= units;
+		error("'--size=' must align to interleave-width: %d and alignment: %ld\n"
+				"  did you intend --size=%lld%s?\n", ways, param.align
+				? p->align : SZ_4K, p->size, suffix);
+		return -EINVAL;
 	}
 
 	if (param.sector_size) {

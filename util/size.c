@@ -2,8 +2,7 @@
 #include <limits.h>
 #include <util/size.h>
 
-static unsigned long long __parse_size64(const char *str,
-		unsigned long long *units)
+unsigned long long __parse_size64(const char *str, unsigned long long *units)
 {
 	unsigned long long val, check;
 	char *end;
