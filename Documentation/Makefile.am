@@ -12,7 +12,8 @@ man1_MANS = \
 	ndctl-disable-namespace.1 \
 	ndctl-create-namespace.1 \
 	ndctl-destroy-namespace.1 \
-	ndctl-list.1
+	ndctl-list.1 \
+	daxctl-list.1
 
 CLEANFILES = $(man1_MANS)
 
