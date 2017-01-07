@@ -114,8 +114,14 @@ make check
 %defattr(-,root,root)
 %license util/COPYING licenses/BSD-MIT licenses/CC0
 %{_bindir}/ndctl
-%{_mandir}/man1/*
+%{_mandir}/man1/ndctl*
 %{bashcompdir}/
+
+%files -n daxctl
+%defattr(-,root,root)
+%license util/COPYING licenses/BSD-MIT licenses/CC0
+%{_bindir}/daxctl
+%{_mandir}/man1/daxctl*
 
 %files -n LNAME
 %defattr(-,root,root)
