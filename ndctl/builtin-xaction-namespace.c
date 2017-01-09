@@ -391,6 +391,12 @@ static int validate_namespace_options(struct ndctl_region *region,
 
 	memset(p, 0, sizeof(*p));
 
+	if (!ndctl_region_is_enabled(region)) {
+		debug("%s: disabled, skipping...\n",
+				ndctl_region_get_devname(region));
+		return -EAGAIN;
+	}
+
 	if (param.size)
 		p->size = parse_size64(param.size);
 	else if (ndns)
@@ -539,9 +545,11 @@ static int namespace_create(struct ndctl_region *region)
 	unsigned long long available;
 	struct ndctl_namespace *ndns;
 	struct parsed_parameters p;
+	int rc;
 
-	if (validate_namespace_options(region, NULL, &p))
-		return -EINVAL;
+	rc = validate_namespace_options(region, NULL, &p);
+	if (rc)
+		return rc;
 
 	if (ndctl_region_get_ro(region)) {
 		debug("%s: read-only, inelligible for namespace creation\n",
@@ -685,8 +693,9 @@ static int namespace_reconfig(struct ndctl_region *region,
 	struct parsed_parameters p;
 	int rc;
 
-	if (validate_namespace_options(region, ndns, &p))
-		return -EINVAL;
+	rc = validate_namespace_options(region, ndns, &p);
+	if (rc)
+		return rc;
 
 	rc = namespace_destroy(region, ndns);
 	if (rc)
