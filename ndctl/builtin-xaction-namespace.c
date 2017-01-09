@@ -752,10 +752,8 @@ static int do_xaction_namespace(const char *namespace,
 
 			if (action == ACTION_CREATE && !namespace) {
 				rc = namespace_create(region);
-				if (rc == -EAGAIN) {
-					rc = 0;
+				if (rc == -EAGAIN)
 					continue;
-				}
 				if (rc == 0)
 					rc = 1;
 				return rc;
@@ -788,7 +786,8 @@ static int do_xaction_namespace(const char *namespace,
 		}
 	}
 
-	rc = success;
+	if (success)
+		return success;
 	return rc;
 }
 
@@ -853,8 +852,17 @@ int cmd_create_namespace(int argc, const char **argv, void *ctx)
 	}
 
 	if (created < 0 || (!namespace && created < 1)) {
-		fprintf(stderr, "failed to %s namespace\n", namespace
-				? "reconfigure" : "create");
+		char *reason = "";
+
+		if (created == -EAGAIN)
+			reason = ": no suitable capacity found";
+		else if (created == -ENXIO)
+			reason = ": unsupported configuration";
+		else if (created == -EINVAL)
+			reason = ": invalid argument";
+
+		fprintf(stderr, "failed to %s namespace%s\n", namespace
+				? "reconfigure" : "create", reason);
 		if (!namespace)
 			created = -ENODEV;
 	}
