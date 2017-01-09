@@ -432,15 +432,14 @@ static int validate_namespace_options(struct ndctl_region *region,
 		else
 			p->mode = NDCTL_NS_MODE_RAW;
 
-		if (ndns && ndctl_namespace_get_type(ndns)
-				== ND_DEVICE_NAMESPACE_BLK
+		if (ndctl_region_get_type(region) != ND_DEVICE_REGION_PMEM
 				&& (p->mode == NDCTL_NS_MODE_MEMORY
 					|| p->mode == NDCTL_NS_MODE_DAX)) {
-			debug("%s: blk namespace do not support %s mode\n",
-					ndctl_namespace_get_devname(ndns),
+			debug("blk %s does not support %s mode\n",
+					ndctl_region_get_devname(region),
 					p->mode == NDCTL_NS_MODE_MEMORY
 					? "memory" : "dax");
-				return -EINVAL;
+			return -EAGAIN;
 		}
 	} else if (ndns)
 		p->mode = ndctl_namespace_get_mode(ndns);
@@ -518,10 +517,12 @@ static int validate_namespace_options(struct ndctl_region *region,
 		struct ndctl_pfn *pfn = ndctl_region_get_pfn_seed(region);
 
 		if (!pfn && param.mode_default) {
-			debug("memory mode not available\n");
+			debug("%s memory mode not available\n",
+					ndctl_region_get_devname(region));
 			p->mode = NDCTL_NS_MODE_RAW;
 		} else if (!pfn) {
-			error("operation failed, memory mode not available\n");
+			error("operation failed, %s memory mode not available\n",
+					ndctl_region_get_devname(region));
 			return -EINVAL;
 		}
 	}
@@ -531,7 +532,8 @@ static int validate_namespace_options(struct ndctl_region *region,
 		struct ndctl_dax *dax = ndctl_region_get_dax_seed(region);
 
 		if (!dax) {
-			error("operation failed, dax mode not available\n");
+			error("operation failed, %s dax mode not available\n",
+					ndctl_region_get_devname(region));
 			return -EINVAL;
 		}
 	}
