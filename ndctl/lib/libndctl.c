@@ -1676,7 +1676,7 @@ NDCTL_EXPORT unsigned int ndctl_region_get_id(struct ndctl_region *region)
 
 NDCTL_EXPORT unsigned int ndctl_region_get_interleave_ways(struct ndctl_region *region)
 {
-	return ndctl_region_get_mappings(region);
+	return max(1U, ndctl_region_get_mappings(region));
 }
 
 NDCTL_EXPORT unsigned int ndctl_region_get_mappings(struct ndctl_region *region)
