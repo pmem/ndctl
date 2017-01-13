@@ -54,6 +54,28 @@ static void destroy_namespace(struct ndctl_namespace *ndns)
 	cmd_destroy_namespace(argc, argv, ctx);
 }
 
+/* Check that the namespace device is gone (if it wasn't the seed) */
+static int check_deleted(struct ndctl_region *region, const char *devname,
+		struct ndctl_test *test)
+{
+	struct ndctl_namespace *ndns;
+
+	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 10, 0)))
+		return 0;
+
+	ndctl_namespace_foreach(region, ndns) {
+		if (strcmp(devname, ndctl_namespace_get_devname(ndns)))
+			continue;
+		if (ndns == ndctl_region_get_namespace_seed(region))
+			continue;
+		fprintf(stderr, "multi-pmem: expected %s to be deleted\n",
+				devname);
+		return -ENXIO;
+	}
+
+	return 0;
+}
+
 static int do_multi_pmem(struct ndctl_ctx *ctx, struct ndctl_test *test)
 {
 	int i;
@@ -190,6 +212,9 @@ static int do_multi_pmem(struct ndctl_ctx *ctx, struct ndctl_test *test)
 					devname, blk_avail, blk_avail_orig);
 			return -ENXIO;
 		}
+
+		if (check_deleted(target, devname, test) != 0)
+			return -ENXIO;
 	}
 
 	ndns = namespaces[NUM_NAMESPACES - 1];
@@ -203,6 +228,9 @@ static int do_multi_pmem(struct ndctl_ctx *ctx, struct ndctl_test *test)
 				devname, blk_avail, expect);
 		return -ENXIO;
 	}
+
+	if (check_deleted(target, devname, test) != 0)
+		return -ENXIO;
 
 	ndctl_bus_foreach(ctx, bus) {
 		if (strncmp(ndctl_bus_get_provider(bus), "nfit_test", 9) != 0)
