@@ -259,6 +259,7 @@ global:
 	ndctl_dax_get_location;
 	ndctl_dax_set_location;
 	ndctl_dax_get_align;
+	ndctl_dax_has_align;
 	ndctl_dax_set_align;
 	ndctl_dax_set_namespace;
 	ndctl_dax_get_bus;

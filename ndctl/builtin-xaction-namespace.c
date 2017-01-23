@@ -39,6 +39,7 @@ static bool force;
 static struct parameters {
 	bool do_scan;
 	bool mode_default;
+	bool align_default;
 	const char *bus;
 	const char *map;
 	const char *type;
@@ -49,6 +50,7 @@ static struct parameters {
 	const char *region;
 	const char *reconfig;
 	const char *sector_size;
+	const char *align;
 } param;
 
 void builtin_xaction_namespace_reset(void)
@@ -71,6 +73,7 @@ struct parsed_parameters {
 	enum ndctl_namespace_mode mode;
 	unsigned long long size;
 	unsigned long sector_size;
+	unsigned long align;
 };
 
 #define debug(fmt, ...) \
@@ -104,6 +107,8 @@ OPT_STRING('l', "sector-size", &param.sector_size, "lba-size", \
 	"specify the logical sector size in bytes"), \
 OPT_STRING('t', "type", &param.type, "type", \
 	"specify the type of namespace to create 'pmem' or 'blk'"), \
+OPT_STRING('a', "align", &param.align, "align", \
+	"specify the namespace alignment in bytes (default: 2M)"), \
 OPT_BOOLEAN('f', "force", &force, "reconfigure namespace even if currently active")
 
 static const struct option base_options[] = {
@@ -200,6 +205,15 @@ static int set_defaults(enum namespace_action mode)
 		error("failed to parse namespace size '%s'\n",
 				param.size);
 		rc = -EINVAL;
+	}
+
+	if (param.align && parse_size64(param.align) == ULLONG_MAX) {
+		error("failed to parse namespace alignment '%s'\n",
+				param.align);
+		rc = -EINVAL;
+	} else if (!param.align) {
+		param.align = "2M";
+		param.align_default = true;
 	}
 
 	if (param.uuid) {
@@ -319,14 +333,8 @@ static int setup_namespace(struct ndctl_region *region,
 
 		try(ndctl_pfn, set_uuid, pfn, uuid);
 		try(ndctl_pfn, set_location, pfn, p->loc);
-
-		/*
-		 * TODO: when we allow setting a non-default alignment
-		 * we'll need to check for "has_align" earlier and fail
-		 * non-default attempts on older kernels.
-		 */
 		if (ndctl_pfn_has_align(pfn))
-			try(ndctl_pfn, set_align, pfn, SZ_2M);
+			try(ndctl_pfn, set_align, pfn, p->align);
 		try(ndctl_pfn, set_namespace, pfn, ndns);
 		rc = ndctl_pfn_enable(pfn);
 	} else if (p->mode == NDCTL_NS_MODE_DAX) {
@@ -335,7 +343,7 @@ static int setup_namespace(struct ndctl_region *region,
 		try(ndctl_dax, set_uuid, dax, uuid);
 		try(ndctl_dax, set_location, dax, p->loc);
 		/* device-dax assumes 'align' attribute present */
-		try(ndctl_dax, set_align, dax, SZ_2M);
+		try(ndctl_dax, set_align, dax, p->align);
 		try(ndctl_dax, set_namespace, dax, ndns);
 		rc = ndctl_dax_enable(dax);
 	} else if (p->mode == NDCTL_NS_MODE_SAFE) {
@@ -387,13 +395,13 @@ static int is_namespace_active(struct ndctl_namespace *ndns)
 static int validate_namespace_options(struct ndctl_region *region,
 		struct ndctl_namespace *ndns, struct parsed_parameters *p)
 {
+	const char *region_name = ndctl_region_get_devname(region);
 	int rc = 0;
 
 	memset(p, 0, sizeof(*p));
 
 	if (!ndctl_region_is_enabled(region)) {
-		debug("%s: disabled, skipping...\n",
-				ndctl_region_get_devname(region));
+		debug("%s: disabled, skipping...\n", region_name);
 		return -EAGAIN;
 	}
 
@@ -435,14 +443,62 @@ static int validate_namespace_options(struct ndctl_region *region,
 		if (ndctl_region_get_type(region) != ND_DEVICE_REGION_PMEM
 				&& (p->mode == NDCTL_NS_MODE_MEMORY
 					|| p->mode == NDCTL_NS_MODE_DAX)) {
-			debug("blk %s does not support %s mode\n",
-					ndctl_region_get_devname(region),
+			debug("blk %s does not support %s mode\n", region_name,
 					p->mode == NDCTL_NS_MODE_MEMORY
 					? "memory" : "dax");
 			return -EAGAIN;
 		}
 	} else if (ndns)
 		p->mode = ndctl_namespace_get_mode(ndns);
+
+	if (param.align) {
+		struct ndctl_pfn *pfn = ndctl_region_get_pfn_seed(region);
+		struct ndctl_dax *dax = ndctl_region_get_dax_seed(region);
+
+		p->align = parse_size64(param.align);
+
+		if (p->mode == NDCTL_NS_MODE_MEMORY && p->align != SZ_2M
+				&& (!pfn || !ndctl_pfn_has_align(pfn))) {
+			/*
+			 * Initial pfn device support in the kernel
+			 * supported a 2M default alignment when
+			 * ndctl_pfn_has_align() returns false.
+			 */
+			debug("%s not support 'align' for memory mode\n",
+					region_name);
+			return -EAGAIN;
+		} else if (p->mode == NDCTL_NS_MODE_DAX
+				&& (!dax || !ndctl_dax_has_align(dax))) {
+			/*
+			 * Unlike the pfn case, we require the kernel to
+			 * have 'align' support for device-dax.
+			 */
+			debug("%s not support 'align' for dax mode\n",
+					region_name);
+			return -EAGAIN;
+		} else if (!param.align_default
+				&& (p->mode == NDCTL_NS_MODE_SAFE
+					|| p->mode == NDCTL_NS_MODE_RAW)) {
+			/*
+			 * Specifying an alignment has no effect for
+			 * raw, or btt mode namespaces.
+			 */
+			error("%s mode does not support setting an alignment\n",
+					p->mode == NDCTL_NS_MODE_SAFE
+					? "sector" : "raw");
+			return -ENXIO;
+		}
+
+		switch (p->align) {
+		case SZ_4K:
+		case SZ_2M:
+		case SZ_1G:
+			break;
+		default:
+			error("unsupported align: %s\n", param.align);
+			return -ENXIO;
+		}
+	}
 
 	if (param.sector_size) {
 		struct ndctl_btt *btt;
@@ -453,7 +509,7 @@ static int validate_namespace_options(struct ndctl_region *region,
 		if (p->mode == NDCTL_NS_MODE_SAFE) {
 			if (!btt) {
 				debug("%s: does not support 'sector' mode\n",
-						ndctl_region_get_devname(region));
+						region_name);
 				return -EINVAL;
 			}
 			num = ndctl_btt_get_num_sector_sizes(btt);
@@ -463,8 +519,7 @@ static int validate_namespace_options(struct ndctl_region *region,
 					break;
 			if (i >= num) {
 				debug("%s: does not support btt sector_size %lu\n",
-						ndctl_region_get_devname(region),
-						p->sector_size);
+						region_name, p->sector_size);
 				return -EINVAL;
 			}
 		} else {
@@ -479,8 +534,7 @@ static int validate_namespace_options(struct ndctl_region *region,
 					break;
 			if (i >= num) {
 				debug("%s: does not support namespace sector_size %lu\n",
-						ndctl_region_get_devname(region),
-						p->sector_size);
+						region_name, p->sector_size);
 				return -EINVAL;
 			}
 		}
@@ -517,12 +571,11 @@ static int validate_namespace_options(struct ndctl_region *region,
 		struct ndctl_pfn *pfn = ndctl_region_get_pfn_seed(region);
 
 		if (!pfn && param.mode_default) {
-			debug("%s memory mode not available\n",
-					ndctl_region_get_devname(region));
+			debug("%s memory mode not available\n", region_name);
 			p->mode = NDCTL_NS_MODE_RAW;
 		} else if (!pfn) {
 			error("operation failed, %s memory mode not available\n",
-					ndctl_region_get_devname(region));
+					region_name);
 			return -EINVAL;
 		}
 	}
@@ -533,7 +586,7 @@ static int validate_namespace_options(struct ndctl_region *region,
 
 		if (!dax) {
 			error("operation failed, %s dax mode not available\n",
-					ndctl_region_get_devname(region));
+					region_name);
 			return -EINVAL;
 		}
 	}

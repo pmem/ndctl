@@ -84,6 +84,19 @@ OPTIONS
 	suffixes "k" or "K" for KiB, "m" or "M" for MiB, "g" or "G" for
 	GiB and "t" or "T" for TiB.
 
+	For pmem namepsaces the size must be a multiple of the
+	interleave-width and the namespace alignment (see
+	below).
+
+-a::
+--align::
+	Applications that want to establish DAX memory mappings
+	with page table entries greater than 4K in size need a
+	persistent memory namespace that is sufficiently aligned. For
+	"memory" and "dax" mode this defaults to 2M. Note that "dax"
+	mode enforces all mappings to be aligned to this value,
+	i.e. fails unaligned mapping attempts.
+
 -e::
 --reconfig=::
 	Reconfigure an existing namespace (change the mode, sector size,

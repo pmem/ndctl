@@ -4477,6 +4477,11 @@ NDCTL_EXPORT unsigned long ndctl_dax_get_align(struct ndctl_dax *dax)
 	return ndctl_pfn_get_align(&dax->pfn);
 }
 
+NDCTL_EXPORT int ndctl_dax_has_align(struct ndctl_dax *dax)
+{
+	return ndctl_pfn_has_align(&dax->pfn);
+}
+
 NDCTL_EXPORT int ndctl_dax_set_align(struct ndctl_dax *dax, unsigned long align)
 {
 	return ndctl_pfn_set_align(&dax->pfn, align);
