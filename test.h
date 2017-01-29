@@ -22,7 +22,7 @@ int nfit_test_init(struct kmod_ctx **ctx, struct kmod_module **mod,
 struct ndctl_ctx;
 int test_parent_uuid(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx);
 int test_multi_pmem(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx);
-int test_dax_directio(int dax_fd, void *dax_addr, off_t offset);
+int test_dax_directio(int dax_fd, unsigned long align, void *dax_addr, off_t offset);
 int test_dpa_alloc(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx);
 int test_dsm_fail(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx);
 int test_libndctl(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx);

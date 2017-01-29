@@ -19,7 +19,7 @@
 #define faili(i) fprintf(stderr, "%s: failed at: %d: %d\n", __func__, __LINE__, i)
 #define TEST_FILE "test_dax_data"
 
-int test_dax_directio(int dax_fd, void *dax_addr, off_t offset)
+int test_dax_directio(int dax_fd, unsigned long align, void *dax_addr, off_t offset)
 {
 	int i, rc = -ENXIO;
 	void *buf;
@@ -28,7 +28,7 @@ int test_dax_directio(int dax_fd, void *dax_addr, off_t offset)
 		return -ENOMEM;
 
 	for (i = 0; i < 3; i++) {
-		void *addr = mmap(dax_addr, 2*HPAGE_SIZE,
+		void *addr = mmap(dax_addr, 2*align,
 				PROT_READ|PROT_WRITE, MAP_SHARED, dax_fd,
 				offset);
 		int fd2;
@@ -43,7 +43,7 @@ int test_dax_directio(int dax_fd, void *dax_addr, off_t offset)
 				DEFFILEMODE);
 		if (fd2 < 0) {
 			faili(i);
-			munmap(addr, 2*HPAGE_SIZE);
+			munmap(addr, 2*align);
 			break;
 		}
 
@@ -94,7 +94,7 @@ int test_dax_directio(int dax_fd, void *dax_addr, off_t offset)
 			break;
 		}
 
-		munmap(addr, 2*HPAGE_SIZE);
+		munmap(addr, 2*align);
 		addr = MAP_FAILED;
 		unlink(TEST_FILE);
 		close(fd2);
@@ -164,8 +164,8 @@ static int test_pmd(int fd)
 	m_align = ALIGN(base, HPAGE_SIZE) - ((unsigned long) base);
 	p_align = ALIGN(ext->fe_physical, HPAGE_SIZE) - ext->fe_physical;
 
-	rc = test_dax_directio(fd, (char *) base + m_align, ext->fe_logical
-			+ p_align);
+	rc = test_dax_directio(fd, HPAGE_SIZE, (char *) base + m_align,
+			ext->fe_logical + p_align);
 
  err_extent:
  err_mmap:
