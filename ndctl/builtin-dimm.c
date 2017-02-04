@@ -17,6 +17,7 @@
 #include <limits.h>
 #include <syslog.h>
 #include <util/log.h>
+#include <util/size.h>
 #include <uuid/uuid.h>
 #include <util/json.h>
 #include <util/filter.h>
@@ -605,8 +606,6 @@ static struct namespace_label *label_base(struct nvdimm_data *ndd)
 	return (struct namespace_label *) base;
 }
 
-#define ALIGN(x, a) ((((unsigned long long) x) + (a - 1)) & ~(a - 1))
-#define BITS_PER_LONG (sizeof(unsigned long) * 8)
 static int label_write_index(struct nvdimm_data *ndd, int index, u32 seq)
 {
 	struct namespace_index *nsindex;

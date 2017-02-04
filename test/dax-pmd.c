@@ -11,11 +11,10 @@
 #include <stdlib.h>
 #include <linux/fs.h>
 #include <test.h>
+#include <util/size.h>
 #include <linux/fiemap.h>
 
 #define NUM_EXTENTS 5
-#define HPAGE_SIZE (2 << 20)
-#define ALIGN(x, a) ((((unsigned long long) x) + (a - 1)) & ~(a - 1))
 #define fail() fprintf(stderr, "%s: failed at: %d\n", __func__, __LINE__)
 #define faili(i) fprintf(stderr, "%s: failed at: %d: %d\n", __func__, __LINE__, i)
 #define TEST_FILE "test_dax_data"

@@ -14,4 +14,8 @@
 unsigned long long parse_size64(const char *str);
 unsigned long long __parse_size64(const char *str, unsigned long long *units);
 
+#define ALIGN(x, a) ((((unsigned long long) x) + (a - 1)) & ~(a - 1))
+#define BITS_PER_LONG (sizeof(unsigned long) * 8)
+#define HPAGE_SIZE (2 << 20)
+
 #endif /* _NDCTL_SIZE_H_ */
