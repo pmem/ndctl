@@ -89,4 +89,6 @@ multi_pmem_SOURCES = \
 multi_pmem_LDADD = \
 		$(LIBNDCTL_LIB) \
 		$(JSON_LIBS) \
+		$(UUID_LIBS) \
+		$(KMOD_LIBS) \
 		../libutil.a
