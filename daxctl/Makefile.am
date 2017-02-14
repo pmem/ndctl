@@ -10,4 +10,5 @@ daxctl_SOURCES =\
 daxctl_LDADD =\
 	lib/libdaxctl.la \
 	../libutil.a \
+	$(UUID_LIBS) \
 	$(JSON_LIBS)
