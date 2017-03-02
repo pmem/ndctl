@@ -392,7 +392,7 @@ static int setup_namespace(struct ndctl_region *region,
 		error("%s: failed to enable\n",
 				ndctl_namespace_get_devname(ndns));
 	} else {
-		struct json_object *jndns = util_namespace_to_json(ndns, 0, 0);
+		struct json_object *jndns = util_namespace_to_json(ndns, 0, 1);
 
 		if (jndns)
 			printf("%s\n", json_object_to_json_string_ext(jndns,
