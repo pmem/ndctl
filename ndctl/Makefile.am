@@ -3,14 +3,14 @@ include $(top_srcdir)/Makefile.am.in
 bin_PROGRAMS = ndctl
 
 ndctl_SOURCES = ndctl.c \
-		builtin-create-nfit.c \
-		builtin-xaction-namespace.c \
-		builtin-check.c \
-		builtin-xable-region.c \
-		builtin-dimm.c \
+		create-nfit.c \
+		namespace.c \
+		check.c \
+		region.c \
+		dimm.c \
 		 ../util/log.c \
-		builtin-list.c \
-		builtin-test.c \
+		list.c \
+		test.c \
 		../util/json.c
 
 if ENABLE_SMART
@@ -20,7 +20,7 @@ endif
 if ENABLE_DESTRUCTIVE
 ndctl_SOURCES += ../test/blk_namespaces.c \
 		 ../test/pmem_namespaces.c
-ndctl_SOURCES += builtin-bat.c
+ndctl_SOURCES += bat.c
 endif
 
 ndctl_LDADD =\

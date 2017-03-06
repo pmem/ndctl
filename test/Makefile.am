@@ -85,8 +85,8 @@ device_dax_SOURCES = \
 		dax-dev.c \
 		dax-pmd.c \
 		$(testcore) \
-		../ndctl/builtin-xaction-namespace.c \
-		../ndctl/builtin-check.c \
+		../ndctl/namespace.c \
+		../ndctl/check.c \
 		../util/json.c
 device_dax_LDADD = \
 		$(LIBNDCTL_LIB) \
@@ -97,8 +97,8 @@ device_dax_LDADD = \
 multi_pmem_SOURCES = \
 		multi-pmem.c \
 		$(testcore) \
-		../ndctl/builtin-xaction-namespace.c \
-		../ndctl/builtin-check.c \
+		../ndctl/namespace.c \
+		../ndctl/check.c \
 		../util/json.c
 multi_pmem_LDADD = \
 		$(LIBNDCTL_LIB) \
