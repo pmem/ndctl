@@ -2259,7 +2259,10 @@ static int do_cmd(int fd, int ioctl_cmd, struct ndctl_cmd *cmd)
 				? ndctl_dimm_get_handle(cmd->dimm) : 0,
 				name, rc, *(cmd->firmware_status), rc < 0 ?
 				strerror(errno) : "success");
-		return rc;
+		if (rc < 0)
+			return -errno;
+		else
+			return rc;
 	}
 
 	for (offset = 0; offset < iter->total_xfer; offset += iter->max_xfer) {
@@ -2270,8 +2273,10 @@ static int do_cmd(int fd, int ioctl_cmd, struct ndctl_cmd *cmd)
 			memcpy(iter->data, iter->total_buf + offset,
 					*(cmd->iter.xfer));
 		rc = ioctl(fd, ioctl_cmd, cmd->cmd_buf);
-		if (rc < 0)
+		if (rc < 0) {
+			rc = -errno;
 			break;
+		}
 
 		if (iter->dir == READ)
 			memcpy(iter->total_buf + offset, iter->data,
