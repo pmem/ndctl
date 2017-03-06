@@ -1053,6 +1053,27 @@ NDCTL_EXPORT int ndctl_region_set_ro(struct ndctl_region *region, int ro)
 	return ro;
 }
 
+NDCTL_EXPORT unsigned long long ndctl_region_get_resource(struct ndctl_region *region)
+{
+	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
+	char *path = region->region_buf;
+	int len = region->buf_len;
+	char buf[SYSFS_ATTR_SIZE];
+	int rc;
+
+	if (snprintf(path, len, "%s/resource", region->region_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_region_get_devname(region));
+		return ULLONG_MAX;
+	}
+
+	rc = sysfs_read_attr(ctx, path, buf);
+	if (rc < 0)
+		return ULLONG_MAX;
+
+	return strtoull(buf, NULL, 0);
+}
+
 NDCTL_EXPORT const char *ndctl_bus_get_cmd_name(struct ndctl_bus *bus, int cmd)
 {
 	return nvdimm_bus_cmd_name(cmd);

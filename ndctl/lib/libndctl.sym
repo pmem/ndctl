@@ -137,6 +137,7 @@ global:
 	ndctl_region_get_interleave_set;
 	ndctl_region_get_ro;
 	ndctl_region_set_ro;
+	ndctl_region_get_resource;
 	ndctl_interleave_set_get_first;
 	ndctl_interleave_set_get_next;
 	ndctl_interleave_set_is_active;
