@@ -1,3 +1,19 @@
+/*
+ * Copyright(c) 2017 Intel Corporation. All rights reserved.
+ * Copyright(c) 2009 Akinobu Mita. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ */
+
+/* originally copied from the Linux kernel bitmap implementation */
+
 #include <stdlib.h>
 #include <util/size.h>
 #include <util/util.h>

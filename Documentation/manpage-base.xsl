@@ -1,3 +1,11 @@
+<!--
+Copyright (c) 2006, Sean Estabrooks
+Copyright (c) 2009, Chris Johnsen
+
+Originally copied from GIT source (commits 775e994af5b8 "Properly render
+asciidoc "callouts" in git man pages." and c30e9485238b "Documentation:
+move callouts.xsl to manpage-{base,normal}.xsl")
+-->
 <!-- manpage-base.xsl:
      special formatting for manpages rendered from asciidoc+docbook -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
