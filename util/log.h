@@ -62,7 +62,8 @@ do { \
 #  ifdef HAVE___SECURE_GETENV
 #    define secure_getenv __secure_getenv
 #  else
-#    error neither secure_getenv nor __secure_getenv is available
+#    warning neither secure_getenv nor __secure_getenv is available.
+#    define secure_getenv getenv
 #  endif
 #endif
 
