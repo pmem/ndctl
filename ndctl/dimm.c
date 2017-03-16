@@ -952,9 +952,9 @@ static int dimm_action(int argc, const char **argv, void *ctx,
 	 * count if some actions succeeded, 0 if none were attempted,
 	 * negative error code otherwise.
 	 */
-	if (rc < 0)
-		return rc;
-	return count;
+	if (count > 0)
+		return count;
+	return rc;
 }
 
 int cmd_write_labels(int argc, const char **argv, void *ctx)
