@@ -10,7 +10,8 @@ TESTS =\
 	clear.sh \
 	dax-errors.sh \
 	daxdev-errors.sh \
-	btt-check.sh
+	btt-check.sh \
+	label-compat.sh
 
 check_PROGRAMS =\
 	libndctl \
