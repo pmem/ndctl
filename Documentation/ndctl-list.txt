@@ -78,6 +78,11 @@ include::xable-region-options.txt[]
 --type=::
 	Filter listing by region type ('pmem' or 'blk')
 
+-m::
+--mode=::
+	Filter listing by the mode ('raw', 'memory', 'sector' or 'dax')
+	of the namespace(s).
+
 -B::
 --buses::
 	Include bus info in the listing
