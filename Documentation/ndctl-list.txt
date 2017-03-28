@@ -105,6 +105,29 @@ include::xable-region-options.txt[]
   }
 }
 
+-X::
+--device-dax::
+	Include device-dax ("daxregion") details when a namespace is in
+	"dax" mode.
+[verse]
+{
+  "dev":"namespace0.0",
+  "mode":"dax",
+  "size":4225761280,
+  "uuid":"18ae1bbb-bb62-4efc-86df-4a5caacb5dcc",
+  "daxregion":{
+    "id":0,
+    "size":4225761280,
+    "align":2097152,
+    "devices":[
+      {
+        "chardev":"dax0.0",
+        "size":4225761280
+      }
+    ]
+  }
+}
+
 -R::
 --regions::
 	Include region info in the listing
