@@ -91,7 +91,7 @@ __ndctlcomp()
 
 	COMPREPLY=( $( compgen -W "$1" -- "$2" ) )
 	for cword in "${COMPREPLY[@]}"; do
-		if [[ "$cword" == @(--bus|--region|--type|--mode|--size|--dimm|--reconfig|--uuid|--name|--sector-size|--map|--namespace) ]]; then
+		if [[ "$cword" == @(--bus|--region|--type|--mode|--size|--dimm|--reconfig|--uuid|--name|--sector-size|--map|--namespace|--input|--output) ]]; then
 			COMPREPLY[$i]="${cword}="
 		else
 			COMPREPLY[$i]="${cword} "
@@ -132,6 +132,11 @@ __ndctl_get_dimms()
 	echo "$(ndctl list $opts | grep -E "^\s*\"dev\":" | cut -d\" -f4)"
 }
 
+__ndctl_file_comp()
+{
+	local cur="$1"
+	_filedir
+}
 __ndctl_comp_options()
 {
 	local cur=$1
@@ -170,6 +175,12 @@ __ndctl_comp_options()
 			;;
 		--map)
 			opts="mem dev"
+			;;
+		--output)
+			;&
+		--input)
+			__ndctl_file_comp "${cur##*=}"
+			return
 			;;
 		*)
 			return
@@ -214,6 +225,8 @@ __ndctl_comp_non_option_args()
 	check-labels)
 		;&
 	read-labels)
+		;&
+	write-labels)
 		;&
 	zero-labels)
 		opts="$(__ndctl_get_dimms -i) all"
