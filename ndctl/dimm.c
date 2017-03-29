@@ -790,12 +790,12 @@ OPT_STRING('b', "bus", &param.bus, "bus-id", \
 OPT_BOOLEAN('v',"verbose", &param.verbose, "turn on debug")
 
 #define READ_OPTIONS() \
-OPT_STRING('o', NULL, &param.outfile, "output-file", \
+OPT_STRING('o', "output", &param.outfile, "output-file", \
 	"filename to write label area contents"), \
 OPT_BOOLEAN('j', "json", &param.json, "parse label data into json")
 
 #define WRITE_OPTIONS() \
-OPT_STRING('i', NULL, &param.infile, "input-file", \
+OPT_STRING('i', "input", &param.infile, "input-file", \
 	"filename to read label area data")
 
 #define INIT_OPTIONS() \

@@ -18,6 +18,7 @@ OPTIONS
 -------
 include::labels-options.txt[]
 -o::
+--output::
 	output file
 -j::
 --json::
