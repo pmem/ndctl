@@ -2,6 +2,7 @@ man1_MANS = \
 	ndctl.1 \
 	ndctl-zero-labels.1 \
 	ndctl-read-labels.1 \
+	ndctl-write-labels.1 \
 	ndctl-init-labels.1 \
 	ndctl-check-labels.1 \
 	ndctl-enable-region.1 \
