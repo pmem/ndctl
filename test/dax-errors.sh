@@ -23,14 +23,16 @@ err() {
 	exit $rc
 }
 
-eval $(uname -r | awk -F. '{print "maj="$1 ";" "min="$2}')
-if [ $maj -lt 4 ]; then
-	echo "kernel $maj.$min lacks dax error handling"
-	exit $rc
-elif [ $maj -eq 4 -a $min -lt 7 ]; then
-	echo "kernel $maj.$min lacks dax error handling"
-	exit $rc
-fi
+check_min_kver()
+{
+	local ver="$1"
+	: "${KVER:=$(uname -r)}"
+
+	[ -n "$ver" ] || return 1
+	[[ "$ver" == "$(echo -e "$ver\n$KVER" | sort -V | head -1)" ]]
+}
+
+check_min_kver "4.7" || { echo "kernel $KVER may lack dax error handling"; exit $rc; }
 
 set -e
 mkdir -p $MNT
