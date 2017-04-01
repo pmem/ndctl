@@ -11,7 +11,8 @@ TESTS =\
 	dax-errors.sh \
 	daxdev-errors.sh \
 	btt-check.sh \
-	label-compat.sh
+	label-compat.sh \
+	blk-exhaust.sh
 
 check_PROGRAMS =\
 	libndctl \
