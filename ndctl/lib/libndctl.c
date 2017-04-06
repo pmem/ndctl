@@ -1275,6 +1275,8 @@ static void *add_dimm(void *parent, int id, const char *dimm_base)
 		dimm->dsm_family = strtoul(buf, NULL, 0);
 	if (dimm->dsm_family == NVDIMM_FAMILY_HPE1)
 		dimm->smart_ops = hpe1_smart_ops;
+	if (dimm->dsm_family == NVDIMM_FAMILY_MSFT)
+		dimm->smart_ops = msft_smart_ops;
 
 	dimm->formats = formats;
 	sprintf(path, "%s/nfit/format", dimm_base);

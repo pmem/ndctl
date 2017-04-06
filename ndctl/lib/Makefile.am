@@ -32,6 +32,7 @@ endif
 if ENABLE_SMART
 libndctl_la_SOURCES += libndctl-smart.c
 libndctl_la_SOURCES += libndctl-hpe1.c
+libndctl_la_SOURCES += libndctl-msft.c
 endif
 
 EXTRA_DIST += libndctl.sym

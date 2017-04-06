@@ -32,6 +32,7 @@
 #include <ccan/endian/endian.h>
 #include <ccan/short_types/short_types.h>
 #include "ndctl-hpe1.h"
+#include "ndctl-msft.h"
 
 #define SZ_16M 0x01000000
 
@@ -196,6 +197,7 @@ struct ndctl_cmd {
 		struct nd_cmd_clear_error clear_err[0];
 #endif
 		struct ndn_pkg_hpe1 hpe1[0];
+		struct ndn_pkg_msft msft[0];
 		struct nd_cmd_smart smart[0];
 		struct nd_cmd_smart_threshold smart_t[0];
 		struct nd_cmd_get_config_size get_size[0];
@@ -226,9 +228,11 @@ struct ndctl_smart_ops {
 #if HAS_SMART == 1
 struct ndctl_smart_ops * const intel_smart_ops;
 struct ndctl_smart_ops * const hpe1_smart_ops;
+struct ndctl_smart_ops * const msft_smart_ops;
 #else
 static struct ndctl_smart_ops * const intel_smart_ops = NULL;
 static struct ndctl_smart_ops * const hpe1_smart_ops = NULL;
+static struct ndctl_smart_ops * const msft_smart_ops = NULL;
 #endif
 
 /* internal library helpers for conditionally defined command numbers */
