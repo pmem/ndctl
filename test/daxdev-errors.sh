@@ -1,0 +1,82 @@
+#!/bin/bash -x
+
+DEV=""
+NDCTL="../ndctl/ndctl"
+DAXCTL="../daxctl/daxctl"
+BUS="-b nfit_test.0"
+BUS1="-b nfit_test.1"
+json2var="s/[{}\",]//g; s/:/=/g"
+rc=77
+
+err() {
+	rc=1
+	echo "test/daxdev-errors: failed at line $1"
+	exit $rc
+}
+
+check_min_kver()
+{
+	local ver="$1"
+	: "${KVER:=$(uname -r)}"
+
+	[ -n "$ver" ] || return 1
+	[[ "$ver" == "$(echo -e "$ver\n$KVER" | sort -V | head -1)" ]]
+}
+
+check_min_kver "4.12" || { echo "kernel $KVER lacks dax dev error handling"; exit $rc; }
+
+set -e
+trap 'err $LINENO' ERR
+
+# setup (reset nfit_test dimms)
+modprobe nfit_test
+$NDCTL disable-region $BUS all
+$NDCTL zero-labels $BUS all
+$NDCTL enable-region $BUS all
+
+query=". | sort_by(.available_size) | reverse | .[0].dev"
+region=$($NDCTL list $BUS -t pmem -Ri | jq -r "$query")
+
+json=$($NDCTL create-namespace $BUS -r $region -t pmem -m dax -a 4096)
+chardev=$(echo $json | jq ". | select(.mode == \"dax\") | .daxregion.devices[0].chardev")
+
+#{
+#  "dev":"namespace6.0",
+#  "mode":"dax",
+#  "size":64004096,
+#  "uuid":"83a925dd-42b5-4ac6-8588-6a50bfc0c001",
+#  "daxregion":{
+#    "id":6,
+#    "size":64004096,
+#    "align":4096,
+#    "devices":[
+#      {
+#        "chardev":"dax6.0",
+#        "size":64004096
+#      }
+#    ]
+#  }
+#}
+
+json1=$($NDCTL list $BUS)
+eval $(echo $json1 | sed -e "$json2var")
+
+read sector len < /sys/bus/platform/devices/nfit_test.0/$dev/$region/badblocks
+echo "sector: $sector len: $len"
+
+# run the daxdev-errors test
+test -x ./daxdev-errors
+./daxdev-errors $dev $region
+
+# check badblocks, should be empty
+if read sector len < /sys/bus/platform/devices/nfit_test.0/$dev/$region/badblocks; then
+	echo "badblocks empty, expected"
+fi
+[ -n "$sector" ] && echo "fail: $LINENO" && exit 1
+
+# cleanup
+$NDCTL disable-region $BUS all
+$NDCTL disable-region $BUS1 all
+modprobe -r nfit_test
+
+exit 0

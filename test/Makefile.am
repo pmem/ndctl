@@ -8,7 +8,8 @@ TESTS =\
 	multi-pmem \
 	create.sh \
 	clear.sh \
-	dax-errors.sh
+	dax-errors.sh \
+	daxdev-errors.sh
 
 check_PROGRAMS =\
 	libndctl \
@@ -16,7 +17,8 @@ check_PROGRAMS =\
 	dpa-alloc \
 	parent-uuid \
 	multi-pmem \
-	dax-errors
+	dax-errors \
+	daxdev-errors
 
 if ENABLE_DESTRUCTIVE
 TESTS +=\
@@ -72,6 +74,10 @@ dax_dev_LDADD = $(LIBNDCTL_LIB) $(KMOD_LIBS)
 dax_pmd_SOURCES = dax-pmd.c
 mmap_SOURCES = mmap.c
 dax_errors_SOURCES = dax-errors.c
+daxdev_errors_SOURCES = daxdev-errors.c \
+			../util/log.c \
+			../util/sysfs.c
+daxdev_errors_LDADD = $(LIBNDCTL_LIB)
 device_dax_SOURCES = \
 		device-dax.c \
 		dax-dev.c \
