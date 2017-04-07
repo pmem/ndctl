@@ -3346,6 +3346,50 @@ NDCTL_EXPORT int ndctl_namespace_disable_invalidate(struct ndctl_namespace *ndns
 	return ndctl_namespace_disable(ndns);
 }
 
+NDCTL_EXPORT int ndctl_namespace_disable_safe(struct ndctl_namespace *ndns)
+{
+	const char *devname = ndctl_namespace_get_devname(ndns);
+	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
+	struct ndctl_pfn *pfn = ndctl_namespace_get_pfn(ndns);
+	struct ndctl_btt *btt = ndctl_namespace_get_btt(ndns);
+	const char *bdev = NULL;
+	char path[50];
+	int fd;
+
+	if (pfn && ndctl_pfn_is_enabled(pfn))
+		bdev = ndctl_pfn_get_block_device(pfn);
+	else if (btt && ndctl_btt_is_enabled(btt))
+		bdev = ndctl_btt_get_block_device(btt);
+	else if (ndctl_namespace_is_enabled(ndns))
+		bdev = ndctl_namespace_get_block_device(ndns);
+
+	if (bdev) {
+		sprintf(path, "/dev/%s", bdev);
+		fd = open(path, O_RDWR|O_EXCL);
+		if (fd >= 0) {
+			/*
+			 * Got it, now block new mounts while we have it
+			 * pinned.
+			 */
+			ndctl_namespace_disable_invalidate(ndns);
+			close(fd);
+		} else {
+			/*
+			 * Yes, TOCTOU hole, but if you're racing namespace
+			 * creation you have other problems, and there's nothing
+			 * stopping the !bdev case from racing to mount an fs or
+			 * re-enabling the namepace.
+			 */
+			dbg(ctx, "%s: %s failed exclusive open: %s\n",
+					devname, bdev, strerror(errno));
+			return -errno;
+		}
+	} else
+		ndctl_namespace_disable_invalidate(ndns);
+
+	return 0;
+}
+
 static int pmem_namespace_is_configured(struct ndctl_namespace *ndns)
 {
 	if (ndctl_namespace_get_size(ndns) < ND_MIN_NAMESPACE_SIZE)

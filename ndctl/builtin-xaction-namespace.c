@@ -731,10 +731,7 @@ static int namespace_destroy(struct ndctl_region *region,
 	struct ndctl_pfn *pfn = ndctl_namespace_get_pfn(ndns);
 	struct ndctl_dax *dax = ndctl_namespace_get_dax(ndns);
 	struct ndctl_btt *btt = ndctl_namespace_get_btt(ndns);
-	const char *bdev = NULL;
-	bool dax_active = false;
-	char path[50];
-	int fd, rc;
+	int rc;
 
 	if (ndctl_region_get_ro(region)) {
 		error("%s: read-only, re-configuration disabled\n",
@@ -742,42 +739,15 @@ static int namespace_destroy(struct ndctl_region *region,
 		return -ENXIO;
 	}
 
-	if (pfn && ndctl_pfn_is_enabled(pfn))
-		bdev = ndctl_pfn_get_block_device(pfn);
-	else if (dax && ndctl_dax_is_enabled(dax))
-		dax_active = true;
-	else if (btt && ndctl_btt_is_enabled(btt))
-		bdev = ndctl_btt_get_block_device(btt);
-	else if (ndctl_namespace_is_enabled(ndns))
-		bdev = ndctl_namespace_get_block_device(ndns);
-
-	if ((bdev || dax_active) && !force) {
+	if (ndctl_namespace_is_active(ndns) && !force) {
 		error("%s is active, specify --force for re-configuration\n",
 				devname);
 		return -EBUSY;
-	} else if (bdev) {
-		sprintf(path, "/dev/%s", bdev);
-		fd = open(path, O_RDWR|O_EXCL);
-		if (fd >= 0) {
-			/*
-			 * Got it, now block new mounts while we have it
-			 * pinned.
-			 */
-			ndctl_namespace_disable_invalidate(ndns);
-			close(fd);
-		} else {
-			/*
-			 * Yes, TOCTOU hole, but if you're racing namespace
-			 * creation you have other problems, and there's nothing
-			 * stopping the !bdev case from racing to mount an fs or
-			 * re-enabling the namepace.
-			 */
-			error("%s: %s failed exlusive open: %s\n",
-					devname, bdev, strerror(errno));
-			return -errno;
-		}
-	} else if (dax_active)
-		ndctl_namespace_disable_invalidate(ndns);
+	} else {
+		rc = ndctl_namespace_disable_safe(ndns);
+		if (rc)
+			return rc;
+	}
 
 	if (pfn || btt || dax) {
 		rc = zero_info_block(ndns);
@@ -869,7 +839,7 @@ static int do_xaction_namespace(const char *namespace,
 					continue;
 				switch (action) {
 				case ACTION_DISABLE:
-					rc = ndctl_namespace_disable_invalidate(ndns);
+					rc = ndctl_namespace_disable_safe(ndns);
 					break;
 				case ACTION_ENABLE:
 					rc = ndctl_namespace_enable(ndns);
