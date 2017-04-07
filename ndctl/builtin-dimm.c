@@ -22,6 +22,7 @@
 #include <util/json.h>
 #include <util/filter.h>
 #include <json-c/json.h>
+#include <util/fletcher.h>
 #include <ndctl/libndctl.h>
 #include <util/parse-options.h>
 #include <ccan/minmax/minmax.h>
@@ -358,7 +359,7 @@ struct nvdimm_data {
 };
 
 /*
- * Note, best_seq(), inc_seq(), fletcher64(), sizeof_namespace_index()
+ * Note, best_seq(), inc_seq(), sizeof_namespace_index()
  * nvdimm_num_label_slots(), label_validate(), and label_write_index()
  * are copied from drivers/nvdimm/label.c in the Linux kernel with the
  * following modifications:
@@ -370,21 +371,6 @@ struct nvdimm_data {
  * 6/ remove flags argument to label_write_index
  * 7/ dropped clear_bit_le() usage in label_write_index
  */
-
-static u64 fletcher64(void *addr, size_t len, bool le)
-{
-	u32 *buf = addr;
-	u32 lo32 = 0;
-	u64 hi32 = 0;
-	size_t i;
-
-	for (i = 0; i < len / sizeof(u32); i++) {
-		lo32 += le ? le32_to_cpu((le32) buf[i]) : buf[i];
-		hi32 += lo32;
-	}
-
-	return hi32 << 32 | lo32;
-}
 
 static unsigned inc_seq(unsigned seq)
 {
