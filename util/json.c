@@ -86,21 +86,6 @@ struct json_object *util_dimm_to_json(struct ndctl_dimm *dimm)
 	return NULL;
 }
 
-bool util_namespace_active(struct ndctl_namespace *ndns)
-{
-	struct ndctl_btt *btt = ndctl_namespace_get_btt(ndns);
-	struct ndctl_pfn *pfn = ndctl_namespace_get_pfn(ndns);
-	struct ndctl_dax *dax = ndctl_namespace_get_dax(ndns);
-
-	if ((btt && ndctl_btt_is_enabled(btt))
-			|| (pfn && ndctl_pfn_is_enabled(pfn))
-			|| (dax && ndctl_dax_is_enabled(dax))
-			|| (!btt && !pfn && !dax
-				&& ndctl_namespace_is_enabled(ndns)))
-		return true;
-	return false;
-}
-
 struct json_object *util_daxctl_dev_to_json(struct daxctl_dev *dev)
 {
 	const char *devname = daxctl_dev_get_devname(dev);
@@ -334,7 +319,7 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 		json_object_object_add(jndns, "blockdev", jobj);
 	}
 
-	if (!util_namespace_active(ndns)) {
+	if (!ndctl_namespace_is_active(ndns)) {
 		jobj = json_object_new_string("disabled");
 		if (!jobj)
 			goto err;

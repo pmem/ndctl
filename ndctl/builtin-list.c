@@ -84,7 +84,7 @@ static struct json_object *list_namespaces(struct ndctl_region *region,
 		if (param.mode && mode_to_type(param.mode) != mode)
 			continue;
 
-		if (!list.idle && !util_namespace_active(ndns))
+		if (!list.idle && !ndctl_namespace_is_active(ndns))
 			continue;
 
 		if (!jnamespaces) {

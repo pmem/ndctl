@@ -3234,6 +3234,21 @@ static void region_refresh_children(struct ndctl_region *region)
 	daxs_init(region);
 }
 
+NDCTL_EXPORT bool ndctl_namespace_is_active(struct ndctl_namespace *ndns)
+{
+	struct ndctl_btt *btt = ndctl_namespace_get_btt(ndns);
+	struct ndctl_pfn *pfn = ndctl_namespace_get_pfn(ndns);
+	struct ndctl_dax *dax = ndctl_namespace_get_dax(ndns);
+
+	if ((btt && ndctl_btt_is_enabled(btt))
+			|| (pfn && ndctl_pfn_is_enabled(pfn))
+			|| (dax && ndctl_dax_is_enabled(dax))
+			|| (!btt && !pfn && !dax
+				&& ndctl_namespace_is_enabled(ndns)))
+		return true;
+	return false;
+}
+
 /*
  * Return 0 if enabled, < 0 if failed to enable, and > 0 if claimed by
  * another device and that device is enabled.  In the > 0 case a
