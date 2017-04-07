@@ -13,6 +13,7 @@ int cmd_enable_namespace(int argc, const char **argv, void *ctx);
 int cmd_create_namespace(int argc, const char **argv, void *ctx);
 int cmd_destroy_namespace(int argc, const char **argv, void *ctx);
 int cmd_disable_namespace(int argc, const char **argv, void *ctx);
+int cmd_check_namespace(int argc, const char **argv, void *ctx);
 int cmd_enable_region(int argc, const char **argv, void *ctx);
 int cmd_disable_region(int argc, const char **argv, void *ctx);
 int cmd_enable_dimm(int argc, const char **argv, void *ctx);

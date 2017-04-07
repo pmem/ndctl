@@ -55,6 +55,7 @@
 #define zfree(ptr) ({ free(*ptr); *ptr = NULL; })
 
 #define BUILD_BUG_ON_ZERO(e) (sizeof(struct { int:-!!(e); }))
+#define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
 
 static inline const char *skip_prefix(const char *str, const char *prefix)
 {

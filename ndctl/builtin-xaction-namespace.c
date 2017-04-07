@@ -28,6 +28,7 @@
 #include <util/parse-options.h>
 #include <ccan/minmax/minmax.h>
 #include <ccan/array_size/array_size.h>
+#include "check.h"
 
 #ifdef HAVE_NDCTL_H
 #include <linux/ndctl.h>
@@ -37,6 +38,7 @@
 
 static bool verbose;
 static bool force;
+static bool repair;
 static struct parameters {
 	bool do_scan;
 	bool mode_default;
@@ -112,6 +114,10 @@ OPT_STRING('a', "align", &param.align, "align", \
 	"specify the namespace alignment in bytes (default: 2M)"), \
 OPT_BOOLEAN('f', "force", &force, "reconfigure namespace even if currently active")
 
+#define CHECK_OPTIONS() \
+OPT_BOOLEAN('R', "repair", &repair, "perform metadata repairs"), \
+OPT_BOOLEAN('f', "force", &force, "check namespace even if currently active")
+
 static const struct option base_options[] = {
 	BASE_OPTIONS(),
 	OPT_END(),
@@ -130,11 +136,18 @@ static const struct option create_options[] = {
 	OPT_END(),
 };
 
+static const struct option check_options[] = {
+	BASE_OPTIONS(),
+	CHECK_OPTIONS(),
+	OPT_END(),
+};
+
 enum namespace_action {
 	ACTION_ENABLE,
 	ACTION_DISABLE,
 	ACTION_CREATE,
 	ACTION_DESTROY,
+	ACTION_CHECK,
 };
 
 static int set_defaults(enum namespace_action mode)
@@ -268,8 +281,26 @@ static const char *parse_namespace_options(int argc, const char **argv,
 	rc = set_defaults(mode);
 
 	if (argc == 0 && mode != ACTION_CREATE) {
-		error("specify a namespace to %s, or \"all\"\n",
-				mode == ACTION_ENABLE ? "enable" : "disable");
+		char *action_string;
+
+		switch (mode) {
+			case ACTION_ENABLE:
+				action_string = "enable";
+				break;
+			case ACTION_DISABLE:
+				action_string = "disable";
+				break;
+			case ACTION_DESTROY:
+				action_string = "destroy";
+				break;
+			case ACTION_CHECK:
+				action_string = "check";
+				break;
+			default:
+				action_string = "<>";
+				break;
+		}
+		error("specify a namespace to %s, or \"all\"\n", action_string);
 		rc = -EINVAL;
 	}
 	for (i = mode == ACTION_CREATE ? 0 : 1; i < argc; i++) {
@@ -793,6 +824,7 @@ static int do_xaction_namespace(const char *namespace,
 	struct ndctl_namespace *ndns, *_n;
 	int rc = -ENXIO, success = 0;
 	struct ndctl_region *region;
+	struct check_opts opts;
 	const char *ndns_name;
 	struct ndctl_bus *bus;
 
@@ -846,6 +878,14 @@ static int do_xaction_namespace(const char *namespace,
 					break;
 				case ACTION_DESTROY:
 					rc = namespace_destroy(region, ndns);
+					break;
+				case ACTION_CHECK:
+					opts.verbose = verbose;
+					opts.repair = repair;
+					opts.force = force;
+					rc = namespace_check(ndns, &opts);
+					if (rc < 0)
+						return rc;
 					break;
 				case ACTION_CREATE:
 					rc = namespace_reconfig(region, ndns);
@@ -962,6 +1002,28 @@ int cmd_destroy_namespace(int argc , const char **argv, void *ctx)
 	} else {
 		fprintf(stderr, "destroyed %d namespace%s\n", destroyed,
 				destroyed > 1 ? "s" : "");
+		return 0;
+	}
+}
+
+int cmd_check_namespace(int argc , const char **argv, void *ctx)
+{
+	char *xable_usage = "ndctl check-namespace <namespace> [<options>]";
+	const char *namespace = parse_namespace_options(argc, argv,
+			ACTION_CHECK, check_options, xable_usage);
+	int checked;
+
+	checked = do_xaction_namespace(namespace, ACTION_CHECK, ctx);
+	if (checked < 0) {
+		fprintf(stderr, "error checking namespaces: %s\n",
+				strerror(-checked));
+		return checked;
+	} else if (checked == 0) {
+		fprintf(stderr, "checked 0 namespaces\n");
+		return 0;
+	} else {
+		fprintf(stderr, "checked %d namespace%s\n", checked,
+				checked > 1 ? "s" : "");
 		return 0;
 	}
 }

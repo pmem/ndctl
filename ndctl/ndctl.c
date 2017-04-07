@@ -57,6 +57,7 @@ static struct cmd_struct commands[] = {
 	{ "disable-namespace", cmd_disable_namespace },
 	{ "create-namespace", cmd_create_namespace },
 	{ "destroy-namespace", cmd_destroy_namespace },
+	{ "check-namespace", cmd_check_namespace },
 	{ "enable-region", cmd_enable_region },
 	{ "disable-region", cmd_disable_region },
 	{ "enable-dimm", cmd_enable_dimm },

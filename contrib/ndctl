@@ -194,6 +194,9 @@ __ndctl_comp_non_option_args()
 	destroy-namespace)
 		opts="$(__ndctl_get_ns) all"
 		;;
+	check-namespace)
+		opts="$(__ndctl_get_ns -i) all"
+		;;
 	enable-region)
 		opts="$(__ndctl_get_regions -i) all"
 		;;

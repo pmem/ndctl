@@ -1,0 +1,64 @@
+ndctl-check-namespace(1)
+=========================
+
+NAME
+----
+ndctl-check-namespace - check namespace metadata consistency
+
+SYNOPSIS
+--------
+[verse]
+'ndctl check-namespace' <namespace> [<options>]
+
+DESCRIPTION
+-----------
+
+A namespace in the 'sector' mode will have metadata on it to describe
+the kernel BTT (Block Translation Table). The check-namespace command
+can be used to check the consistency of this metadata, and optionally,
+also attempt to repair it, if it has enough information to do so.
+
+The namespace being checked has to be disabled before initiating a
+check on it as a precautionary measure. The --force option can override
+this.
+
+EXAMPLES
+--------
+
+Check a namespace (only report errors)
+[verse]
+ndctl disable-namespace namespace0.0
+ndctl check-namespace namespace0.0
+
+Check a namespace, and perform repairs if possible
+[verse]
+ndctl disable-namespace namespace0.0
+ndctl check-namespace --repair namespace0.0
+
+OPTIONS
+-------
+-R::
+--repair::
+	Perform metadata repairs if possible. Without this option,
+	the raw namespace contents will not be touched.
+
+-f::
+--force::
+	Unless this option is specified, a check-namespace operation
+	will fail if the namespace is presently active. Specifying
+	--force causes the namespace to be disabled before checking.
+
+-v::
+--verbose::
+	Emit debug messages for the namespace check process.
+
+-r::
+--region=::
+include::xable-region-options.txt[]
+
+SEE ALSO
+--------
+linkndctl:ndctl-disable-namespace[1],
+linkndctl:ndctl-enable-namespace[1],
+http://pmem.io/documents/NVDIMM_Namespace_Spec.pdf[NVDIMM Namespace
+Specification]

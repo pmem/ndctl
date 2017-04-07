@@ -5,6 +5,7 @@ bin_PROGRAMS = ndctl
 ndctl_SOURCES = ndctl.c \
 		builtin-create-nfit.c \
 		builtin-xaction-namespace.c \
+		builtin-check.c \
 		builtin-xable-region.c \
 		builtin-dimm.c \
 		 ../util/log.c \
