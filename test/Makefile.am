@@ -9,7 +9,8 @@ TESTS =\
 	create.sh \
 	clear.sh \
 	dax-errors.sh \
-	daxdev-errors.sh
+	daxdev-errors.sh \
+	btt-check.sh
 
 check_PROGRAMS =\
 	libndctl \
