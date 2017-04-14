@@ -144,7 +144,7 @@ struct ndctl_dimm {
 	int health_eventfd;
 	int buf_len;
 	int id;
-	union {
+	union dimm_flags {
 		unsigned long flags;
 		struct {
 			unsigned int f_map:1;
@@ -153,8 +153,9 @@ struct ndctl_dimm {
 			unsigned int f_flush:1;
 			unsigned int f_smart:1;
 			unsigned int f_restore:1;
+			unsigned int f_notify:1;
 		};
-	};
+	} flags;
 	struct list_node list;
 	int formats;
 	int format[0];
@@ -779,17 +780,19 @@ static void parse_nfit_mem_flags(struct ndctl_dimm *dimm, char *flags)
 	while ((end = strchr(start, ' '))) {
 		*end = '\0';
 		if (strcmp(start, "not_armed") == 0)
-			dimm->f_arm = 1;
+			dimm->flags.f_arm = 1;
 		else if (strcmp(start, "save_fail") == 0)
-			dimm->f_save = 1;
+			dimm->flags.f_save = 1;
 		else if (strcmp(start, "flush_fail") == 0)
-			dimm->f_flush = 1;
+			dimm->flags.f_flush = 1;
 		else if (strcmp(start, "smart_event") == 0)
-			dimm->f_smart = 1;
+			dimm->flags.f_smart = 1;
 		else if (strcmp(start, "restore_fail") == 0)
-			dimm->f_restore = 1;
+			dimm->flags.f_restore = 1;
 		else if (strcmp(start, "map_fail") == 0)
-			dimm->f_map = 1;
+			dimm->flags.f_map = 1;
+		else if (strcmp(start, "smart_notify") == 0)
+			dimm->flags.f_notify = 1;
 		start = end + 1;
 	}
 	if (end != start)
@@ -1441,37 +1444,45 @@ NDCTL_EXPORT const char *ndctl_dimm_get_cmd_name(struct ndctl_dimm *dimm, int cm
 
 NDCTL_EXPORT int ndctl_dimm_has_errors(struct ndctl_dimm *dimm)
 {
-	return dimm->flags != 0;
+	union dimm_flags flags = dimm->flags;
+
+	flags.f_notify = 0;
+	return flags.flags != 0;
+}
+
+NDCTL_EXPORT int ndctl_dimm_has_notifications(struct ndctl_dimm *dimm)
+{
+	return dimm->flags.f_notify;
 }
 
 NDCTL_EXPORT int ndctl_dimm_failed_save(struct ndctl_dimm *dimm)
 {
-	return dimm->f_save;
+	return dimm->flags.f_save;
 }
 
 NDCTL_EXPORT int ndctl_dimm_failed_arm(struct ndctl_dimm *dimm)
 {
-	return dimm->f_arm;
+	return dimm->flags.f_arm;
 }
 
 NDCTL_EXPORT int ndctl_dimm_failed_restore(struct ndctl_dimm *dimm)
 {
-	return dimm->f_restore;
+	return dimm->flags.f_restore;
 }
 
 NDCTL_EXPORT int ndctl_dimm_smart_pending(struct ndctl_dimm *dimm)
 {
-	return dimm->f_smart;
+	return dimm->flags.f_smart;
 }
 
 NDCTL_EXPORT int ndctl_dimm_failed_flush(struct ndctl_dimm *dimm)
 {
-	return dimm->f_flush;
+	return dimm->flags.f_flush;
 }
 
 NDCTL_EXPORT int ndctl_dimm_failed_map(struct ndctl_dimm *dimm)
 {
-	return dimm->f_map;
+	return dimm->flags.f_map;
 }
 
 NDCTL_EXPORT int ndctl_dimm_is_cmd_supported(struct ndctl_dimm *dimm,

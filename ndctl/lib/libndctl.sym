@@ -59,6 +59,7 @@ global:
 	ndctl_dimm_get_devname;
 	ndctl_dimm_get_cmd_name;
 	ndctl_dimm_has_errors;
+	ndctl_dimm_has_notifications;
 	ndctl_dimm_failed_save;
 	ndctl_dimm_failed_map;
 	ndctl_dimm_failed_arm;

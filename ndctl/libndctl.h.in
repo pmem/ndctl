@@ -141,6 +141,7 @@ unsigned int ndctl_dimm_get_serial(struct ndctl_dimm *dimm);
 const char *ndctl_dimm_get_cmd_name(struct ndctl_dimm *dimm, int cmd);
 int ndctl_dimm_is_cmd_supported(struct ndctl_dimm *dimm, int cmd);
 int ndctl_dimm_has_errors(struct ndctl_dimm *dimm);
+int ndctl_dimm_has_notifications(struct ndctl_dimm *dimm);
 int ndctl_dimm_failed_save(struct ndctl_dimm *dimm);
 int ndctl_dimm_failed_arm(struct ndctl_dimm *dimm);
 int ndctl_dimm_failed_restore(struct ndctl_dimm *dimm);
