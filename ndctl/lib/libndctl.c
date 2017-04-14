@@ -147,6 +147,7 @@ struct ndctl_dimm {
 	union {
 		unsigned long flags;
 		struct {
+			unsigned int f_map:1;
 			unsigned int f_arm:1;
 			unsigned int f_save:1;
 			unsigned int f_flush:1;
@@ -787,6 +788,8 @@ static void parse_nfit_mem_flags(struct ndctl_dimm *dimm, char *flags)
 			dimm->f_smart = 1;
 		else if (strcmp(start, "restore_fail") == 0)
 			dimm->f_restore = 1;
+		else if (strcmp(start, "map_fail") == 0)
+			dimm->f_map = 1;
 		start = end + 1;
 	}
 	if (end != start)
@@ -1464,6 +1467,11 @@ NDCTL_EXPORT int ndctl_dimm_smart_pending(struct ndctl_dimm *dimm)
 NDCTL_EXPORT int ndctl_dimm_failed_flush(struct ndctl_dimm *dimm)
 {
 	return dimm->f_flush;
+}
+
+NDCTL_EXPORT int ndctl_dimm_failed_map(struct ndctl_dimm *dimm)
+{
+	return dimm->f_map;
 }
 
 NDCTL_EXPORT int ndctl_dimm_is_cmd_supported(struct ndctl_dimm *dimm,

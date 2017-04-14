@@ -60,6 +60,7 @@ global:
 	ndctl_dimm_get_cmd_name;
 	ndctl_dimm_has_errors;
 	ndctl_dimm_failed_save;
+	ndctl_dimm_failed_map;
 	ndctl_dimm_failed_arm;
 	ndctl_dimm_failed_restore;
 	ndctl_dimm_smart_pending;

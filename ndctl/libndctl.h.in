@@ -144,6 +144,7 @@ int ndctl_dimm_has_errors(struct ndctl_dimm *dimm);
 int ndctl_dimm_failed_save(struct ndctl_dimm *dimm);
 int ndctl_dimm_failed_arm(struct ndctl_dimm *dimm);
 int ndctl_dimm_failed_restore(struct ndctl_dimm *dimm);
+int ndctl_dimm_failed_map(struct ndctl_dimm *dimm);
 int ndctl_dimm_smart_pending(struct ndctl_dimm *dimm);
 int ndctl_dimm_failed_flush(struct ndctl_dimm *dimm);
 int ndctl_dimm_get_health_eventfd(struct ndctl_dimm *dimm);
