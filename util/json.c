@@ -80,6 +80,48 @@ struct json_object *util_dimm_to_json(struct ndctl_dimm *dimm)
 		json_object_object_add(jdimm, "state", jobj);
 	}
 
+	if (ndctl_dimm_failed_map(dimm)) {
+		jobj = json_object_new_boolean(true);
+		if (!jobj)
+			goto err;
+		json_object_object_add(jdimm, "flag_failed_map", jobj);
+	}
+
+	if (ndctl_dimm_failed_save(dimm)) {
+		jobj = json_object_new_boolean(true);
+		if (!jobj)
+			goto err;
+		json_object_object_add(jdimm, "flag_failed_save", jobj);
+	}
+
+	if (ndctl_dimm_failed_arm(dimm)) {
+		jobj = json_object_new_boolean(true);
+		if (!jobj)
+			goto err;
+		json_object_object_add(jdimm, "flag_failed_arm", jobj);
+	}
+
+	if (ndctl_dimm_failed_restore(dimm)) {
+		jobj = json_object_new_boolean(true);
+		if (!jobj)
+			goto err;
+		json_object_object_add(jdimm, "flag_failed_restore", jobj);
+	}
+
+	if (ndctl_dimm_failed_flush(dimm)) {
+		jobj = json_object_new_boolean(true);
+		if (!jobj)
+			goto err;
+		json_object_object_add(jdimm, "flag_failed_flush", jobj);
+	}
+
+	if (ndctl_dimm_smart_pending(dimm)) {
+		jobj = json_object_new_boolean(true);
+		if (!jobj)
+			goto err;
+		json_object_object_add(jdimm, "flag_smart_event", jobj);
+	}
+
 	return jdimm;
  err:
 	json_object_put(jdimm);
