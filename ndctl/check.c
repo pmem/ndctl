@@ -13,6 +13,8 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <setjmp.h>
+#include <signal.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -39,6 +41,13 @@
 #else
 #include <ndctl.h>
 #endif
+
+static sigjmp_buf sj_env;
+
+static void sigbus_hdl(int sig, siginfo_t *siginfo, void *ptr)
+{
+	siglongjmp(sj_env, 1);
+}
 
 static int repair_msg(struct btt_chk *bttc)
 {
@@ -872,6 +881,7 @@ int namespace_check(struct ndctl_namespace *ndns, struct check_opts *opts)
 	int raw_mode, rc, disabled_flag = 0, open_flags;
 	struct btt_sb *btt_sb;
 	struct btt_chk *bttc;
+	struct sigaction act;
 	char path[50];
 
 	bttc = calloc(1, sizeof(*bttc));
@@ -881,6 +891,15 @@ int namespace_check(struct ndctl_namespace *ndns, struct check_opts *opts)
 	log_init(&bttc->ctx, devname, "NDCTL_CHECK_NAMESPACE");
 	if (opts->verbose)
 		bttc->ctx.log_priority = LOG_DEBUG;
+
+	memset(&act, 0, sizeof(act));
+	act.sa_sigaction = sigbus_hdl;
+	act.sa_flags = SA_SIGINFO;
+
+	if (sigaction(SIGBUS, &act, 0)) {
+		err(bttc, "Unable to set sigaction\n");
+		return -errno;
+	}
 
 	bttc->opts = opts;
 	bttc->start_off = BTT_START_OFFSET;
@@ -947,6 +966,18 @@ int namespace_check(struct ndctl_namespace *ndns, struct check_opts *opts)
 			bttc->path, strerror(errno));
 		rc = -errno;
 		goto out_sb;
+	}
+
+	/*
+	 * This is where we jump to if we receive a SIGBUS, prior to doing any
+	 * mmaped reads, and can safely abort
+	 */
+	if (sigsetjmp(sj_env, 1)) {
+		err(bttc, "Received a SIGBUS\n");
+		err(bttc,
+			"Metadata corruption found, recovery is not possible\n");
+		rc = -EFAULT;
+		goto out_close;
 	}
 
 	rc = btt_info_read_verify(bttc, btt_sb, bttc->start_off);
