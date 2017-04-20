@@ -1033,6 +1033,8 @@ static int check_btt_size(struct ndctl_btt *btt)
 static int check_btt_create(struct ndctl_region *region, struct ndctl_namespace *ndns,
 		struct namespace *namespace)
 {
+	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
+	struct ndctl_test *test = ndctl_get_private_data(ctx);
 	struct btt *btt_s = namespace->btt_settings;
 	int i, fd, retry = 10;
 	struct ndctl_btt *btt;
@@ -1070,10 +1072,13 @@ static int check_btt_create(struct ndctl_region *region, struct ndctl_namespace 
 			goto err;
 		}
 
-		mode = ndctl_namespace_get_mode(ndns);
-		if (mode >= 0 && mode != NDCTL_NS_MODE_SAFE)
-			fprintf(stderr, "%s: expected safe mode got: %d\n",
-					devname, mode);
+		/* prior to v4.5 the mode attribute did not exist */
+		if (ndctl_test_attempt(test, KERNEL_VERSION(4, 5, 0))) {
+			mode = ndctl_namespace_get_mode(ndns);
+			if (mode >= 0 && mode != NDCTL_NS_MODE_SAFE)
+				fprintf(stderr, "%s: expected safe mode got: %d\n",
+						devname, mode);
+		}
 
 		rc = check_btt_size(btt);
 		if (rc)
