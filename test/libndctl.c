@@ -2405,16 +2405,21 @@ static int do_test0(struct ndctl_ctx *ctx, struct ndctl_test *test)
 	ndctl_region_foreach(bus, region)
 		ndctl_region_enable(region);
 
-	if (ndctl_test_attempt(test, KERNEL_VERSION(4, 7, 0))) {
+	/* pfn and dax tests require vmalloc-enabled nfit_test */
+	if (ndctl_test_attempt(test, KERNEL_VERSION(4, 8, 0))) {
 		rc = check_regions(bus, regions0, ARRAY_SIZE(regions0), DAX);
 		if (rc)
 			return rc;
 		reset_bus(bus);
 	}
-	rc = check_regions(bus, regions0, ARRAY_SIZE(regions0), PFN);
-	if (rc)
-		return rc;
-	reset_bus(bus);
+
+	if (ndctl_test_attempt(test, KERNEL_VERSION(4, 8, 0))) {
+		rc = check_regions(bus, regions0, ARRAY_SIZE(regions0), PFN);
+		if (rc)
+			return rc;
+		reset_bus(bus);
+	}
+
 	return check_regions(bus, regions0, ARRAY_SIZE(regions0), BTT);
 }
 
@@ -2464,7 +2469,7 @@ int test_libndctl(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx)
 	daxctl_set_log_priority(daxctl_ctx, loglevel);
 	ndctl_set_private_data(ctx, test);
 
-	err = nfit_test_init(&kmod_ctx, &mod, loglevel);
+	err = nfit_test_init(&kmod_ctx, &mod, loglevel, test);
 	if (err < 0) {
 		ndctl_test_skip(test);
 		fprintf(stderr, "nfit_test unavailable skipping tests\n");
