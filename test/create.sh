@@ -13,6 +13,17 @@ err() {
 	exit $rc
 }
 
+check_min_kver()
+{
+	local ver="$1"
+	: "${KVER:=$(uname -r)}"
+
+	[ -n "$ver" ] || return 1
+	[[ "$ver" == "$(echo -e "$ver\n$KVER" | sort -V | head -1)" ]]
+}
+
+check_min_kver "4.5" || { echo "kernel $KVER may lack namespace mode attribute"; exit $rc; }
+
 set -e
 trap 'err $LINENO' ERR
 
