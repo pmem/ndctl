@@ -253,7 +253,7 @@ int test_multi_pmem(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx
 
 	ndctl_set_log_priority(ctx, loglevel);
 
-	err = nfit_test_init(&kmod_ctx, &mod, loglevel);
+	err = nfit_test_init(&kmod_ctx, &mod, loglevel, test);
 	if (err < 0) {
 		result = 77;
 		ndctl_test_skip(test);

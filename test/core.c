@@ -104,7 +104,7 @@ int ndctl_test_get_skipped(struct ndctl_test *test)
 }
 
 int nfit_test_init(struct kmod_ctx **ctx, struct kmod_module **mod,
-		int log_level)
+		int log_level, struct ndctl_test *test)
 {
 	int rc;
 	unsigned int i;
@@ -142,6 +142,15 @@ int nfit_test_init(struct kmod_ctx **ctx, struct kmod_module **mod,
 		int state;
 
 		name = list[i];
+
+		/*
+		 * Don't check for device-dax modules on kernels older
+		 * than 4.7.
+		 */
+		if (strstr(name, "dax")
+				&& !ndctl_test_attempt(test,
+					KERNEL_VERSION(4, 7, 0)))
+			continue;
 retry:
 		rc = kmod_module_new_from_name(*ctx, name, mod);
 		if (rc) {
