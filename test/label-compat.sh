@@ -46,7 +46,7 @@ done
 
 $NDCTL enable-region $BUS all
 
-len=$($NDCTL list -r 7 -N | jq -r "length")
+len=$($NDCTL list -r $region -N | jq -r "length")
 
 if [ -z $len ]; then
 	rc=1
