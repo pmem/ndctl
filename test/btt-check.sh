@@ -43,7 +43,7 @@ check_min_kver()
 	[[ "$ver" == "$(echo -e "$ver\n$KVER" | sort -V | head -1)" ]]
 }
 
-check_min_kver "4.12" || { echo "kernel $KVER may not support badblocks clearing on pmem via btt"; exit $rc; }
+check_min_kver "4.13" || { echo "kernel $KVER may not support badblocks clearing on pmem via btt"; exit $rc; }
 
 create()
 {
