@@ -81,7 +81,7 @@ If the unit test modules are indeed available in the modules 'extra'
 directory the default depmod policy can be overridden by adding a file
 to /etc/depmod.d with the following contents:  
 `override nfit * extra`  
-`override dax * extra`  
+`override device_dax * extra`
 `override dax_pmem * extra`  
 `override libnvdimm * extra`  
 `override nd_blk * extra`  
