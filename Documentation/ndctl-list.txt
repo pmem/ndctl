@@ -148,9 +148,15 @@ include::xable-region-options.txt[]
 
 -M::
 --media-errors::
-	Include media errors (badblocks) in the listing. badblocks_count
-	may count blocks that are not in the data space of the namespace
-	for sector mode.
+	Include media errors (badblocks) in the listing. Note that the
+	'badblock_count' property is included in the listing by default
+	when the count is non-zero, otherwise it is hidden. Also, if the
+	namespace is in 'sector' mode the 'badblocks' listing is not
+	included and 'badblock_count' property may include blocks that are
+	located in metadata, or unused capacity in the namespace. Convert
+	a 'sector' namespace into 'raw' mode to list precise 'badblocks'
+	offsets.
+
 [verse]
 {
   "dev":"namespace7.0",

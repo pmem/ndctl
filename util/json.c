@@ -374,8 +374,8 @@ static struct json_object *util_pfn_badblocks_to_json(struct ndctl_pfn *pfn,
 			include_media_errors, bb_count);
 }
 
-static struct json_object *util_btt_badblocks_to_json(struct ndctl_btt *btt,
-		bool include_media_errors, unsigned int *bb_count)
+static void util_btt_badblocks_to_json(struct ndctl_btt *btt,
+		unsigned int *bb_count)
 {
 	struct ndctl_region *region = ndctl_btt_get_region(btt);
 	struct ndctl_namespace *ndns = ndctl_btt_get_namespace(btt);
@@ -383,14 +383,22 @@ static struct json_object *util_btt_badblocks_to_json(struct ndctl_btt *btt,
 
 	btt_begin = ndctl_namespace_get_resource(ndns);
 	if (btt_begin == ULLONG_MAX)
-		return NULL;
+		return;
 
 	btt_size = ndctl_btt_get_size(btt);
 	if (btt_size == ULLONG_MAX)
-		return NULL;
+		return;
 
-	return dev_badblocks_to_json(region, btt_begin, btt_size,
-			include_media_errors, bb_count);
+	/*
+	 * The dev_badblocks_to_json() for BTT is not accurate with
+	 * respect to data vs metadata badblocks, and is only useful for
+	 * a potential bb_count.
+	 *
+	 * FIXME: switch to native BTT badblocks representation
+	 * when / if the kernel provides it.
+	 */
+	dev_badblocks_to_json(region, btt_begin, btt_size,
+			false, bb_count);
 }
 
 static struct json_object *util_dax_badblocks_to_json(struct ndctl_dax *dax,
@@ -416,16 +424,16 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 		bool include_media_errors)
 {
 	struct json_object *jndns = json_object_new_object();
+	struct json_object *jobj, *jbbs = NULL;
 	unsigned long long size = ULLONG_MAX;
 	enum ndctl_namespace_mode mode;
-	struct json_object *jobj, *jobj2;
 	const char *bdev = NULL;
+	unsigned int bb_count;
 	struct ndctl_btt *btt;
 	struct ndctl_pfn *pfn;
 	struct ndctl_dax *dax;
 	char buf[40];
 	uuid_t uuid;
-	unsigned int bb_count;
 
 	if (!jndns)
 		return NULL;
@@ -549,38 +557,27 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 	}
 
 	if (pfn)
-		jobj2 = util_pfn_badblocks_to_json(pfn, include_media_errors,
+		jbbs = util_pfn_badblocks_to_json(pfn, include_media_errors,
 				&bb_count);
 	else if (dax)
-		jobj2 = util_dax_badblocks_to_json(dax, include_media_errors,
+		jbbs = util_dax_badblocks_to_json(dax, include_media_errors,
 				&bb_count);
-	else if (btt) {
-		jobj2 = util_btt_badblocks_to_json(btt, include_media_errors,
-				&bb_count);
-		/*
-		 * Discard the jobj2, the badblocks for BTT is not,
-		 * accurate and there will be a good method to caculate
-		 * them later. We just want a bb count and not the specifics
-		 * for now.
-		 */
-		jobj2 = NULL;
-	} else {
-		struct ndctl_region *region =
-			ndctl_namespace_get_region(ndns);
-
-		jobj2 = util_region_badblocks_to_json(region,
+	else if (btt)
+		util_btt_badblocks_to_json(btt, &bb_count);
+	else
+		jbbs = util_region_badblocks_to_json(
+				ndctl_namespace_get_region(ndns),
 				include_media_errors, &bb_count);
-	}
 
 	jobj = json_object_new_int(bb_count);
 	if (!jobj) {
-		json_object_put(jobj2);
+		json_object_put(jbbs);
 		goto err;
 	}
 
 	json_object_object_add(jndns, "badblock_count", jobj);
-	if (include_media_errors && jobj2)
-			json_object_object_add(jndns, "badblocks", jobj2);
+	if (include_media_errors && jbbs)
+			json_object_object_add(jndns, "badblocks", jbbs);
 
 	return jndns;
  err:

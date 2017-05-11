@@ -120,10 +120,10 @@ static struct json_object *list_namespaces(struct ndctl_region *region,
 }
 
 static struct json_object *region_to_json(struct ndctl_region *region,
-		bool include_media_err)
+		bool include_media_errors)
 {
 	struct json_object *jregion = json_object_new_object();
-	struct json_object *jobj, *jobj2, *jmappings = NULL;
+	struct json_object *jobj, *jbbs, *jmappings = NULL;
 	struct ndctl_interleave_set *iset;
 	struct ndctl_mapping *mapping;
 	unsigned int bb_count;
@@ -207,16 +207,16 @@ static struct json_object *region_to_json(struct ndctl_region *region,
 		json_object_object_add(jregion, "state", jobj);
 	}
 
-	jobj2 = util_region_badblocks_to_json(region, include_media_err,
+	jbbs = util_region_badblocks_to_json(region, include_media_errors,
 			&bb_count);
 	jobj = json_object_new_int(bb_count);
 	if (!jobj) {
-		json_object_put(jobj2);
+		json_object_put(jbbs);
 		goto err;
 	}
 	json_object_object_add(jregion, "badblock_count", jobj);
-	if (include_media_err && jobj2)
-		json_object_object_add(jregion, "badblocks", jobj2);
+	if (include_media_errors && jbbs)
+		json_object_object_add(jregion, "badblocks", jbbs);
 
 	list_namespaces(region, jregion, NULL, false);
 	return jregion;
