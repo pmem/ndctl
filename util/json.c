@@ -356,7 +356,7 @@ static struct json_object *dev_badblocks_to_json(struct ndctl_region *region,
 	return NULL;
 }
 
-struct json_object *util_pfn_badblocks_to_json(struct ndctl_pfn *pfn,
+static struct json_object *util_pfn_badblocks_to_json(struct ndctl_pfn *pfn,
 		bool include_media_errors, unsigned int *bb_count)
 {
 	struct ndctl_region *region = ndctl_pfn_get_region(pfn);
@@ -374,7 +374,7 @@ struct json_object *util_pfn_badblocks_to_json(struct ndctl_pfn *pfn,
 			include_media_errors, bb_count);
 }
 
-struct json_object *util_btt_badblocks_to_json(struct ndctl_btt *btt,
+static struct json_object *util_btt_badblocks_to_json(struct ndctl_btt *btt,
 		bool include_media_errors, unsigned int *bb_count)
 {
 	struct ndctl_region *region = ndctl_btt_get_region(btt);
@@ -393,7 +393,7 @@ struct json_object *util_btt_badblocks_to_json(struct ndctl_btt *btt,
 			include_media_errors, bb_count);
 }
 
-struct json_object *util_dax_badblocks_to_json(struct ndctl_dax *dax,
+static struct json_object *util_dax_badblocks_to_json(struct ndctl_dax *dax,
 		bool include_media_errors, unsigned int *bb_count)
 {
 	struct ndctl_region *region = ndctl_dax_get_region(dax);

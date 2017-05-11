@@ -13,12 +13,6 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 		bool include_idle, bool include_dax, bool include_media_errs);
 struct daxctl_region;
 struct daxctl_dev;
-struct json_object *util_dax_badblocks_to_json(struct ndctl_dax *dax,
-		bool include_media_errors, unsigned int *bb_count);
-struct json_object *util_pfn_badblocks_to_json(struct ndctl_pfn *pfn,
-		bool include_media_errors, unsigned int *bb_count);
-struct json_object *util_btt_badblocks_to_json(struct ndctl_btt *btt,
-		bool include_media_errors, unsigned int *bb_count);
 struct json_object *util_region_badblocks_to_json(struct ndctl_region *region,
 		bool include_media_errors, unsigned int *bb_count);
 struct json_object *util_daxctl_region_to_json(struct daxctl_region *region,
