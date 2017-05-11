@@ -379,14 +379,14 @@ static void util_btt_badblocks_to_json(struct ndctl_btt *btt,
 {
 	struct ndctl_region *region = ndctl_btt_get_region(btt);
 	struct ndctl_namespace *ndns = ndctl_btt_get_namespace(btt);
-	unsigned long long btt_begin, btt_size;
+	unsigned long long begin, size;
 
-	btt_begin = ndctl_namespace_get_resource(ndns);
-	if (btt_begin == ULLONG_MAX)
+	begin = ndctl_namespace_get_resource(ndns);
+	if (begin == ULLONG_MAX)
 		return;
 
-	btt_size = ndctl_btt_get_size(btt);
-	if (btt_size == ULLONG_MAX)
+	size = ndctl_namespace_get_size(ndns);
+	if (size == ULLONG_MAX)
 		return;
 
 	/*
@@ -397,8 +397,7 @@ static void util_btt_badblocks_to_json(struct ndctl_btt *btt,
 	 * FIXME: switch to native BTT badblocks representation
 	 * when / if the kernel provides it.
 	 */
-	dev_badblocks_to_json(region, btt_begin, btt_size,
-			false, bb_count);
+	dev_badblocks_to_json(region, begin, size, false, bb_count);
 }
 
 static struct json_object *util_dax_badblocks_to_json(struct ndctl_dax *dax,
