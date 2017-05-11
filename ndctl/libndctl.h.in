@@ -372,6 +372,10 @@ int ndctl_cmd_get_status(struct ndctl_cmd *cmd);
 unsigned int ndctl_cmd_get_firmware_status(struct ndctl_cmd *cmd);
 int ndctl_cmd_submit(struct ndctl_cmd *cmd);
 
+struct badblock {
+	unsigned long long offset;
+	unsigned int len;
+};
 struct ndctl_region;
 struct ndctl_region *ndctl_region_get_first(struct ndctl_bus *bus);
 struct ndctl_region *ndctl_region_get_next(struct ndctl_region *region);
@@ -379,6 +383,12 @@ struct ndctl_region *ndctl_region_get_next(struct ndctl_region *region);
         for (region = ndctl_region_get_first(bus); \
              region != NULL; \
              region = ndctl_region_get_next(region))
+struct badblock *ndctl_region_get_first_badblock(struct ndctl_region *region);
+struct badblock *ndctl_region_get_next_badblock(struct ndctl_region *region);
+#define ndctl_region_badblock_foreach(region, badblock) \
+        for (badblock = ndctl_region_get_first_badblock(region); \
+             badblock != NULL; \
+             badblock = ndctl_region_get_next_badblock(region))
 unsigned int ndctl_region_get_id(struct ndctl_region *region);
 const char *ndctl_region_get_devname(struct ndctl_region *region);
 unsigned int ndctl_region_get_interleave_ways(struct ndctl_region *region);

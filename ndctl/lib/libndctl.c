@@ -229,6 +229,8 @@ struct ndctl_region {
 		int state;
 		unsigned long long cookie;
 	} iset;
+	FILE *badblocks;
+	struct badblock bb;
 };
 
 /**
@@ -594,6 +596,8 @@ static void free_region(struct ndctl_region *region)
 	kmod_module_unref(region->module);
 	free(region->region_buf);
 	free(region->region_path);
+	if (region->badblocks)
+		fclose(region->badblocks);
 	free(region);
 }
 
@@ -1865,6 +1869,75 @@ NDCTL_EXPORT struct ndctl_dimm *ndctl_region_get_next_dimm(struct ndctl_region *
 	}
 
 	return NULL;
+}
+
+static int regions_badblocks_init(struct ndctl_region *region)
+{
+	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
+	char *bb_path;
+	int rc = 0;
+
+	/* if the file is already open */
+	if (region->badblocks) {
+		fclose(region->badblocks);
+		region->badblocks = NULL;
+	}
+
+	if (asprintf(&bb_path, "%s/badblocks",
+				region->region_path) < 0) {
+		rc = -errno;
+		err(ctx, "region badblocks path allocation failure\n");
+		return rc;
+	}
+
+	region->badblocks = fopen(bb_path, "re");
+	if (!region->badblocks) {
+		rc = -errno;
+		free(bb_path);
+		return rc;
+	}
+
+	free(bb_path);
+	return rc;
+}
+
+NDCTL_EXPORT struct badblock *ndctl_region_get_next_badblock(struct ndctl_region *region)
+{
+	int rc;
+	char *buf = NULL;
+	size_t rlen = 0;
+
+	if (!region->badblocks)
+		return NULL;
+
+	rc = getline(&buf, &rlen, region->badblocks);
+	if (rc == -1) {
+		free(buf);
+		return NULL;
+	}
+
+	rc = sscanf(buf, "%llu %u", &region->bb.offset, &region->bb.len);
+	free(buf);
+	if (rc != 2) {
+		fclose(region->badblocks);
+		region->badblocks = NULL;
+		region->bb.offset = 0;
+		region->bb.len = 0;
+		return NULL;
+	}
+
+	return &region->bb;
+}
+
+NDCTL_EXPORT struct badblock *ndctl_region_get_first_badblock(struct ndctl_region *region)
+{
+	int rc;
+
+	rc = regions_badblocks_init(region);
+	if (rc < 0)
+		return NULL;
+
+	return ndctl_region_get_next_badblock(region);
 }
 
 static struct nd_cmd_vendor_tail *to_vendor_tail(struct ndctl_cmd *cmd)
