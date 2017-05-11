@@ -24,6 +24,7 @@ static struct {
 	bool idle;
 	bool health;
 	bool dax;
+	bool media_errors;
 } list;
 
 static struct {
@@ -99,7 +100,8 @@ static struct json_object *list_namespaces(struct ndctl_region *region,
 						jnamespaces);
 		}
 
-		jndns = util_namespace_to_json(ndns, list.idle, list.dax);
+		jndns = util_namespace_to_json(ndns, list.idle, list.dax,
+				list.media_errors);
 		if (!jndns) {
 			fail("\n");
 			continue;
@@ -117,12 +119,14 @@ static struct json_object *list_namespaces(struct ndctl_region *region,
 	return NULL;
 }
 
-static struct json_object *region_to_json(struct ndctl_region *region)
+static struct json_object *region_to_json(struct ndctl_region *region,
+		bool include_media_err)
 {
 	struct json_object *jregion = json_object_new_object();
-	struct json_object *jobj, *jmappings = NULL;
+	struct json_object *jobj, *jobj2, *jmappings = NULL;
 	struct ndctl_interleave_set *iset;
 	struct ndctl_mapping *mapping;
+	unsigned int bb_count;
 
 	if (!jregion)
 		return NULL;
@@ -203,6 +207,17 @@ static struct json_object *region_to_json(struct ndctl_region *region)
 		json_object_object_add(jregion, "state", jobj);
 	}
 
+	jobj2 = util_region_badblocks_to_json(region, include_media_err,
+			&bb_count);
+	jobj = json_object_new_int(bb_count);
+	if (!jobj) {
+		json_object_put(jobj2);
+		goto err;
+	}
+	json_object_object_add(jregion, "badblock_count", jobj);
+	if (include_media_err && jobj2)
+		json_object_object_add(jregion, "badblocks", jobj2);
+
 	list_namespaces(region, jregion, NULL, false);
 	return jregion;
  err:
@@ -240,6 +255,8 @@ int cmd_list(int argc, const char **argv, void *ctx)
 		OPT_BOOLEAN('X', "device-dax", &list.dax,
 				"include device-dax info"),
 		OPT_BOOLEAN('i', "idle", &list.idle, "include idle devices"),
+		OPT_BOOLEAN('M', "media-errors", &list.media_errors,
+				"include media errors"),
 		OPT_END(),
 	};
 	const char * const u[] = {
@@ -404,7 +421,7 @@ int cmd_list(int argc, const char **argv, void *ctx)
 							jregions);
 			}
 
-			jregion = region_to_json(region);
+			jregion = region_to_json(region, list.media_errors);
 			if (!jregion) {
 				fail("\n");
 				continue;
