@@ -568,15 +568,17 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 				ndctl_namespace_get_region(ndns),
 				include_media_errors, &bb_count);
 
-	jobj = json_object_new_int(bb_count);
-	if (!jobj) {
-		json_object_put(jbbs);
-		goto err;
+	if (bb_count) {
+		jobj = json_object_new_int(bb_count);
+		if (!jobj) {
+			json_object_put(jbbs);
+			goto err;
+		}
+		json_object_object_add(jndns, "badblock_count", jobj);
 	}
 
-	json_object_object_add(jndns, "badblock_count", jobj);
 	if (include_media_errors && jbbs)
-			json_object_object_add(jndns, "badblocks", jbbs);
+		json_object_object_add(jndns, "badblocks", jbbs);
 
 	return jndns;
  err:

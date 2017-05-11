@@ -209,12 +209,14 @@ static struct json_object *region_to_json(struct ndctl_region *region,
 
 	jbbs = util_region_badblocks_to_json(region, include_media_errors,
 			&bb_count);
-	jobj = json_object_new_int(bb_count);
-	if (!jobj) {
-		json_object_put(jbbs);
-		goto err;
+	if (bb_count) {
+		jobj = json_object_new_int(bb_count);
+		if (!jobj) {
+			json_object_put(jbbs);
+			goto err;
+		}
+		json_object_object_add(jregion, "badblock_count", jobj);
 	}
-	json_object_object_add(jregion, "badblock_count", jobj);
 	if (include_media_errors && jbbs)
 		json_object_object_add(jregion, "badblocks", jbbs);
 
