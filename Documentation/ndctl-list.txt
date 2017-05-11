@@ -146,6 +146,35 @@ include::xable-region-options.txt[]
 --idle::
 	Include idle (not enabled) devices in the listing
 
+-M::
+--media-errors::
+	Include media errors (badblocks) in the listing. badblocks_count
+	may count blocks that are not in the data space of the namespace
+	for sector mode.
+[verse]
+{
+  "dev":"namespace7.0",
+  "mode":"raw",
+  "size":33554432,
+  "blockdev":"pmem7",
+  "badblock_count":17,
+  "badblocks":[
+    {
+      "offset":4,
+      "length":1
+    },
+    {
+      "offset":32768,
+      "length":8
+    },
+    {
+      "offset":65528,
+      "length":8
+    }
+  ]
+}
+
+
 SEE ALSO
 --------
 linkndctl:ndctl-create-namespace[1]
