@@ -445,6 +445,7 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 	struct ndctl_dax *dax;
 	char buf[40];
 	uuid_t uuid;
+	int numa;
 
 	if (!jndns)
 		return NULL;
@@ -565,6 +566,13 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 		if (!jobj)
 			goto err;
 		json_object_object_add(jndns, "state", jobj);
+	}
+
+	numa = ndctl_namespace_get_numa_node(ndns);
+	if (numa >= 0) {
+		jobj = json_object_new_int(numa);
+		if (jobj)
+			json_object_object_add(jndns, "numa_node", jobj);
 	}
 
 	if (pfn)
