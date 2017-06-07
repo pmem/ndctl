@@ -138,7 +138,7 @@ static struct json_object *region_to_json(struct ndctl_region *region,
 	struct json_object *jobj, *jbbs, *jmappings = NULL;
 	struct ndctl_interleave_set *iset;
 	struct ndctl_mapping *mapping;
-	unsigned int bb_count;
+	unsigned int bb_count = 0;
 
 	if (!jregion)
 		return NULL;
