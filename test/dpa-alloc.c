@@ -38,7 +38,6 @@ static const char *NFIT_PROVIDER0 = "nfit_test.0";
 static const char *NFIT_PROVIDER1 = "nfit_test.1";
 #define SZ_4K 0x1000UL
 #define NUM_NAMESPACES 4
-#define DEFAULT_AVAILABLE_SLOTS 1015
 
 struct test_dpa_namespace {
 	struct ndctl_namespace *ndns;
@@ -48,8 +47,8 @@ struct test_dpa_namespace {
 
 static int do_test(struct ndctl_ctx *ctx, struct ndctl_test *test)
 {
+	unsigned int default_available_slots, available_slots, i;
 	struct ndctl_region *region, *blk_region = NULL;
-	unsigned int available_slots, i;
 	struct ndctl_namespace *ndns;
 	struct ndctl_dimm *dimm;
 	unsigned long size;
@@ -110,13 +109,7 @@ static int do_test(struct ndctl_ctx *ctx, struct ndctl_test *test)
 		return -ENXIO;
 	}
 
-	available_slots = ndctl_dimm_get_available_labels(dimm);
-	if (available_slots < DEFAULT_AVAILABLE_SLOTS) {
-		fprintf(stderr, "%s: expected %d\n",
-				ndctl_dimm_get_devname(dimm),
-				DEFAULT_AVAILABLE_SLOTS);
-		return -ENXIO;
-	}
+	default_available_slots = ndctl_dimm_get_available_labels(dimm);
 
 	/* grow namespaces */
 	for (i = 0; i < ARRAY_SIZE(namespaces); i++) {
@@ -151,10 +144,10 @@ static int do_test(struct ndctl_ctx *ctx, struct ndctl_test *test)
 	}
 
 	available_slots = ndctl_dimm_get_available_labels(dimm);
-	if (available_slots != DEFAULT_AVAILABLE_SLOTS
+	if (available_slots != default_available_slots
 			- ARRAY_SIZE(namespaces)) {
 		fprintf(stderr, "expected %ld slots available\n",
-				DEFAULT_AVAILABLE_SLOTS
+				default_available_slots
 				- ARRAY_SIZE(namespaces));
 		return -ENOSPC;
 	}
@@ -278,7 +271,7 @@ static int do_test(struct ndctl_ctx *ctx, struct ndctl_test *test)
 	}
 
 	available_slots = ndctl_dimm_get_available_labels(dimm);
-	if (available_slots != DEFAULT_AVAILABLE_SLOTS - 1) {
+	if (available_slots != default_available_slots - 1) {
 		fprintf(stderr, "mishandled slot count\n");
 		return -ENXIO;
 	}
