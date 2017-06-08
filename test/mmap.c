@@ -71,7 +71,6 @@ static void test_read(unsigned long *p, size_t size)
 	start();
 	for (i=0, wp=p; i<(size/sizeof(*wp)); i++)
 		tmp = *wp++;
-	tmp = tmp;
 	timeval = stop();
 	printf("Read : %10llu usec\n", timeval);
 }
