@@ -169,6 +169,8 @@ global:
 	ndctl_namespace_get_devname;
 	ndctl_namespace_get_block_device;
 	ndctl_namespace_get_mode;
+	ndctl_namespace_set_enforce_mode;
+	ndctl_namespace_get_enforce_mode;
 	ndctl_region_get_nstype;
 	ndctl_namespace_get_type;
 	ndctl_namespace_get_type_name;

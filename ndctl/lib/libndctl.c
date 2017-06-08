@@ -268,6 +268,7 @@ struct ndctl_namespace {
 	int type, id, buf_len, raw_mode;
 	int generation;
 	unsigned long long resource, size;
+	enum ndctl_namespace_mode enforce_mode;
 	char *alt_name;
 	uuid_t uuid;
 	struct ndctl_lbasize lbasize;
@@ -2858,6 +2859,31 @@ static char *get_block_device(struct ndctl_ctx *ctx, const char *block_path)
 static int parse_lbasize_supported(struct ndctl_ctx *ctx, const char *devname,
 		const char *buf, struct ndctl_lbasize *lba);
 
+static const char *enforce_id_to_name(enum ndctl_namespace_mode mode)
+{
+	static const char *id_to_name[] = {
+		[NDCTL_NS_MODE_MEMORY] = "pfn",
+		[NDCTL_NS_MODE_SAFE] = "btt", /* TODO: convert to btt2 */
+		[NDCTL_NS_MODE_RAW] = "",
+		[NDCTL_NS_MODE_DAX] = "dax",
+		[NDCTL_NS_MODE_UNKNOWN] = "<unknown>",
+	};
+
+	if (mode < NDCTL_NS_MODE_UNKNOWN && mode >= 0)
+		return id_to_name[mode];
+	return id_to_name[NDCTL_NS_MODE_UNKNOWN];
+}
+
+static enum ndctl_namespace_mode enforce_name_to_id(const char *name)
+{
+	int i;
+
+	for (i = 0; i < NDCTL_NS_MODE_UNKNOWN; i++)
+		if (strcmp(enforce_id_to_name(i), name) == 0)
+			return i;
+	return NDCTL_NS_MODE_UNKNOWN;
+}
+
 static void *add_namespace(void *parent, int id, const char *ndns_base)
 {
 	const char *devname = devpath_to_devname(ndns_base);
@@ -2902,6 +2928,10 @@ static void *add_namespace(void *parent, int id, const char *ndns_base)
 	sprintf(path, "%s/numa_node", ndns_base);
 	if (sysfs_read_attr(ctx, path, buf) == 0)
 		ndns->numa_node = strtol(buf, NULL, 0);
+
+	sprintf(path, "%s/holder_class", ndns_base);
+	if (sysfs_read_attr(ctx, path, buf) == 0)
+		ndns->enforce_mode = enforce_name_to_id(buf);
 
 	switch (ndns->type) {
 	case ND_DEVICE_NAMESPACE_BLK:
@@ -3148,6 +3178,35 @@ NDCTL_EXPORT enum ndctl_namespace_mode ndctl_namespace_get_mode(
 	if (strcmp("safe", buf) == 0)
 		return NDCTL_NS_MODE_SAFE;
 	return -ENXIO;
+}
+
+NDCTL_EXPORT enum ndctl_namespace_mode ndctl_namespace_get_enforce_mode(
+		struct ndctl_namespace *ndns)
+{
+	return ndns->enforce_mode;
+}
+
+NDCTL_EXPORT int ndctl_namespace_set_enforce_mode(struct ndctl_namespace *ndns,
+		enum ndctl_namespace_mode mode)
+{
+	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
+	char *path = ndns->ndns_buf;
+	int len = ndns->buf_len;
+	int rc;
+
+	if (mode < 0 || mode >= NDCTL_NS_MODE_UNKNOWN)
+		return -EINVAL;
+
+	if (snprintf(path, len, "%s/holder_class", ndns->ndns_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_namespace_get_devname(ndns));
+		return -ENOMEM;
+	}
+
+	rc = sysfs_write_attr(ctx, path, enforce_id_to_name(mode));
+	if (rc >= 0)
+		ndns->enforce_mode = mode;
+	return rc;
 }
 
 NDCTL_EXPORT int ndctl_namespace_is_valid(struct ndctl_namespace *ndns)

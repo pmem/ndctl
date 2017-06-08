@@ -489,10 +489,14 @@ enum ndctl_namespace_mode {
 	NDCTL_NS_MODE_SAFE,
 	NDCTL_NS_MODE_RAW,
 	NDCTL_NS_MODE_DAX,
-	NDCTL_NS_MODE_UNKNOWN,
+	NDCTL_NS_MODE_UNKNOWN, /* must be last entry */
 };
 enum ndctl_namespace_mode ndctl_namespace_get_mode(
 		struct ndctl_namespace *ndns);
+enum ndctl_namespace_mode ndctl_namespace_get_enforce_mode(
+		struct ndctl_namespace *ndns);
+int ndctl_namespace_set_enforce_mode(struct ndctl_namespace *ndns,
+		enum ndctl_namespace_mode mode);
 int ndctl_namespace_is_enabled(struct ndctl_namespace *ndns);
 int ndctl_namespace_enable(struct ndctl_namespace *ndns);
 int ndctl_namespace_disable(struct ndctl_namespace *ndns);
@@ -520,7 +524,6 @@ int ndctl_namespace_set_sector_size(struct ndctl_namespace *ndns,
 int ndctl_namespace_get_raw_mode(struct ndctl_namespace *ndns);
 int ndctl_namespace_set_raw_mode(struct ndctl_namespace *ndns, int raw_mode);
 int ndctl_namespace_get_numa_node(struct ndctl_namespace *ndns);
-
 struct ndctl_btt;
 struct ndctl_btt *ndctl_btt_get_first(struct ndctl_region *region);
 struct ndctl_btt *ndctl_btt_get_next(struct ndctl_btt *btt);

@@ -360,6 +360,15 @@ static int setup_namespace(struct ndctl_region *region,
 		try(ndctl_namespace, set_sector_size, ndns, p->sector_size);
 
 	uuid_generate(uuid);
+
+	/*
+	 * Note, this call to ndctl_namespace_set_mode() is not error
+	 * checked since kernels older than 4.13 do not support this
+	 * property of namespaces and it is an opportunistic enforcement
+	 * mechanism.
+	 */
+	ndctl_namespace_set_enforce_mode(ndns, p->mode);
+
 	if (do_setup_pfn(ndns, p)) {
 		struct ndctl_pfn *pfn = ndctl_region_get_pfn_seed(region);
 
@@ -777,6 +786,8 @@ static int namespace_destroy(struct ndctl_region *region,
 		if (rc)
 			return rc;
 	}
+
+	ndctl_namespace_set_enforce_mode(ndns, NDCTL_NS_MODE_RAW);
 
 	if (pfn || btt || dax) {
 		rc = zero_info_block(ndns);

@@ -736,6 +736,8 @@ static int __check_dax_create(struct ndctl_region *region,
 		enum ndctl_pfn_loc loc, uuid_t uuid)
 {
 	struct ndctl_dax *dax_seed = ndctl_region_get_dax_seed(region);
+	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
+	struct ndctl_test *test = ndctl_get_private_data(ctx);
 	enum ndctl_namespace_mode mode;
 	struct ndctl_dax *dax;
 	const char *devname;
@@ -753,6 +755,12 @@ static int __check_dax_create(struct ndctl_region *region,
 	 * alignment is PAGE_SIZE
 	 */
 	ndctl_dax_set_align(dax, SZ_4K);
+
+	rc = ndctl_namespace_set_enforce_mode(ndns, NDCTL_NS_MODE_DAX);
+	if (ndctl_test_attempt(test, KERNEL_VERSION(4, 13, 0)) && rc < 0) {
+		fprintf(stderr, "%s: failed to enforce dax mode\n", devname);
+		return rc;
+	}
 	ndctl_dax_set_namespace(dax, ndns);
 	rc = ndctl_dax_enable(dax);
 	if (rc) {
@@ -838,6 +846,8 @@ static int __check_pfn_create(struct ndctl_region *region,
 		void *buf, enum ndctl_pfn_loc loc, uuid_t uuid)
 {
 	struct ndctl_pfn *pfn_seed = ndctl_region_get_pfn_seed(region);
+	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
+	struct ndctl_test *test = ndctl_get_private_data(ctx);
 	enum ndctl_namespace_mode mode;
 	struct ndctl_pfn *pfn;
 	const char *devname;
@@ -857,6 +867,11 @@ static int __check_pfn_create(struct ndctl_region *region,
 	 * alignment is PAGE_SIZE
 	 */
 	ndctl_pfn_set_align(pfn, SZ_4K);
+	rc = ndctl_namespace_set_enforce_mode(ndns, NDCTL_NS_MODE_MEMORY);
+	if (ndctl_test_attempt(test, KERNEL_VERSION(4, 13, 0)) && rc < 0) {
+		fprintf(stderr, "%s: failed to enforce pfn mode\n", devname);
+		return rc;
+	}
 	ndctl_pfn_set_namespace(pfn, ndns);
 	rc = ndctl_pfn_enable(pfn);
 	if (rc) {
@@ -1067,6 +1082,12 @@ static int check_btt_create(struct ndctl_region *region, struct ndctl_namespace 
 		devname = ndctl_btt_get_devname(btt);
 		ndctl_btt_set_uuid(btt, btt_s->uuid);
 		ndctl_btt_set_sector_size(btt, btt_s->sector_sizes[i]);
+		rc = ndctl_namespace_set_enforce_mode(ndns, NDCTL_NS_MODE_SAFE);
+		if (ndctl_test_attempt(test, KERNEL_VERSION(4, 13, 0)) && rc < 0) {
+			fprintf(stderr, "%s: failed to enforce btt mode\n", devname);
+			goto err;
+		}
+
 		ndctl_btt_set_namespace(btt, ndns);
 		rc = ndctl_btt_enable(btt);
 		if (namespace->ro == (rc == 0)) {
@@ -1237,9 +1258,12 @@ static int check_pfn_autodetect(struct ndctl_bus *bus,
 		struct namespace *namespace)
 {
 	struct ndctl_region *region = ndctl_namespace_get_region(ndns);
+	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
 	const char *devname = ndctl_namespace_get_devname(ndns);
+	struct ndctl_test *test = ndctl_get_private_data(ctx);
 	struct pfn *auto_pfn = namespace->pfn_settings;
 	struct ndctl_pfn *pfn, *found = NULL;
+	enum ndctl_namespace_mode mode;
 	ssize_t rc = -ENXIO;
 	char bdev[50];
 	int fd, ro;
@@ -1264,6 +1288,13 @@ static int check_pfn_autodetect(struct ndctl_bus *bus,
 
 	if (!found)
 		return -ENXIO;
+
+	mode = ndctl_namespace_get_enforce_mode(ndns);
+	if (ndctl_test_attempt(test, KERNEL_VERSION(4, 13, 0))
+			&& mode != NDCTL_NS_MODE_MEMORY) {
+		fprintf(stderr, "%s expected enforce_mode pfn\n", devname);
+		return -ENXIO;
+	}
 
 	sprintf(bdev, "/dev/%s", ndctl_pfn_get_block_device(pfn));
 	fd = open(bdev, O_RDONLY);
@@ -1324,9 +1355,12 @@ static int check_dax_autodetect(struct ndctl_bus *bus,
 		struct namespace *namespace)
 {
 	struct ndctl_region *region = ndctl_namespace_get_region(ndns);
+	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
 	const char *devname = ndctl_namespace_get_devname(ndns);
+	struct ndctl_test *test = ndctl_get_private_data(ctx);
 	struct dax *auto_dax = namespace->dax_settings;
 	struct ndctl_dax *dax, *found = NULL;
+	enum ndctl_namespace_mode mode;
 	ssize_t rc = -ENXIO;
 	char bdev[50];
 	int fd;
@@ -1351,6 +1385,13 @@ static int check_dax_autodetect(struct ndctl_bus *bus,
 
 	if (!found)
 		return -ENXIO;
+
+	mode = ndctl_namespace_get_enforce_mode(ndns);
+	if (ndctl_test_attempt(test, KERNEL_VERSION(4, 13, 0))
+			&& mode != NDCTL_NS_MODE_DAX) {
+		fprintf(stderr, "%s expected enforce_mode dax\n", devname);
+		return -ENXIO;
+	}
 
 	rc = validate_dax(dax);
 	if (rc) {
@@ -1399,9 +1440,12 @@ static int check_btt_autodetect(struct ndctl_bus *bus,
 		struct namespace *namespace)
 {
 	struct ndctl_region *region = ndctl_namespace_get_region(ndns);
+	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
 	const char *devname = ndctl_namespace_get_devname(ndns);
+	struct ndctl_test *test = ndctl_get_private_data(ctx);
 	struct btt *auto_btt = namespace->btt_settings;
 	struct ndctl_btt *btt, *found = NULL;
+	enum ndctl_namespace_mode mode;
 	ssize_t rc = -ENXIO;
 	char bdev[50];
 	int fd, ro;
@@ -1426,6 +1470,13 @@ static int check_btt_autodetect(struct ndctl_bus *bus,
 
 	if (!found)
 		return -ENXIO;
+
+	mode = ndctl_namespace_get_enforce_mode(ndns);
+	if (ndctl_test_attempt(test, KERNEL_VERSION(4, 13, 0))
+			&& mode != NDCTL_NS_MODE_SAFE) {
+		fprintf(stderr, "%s expected enforce_mode btt\n", devname);
+		return -ENXIO;
+	}
 
 	sprintf(bdev, "/dev/%s", ndctl_btt_get_block_device(btt));
 	fd = open(bdev, O_RDONLY);
