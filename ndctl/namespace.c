@@ -428,7 +428,7 @@ static int validate_namespace_options(struct ndctl_region *region,
 		struct ndctl_namespace *ndns, struct parsed_parameters *p)
 {
 	const char *region_name = ndctl_region_get_devname(region);
-	unsigned long long size_align, units = 1;
+	unsigned long long size_align = SZ_4K, units = 1;
 	unsigned int ways;
 	int rc = 0;
 
@@ -540,8 +540,6 @@ static int validate_namespace_options(struct ndctl_region *region,
 		if (p->mode == NDCTL_NS_MODE_MEMORY
 				|| p->mode == NDCTL_NS_MODE_DAX)
 			size_align = p->align;
-		else
-			size_align = SZ_4K;
 	}
 
 	/* (re-)validate that the size satisfies the alignment */
