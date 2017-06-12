@@ -10,6 +10,7 @@
 # General Public License for more details.
 
 man1_MANS = \
+	daxctl.1 \
 	ndctl.1 \
 	ndctl-zero-labels.1 \
 	ndctl-read-labels.1 \

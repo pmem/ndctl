@@ -1,0 +1,47 @@
+daxctl(1)
+=========
+
+NAME
+----
+daxctl - Provides enumeration and provisioning commands for the Linux kernel Device-DAX facility
+
+SYNOPSIS
+--------
+[verse]
+'daxctl' [--version] [--help] COMMAND [ARGS]
+
+OPTIONS
+-------
+-v::
+--version::
+  Display daxctl version.
+
+-h::
+--help::
+  Run daxcl help command.
+
+DESCRIPTION
+-----------
+The daxctl utility provides enumeration and provisioning commands for
+the Linux kernel Device-DAX facility. This facility enables DAX mappings
+of performance / feature differentiated memory without need of a
+filesystem.
+
+SEE ALSO
+--------
+linkndctl:ndctl-create-namespace[1],
+linkndctl:ndctl-destroy-namespace[1],
+linkndctl:ndctl-check-namespace[1],
+linkndctl:ndctl-enable-region[1],
+linkndctl:ndctl-disable-region[1],
+linkndctl:ndctl-enable-dimm[1],
+linkndctl:ndctl-disable-dimm[1],
+linkndctl:ndctl-enable-namespace[1],
+linkndctl:ndctl-disable-namespace[1],
+linkndctl:ndctl-zero-labels[1],
+linkndctl:ndctl-read-labels[1],
+linkndctl:ndctl-list[1],
+https://www.kernel.org/doc/Documentation/nvdimm/nvdimm.txt[LIBNVDIMM
+Overview],
+http://pmem.io/documents/NVDIMM_Driver_Writers_Guide.pdf[NVDIMM Driver
+Writer's Guide]
