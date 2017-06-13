@@ -203,7 +203,7 @@ __ndctl_comp_non_option_args()
 	disable-namespace)
 		;&
 	destroy-namespace)
-		opts="$(__ndctl_get_ns) all"
+		opts="$(__ndctl_get_ns -i) all"
 		;;
 	check-namespace)
 		opts="$(__ndctl_get_ns -i) all"
