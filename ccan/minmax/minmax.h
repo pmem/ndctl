@@ -32,10 +32,10 @@
 
 #define max(a, b) \
 	({ \
-		typeof(a) _a = (a); \
-		typeof(b) _b = (b); \
-		MINMAX_ASSERT_COMPATIBLE(typeof(_a), typeof(_b)); \
-		_a > _b ? _a : _b; \
+		typeof(a) __a = (a); \
+		typeof(b) __b = (b); \
+		MINMAX_ASSERT_COMPATIBLE(typeof(__a), typeof(__b)); \
+		__a > __b ? __a : __b; \
 	})
 
 #define clamp(v, f, c)	(max(min((v), (c)), (f)))

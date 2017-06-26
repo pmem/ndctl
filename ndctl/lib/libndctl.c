@@ -1170,7 +1170,7 @@ static void *add_dimm(void *parent, int id, const char *dimm_base)
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		formats = 1;
 	else
-		formats = strtoul(buf, NULL, 0);
+		formats = clamp(strtoul(buf, NULL, 0), 1UL, 2UL);
 
 	dimm = calloc(1, sizeof(*dimm) + sizeof(int) * formats);
 	if (!dimm)
