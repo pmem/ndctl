@@ -14,16 +14,19 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
+#include <errno.h>
 #include <util/log.h>
 
 void do_log(struct log_ctx *ctx, int priority, const char *file,
 		int line, const char *fn, const char *format, ...)
 {
 	va_list args;
+	int errno_save = errno;
 
 	va_start(args, format);
 	ctx->log_fn(ctx, priority, file, line, fn, format, args);
 	va_end(args);
+	errno = errno_save;
 }
 
 static void log_stderr(struct log_ctx *ctx, int priority, const char *file,
