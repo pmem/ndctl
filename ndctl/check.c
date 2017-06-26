@@ -898,7 +898,8 @@ int namespace_check(struct ndctl_namespace *ndns, struct check_opts *opts)
 
 	if (sigaction(SIGBUS, &act, 0)) {
 		err(bttc, "Unable to set sigaction\n");
-		return -errno;
+		rc = -errno;
+		goto out_bttc;
 	}
 
 	bttc->opts = opts;
@@ -912,7 +913,7 @@ int namespace_check(struct ndctl_namespace *ndns, struct check_opts *opts)
 		if (opts->force) {
 			rc = ndctl_namespace_disable_safe(ndns);
 			if (rc)
-				return rc;
+				goto out_bttc;
 			disabled_flag = 1;
 		} else {
 			err(bttc, "%s: check aborted, namespace online\n",
