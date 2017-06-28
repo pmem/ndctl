@@ -9,8 +9,12 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
+do_subst = sed -e 's,UTILITY,ndctl,g'
+
+asciidoc.conf: ../asciidoc.conf.in
+	$(AM_V_GEN) $(do_subst) < $< > $@
+
 man1_MANS = \
-	daxctl.1 \
 	ndctl.1 \
 	ndctl-zero-labels.1 \
 	ndctl-read-labels.1 \
@@ -26,14 +30,14 @@ man1_MANS = \
 	ndctl-create-namespace.1 \
 	ndctl-destroy-namespace.1 \
 	ndctl-check-namespace.1 \
-	ndctl-list.1 \
-	daxctl-list.1
+	ndctl-list.1
 
 CLEANFILES = $(man1_MANS)
 
 XML_DEPS = \
-	..//version.m4 \
+	../../version.m4 \
 	Makefile \
+	asciidoc.conf \
 	region-description.txt \
 	xable-region-options.txt \
 	dimm-description.txt \
@@ -52,4 +56,4 @@ RM ?= rm -f
 
 %.1: %.xml
 	$(AM_V_GEN)$(RM) $@ && \
-		$(XMLTO) -o . -m manpage-normal.xsl man $<
+		$(XMLTO) -o . -m ../manpage-normal.xsl man $<

@@ -29,5 +29,5 @@ filesystem.
 
 SEE ALSO
 --------
-linkndctl:ndctl-create-namespace[1],
-linkndctl:ndctl-list[1]
+linkdaxctl:ndctl-create-namespace[1],
+linkdaxctl:ndctl-list[1]

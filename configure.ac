@@ -265,7 +265,8 @@ AC_CONFIG_FILES([
         ndctl/Makefile
         daxctl/Makefile
         test/Makefile
-        Documentation/Makefile
+        Documentation/ndctl/Makefile
+        Documentation/daxctl/Makefile
 ])
 
 AC_OUTPUT
