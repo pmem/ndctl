@@ -994,16 +994,16 @@ static int check_btt_size(struct ndctl_btt *btt)
 	int size_select, sect_select;
 	unsigned long long expect_table[][2] = {
 		[0] = {
-			[0] = 0x11b4400,
-			[1] = 0x8da2000,
+			[0] = 0x11b5400,
+			[1] = 0x8daa000,
 		},
 		[1] = {
-			[0] = 0x13b0400,
-			[1] = 0x9d82000,
+			[0] = 0x13b1400,
+			[1] = 0x9d8a000,
 		},
 		[2] = {
-			[0] = 0x1aa2600,
-			[1] = 0xd513000,
+			[0] = 0x1aa3600,
+			[1] = 0xd51b000,
 		},
 	};
 
@@ -1107,9 +1107,12 @@ static int check_btt_create(struct ndctl_region *region, struct ndctl_namespace 
 						devname, mode);
 		}
 
-		rc = check_btt_size(btt);
-		if (rc)
-			goto err;
+		/* prior to v4.13 the expected sizes were different due to BTT1.1 */
+		if (ndctl_test_attempt(test, KERNEL_VERSION(4, 13, 0))) {
+			rc = check_btt_size(btt);
+			if (rc)
+				goto err;
+		}
 
 		if (btt_seed == ndctl_region_get_btt_seed(region)
 				&& btt == btt_seed) {
@@ -1517,7 +1520,14 @@ static int check_btt_autodetect(struct ndctl_bus *bus,
 	}
 
 	memset(buf, 0, 4096);
+	/* Delete both the first and second 4K pages */
 	rc = pwrite(fd, buf, 4096, 4096);
+	if (rc < 4096) {
+		rc = -ENXIO;
+		fprintf(stderr, "%s: failed to overwrite btt on %s\n",
+				devname, bdev);
+	}
+	rc = pwrite(fd, buf, 4096, 0);
 	if (rc < 4096) {
 		rc = -ENXIO;
 		fprintf(stderr, "%s: failed to overwrite btt on %s\n",
