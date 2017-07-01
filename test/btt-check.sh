@@ -146,10 +146,10 @@ test_bad_info()
 	echo "=== ${FUNCNAME[0]} ==="
 	set_raw
 	echo "wiping info block"
-	dd if=/dev/zero of=/dev/$raw_bdev bs=$bs count=1 seek=1
+	dd if=/dev/zero of=/dev/$raw_bdev bs=$bs count=2 seek=0
 	unset_raw
 	$ndctl disable-namespace $dev
-	$ndctl check-namespace $dev 2>&1 | grep "info block at offset 0x1000 needs to be restored"
+	$ndctl check-namespace $dev 2>&1 | grep -E "info block at offset .* needs to be restored"
 	$ndctl check-namespace --repair $dev
 	$ndctl enable-namespace $dev
 	post_repair_test

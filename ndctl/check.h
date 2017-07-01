@@ -27,8 +27,11 @@
 #define ARENA_MIN_SIZE (1UL << 24)	/* 16 MB */
 #define ARENA_MAX_SIZE (1ULL << 39)	/* 512 GB */
 #define BTT_INFO_SIZE 4096
-#define BTT_START_OFFSET 4096
 #define IB_FLAG_ERROR_MASK 0x00000001
+
+#define BTT_NUM_OFFSETS 2
+#define BTT1_START_OFFSET 4096
+#define BTT2_START_OFFSET 0
 
 struct log_entry {
 	le32 lba;
