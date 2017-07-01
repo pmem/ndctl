@@ -159,6 +159,11 @@ static struct json_object *dump_label_json(struct ndctl_cmd *cmd_read, ssize_t s
 			break;
 		json_object_object_add(jlabel, "isetcookie", jobj);
 
+		jobj = json_object_new_int64(le64_to_cpu(nslabel.lbasize));
+		if (!jobj)
+			break;
+		json_object_object_add(jlabel, "lbasize", jobj);
+
 		jobj = json_object_new_int64(le64_to_cpu(nslabel.dpa));
 		if (!jobj)
 			break;
