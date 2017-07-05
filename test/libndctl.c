@@ -247,21 +247,23 @@ struct namespace {
 	uuid_t uuid;
 	int do_configure;
 	int check_alt_name;
-	int num_sector_sizes;
 	int ro;
+	int num_sector_sizes;
 	unsigned long *sector_sizes;
 };
 
 static uuid_t null_uuid;
-static unsigned long blk_sector_sizes[7] = { 512, 520, 528, 4096, 4104, 4160, 4224, };
-static unsigned long pmem_sector_sizes[1] = { 0 };
+static unsigned long blk_sector_sizes[] = { 512, 520, 528, 4096, 4104, 4160, 4224, };
+static unsigned long pmem_sector_sizes[] = { 512, 4096 };
+static unsigned long io_sector_sizes[] = { 0 };
 
 static struct namespace namespace0_pmem0 = {
 	0, "namespace_pmem", &btt_settings, &pfn_settings, &dax_settings, SZ_18M,
 	{ 1, 1, 1, 1,
 	  1, 1, 1, 1,
 	  1, 1, 1, 1,
-	  1, 1, 1, 1, }, 1, 1, 1, 0, pmem_sector_sizes,
+	  1, 1, 1, 1, }, 1, 1, 0,
+	ARRAY_SIZE(pmem_sector_sizes), pmem_sector_sizes,
 };
 
 static struct namespace namespace1_pmem0 = {
@@ -269,7 +271,8 @@ static struct namespace namespace1_pmem0 = {
 	{ 2, 2, 2, 2,
 	  2, 2, 2, 2,
 	  2, 2, 2, 2,
-	  2, 2, 2, 2, }, 1, 1, 1, 0, pmem_sector_sizes,
+	  2, 2, 2, 2, }, 1, 1, 0,
+	ARRAY_SIZE(pmem_sector_sizes), pmem_sector_sizes,
 };
 
 static struct namespace namespace2_blk0 = {
@@ -277,7 +280,8 @@ static struct namespace namespace2_blk0 = {
 	{ 3, 3, 3, 3,
 	  3, 3, 3, 3,
 	  3, 3, 3, 3,
-	  3, 3, 3, 3, }, 1, 1, 7, 0, blk_sector_sizes,
+	  3, 3, 3, 3, }, 1, 1, 0,
+	ARRAY_SIZE(blk_sector_sizes), blk_sector_sizes,
 };
 
 static struct namespace namespace2_blk1 = {
@@ -285,7 +289,8 @@ static struct namespace namespace2_blk1 = {
 	{ 4, 4, 4, 4,
 	  4, 4, 4, 4,
 	  4, 4, 4, 4,
-	  4, 4, 4, 4, }, 1, 1, 7, 0, blk_sector_sizes,
+	  4, 4, 4, 4, }, 1, 1, 0,
+	ARRAY_SIZE(blk_sector_sizes), blk_sector_sizes,
 };
 
 static struct namespace namespace3_blk0 = {
@@ -293,7 +298,8 @@ static struct namespace namespace3_blk0 = {
 	{ 5, 5, 5, 5,
 	  5, 5, 5, 5,
 	  5, 5, 5, 5,
-	  5, 5, 5, 5, }, 1, 1, 7, 0, blk_sector_sizes,
+	  5, 5, 5, 5, }, 1, 1, 0,
+	ARRAY_SIZE(blk_sector_sizes), blk_sector_sizes,
 };
 
 static struct namespace namespace3_blk1 = {
@@ -301,7 +307,8 @@ static struct namespace namespace3_blk1 = {
 	{ 6, 6, 6, 6,
 	  6, 6, 6, 6,
 	  6, 6, 6, 6,
-	  6, 6, 6, 6, }, 1, 1, 7, 0, blk_sector_sizes,
+	  6, 6, 6, 6, }, 1, 1, 0,
+	ARRAY_SIZE(blk_sector_sizes), blk_sector_sizes,
 };
 
 static struct namespace namespace4_blk0 = {
@@ -309,7 +316,8 @@ static struct namespace namespace4_blk0 = {
 	{ 7, 7, 7, 7,
 	  7, 7, 7, 7,
 	  7, 7, 7, 7,
-	  7, 7, 7, 7, }, 1, 1, 7, 0, blk_sector_sizes,
+	  7, 7, 7, 7, }, 1, 1, 0,
+	ARRAY_SIZE(blk_sector_sizes), blk_sector_sizes,
 };
 
 static struct namespace namespace5_blk0 = {
@@ -317,7 +325,8 @@ static struct namespace namespace5_blk0 = {
 	{ 8, 8, 8, 8,
 	  8, 8, 8, 8,
 	  8, 8, 8, 8,
-	  8, 8, 8, 8, }, 1, 1, 7, 0, blk_sector_sizes,
+	  8, 8, 8, 8, }, 1, 1, 0,
+	ARRAY_SIZE(blk_sector_sizes), blk_sector_sizes,
 };
 
 static struct region regions0[] = {
@@ -384,7 +393,7 @@ static struct namespace namespace1 = {
 	{ 0, 0, 0, 0,
 	  0, 0, 0, 0,
 	  0, 0, 0, 0,
-	  0, 0, 0, 0, }, -1, 0, 1, 1, pmem_sector_sizes,
+	  0, 0, 0, 0, }, -1, 0, 1, ARRAY_SIZE(io_sector_sizes), io_sector_sizes,
 };
 
 static struct region regions1[] = {
@@ -1620,6 +1629,8 @@ static int validate_bdev(const char *devname, struct ndctl_btt *btt,
 static int check_namespaces(struct ndctl_region *region,
 		struct namespace **namespaces, enum ns_mode mode)
 {
+	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
+	struct ndctl_test *test = ndctl_get_private_data(ctx);
 	struct ndctl_bus *bus = ndctl_region_get_bus(region);
 	struct ndctl_namespace **ndns_save;
 	struct namespace *namespace;
@@ -1637,8 +1648,10 @@ static int check_namespaces(struct ndctl_region *region,
  retry:
 	ndns_save = NULL;
 	for (i = 0; (namespace = namespaces[i]); i++) {
-		struct ndctl_namespace *ndns;
 		uuid_t uu;
+		struct ndctl_namespace *ndns;
+		unsigned long _sizes[] = { 0 }, *sector_sizes = _sizes;
+		int num_sector_sizes = (int) ARRAY_SIZE(_sizes);
 
 		snprintf(devname, sizeof(devname), "namespace%d.%d",
 				ndctl_region_get_id(region), namespace->id);
@@ -1649,7 +1662,15 @@ static int check_namespaces(struct ndctl_region *region,
 			break;
 		}
 
-		for (j = 0; j < namespace->num_sector_sizes; j++) {
+		if (ndctl_region_get_type(region) == ND_DEVICE_REGION_PMEM
+				&& !ndctl_test_attempt(test, KERNEL_VERSION(4, 13, 0)))
+			/* pass, no sector_size support for pmem prior to 4.13 */;
+		else {
+			num_sector_sizes = namespace->num_sector_sizes;
+			sector_sizes = namespace->sector_sizes;
+		}
+
+		for (j = 0; j < num_sector_sizes; j++) {
 			struct btt *btt_s = NULL;
 			struct pfn *pfn_s = NULL;
 			struct dax *dax_s = NULL;
@@ -1658,7 +1679,7 @@ static int check_namespaces(struct ndctl_region *region,
 			struct ndctl_dax *dax = NULL;
 
 			rc = configure_namespace(region, ndns, namespace,
-					namespace->sector_sizes[j], mode);
+					sector_sizes[j], mode);
 			if (rc < 0) {
 				fprintf(stderr, "%s: failed to configure namespace\n",
 						devname);
@@ -1732,6 +1753,15 @@ static int check_namespaces(struct ndctl_region *region,
 				fprintf(stderr, "%s: expected size: %#llx got: %#llx\n",
 						devname, namespace->size,
 						ndctl_namespace_get_size(ndns));
+				rc = -ENXIO;
+				break;
+			}
+
+			if (sector_sizes[j] && sector_sizes[j]
+					!= ndctl_namespace_get_sector_size(ndns)) {
+				fprintf(stderr, "%s: expected lbasize: %#lx got: %#x\n",
+						devname, sector_sizes[j],
+						ndctl_namespace_get_sector_size(ndns));
 				rc = -ENXIO;
 				break;
 			}
@@ -1813,7 +1843,7 @@ static int check_namespaces(struct ndctl_region *region,
 			 * If this is the last sector size being tested, don't disable
 			 * the namespace
 			 */
-			if (j == namespace->num_sector_sizes - 1)
+			if (j == num_sector_sizes - 1)
 				break;
 
 			/*
