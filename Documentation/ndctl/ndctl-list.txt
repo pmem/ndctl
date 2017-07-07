@@ -180,6 +180,34 @@ include::xable-region-options.txt[]
   ]
 }
 
+-u::
+--human::
+	By default 'ndctl list' will output machine-friendly raw-integer
+	data. Instead, with this flag, numbers representing storage size
+	will be formatted as human readable strings with units, other
+	fields are converted to hexadecimal strings.  Example:
+
+[verse]
+# ndctl list --region=7
+{
+  "dev":"region7",
+  "size":67108864,
+  "available_size":67108864,
+  "type":"pmem",
+  "iset_id":-6382611090938810793,
+  "badblock_count":8
+}
+
+# ndctl list --human --region=7
+{
+  "dev":"region7",
+  "size":"64.00 MiB (67.11 MB)",
+  "available_size":"64.00 MiB (67.11 MB)",
+  "type":"pmem",
+  "iset_id":"0xa76c6907811fae57",
+  "badblock_count":8
+}
+
 COPYRIGHT
 ---------
 Copyright (c) 2016 - 2017, Intel Corporation. License GPLv2: GNU GPL

@@ -11,10 +11,12 @@
  * General Public License for more details.
  */
 #include <limits.h>
+#include <string.h>
 #include <util/json.h>
 #include <util/filter.h>
 #include <uuid/uuid.h>
 #include <json-c/json.h>
+#include <json-c/printbuf.h>
 #include <ndctl/libndctl.h>
 #include <daxctl/libdaxctl.h>
 #include <ccan/array_size/array_size.h>
@@ -24,6 +26,88 @@
 #else
 #include <ndctl.h>
 #endif
+
+/* adapted from mdadm::human_size_brief() */
+static int display_size(struct json_object *jobj, struct printbuf *pbuf,
+		int level, int flags)
+{
+	unsigned long long bytes = json_object_get_int64(jobj);
+	static char buf[128];
+	int c;
+
+	/*
+	 * We convert bytes to either centi-M{ega,ibi}bytes or
+	 * centi-G{igi,ibi}bytes, with appropriate rounding, and then print
+	 * 1/100th of those as a decimal.  We allow upto 2048Megabytes before
+	 * converting to gigabytes, as that shows more precision and isn't too
+	 * large a number.  Terabytes are not yet handled.
+	 *
+	 * If prefix == IEC, we mean prefixes like kibi,mebi,gibi etc.
+	 * If prefix == JEDEC, we mean prefixes like kilo,mega,giga etc.
+	 */
+
+	if (bytes < 5000*1024)
+		snprintf(buf, sizeof(buf), "%lld", bytes);
+	else {
+		/* IEC */
+		if (bytes < 2*1024LL*1024LL*1024LL) {
+			long cMiB = (bytes * 200LL / (1LL<<20) +1) /2;
+
+			c = snprintf(buf, sizeof(buf), "\"%ld.%02ld MiB",
+					cMiB/100 , cMiB % 100);
+		} else {
+			long cGiB = (bytes * 200LL / (1LL<<30) +1) /2;
+
+			c = snprintf(buf, sizeof(buf), "\"%ld.%02ld GiB",
+					cGiB/100 , cGiB % 100);
+		}
+
+		/* JEDEC */
+		if (bytes < 2*1024LL*1024LL*1024LL) {
+			long cMB  = (bytes / (1000000LL / 200LL) + 1) / 2;
+
+			snprintf(buf + c, sizeof(buf) - c, " (%ld.%02ld MB)\"",
+					cMB/100, cMB % 100);
+		} else {
+			long cGB  = (bytes / (1000000000LL/200LL) + 1) / 2;
+
+			snprintf(buf + c, sizeof(buf) - c, " (%ld.%02ld GB)\"",
+					cGB/100 , cGB % 100);
+		}
+	}
+
+	return printbuf_memappend(pbuf, buf, strlen(buf));
+}
+
+static int display_hex(struct json_object *jobj, struct printbuf *pbuf,
+		int level, int flags)
+{
+	unsigned long long val = json_object_get_int64(jobj);
+	static char buf[32];
+
+	snprintf(buf, sizeof(buf), "\"%#llx\"", val);
+	return printbuf_memappend(pbuf, buf, strlen(buf));
+}
+
+struct json_object *util_json_object_size(unsigned long long size,
+		unsigned long flags)
+{
+	struct json_object *jobj = json_object_new_int64(size);
+
+	if (jobj && (flags & UTIL_JSON_HUMAN))
+		json_object_set_serializer(jobj, display_size, NULL, NULL);
+	return jobj;
+}
+
+struct json_object *util_json_object_hex(unsigned long long val,
+		unsigned long flags)
+{
+	struct json_object *jobj = json_object_new_int64(val);
+
+	if (jobj && (flags & UTIL_JSON_HUMAN))
+		json_object_set_serializer(jobj, display_hex, NULL, NULL);
+	return jobj;
+}
 
 void util_display_json_array(FILE *f_out, struct json_object *jarray, int jflag)
 {
@@ -140,7 +224,8 @@ struct json_object *util_dimm_to_json(struct ndctl_dimm *dimm)
 	return NULL;
 }
 
-struct json_object *util_daxctl_dev_to_json(struct daxctl_dev *dev)
+struct json_object *util_daxctl_dev_to_json(struct daxctl_dev *dev,
+		unsigned long flags)
 {
 	const char *devname = daxctl_dev_get_devname(dev);
 	struct json_object *jdev, *jobj;
@@ -153,7 +238,7 @@ struct json_object *util_daxctl_dev_to_json(struct daxctl_dev *dev)
 	if (jobj)
 		json_object_object_add(jdev, "chardev", jobj);
 
-	jobj = json_object_new_int64(daxctl_dev_get_size(dev));
+	jobj = util_json_object_size(daxctl_dev_get_size(dev), flags);
 	if (jobj)
 		json_object_object_add(jdev, "size", jobj);
 
@@ -181,7 +266,7 @@ struct json_object *util_daxctl_devs_to_list(struct daxctl_region *region,
 				return NULL;
 		}
 
-		jdev = util_daxctl_dev_to_json(dev);
+		jdev = util_daxctl_dev_to_json(dev, flags);
 		if (!jdev) {
 			json_object_put(jdevs);
 			return NULL;
@@ -211,7 +296,7 @@ struct json_object *util_daxctl_region_to_json(struct daxctl_region *region,
 
 	size = daxctl_region_get_size(region);
 	if (size < ULLONG_MAX) {
-		jobj = json_object_new_int64(size);
+		jobj = util_json_object_size(size, flags);
 		if (!jobj)
 			goto err;
 		json_object_object_add(jregion, "size", jobj);
@@ -219,7 +304,7 @@ struct json_object *util_daxctl_region_to_json(struct daxctl_region *region,
 
 	available_size = daxctl_region_get_available_size(region);
 	if (available_size) {
-		jobj = json_object_new_int64(available_size);
+		jobj = util_json_object_size(available_size, flags);
 		if (!jobj)
 			goto err;
 		json_object_object_add(jregion, "available_size", jobj);
@@ -490,7 +575,7 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 		json_object_object_add(jndns, "mode", jobj);
 
 	if (size < ULLONG_MAX) {
-		jobj = json_object_new_int64(size);
+		jobj = util_json_object_size(size, flags);
 		if (jobj)
 			json_object_object_add(jndns, "size", jobj);
 	}
@@ -604,7 +689,8 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 	return NULL;
 }
 
-struct json_object *util_mapping_to_json(struct ndctl_mapping *mapping)
+struct json_object *util_mapping_to_json(struct ndctl_mapping *mapping,
+		unsigned long flags)
 {
 	struct json_object *jmapping = json_object_new_object();
 	struct ndctl_dimm *dimm = ndctl_mapping_get_dimm(mapping);
@@ -618,12 +704,12 @@ struct json_object *util_mapping_to_json(struct ndctl_mapping *mapping)
 		goto err;
 	json_object_object_add(jmapping, "dimm", jobj);
 
-	jobj = json_object_new_int64(ndctl_mapping_get_offset(mapping));
+	jobj = util_json_object_hex(ndctl_mapping_get_offset(mapping), flags);
 	if (!jobj)
 		goto err;
 	json_object_object_add(jmapping, "offset", jobj);
 
-	jobj = json_object_new_int64(ndctl_mapping_get_length(mapping));
+	jobj = util_json_object_hex(ndctl_mapping_get_length(mapping), flags);
 	if (!jobj)
 		goto err;
 	json_object_object_add(jmapping, "length", jobj);

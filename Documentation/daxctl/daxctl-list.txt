@@ -73,6 +73,26 @@ OPTIONS
 --idle::
 	Include idle (not enabled / zero-sized) devices in the listing
 
+-u::
+--human::
+	By default 'daxctl list' will output machine-friendly raw-integer
+	data. Instead, with this flag, numbers representing storage size
+	will be formatted as human readable strings with units, other
+	fields are converted to hexadecimal strings.  Example:
+
+[verse]
+# daxctl list
+{
+  "chardev":"dax1.0",
+  "size":32828817408
+}
+
+# daxctl list --human
+{
+  "chardev":"dax1.0",
+  "size":"30.57 GiB (32.83 GB)"
+}
+
 COPYRIGHT
 ---------
 Copyright (c) 2016 - 2017, Intel Corporation. License GPLv2: GNU GPL

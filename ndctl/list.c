@@ -37,6 +37,7 @@ static struct {
 	bool health;
 	bool dax;
 	bool media_errors;
+	bool human;
 } list;
 
 static unsigned long listopts_to_flags(void)
@@ -49,6 +50,8 @@ static unsigned long listopts_to_flags(void)
 		flags |= UTIL_JSON_MEDIA_ERRORS;
 	if (list.dax)
 		flags |= UTIL_JSON_DAX;
+	if (list.human)
+		flags |= UTIL_JSON_HUMAN;
 	return flags;
 }
 
@@ -160,12 +163,13 @@ static struct json_object *region_to_json(struct ndctl_region *region,
 		goto err;
 	json_object_object_add(jregion, "dev", jobj);
 
-	jobj = json_object_new_int64(ndctl_region_get_size(region));
+	jobj = util_json_object_size(ndctl_region_get_size(region), flags);
 	if (!jobj)
 		goto err;
 	json_object_object_add(jregion, "size", jobj);
 
-	jobj = json_object_new_int64(ndctl_region_get_available_size(region));
+	jobj = util_json_object_size(ndctl_region_get_available_size(region),
+			flags);
 	if (!jobj)
 		goto err;
 	json_object_object_add(jregion, "available_size", jobj);
@@ -186,8 +190,8 @@ static struct json_object *region_to_json(struct ndctl_region *region,
 
 	iset = ndctl_region_get_interleave_set(region);
 	if (iset) {
-		jobj = json_object_new_int64(
-				ndctl_interleave_set_get_cookie(iset));
+		jobj = util_json_object_hex(
+				ndctl_interleave_set_get_cookie(iset), flags);
 		if (!jobj)
 			fail("\n");
 		else
@@ -216,7 +220,7 @@ static struct json_object *region_to_json(struct ndctl_region *region,
 			json_object_object_add(jregion, "mappings", jmappings);
 		}
 
-		jmapping = util_mapping_to_json(mapping);
+		jmapping = util_mapping_to_json(mapping, listopts_to_flags());
 		if (!jmapping) {
 			fail("\n");
 			continue;
@@ -282,6 +286,8 @@ int cmd_list(int argc, const char **argv, void *ctx)
 		OPT_BOOLEAN('i', "idle", &list.idle, "include idle devices"),
 		OPT_BOOLEAN('M', "media-errors", &list.media_errors,
 				"include media errors"),
+		OPT_BOOLEAN('u', "human", &list.human,
+				"use human friendly number formats "),
 		OPT_END(),
 	};
 	const char * const u[] = {
