@@ -161,7 +161,8 @@ struct json_object *util_daxctl_dev_to_json(struct daxctl_dev *dev)
 }
 
 struct json_object *util_daxctl_devs_to_list(struct daxctl_region *region,
-		struct json_object *jdevs, const char *ident, bool include_idle)
+		struct json_object *jdevs, const char *ident,
+		unsigned long flags)
 {
 	struct daxctl_dev *dev;
 
@@ -171,7 +172,7 @@ struct json_object *util_daxctl_devs_to_list(struct daxctl_region *region,
 		if (!util_daxctl_dev_filter(dev, ident))
 			continue;
 
-		if (!include_idle && !daxctl_dev_get_size(dev))
+		if (!(flags & UTIL_JSON_IDLE) && !daxctl_dev_get_size(dev))
 			continue;
 
 		if (!jdevs) {
@@ -193,7 +194,7 @@ struct json_object *util_daxctl_devs_to_list(struct daxctl_region *region,
 }
 
 struct json_object *util_daxctl_region_to_json(struct daxctl_region *region,
-		bool include_devs, const char *ident, bool include_idle)
+		const char *ident, unsigned long flags)
 {
 	unsigned long align;
 	struct json_object *jregion, *jobj;
@@ -232,10 +233,10 @@ struct json_object *util_daxctl_region_to_json(struct daxctl_region *region,
 		json_object_object_add(jregion, "align", jobj);
 	}
 
-	if (!include_devs)
+	if (!(flags & UTIL_JSON_DAX))
 		return jregion;
 
-	jobj = util_daxctl_devs_to_list(region, NULL, ident, include_idle);
+	jobj = util_daxctl_devs_to_list(region, NULL, ident, flags);
 	if (jobj)
 		json_object_object_add(jregion, "devices", jobj);
 
@@ -246,20 +247,20 @@ struct json_object *util_daxctl_region_to_json(struct daxctl_region *region,
 }
 
 struct json_object *util_region_badblocks_to_json(struct ndctl_region *region,
-		bool include_media_errors, unsigned int *bb_count)
+		unsigned int *bb_count, unsigned long flags)
 {
 	struct json_object *jbb = NULL, *jbbs = NULL, *jobj;
 	struct badblock *bb;
 	int bbs = 0;
 
-	if (include_media_errors) {
+	if (flags & UTIL_JSON_MEDIA_ERRORS) {
 		jbbs = json_object_new_array();
 		if (!jbbs)
 			return NULL;
 	}
 
 	ndctl_region_badblock_foreach(region, bb) {
-		if (include_media_errors) {
+		if (flags & UTIL_JSON_MEDIA_ERRORS) {
 			jbb = json_object_new_object();
 			if (!jbb)
 				goto err_array;
@@ -294,7 +295,7 @@ struct json_object *util_region_badblocks_to_json(struct ndctl_region *region,
 
 static struct json_object *dev_badblocks_to_json(struct ndctl_region *region,
 		unsigned long long dev_begin, unsigned long long dev_size,
-		bool include_media_errors, unsigned int *bb_count)
+		unsigned int *bb_count, unsigned long flags)
 {
 	struct json_object *jbb = NULL, *jbbs = NULL, *jobj;
 	unsigned long long region_begin, dev_end, offset;
@@ -307,7 +308,7 @@ static struct json_object *dev_badblocks_to_json(struct ndctl_region *region,
 
 	dev_end = dev_begin + dev_size - 1;
 
-	if (include_media_errors) {
+	if (flags & UTIL_JSON_MEDIA_ERRORS) {
 		jbbs = json_object_new_array();
 		if (!jbbs)
 			return NULL;
@@ -335,7 +336,7 @@ static struct json_object *dev_badblocks_to_json(struct ndctl_region *region,
 		offset = (begin - dev_begin) >> 9;
 		len = (end - begin + 1) >> 9;
 
-		if (include_media_errors) {
+		if (flags & UTIL_JSON_MEDIA_ERRORS) {
 			/* add to json */
 			jbb = json_object_new_object();
 			if (!jbb)
@@ -369,7 +370,7 @@ static struct json_object *dev_badblocks_to_json(struct ndctl_region *region,
 }
 
 static struct json_object *util_pfn_badblocks_to_json(struct ndctl_pfn *pfn,
-		bool include_media_errors, unsigned int *bb_count)
+		unsigned int *bb_count, unsigned long flags)
 {
 	struct ndctl_region *region = ndctl_pfn_get_region(pfn);
 	unsigned long long pfn_begin, pfn_size;
@@ -383,7 +384,7 @@ static struct json_object *util_pfn_badblocks_to_json(struct ndctl_pfn *pfn,
 		return NULL;
 
 	return dev_badblocks_to_json(region, pfn_begin, pfn_size,
-			include_media_errors, bb_count);
+			bb_count, flags);
 }
 
 static void util_btt_badblocks_to_json(struct ndctl_btt *btt,
@@ -409,11 +410,11 @@ static void util_btt_badblocks_to_json(struct ndctl_btt *btt,
 	 * FIXME: switch to native BTT badblocks representation
 	 * when / if the kernel provides it.
 	 */
-	dev_badblocks_to_json(region, begin, size, false, bb_count);
+	dev_badblocks_to_json(region, begin, size, bb_count, 0);
 }
 
 static struct json_object *util_dax_badblocks_to_json(struct ndctl_dax *dax,
-		bool include_media_errors, unsigned int *bb_count)
+		unsigned int *bb_count, unsigned long flags)
 {
 	struct ndctl_region *region = ndctl_dax_get_region(dax);
 	unsigned long long dax_begin, dax_size;
@@ -427,12 +428,11 @@ static struct json_object *util_dax_badblocks_to_json(struct ndctl_dax *dax,
 		return NULL;
 
 	return dev_badblocks_to_json(region, dax_begin, dax_size,
-			include_media_errors, bb_count);
+			bb_count, flags);
 }
 
 struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
-		bool include_idle, bool include_dax,
-		bool include_media_errors)
+		unsigned long flags)
 {
 	struct json_object *jndns = json_object_new_object();
 	struct json_object *jobj, *jbbs = NULL;
@@ -526,10 +526,10 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 		if (!jobj)
 			goto err;
 		json_object_object_add(jndns, "uuid", jobj);
-		if (include_dax) {
+		if (flags & UTIL_JSON_DAX) {
 			dax_region = ndctl_dax_get_daxctl_region(dax);
-			jobj = util_daxctl_region_to_json(dax_region,
-					true, NULL, include_idle);
+			jobj = util_daxctl_region_to_json(dax_region, NULL,
+					flags);
 			if (jobj)
 				json_object_object_add(jndns, "daxregion", jobj);
 		}
@@ -576,17 +576,15 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 	}
 
 	if (pfn)
-		jbbs = util_pfn_badblocks_to_json(pfn, include_media_errors,
-				&bb_count);
+		jbbs = util_pfn_badblocks_to_json(pfn, &bb_count, flags);
 	else if (dax)
-		jbbs = util_dax_badblocks_to_json(dax, include_media_errors,
-				&bb_count);
+		jbbs = util_dax_badblocks_to_json(dax, &bb_count, flags);
 	else if (btt)
 		util_btt_badblocks_to_json(btt, &bb_count);
 	else
 		jbbs = util_region_badblocks_to_json(
-				ndctl_namespace_get_region(ndns),
-				include_media_errors, &bb_count);
+				ndctl_namespace_get_region(ndns), &bb_count,
+				flags);
 
 	if (bb_count) {
 		jobj = json_object_new_int(bb_count);
@@ -597,7 +595,7 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 		json_object_object_add(jndns, "badblock_count", jobj);
 	}
 
-	if (include_media_errors && jbbs)
+	if ((flags & UTIL_JSON_MEDIA_ERRORS) && jbbs)
 		json_object_object_add(jndns, "badblocks", jbbs);
 
 	return jndns;

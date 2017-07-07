@@ -39,6 +39,19 @@ static struct {
 	bool media_errors;
 } list;
 
+static unsigned long listopts_to_flags(void)
+{
+	unsigned long flags = 0;
+
+	if (list.idle)
+		flags |= UTIL_JSON_IDLE;
+	if (list.media_errors)
+		flags |= UTIL_JSON_MEDIA_ERRORS;
+	if (list.dax)
+		flags |= UTIL_JSON_DAX;
+	return flags;
+}
+
 static struct {
 	const char *bus;
 	const char *region;
@@ -112,8 +125,7 @@ static struct json_object *list_namespaces(struct ndctl_region *region,
 						jnamespaces);
 		}
 
-		jndns = util_namespace_to_json(ndns, list.idle, list.dax,
-				list.media_errors);
+		jndns = util_namespace_to_json(ndns, listopts_to_flags());
 		if (!jndns) {
 			fail("\n");
 			continue;
@@ -132,7 +144,7 @@ static struct json_object *list_namespaces(struct ndctl_region *region,
 }
 
 static struct json_object *region_to_json(struct ndctl_region *region,
-		bool include_media_errors)
+		unsigned long flags)
 {
 	struct json_object *jregion = json_object_new_object();
 	struct json_object *jobj, *jbbs, *jmappings = NULL;
@@ -219,8 +231,7 @@ static struct json_object *region_to_json(struct ndctl_region *region,
 		json_object_object_add(jregion, "state", jobj);
 	}
 
-	jbbs = util_region_badblocks_to_json(region, include_media_errors,
-			&bb_count);
+	jbbs = util_region_badblocks_to_json(region, &bb_count, flags);
 	if (bb_count) {
 		jobj = json_object_new_int(bb_count);
 		if (!jobj) {
@@ -229,7 +240,7 @@ static struct json_object *region_to_json(struct ndctl_region *region,
 		}
 		json_object_object_add(jregion, "badblock_count", jobj);
 	}
-	if (include_media_errors && jbbs)
+	if ((flags & UTIL_JSON_MEDIA_ERRORS) && jbbs)
 		json_object_object_add(jregion, "badblocks", jbbs);
 
 	list_namespaces(region, jregion, NULL, false);
@@ -435,7 +446,7 @@ int cmd_list(int argc, const char **argv, void *ctx)
 							jregions);
 			}
 
-			jregion = region_to_json(region, list.media_errors);
+			jregion = region_to_json(region, listopts_to_flags());
 			if (!jregion) {
 				fail("\n");
 				continue;
