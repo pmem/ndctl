@@ -1526,6 +1526,7 @@ static int check_btt_autodetect(struct ndctl_bus *bus,
 		rc = -ENXIO;
 		fprintf(stderr, "%s: failed to overwrite btt on %s\n",
 				devname, bdev);
+		goto out;
 	}
 	rc = pwrite(fd, buf, 4096, 0);
 	if (rc < 4096) {
