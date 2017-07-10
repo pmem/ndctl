@@ -2935,13 +2935,20 @@ static void *add_namespace(void *parent, int id, const char *ndns_base)
 
 	switch (ndns->type) {
 	case ND_DEVICE_NAMESPACE_BLK:
-		sprintf(path, "%s/sector_size", ndns_base);
-		if (sysfs_read_attr(ctx, path, buf) < 0)
-			goto err_read;
-		if (parse_lbasize_supported(ctx, devname, buf, &ndns->lbasize) < 0)
-			goto err_read;
-		/* fall through */
 	case ND_DEVICE_NAMESPACE_PMEM:
+		sprintf(path, "%s/sector_size", ndns_base);
+		if (sysfs_read_attr(ctx, path, buf) == 0)
+			parse_lbasize_supported(ctx, devname, buf,
+					&ndns->lbasize);
+		else if (ndns->type == ND_DEVICE_NAMESPACE_BLK) {
+			/*
+			 * sector_size support is mandatory for blk,
+			 * optional for pmem.
+			 */
+			goto err_read;
+		} else
+			parse_lbasize_supported(ctx, devname, "",
+					&ndns->lbasize);
 		sprintf(path, "%s/alt_name", ndns_base);
 		if (sysfs_read_attr(ctx, path, buf) < 0)
 			goto err_read;
