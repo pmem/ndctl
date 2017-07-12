@@ -148,10 +148,13 @@ struct json_object *util_bus_to_json(struct ndctl_bus *bus)
 	return NULL;
 }
 
-struct json_object *util_dimm_to_json(struct ndctl_dimm *dimm)
+struct json_object *util_dimm_to_json(struct ndctl_dimm *dimm,
+		unsigned long flags)
 {
 	struct json_object *jdimm = json_object_new_object();
 	const char *id = ndctl_dimm_get_unique_id(dimm);
+	unsigned int handle = ndctl_dimm_get_handle(dimm);
+	unsigned short phys_id = ndctl_dimm_get_phys_id(dimm);
 	struct json_object *jobj;
 
 	if (!jdimm)
@@ -167,6 +170,20 @@ struct json_object *util_dimm_to_json(struct ndctl_dimm *dimm)
 		if (!jobj)
 			goto err;
 		json_object_object_add(jdimm, "id", jobj);
+	}
+
+	if (handle < UINT_MAX) {
+		jobj = util_json_object_hex(handle, flags);
+		if (!jobj)
+			goto err;
+		json_object_object_add(jdimm, "handle", jobj);
+	}
+
+	if (phys_id < USHRT_MAX) {
+		jobj = util_json_object_hex(phys_id, flags);
+		if (!jobj)
+			goto err;
+		json_object_object_add(jdimm, "phys_id", jobj);
 	}
 
 	if (!ndctl_dimm_is_enabled(dimm)) {

@@ -388,7 +388,7 @@ int cmd_list(int argc, const char **argv, void *ctx)
 					json_object_object_add(jbus, "dimms", jdimms);
 			}
 
-			jdimm = util_dimm_to_json(dimm);
+			jdimm = util_dimm_to_json(dimm, listopts_to_flags());
 			if (!jdimm) {
 				fail("\n");
 				continue;
