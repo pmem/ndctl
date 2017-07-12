@@ -16,6 +16,7 @@
 #include <stdbool.h>
 #include <stdarg.h>
 #include <unistd.h>
+#include <errno.h>
 
 #ifdef HAVE_LIBUUID
 #include <uuid/uuid.h>
