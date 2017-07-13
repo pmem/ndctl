@@ -704,6 +704,8 @@ NDCTL_EXPORT int ndctl_get_log_priority(struct ndctl_ctx *ctx)
 NDCTL_EXPORT void ndctl_set_log_priority(struct ndctl_ctx *ctx, int priority)
 {
 	ctx->ctx.log_priority = priority;
+	/* forward the debug level to our internal libdaxctl instance */
+	daxctl_set_log_priority(ctx->daxctl_ctx, priority);
 }
 
 static char *__dev_path(char *type, int major, int minor, int parent)
