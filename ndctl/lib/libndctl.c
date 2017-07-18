@@ -1050,7 +1050,7 @@ NDCTL_EXPORT int ndctl_region_set_ro(struct ndctl_region *region, int ro)
 {
 	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
 	char *path = region->region_buf;
-	int len = region->buf_len;
+	int len = region->buf_len, rc;
 
 	if (snprintf(path, len, "%s/read_only", region->region_path) >= len) {
 		err(ctx, "%s: buffer too small!\n",
@@ -1059,8 +1059,9 @@ NDCTL_EXPORT int ndctl_region_set_ro(struct ndctl_region *region, int ro)
 	}
 
 	ro = !!ro;
-	if (sysfs_write_attr(ctx, path, ro ? "1\n" : "0\n") < 0)
-		return -ENXIO;
+	rc = sysfs_write_attr(ctx, path, ro ? "1\n" : "0\n");
+	if (rc < 0)
+		return rc;
 
 	region->ro = ro;
 	return ro;
@@ -3235,7 +3236,7 @@ NDCTL_EXPORT int ndctl_namespace_set_raw_mode(struct ndctl_namespace *ndns,
 {
 	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
 	char *path = ndns->ndns_buf;
-	int len = ndns->buf_len;
+	int len = ndns->buf_len, rc;
 
 	if (snprintf(path, len, "%s/force_raw", ndns->ndns_path) >= len) {
 		err(ctx, "%s: buffer too small!\n",
@@ -3244,8 +3245,9 @@ NDCTL_EXPORT int ndctl_namespace_set_raw_mode(struct ndctl_namespace *ndns,
 	}
 
 	raw_mode = !!raw_mode;
-	if (sysfs_write_attr(ctx, path, raw_mode ? "1\n" : "0\n") < 0)
-		return -ENXIO;
+	rc = sysfs_write_attr(ctx, path, raw_mode ? "1\n" : "0\n");
+	if (rc < 0)
+		return rc;
 
 	ndns->raw_mode = raw_mode;
 	return raw_mode;
@@ -3602,7 +3604,7 @@ NDCTL_EXPORT int ndctl_namespace_set_uuid(struct ndctl_namespace *ndns, uuid_t u
 {
 	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
 	char *path = ndns->ndns_buf;
-	int len = ndns->buf_len;
+	int len = ndns->buf_len, rc;
 	char uuid[40];
 
 	if (snprintf(path, len, "%s/uuid", ndns->ndns_path) >= len) {
@@ -3612,8 +3614,9 @@ NDCTL_EXPORT int ndctl_namespace_set_uuid(struct ndctl_namespace *ndns, uuid_t u
 	}
 
 	uuid_unparse(uu, uuid);
-	if (sysfs_write_attr(ctx, path, uuid) != 0)
-		return -ENXIO;
+	rc = sysfs_write_attr(ctx, path, uuid);
+	if (rc != 0)
+		return rc;
 	memcpy(ndns->uuid, uu, sizeof(uuid_t));
 	return 0;
 }
@@ -3645,7 +3648,7 @@ NDCTL_EXPORT int ndctl_namespace_set_sector_size(struct ndctl_namespace *ndns,
 {
 	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
 	char *path = ndns->ndns_buf;
-	int len = ndns->buf_len;
+	int len = ndns->buf_len, rc;
 	char sector_str[40];
 	int i;
 
@@ -3659,8 +3662,9 @@ NDCTL_EXPORT int ndctl_namespace_set_sector_size(struct ndctl_namespace *ndns,
 	}
 
 	sprintf(sector_str, "%d\n", sector_size);
-	if (sysfs_write_attr(ctx, path, sector_str) != 0)
-		return -ENXIO;
+	rc = sysfs_write_attr(ctx, path, sector_str);
+	if (rc != 0)
+		return rc;
 
 	for (i = 0; i < ndns->lbasize.num; i++)
 		if (ndns->lbasize.supported[i] == sector_size)
@@ -3680,7 +3684,7 @@ NDCTL_EXPORT int ndctl_namespace_set_alt_name(struct ndctl_namespace *ndns,
 {
 	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
 	char *path = ndns->ndns_buf;
-	int len = ndns->buf_len;
+	int len = ndns->buf_len, rc;
 	char *buf;
 
 	if (!ndns->alt_name)
@@ -3699,9 +3703,10 @@ NDCTL_EXPORT int ndctl_namespace_set_alt_name(struct ndctl_namespace *ndns,
 	if (!buf)
 		return -ENOMEM;
 
-	if (sysfs_write_attr(ctx, path, buf) < 0) {
+	rc = sysfs_write_attr(ctx, path, buf);
+	if (rc < 0) {
 		free(buf);
-		return -ENXIO;
+		return rc;
 	}
 
 	free(ndns->alt_name);
@@ -3724,7 +3729,7 @@ static int namespace_set_size(struct ndctl_namespace *ndns,
 {
 	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
 	char *path = ndns->ndns_buf;
-	int len = ndns->buf_len;
+	int len = ndns->buf_len, rc;
 	char buf[SYSFS_ATTR_SIZE];
 
 	if (snprintf(path, len, "%s/size", ndns->ndns_path) >= len) {
@@ -3734,8 +3739,9 @@ static int namespace_set_size(struct ndctl_namespace *ndns,
 	}
 
 	sprintf(buf, "%#llx\n", size);
-	if (sysfs_write_attr(ctx, path, buf) < 0)
-		return -ENXIO;
+	rc = sysfs_write_attr(ctx, path, buf);
+	if (rc < 0)
+		return rc;
 
 	ndns->size = size;
 	return 0;
@@ -4008,7 +4014,7 @@ NDCTL_EXPORT int ndctl_btt_set_uuid(struct ndctl_btt *btt, uuid_t uu)
 {
 	struct ndctl_ctx *ctx = ndctl_btt_get_ctx(btt);
 	char *path = btt->btt_buf;
-	int len = btt->buf_len;
+	int len = btt->buf_len, rc;
 	char uuid[40];
 
 	if (snprintf(path, len, "%s/uuid", btt->btt_path) >= len) {
@@ -4018,8 +4024,9 @@ NDCTL_EXPORT int ndctl_btt_set_uuid(struct ndctl_btt *btt, uuid_t uu)
 	}
 
 	uuid_unparse(uu, uuid);
-	if (sysfs_write_attr(ctx, path, uuid) != 0)
-		return -ENXIO;
+	rc = sysfs_write_attr(ctx, path, uuid);
+	if (rc != 0)
+		return rc;
 	memcpy(btt->uuid, uu, sizeof(uuid_t));
 	return 0;
 }
@@ -4029,7 +4036,7 @@ NDCTL_EXPORT int ndctl_btt_set_sector_size(struct ndctl_btt *btt,
 {
 	struct ndctl_ctx *ctx = ndctl_btt_get_ctx(btt);
 	char *path = btt->btt_buf;
-	int len = btt->buf_len;
+	int len = btt->buf_len, rc;
 	char sector_str[40];
 	int i;
 
@@ -4040,8 +4047,9 @@ NDCTL_EXPORT int ndctl_btt_set_sector_size(struct ndctl_btt *btt,
 	}
 
 	sprintf(sector_str, "%d\n", sector_size);
-	if (sysfs_write_attr(ctx, path, sector_str) != 0)
-		return -ENXIO;
+	rc = sysfs_write_attr(ctx, path, sector_str);
+	if (rc != 0)
+		return rc;
 
 	for (i = 0; i < btt->lbasize.num; i++)
 		if (btt->lbasize.supported[i] == sector_size)
@@ -4053,8 +4061,8 @@ NDCTL_EXPORT int ndctl_btt_set_namespace(struct ndctl_btt *btt,
 		struct ndctl_namespace *ndns)
 {
 	struct ndctl_ctx *ctx = ndctl_btt_get_ctx(btt);
+	int len = btt->buf_len, rc;
 	char *path = btt->btt_buf;
-	int len = btt->buf_len;
 
 	if (snprintf(path, len, "%s/namespace", btt->btt_path) >= len) {
 		err(ctx, "%s: buffer too small!\n",
@@ -4062,9 +4070,10 @@ NDCTL_EXPORT int ndctl_btt_set_namespace(struct ndctl_btt *btt,
 		return -ENXIO;
 	}
 
-	if (sysfs_write_attr(ctx, path, ndns
-				? ndctl_namespace_get_devname(ndns) : "\n"))
-		return -ENXIO;
+	rc = sysfs_write_attr(ctx, path, ndns
+				? ndctl_namespace_get_devname(ndns) : "\n");
+	if (rc != 0)
+		return rc;
 
 	btt->ndns = ndns;
 	return 0;
@@ -4407,8 +4416,8 @@ NDCTL_EXPORT unsigned long long ndctl_pfn_get_resource(struct ndctl_pfn *pfn)
 NDCTL_EXPORT int ndctl_pfn_set_uuid(struct ndctl_pfn *pfn, uuid_t uu)
 {
 	struct ndctl_ctx *ctx = ndctl_pfn_get_ctx(pfn);
+	int len = pfn->buf_len, rc;
 	char *path = pfn->pfn_buf;
-	int len = pfn->buf_len;
 	char uuid[40];
 
 	if (snprintf(path, len, "%s/uuid", pfn->pfn_path) >= len) {
@@ -4418,8 +4427,9 @@ NDCTL_EXPORT int ndctl_pfn_set_uuid(struct ndctl_pfn *pfn, uuid_t uu)
 	}
 
 	uuid_unparse(uu, uuid);
-	if (sysfs_write_attr(ctx, path, uuid) != 0)
-		return -ENXIO;
+	rc = sysfs_write_attr(ctx, path, uuid);
+	if (rc != 0)
+		return rc;
 	memcpy(pfn->uuid, uu, sizeof(uuid_t));
 	return 0;
 }
@@ -4433,8 +4443,8 @@ NDCTL_EXPORT int ndctl_pfn_set_location(struct ndctl_pfn *pfn,
 		enum ndctl_pfn_loc loc)
 {
 	struct ndctl_ctx *ctx = ndctl_pfn_get_ctx(pfn);
+	int len = pfn->buf_len, rc;
 	char *path = pfn->pfn_buf;
-	int len = pfn->buf_len;
 	const char *locations[] = {
 		[NDCTL_PFN_LOC_NONE] = "none",
 		[NDCTL_PFN_LOC_RAM] = "ram",
@@ -4456,8 +4466,9 @@ NDCTL_EXPORT int ndctl_pfn_set_location(struct ndctl_pfn *pfn,
 		return -ENXIO;
 	}
 
-	if (sysfs_write_attr(ctx, path, locations[loc]) != 0)
-		return -ENXIO;
+	rc = sysfs_write_attr(ctx, path, locations[loc]);
+	if (rc != 0)
+		return rc;
 	pfn->loc = loc;
 	return 0;
 }
@@ -4486,8 +4497,8 @@ NDCTL_EXPORT int ndctl_pfn_has_align(struct ndctl_pfn *pfn)
 NDCTL_EXPORT int ndctl_pfn_set_align(struct ndctl_pfn *pfn, unsigned long align)
 {
 	struct ndctl_ctx *ctx = ndctl_pfn_get_ctx(pfn);
+	int len = pfn->buf_len, rc;
 	char *path = pfn->pfn_buf;
-	int len = pfn->buf_len;
 	char align_str[40];
 
 	if (snprintf(path, len, "%s/align", pfn->pfn_path) >= len) {
@@ -4497,8 +4508,9 @@ NDCTL_EXPORT int ndctl_pfn_set_align(struct ndctl_pfn *pfn, unsigned long align)
 	}
 
 	sprintf(align_str, "%lu\n", align);
-	if (sysfs_write_attr(ctx, path, align_str) != 0)
-		return -ENXIO;
+	rc = sysfs_write_attr(ctx, path, align_str);
+	if (rc != 0)
+		return rc;
 	pfn->align = align;
 	return 0;
 }
@@ -4507,8 +4519,8 @@ NDCTL_EXPORT int ndctl_pfn_set_namespace(struct ndctl_pfn *pfn,
 		struct ndctl_namespace *ndns)
 {
 	struct ndctl_ctx *ctx = ndctl_pfn_get_ctx(pfn);
+	int len = pfn->buf_len, rc;
 	char *path = pfn->pfn_buf;
-	int len = pfn->buf_len;
 
 	if (snprintf(path, len, "%s/namespace", pfn->pfn_path) >= len) {
 		err(ctx, "%s: buffer too small!\n",
@@ -4516,9 +4528,10 @@ NDCTL_EXPORT int ndctl_pfn_set_namespace(struct ndctl_pfn *pfn,
 		return -ENXIO;
 	}
 
-	if (sysfs_write_attr(ctx, path, ndns
-				? ndctl_namespace_get_devname(ndns) : "\n"))
-		return -ENXIO;
+	rc = sysfs_write_attr(ctx, path, ndns
+				? ndctl_namespace_get_devname(ndns) : "\n");
+	if (rc != 0)
+		return rc;
 
 	pfn->ndns = ndns;
 	return 0;

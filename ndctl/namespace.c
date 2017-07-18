@@ -978,17 +978,8 @@ int cmd_create_namespace(int argc, const char **argv, void *ctx)
 	}
 
 	if (created < 0 || (!namespace && created < 1)) {
-		char *reason = "";
-
-		if (created == -EAGAIN)
-			reason = ": no suitable capacity found";
-		else if (created == -ENXIO)
-			reason = ": unsupported configuration";
-		else if (created == -EINVAL)
-			reason = ": invalid argument";
-
-		fprintf(stderr, "failed to %s namespace%s\n", namespace
-				? "reconfigure" : "create", reason);
+		fprintf(stderr, "failed to %s namespace: %s\n", namespace
+				? "reconfigure" : "create", strerror(-created));
 		if (!namespace)
 			created = -ENODEV;
 	}
