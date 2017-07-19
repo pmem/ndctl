@@ -27,6 +27,8 @@
 #include <daxctl/libdaxctl.h>
 #include "libdaxctl-private.h"
 
+static const char *attrs = "dax_region";
+
 /**
  * struct daxctl_ctx - library user context to find "nd" instances
  *
@@ -219,13 +221,15 @@ DAXCTL_EXPORT void daxctl_region_ref(struct daxctl_region *region)
 		region->refcount++;
 }
 
-static void *add_dax_region(void *parent, int id, const char *base)
+static struct daxctl_region *add_dax_region(void *parent, int id,
+		const char *base)
 {
 	struct daxctl_region *region, *region_dup;
-	const char *attrs = "dax_region";
 	struct daxctl_ctx *ctx = parent;
 	char buf[SYSFS_ATTR_SIZE];
 	char *path;
+
+	dbg(ctx, "%s: \'%s\'\n", __func__, base);
 
 	daxctl_region_foreach(ctx, region_dup)
 		if (region_dup->id == id)
@@ -255,12 +259,12 @@ static void *add_dax_region(void *parent, int id, const char *base)
 	if (sysfs_read_attr(ctx, path, buf) == 0)
 		region->align = strtoul(buf, NULL, 0);
 
-	sprintf(path, "%s/%s", base, attrs);
-	region->region_path = strdup(path);
+	region->region_path = strdup(base);
 	if (!region->region_path)
 		goto err_read;
 
-	region->region_buf = calloc(1, strlen(path) + REGION_BUF_SIZE);
+	region->region_buf = calloc(1, strlen(path) + strlen(attrs)
+			+ REGION_BUF_SIZE);
 	if (!region->region_buf)
 		goto err_read;
 	region->buf_len = strlen(path) + REGION_BUF_SIZE;
@@ -306,6 +310,7 @@ static void *add_dax_dev(void *parent, int id, const char *daxdev_base)
 
 	if (!path)
 		return NULL;
+	dbg(ctx, "%s: base: \'%s\'\n", __func__, daxdev_base);
 
 	dev = calloc(1, sizeof(*dev));
 	if (!dev)
@@ -382,8 +387,8 @@ DAXCTL_EXPORT unsigned long long daxctl_region_get_available_size(
 	int len = region->buf_len;
 	unsigned long long avail;
 
-	if (snprintf(path, len, "%s/available_size",
-				region->region_path) >= len) {
+	if (snprintf(path, len, "%s/%s/available_size",
+				region->region_path, attrs) >= len) {
 		err(ctx, "%s: buffer too small!\n",
 				daxctl_region_get_devname(region));
 		return 0;
@@ -407,7 +412,7 @@ DAXCTL_EXPORT struct daxctl_dev *daxctl_region_get_dev_seed(
 	char buf[SYSFS_ATTR_SIZE];
 	struct daxctl_dev *dev;
 
-	if (snprintf(path, len, "%s/seed", region->region_path) >= len) {
+	if (snprintf(path, len, "%s/%s/seed", region->region_path, attrs) >= len) {
 		err(ctx, "%s: buffer too small!\n",
 				daxctl_region_get_devname(region));
 		return NULL;
