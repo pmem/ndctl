@@ -622,18 +622,28 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 	} else if (dax) {
 		struct daxctl_region *dax_region;
 
+		dax_region = ndctl_dax_get_daxctl_region(dax);
 		ndctl_dax_get_uuid(dax, uuid);
 		uuid_unparse(uuid, buf);
 		jobj = json_object_new_string(buf);
 		if (!jobj)
 			goto err;
 		json_object_object_add(jndns, "uuid", jobj);
-		if (flags & UTIL_JSON_DAX) {
-			dax_region = ndctl_dax_get_daxctl_region(dax);
+		if ((flags & UTIL_JSON_DAX) && dax_region) {
 			jobj = util_daxctl_region_to_json(dax_region, NULL,
 					flags);
 			if (jobj)
 				json_object_object_add(jndns, "daxregion", jobj);
+		} else if (dax_region) {
+			struct daxctl_dev *dev;
+			const char *name;
+
+			dev = daxctl_dev_get_first(dax_region);
+			name = daxctl_dev_get_devname(dev);
+			jobj = json_object_new_string(name);
+			if (!jobj)
+				goto err;
+			json_object_object_add(jndns, "chardev", jobj);
 		}
 	} else if (ndctl_namespace_get_type(ndns) != ND_DEVICE_NAMESPACE_IO) {
 		const char *name;
