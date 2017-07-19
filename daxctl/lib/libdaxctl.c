@@ -232,7 +232,7 @@ static struct daxctl_region *add_dax_region(void *parent, int id,
 	dbg(ctx, "%s: \'%s\'\n", __func__, base);
 
 	daxctl_region_foreach(ctx, region_dup)
-		if (region_dup->id == id)
+		if (strcmp(region_dup->region_path, base) == 0)
 			return region_dup;
 
 	path = calloc(1, strlen(base) + 100);
@@ -438,20 +438,48 @@ static void dax_devices_init(struct daxctl_region *region)
 
 	region->devices_init = 1;
 	sprintf(daxdev_fmt, "dax%d.", region->id);
-	region_path = strdup(region->region_path);
-	if (region_path) {
-		char *c = strrchr(region_path, '_');
-
-		/* convert <devpath>/dax_region to <devpath>/dax */
-		*c = '\0';
-		sysfs_device_parse(ctx, region_path, daxdev_fmt, region,
-				add_dax_dev);
+	if (asprintf(&region_path, "%s/dax", region->region_path) < 0) {
+		dbg(ctx, "region path alloc fail\n");
+		return;
 	}
+	sysfs_device_parse(ctx, region_path, daxdev_fmt, region, add_dax_dev);
 	free(region_path);
+}
+
+static char *dax_region_path(const char *base, const char *device)
+{
+	char *path, *region_path, *c;
+
+	if (asprintf(&path, "%s/%s", base, device) < 0)
+		return NULL;
+
+	/* dax_region must be the instance's direct parent */
+	region_path = canonicalize_file_name(path);
+	free(path);
+	if (!region_path)
+		return NULL;
+
+	/* 'region_path' is now regionX/dax/daxX.Y', trim back to regionX */
+	c = strrchr(region_path, '/');
+	if (!c) {
+		free(region_path);
+		return NULL;
+	}
+	*c = '\0';
+
+	c = strrchr(region_path, '/');
+	if (!c) {
+		free(region_path);
+		return NULL;
+	}
+	*c = '\0';
+
+	return region_path;
 }
 
 static void dax_regions_init(struct daxctl_ctx *ctx)
 {
+	const char *base = "/sys/class/dax";
 	struct dirent *de;
 	DIR *dir;
 
@@ -460,7 +488,7 @@ static void dax_regions_init(struct daxctl_ctx *ctx)
 
 	ctx->regions_init = 1;
 
-	dir = opendir("/sys/class/dax");
+	dir = opendir(base);
 	if (!dir) {
 		dbg(ctx, "no dax regions found\n");
 		return;
@@ -475,11 +503,11 @@ static void dax_regions_init(struct daxctl_ctx *ctx)
 			continue;
 		if (sscanf(de->d_name, "dax%d.%d", &region_id, &id) != 2)
 			continue;
-		if (asprintf(&dev_path, "/sys/class/dax/%s/device", de->d_name) < 0) {
+		dev_path = dax_region_path(base, de->d_name);
+		if (!dev_path) {
 			err(ctx, "dax region path allocation failure\n");
 			continue;
 		}
-
 		region = add_dax_region(ctx, region_id, dev_path);
 		free(dev_path);
 		if (!region)
