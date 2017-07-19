@@ -306,6 +306,24 @@ struct json_object *util_daxctl_region_to_json(struct daxctl_region *region,
 	if (!jregion)
 		return NULL;
 
+	/*
+	 * The flag indicates when we are being called by an agent that
+	 * already knows about the parent device information.
+	 */
+	if (!(flags & UTIL_JSON_DAX)) {
+		/* trim off the redundant /sys/devices prefix */
+		const char *path = daxctl_region_get_path(region);
+		int len = strlen("/sys/devices");
+		const char *trim = &path[len];
+
+		if (strncmp(path, "/sys/devices", len) != 0)
+			goto err;
+		jobj = json_object_new_string(trim);
+		if (!jobj)
+			goto err;
+		json_object_object_add(jregion, "path", jobj);
+	}
+
 	jobj = json_object_new_int(daxctl_region_get_id(region));
 	if (!jobj)
 		goto err;
@@ -335,7 +353,7 @@ struct json_object *util_daxctl_region_to_json(struct daxctl_region *region,
 		json_object_object_add(jregion, "align", jobj);
 	}
 
-	if (!(flags & UTIL_JSON_DAX))
+	if (!(flags & UTIL_JSON_DAX_DEVS))
 		return jregion;
 
 	jobj = util_daxctl_devs_to_list(region, NULL, ident, flags);

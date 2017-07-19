@@ -34,7 +34,7 @@ static unsigned long listopts_to_flags(void)
 	unsigned long flags = 0;
 
 	if (list.devs)
-		flags |= UTIL_JSON_DAX;
+		flags |= UTIL_JSON_DAX_DEVS;
 	if (list.idle)
 		flags |= UTIL_JSON_IDLE;
 	if (list.human)

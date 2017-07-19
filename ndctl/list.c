@@ -49,7 +49,7 @@ static unsigned long listopts_to_flags(void)
 	if (list.media_errors)
 		flags |= UTIL_JSON_MEDIA_ERRORS;
 	if (list.dax)
-		flags |= UTIL_JSON_DAX;
+		flags |= UTIL_JSON_DAX | UTIL_JSON_DAX_DEVS;
 	if (list.human)
 		flags |= UTIL_JSON_HUMAN;
 	return flags;

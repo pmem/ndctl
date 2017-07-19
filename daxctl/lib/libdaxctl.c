@@ -378,6 +378,11 @@ DAXCTL_EXPORT const char *daxctl_region_get_devname(struct daxctl_region *region
 	return region->devname;
 }
 
+DAXCTL_EXPORT const char *daxctl_region_get_path(struct daxctl_region *region)
+{
+	return region->region_path;
+}
+
 DAXCTL_EXPORT unsigned long long daxctl_region_get_available_size(
 		struct daxctl_region *region)
 {

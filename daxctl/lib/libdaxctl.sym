@@ -45,3 +45,8 @@ global:
 	daxctl_region_get_first;
 	daxctl_region_get_next;
 } LIBDAXCTL_3;
+
+LIBDAXCTL_5 {
+global:
+	daxctl_region_get_path;
+} LIBDAXCTL_4;

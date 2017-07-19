@@ -401,7 +401,7 @@ static int setup_namespace(struct ndctl_region *region,
 		error("%s: failed to enable\n",
 				ndctl_namespace_get_devname(ndns));
 	} else {
-		unsigned long flags = UTIL_JSON_DAX;
+		unsigned long flags = UTIL_JSON_DAX | UTIL_JSON_DAX_DEVS;
 		struct json_object *jndns;
 
 		if (isatty(1))
