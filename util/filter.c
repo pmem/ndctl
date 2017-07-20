@@ -21,8 +21,8 @@
 struct ndctl_bus *util_bus_filter(struct ndctl_bus *bus, const char *ident)
 {
 	char *end = NULL;
-	const char *provider;
 	unsigned long bus_id, id;
+	const char *provider, *devname;
 
 	if (!ident || strcmp(ident, "all") == 0)
 		return bus;
@@ -32,12 +32,14 @@ struct ndctl_bus *util_bus_filter(struct ndctl_bus *bus, const char *ident)
 		bus_id = ULONG_MAX;
 
 	provider = ndctl_bus_get_provider(bus);
+	devname = ndctl_bus_get_devname(bus);
 	id = ndctl_bus_get_id(bus);
 
 	if (bus_id < ULONG_MAX && bus_id == id)
 		return bus;
 
-	if (bus_id == ULONG_MAX && strcmp(ident, provider) == 0)
+	if (bus_id == ULONG_MAX && (strcmp(ident, provider) == 0
+				|| strcmp(ident, devname) == 0))
 		return bus;
 
 	return NULL;
