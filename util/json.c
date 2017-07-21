@@ -558,7 +558,7 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 	struct json_object *jobj, *jbbs = NULL;
 	unsigned long long size = ULLONG_MAX;
 	enum ndctl_namespace_mode mode;
-	const char *bdev = NULL;
+	const char *bdev = NULL, *name;
 	unsigned int bb_count;
 	struct ndctl_btt *btt;
 	struct ndctl_pfn *pfn;
@@ -654,7 +654,6 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 				json_object_object_add(jndns, "daxregion", jobj);
 		} else if (dax_region) {
 			struct daxctl_dev *dev;
-			const char *name;
 
 			dev = daxctl_dev_get_first(dax_region);
 			name = daxctl_dev_get_devname(dev);
@@ -664,22 +663,12 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 			json_object_object_add(jndns, "chardev", jobj);
 		}
 	} else if (ndctl_namespace_get_type(ndns) != ND_DEVICE_NAMESPACE_IO) {
-		const char *name;
-
 		ndctl_namespace_get_uuid(ndns, uuid);
 		uuid_unparse(uuid, buf);
 		jobj = json_object_new_string(buf);
 		if (!jobj)
 			goto err;
 		json_object_object_add(jndns, "uuid", jobj);
-
-		name = ndctl_namespace_get_alt_name(ndns);
-		if (name[0]) {
-			jobj = json_object_new_string(name);
-			if (!jobj)
-				goto err;
-			json_object_object_add(jndns, "name", jobj);
-		}
 		bdev = ndctl_namespace_get_block_device(ndns);
 	} else
 		bdev = ndctl_namespace_get_block_device(ndns);
@@ -696,6 +685,14 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 		if (!jobj)
 			goto err;
 		json_object_object_add(jndns, "state", jobj);
+	}
+
+	name = ndctl_namespace_get_alt_name(ndns);
+	if (name && name[0]) {
+		jobj = json_object_new_string(name);
+		if (!jobj)
+			goto err;
+		json_object_object_add(jndns, "name", jobj);
 	}
 
 	numa = ndctl_namespace_get_numa_node(ndns);
