@@ -557,8 +557,7 @@ static int validate_namespace_options(struct ndctl_region *region,
 
 	/* (re-)validate that the size satisfies the alignment */
 	ways = ndctl_region_get_interleave_ways(region);
-	size_align = max(units, size_align) * ways;
-	if (p->size % size_align) {
+	if (p->size % (size_align * ways)) {
 		char *suffix = "";
 
 		if (units == SZ_1K)
@@ -569,6 +568,12 @@ static int validate_namespace_options(struct ndctl_region *region,
 			suffix = "G";
 		else if (units == SZ_1T)
 			suffix = "T";
+
+		/*
+		 * Make the recommendation in the units of the '--size'
+		 * option
+		 */
+		size_align = max(units, size_align) * ways;
 
 		p->size /= size_align;
 		p->size++;
