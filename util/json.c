@@ -559,7 +559,7 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 	unsigned long long size = ULLONG_MAX;
 	enum ndctl_namespace_mode mode;
 	const char *bdev = NULL, *name;
-	unsigned int bb_count;
+	unsigned int bb_count = 0;
 	struct ndctl_btt *btt;
 	struct ndctl_pfn *pfn;
 	struct ndctl_dax *dax;
