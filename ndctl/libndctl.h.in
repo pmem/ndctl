@@ -460,6 +460,7 @@ struct ndctl_bus *ndctl_mapping_get_bus(struct ndctl_mapping *mapping);
 struct ndctl_region *ndctl_mapping_get_region(struct ndctl_mapping *mapping);
 unsigned long long ndctl_mapping_get_offset(struct ndctl_mapping *mapping);
 unsigned long long ndctl_mapping_get_length(struct ndctl_mapping *mapping);
+int ndctl_mapping_get_position(struct ndctl_mapping *mapping);
 
 struct ndctl_namespace;
 struct ndctl_namespace *ndctl_namespace_get_first(struct ndctl_region *region);

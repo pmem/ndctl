@@ -737,6 +737,7 @@ struct json_object *util_mapping_to_json(struct ndctl_mapping *mapping,
 	struct json_object *jmapping = json_object_new_object();
 	struct ndctl_dimm *dimm = ndctl_mapping_get_dimm(mapping);
 	struct json_object *jobj;
+	int position;
 
 	if (!jmapping)
 		return NULL;
@@ -755,6 +756,14 @@ struct json_object *util_mapping_to_json(struct ndctl_mapping *mapping,
 	if (!jobj)
 		goto err;
 	json_object_object_add(jmapping, "length", jobj);
+
+	position = ndctl_mapping_get_position(mapping);
+	if (position >= 0) {
+		jobj = json_object_new_int(position);
+		if (!jobj)
+			goto err;
+		json_object_object_add(jmapping, "position", jobj);
+	}
 
 	return jmapping;
  err:

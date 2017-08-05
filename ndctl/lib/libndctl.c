@@ -166,6 +166,7 @@ struct ndctl_dimm {
  * @dimm: backing dimm for the mapping
  * @offset: dimm relative offset
  * @length: span of the extent
+ * @position: interleave-order of the extent
  *
  * This data can be used to identify the dimm ranges contributing to a
  * region / interleave-set and identify how regions alias each other.
@@ -174,6 +175,7 @@ struct ndctl_mapping {
 	struct ndctl_region *region;
 	struct ndctl_dimm *dimm;
 	unsigned long long offset, length;
+	int position;
 	struct list_node list;
 };
 
@@ -2723,6 +2725,7 @@ static void mappings_init(struct ndctl_region *region)
 		unsigned long long offset, length;
 		struct ndctl_dimm *dimm;
 		unsigned int dimm_id;
+		int position, match;
 
 		sprintf(mapping_path, "%s/mapping%d", region->region_path, i);
 		if (sysfs_read_attr(ctx, mapping_path, buf) < 0) {
@@ -2731,8 +2734,11 @@ static void mappings_init(struct ndctl_region *region)
 			continue;
 		}
 
-		if (sscanf(buf, "nmem%u,%llu,%llu", &dimm_id, &offset,
-					&length) != 3) {
+		match = sscanf(buf, "nmem%u,%llu,%llu,%d", &dimm_id, &offset,
+				&length, &position);
+		if (match < 4)
+			position = -1;
+		if (match < 3) {
 			err(ctx, "bus%d mapping parse failure\n",
 					ndctl_bus_get_id(bus));
 			continue;
@@ -2756,6 +2762,7 @@ static void mappings_init(struct ndctl_region *region)
 		mapping->offset = offset;
 		mapping->length = length;
 		mapping->dimm = dimm;
+		mapping->position = position;
 		list_add(&region->mappings, &mapping->list);
 	}
 	free(mapping_path);
@@ -2788,6 +2795,11 @@ NDCTL_EXPORT unsigned long long ndctl_mapping_get_offset(struct ndctl_mapping *m
 NDCTL_EXPORT unsigned long long ndctl_mapping_get_length(struct ndctl_mapping *mapping)
 {
 	return mapping->length;
+}
+
+NDCTL_EXPORT int ndctl_mapping_get_position(struct ndctl_mapping *mapping)
+{
+	return mapping->position;
 }
 
 NDCTL_EXPORT struct ndctl_region *ndctl_mapping_get_region(
