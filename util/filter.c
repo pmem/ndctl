@@ -130,6 +130,37 @@ struct ndctl_bus *util_bus_filter_by_dimm(struct ndctl_bus *bus,
 	return NULL;
 }
 
+struct ndctl_bus *util_bus_filter_by_region(struct ndctl_bus *bus,
+		const char *ident)
+{
+	struct ndctl_region *region;
+
+	if (!ident || strcmp(ident, "all") == 0)
+		return bus;
+
+	ndctl_region_foreach(bus, region)
+		if (util_region_filter(region, ident))
+			return bus;
+	return NULL;
+}
+
+
+struct ndctl_bus *util_bus_filter_by_namespace(struct ndctl_bus *bus,
+		const char *ident)
+{
+	struct ndctl_region *region;
+	struct ndctl_namespace *ndns;
+
+	if (!ident || strcmp(ident, "all") == 0)
+		return bus;
+
+	ndctl_region_foreach(bus, region)
+		ndctl_namespace_foreach(region, ndns)
+			if (util_namespace_filter(ndns, ident))
+				return bus;
+	return NULL;
+}
+
 struct ndctl_region *util_region_filter_by_dimm(struct ndctl_region *region,
 		const char *ident)
 {
@@ -142,6 +173,65 @@ struct ndctl_region *util_region_filter_by_dimm(struct ndctl_region *region,
 		if (util_dimm_filter(dimm, ident))
 			return region;
 
+	return NULL;
+}
+
+struct ndctl_dimm *util_dimm_filter_by_region(struct ndctl_dimm *dimm,
+		const char *ident)
+{
+	struct ndctl_bus *bus = ndctl_dimm_get_bus(dimm);
+	struct ndctl_region *region;
+	struct ndctl_dimm *check;
+
+	if (!ident || strcmp(ident, "all") == 0)
+		return dimm;
+
+	ndctl_region_foreach(bus, region) {
+		if (!util_region_filter(region, ident))
+			continue;
+		ndctl_dimm_foreach_in_region(region, check)
+			if (check == dimm)
+				return dimm;
+	}
+
+	return NULL;
+}
+
+struct ndctl_dimm *util_dimm_filter_by_namespace(struct ndctl_dimm *dimm,
+		const char *ident)
+{
+	struct ndctl_bus *bus = ndctl_dimm_get_bus(dimm);
+	struct ndctl_namespace *ndns;
+	struct ndctl_region *region;
+	struct ndctl_dimm *check;
+
+	if (!ident || strcmp(ident, "all") == 0)
+		return dimm;
+
+	ndctl_region_foreach(bus, region) {
+		ndctl_namespace_foreach(region, ndns) {
+			if (!util_namespace_filter(ndns, ident))
+				continue;
+			ndctl_dimm_foreach_in_region(region, check)
+				if (check == dimm)
+					return dimm;
+		}
+	}
+
+	return NULL;
+}
+
+struct ndctl_region *util_region_filter_by_namespace(struct ndctl_region *region,
+		const char *ident)
+{
+	struct ndctl_namespace *ndns;
+
+	if (!ident || strcmp(ident, "all") == 0)
+		return region;
+
+	ndctl_namespace_foreach(region, ndns)
+		if (util_namespace_filter(ndns, ident))
+			return region;
 	return NULL;
 }
 

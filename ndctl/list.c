@@ -344,7 +344,9 @@ int cmd_list(int argc, const char **argv, void *ctx)
 		struct ndctl_dimm *dimm;
 
 		if (!util_bus_filter(bus, param.bus)
-				|| !util_bus_filter_by_dimm(bus, param.dimm))
+				|| !util_bus_filter_by_dimm(bus, param.dimm)
+				|| !util_bus_filter_by_region(bus, param.region)
+				|| !util_bus_filter_by_namespace(bus, param.namespace))
 			continue;
 
 		if (list.buses) {
@@ -371,7 +373,11 @@ int cmd_list(int argc, const char **argv, void *ctx)
 			if (!list.dimms)
 				break;
 
-			if (!util_dimm_filter(dimm, param.dimm))
+			if (!util_dimm_filter(dimm, param.dimm)
+					|| !util_dimm_filter_by_region(dimm,
+						param.region)
+					|| !util_dimm_filter_by_namespace(dimm,
+						param.namespace))
 				continue;
 
 			if (!list.idle && !ndctl_dimm_is_enabled(dimm))
@@ -425,7 +431,9 @@ int cmd_list(int argc, const char **argv, void *ctx)
 
 			if (!util_region_filter(region, param.region)
 					|| !util_region_filter_by_dimm(region,
-						param.dimm))
+						param.dimm)
+					|| !util_region_filter_by_namespace(region,
+						param.namespace))
 				continue;
 
 			if (type && ndctl_region_get_type(region) != type)
