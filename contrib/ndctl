@@ -103,6 +103,9 @@ __ndctlcomp()
 __ndctl_get_buses()
 {
 	local opts="--buses $*"
+	[ -n "$dimm_filter" ] && opts="$opts --dimm=$dimm_filter"
+	[ -n "$reg_filter" ] && opts="$opts --region=$reg_filter"
+	[ -n "$ns_filter" ] && opts="$opts --namespace=$ns_filter"
 	echo "$(ndctl list $opts | grep -E "^\s*\"provider\":" | cut -d\" -f4)"
 }
 
@@ -110,6 +113,8 @@ __ndctl_get_regions()
 {
 	local opts="--regions $*"
 	[ -n "$bus_filter" ] && opts="$opts --bus=$bus_filter"
+	[ -n "$dimm_filter" ] && opts="$opts --dimm=$dimm_filter"
+	[ -n "$ns_filter" ] && opts="$opts --namespace=$ns_filter"
 	[ -n "$type_filter" ] && opts="$opts --type=$type_filter"
 	[ -n "$idle_filter" ] && opts="$opts --idle"
 	echo "$(ndctl list $opts | grep -E "^\s*\"dev\":" | cut -d\" -f4)"
@@ -119,7 +124,9 @@ __ndctl_get_ns()
 {
 	opts="--namespaces $*"
 	[ -n "$bus_filter" ] && opts="$opts --bus=$bus_filter"
-	[ -n "$reg_filter" ] && opts="$opts --bus=$reg_filter"
+	[ -n "$dimm_filter" ] && opts="$opts --dimm=$dimm_filter"
+	[ -n "$reg_filter" ] && opts="$opts --region=$reg_filter"
+	[ -n "$mode_filter" ] && opts="$opts --mode=$mode_filter"
 	[ -n "$type_filter" ] && opts="$opts --type=$type_filter"
 	[ -n "$idle_filter" ] && opts="$opts --idle"
 	echo "$(ndctl list $opts | grep -E "^\s*\"dev\":" | cut -d\" -f4)"
@@ -129,6 +136,8 @@ __ndctl_get_dimms()
 {
 	opts="--dimms $*"
 	[ -n "$bus_filter" ] && opts="$opts --bus=$bus_filter"
+	[ -n "$reg_filter" ] && opts="$opts --region=$reg_filter"
+	[ -n "$ns_filter" ] && opts="$opts --namespace=$ns_filter"
 	echo "$(ndctl list $opts | grep -E "^\s*\"dev\":" | cut -d\" -f4)"
 }
 
@@ -263,6 +272,8 @@ __ndctl_init_filters()
 {
 	bus_filter=''
 	reg_filter=''
+	ns_filter=''
+	dimm_filter=''
 	type_filter=''
 	idle_filter=''
 	mode_filter=''
@@ -280,6 +291,19 @@ __ndctl_init_filters()
 			local regions=$(__ndctl_get_regions -i)
 			[[ "$regions" == *"$reg_filter"* ]] || reg_filter=''
 		fi
+		if [[ "$__word" =~ --namespace=(.*) ]]; then
+			ns_filter="${BASH_REMATCH[1]}"
+			# lets make sure this is in the list of namespaces
+			local nss=$(__ndctl_get_ns -i)
+			[[ "$nss" == *"$ns_filter"* ]] || ns_filter=''
+		fi
+		if [[ "$__word" =~ --dimm=(.*) ]]; then
+			dimm_filter="${BASH_REMATCH[1]}"
+			# lets make sure this is in the list of dimms
+			local dimms=$(__ndctl_get_dimms)
+			[[ "$dimms" == *"$dimm_filter"* ]] || dimm_filter=''
+		fi
+
 		if [[ "$__word" =~ --idle ]]; then
 			idle_filter="1"
 		fi
