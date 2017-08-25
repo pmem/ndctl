@@ -141,6 +141,17 @@ __ndctl_get_dimms()
 	echo "$(ndctl list $opts | grep -E "^\s*\"dev\":" | cut -d\" -f4)"
 }
 
+__ndctl_get_sector_sizes()
+{
+	if [[ "$mode_filter" == @(raw|memory) ]]; then
+		echo "512 4096"
+	elif [[ "$mode_filter" == @(dax) ]]; then
+		return
+	else
+		echo "512 520 528 4096 4104 4160 4224"
+	fi
+}
+
 __ndctl_file_comp()
 {
 	local cur="$1"
@@ -181,6 +192,9 @@ __ndctl_comp_options()
 			if [[ "$type_filter" == "blk" ]]; then
 				opts="raw sector"
 			fi
+			;;
+		--sector-size)
+			opts=$(__ndctl_get_sector_sizes)
 			;;
 		--map)
 			opts="mem dev"
