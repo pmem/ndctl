@@ -264,6 +264,17 @@ __ndctl_comp_non_option_args()
 	__ndctlcomp "$opts" "$cur"
 }
 
+__ndctl_add_special_opts()
+{
+	local subcmd=$1
+
+	case $subcmd in
+	create-namespace)
+		opts="$opts --no-autolabel"
+		;;
+	esac
+}
+
 __ndctl_prev_skip_opts ()
 {
 	local i cmd_ cmds_
@@ -357,6 +368,7 @@ __ndctl_main()
 		# List long option names
 		if [[ $cur == --* ]];  then
 			opts=$($cmd $subcmd --list-opts)
+			__ndctl_add_special_opts "$subcmd"
 			__ndctlcomp "$opts" "$cur"
 			__ndctl_comp_options "$cur"
 		else
