@@ -34,6 +34,63 @@
 #include "hpe1.h"
 #include "msft.h"
 
+/**
+ * struct ndctl_dimm - memory device as identified by NFIT
+ * @module: kernel module (libnvdimm)
+ * @handle: NFIT-handle value
+ * @major: /dev/nmemX major character device number
+ * @minor: /dev/nmemX minor character device number
+ * @phys_id: SMBIOS physical id
+ * @vendor_id: hardware component vendor
+ * @device_id: hardware device id
+ * @revision_id: hardware revision id
+ * @node: system node-id
+ * @socket: socket-id in the node
+ * @imc: memory-controller-id in the socket
+ * @channel: channel-id in the memory-controller
+ * @dimm: dimm-id in the channel
+ * @formats: number of support interfaces
+ * @format: array of format interface code numbers
+ */
+struct ndctl_dimm {
+	struct kmod_module *module;
+	struct ndctl_bus *bus;
+	struct ndctl_smart_ops *smart_ops;
+	unsigned int handle, major, minor, serial;
+	unsigned short phys_id;
+	unsigned short vendor_id;
+	unsigned short device_id;
+	unsigned short revision_id;
+	unsigned short subsystem_vendor_id;
+	unsigned short subsystem_device_id;
+	unsigned short subsystem_revision_id;
+	unsigned short manufacturing_date;
+	unsigned char manufacturing_location;
+	unsigned long dsm_family;
+	unsigned long dsm_mask;
+	char *unique_id;
+	char *dimm_path;
+	char *dimm_buf;
+	int health_eventfd;
+	int buf_len;
+	int id;
+	union dimm_flags {
+		unsigned long flags;
+		struct {
+			unsigned int f_map:1;
+			unsigned int f_arm:1;
+			unsigned int f_save:1;
+			unsigned int f_flush:1;
+			unsigned int f_smart:1;
+			unsigned int f_restore:1;
+			unsigned int f_notify:1;
+		};
+	} flags;
+	struct list_node list;
+	int formats;
+	int format[0];
+};
+
 #define SZ_16M 0x01000000
 
 enum {

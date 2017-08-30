@@ -17,6 +17,7 @@ libndctl_la_SOURCES =\
 	../../util/log.h \
 	../../util/sysfs.c \
 	../../util/sysfs.h \
+	dimm.c \
 	libndctl.c
 
 libndctl_la_LIBADD =\
