@@ -34,6 +34,15 @@
 #include "hpe1.h"
 #include "msft.h"
 
+struct nvdimm_data {
+	struct ndctl_cmd *cmd_read;
+	void *data;
+	unsigned long config_size;
+	size_t nslabel_size;
+	int nsindex_size;
+	int ns_current, ns_next;
+};
+
 /**
  * struct ndctl_dimm - memory device as identified by NFIT
  * @module: kernel module (libnvdimm)
@@ -56,6 +65,7 @@ struct ndctl_dimm {
 	struct kmod_module *module;
 	struct ndctl_bus *bus;
 	struct ndctl_smart_ops *smart_ops;
+	struct nvdimm_data ndd;
 	unsigned int handle, major, minor, serial;
 	unsigned short phys_id;
 	unsigned short vendor_id;

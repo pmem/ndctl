@@ -114,7 +114,10 @@ global:
 	ndctl_cmd_smart_threshold_get_spares;
 	ndctl_dimm_zero_labels;
 	ndctl_dimm_read_labels;
+	ndctl_dimm_validate_labels;
+	ndctl_dimm_init_labels;
 	ndctl_dimm_get_available_labels;
+	ndctl_dimm_sizeof_namespace_label;
 	ndctl_region_get_first;
 	ndctl_region_get_next;
 	ndctl_region_get_id;

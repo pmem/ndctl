@@ -12,6 +12,7 @@
  */
 #ifndef __NDCTL_NAMESPACE_H__
 #define __NDCTL_NAMESPACE_H__
+#include <sys/types.h>
 #include <util/size.h>
 #include <ccan/endian/endian.h>
 #include <ccan/short_types/short_types.h>

@@ -560,6 +560,7 @@ static void free_dimm(struct ndctl_dimm *dimm)
 		kmod_module_unref(dimm->module);
 	if (dimm->health_eventfd > -1)
 		close(dimm->health_eventfd);
+	ndctl_cmd_unref(dimm->ndd.cmd_read);
 	free(dimm);
 }
 
