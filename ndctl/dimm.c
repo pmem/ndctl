@@ -24,58 +24,10 @@
 #include <json-c/json.h>
 #include <util/fletcher.h>
 #include <ndctl/libndctl.h>
+#include <ndctl/namespace.h>
 #include <util/parse-options.h>
 #include <ccan/minmax/minmax.h>
-#include <ccan/short_types/short_types.h>
-#include <ccan/endian/endian.h>
 #include <ccan/array_size/array_size.h>
-
-enum {
-	NSINDEX_SIG_LEN = 16,
-	NSINDEX_ALIGN = 256,
-	NSINDEX_SEQ_MASK = 0x3,
-	NSLABEL_UUID_LEN = 16,
-	NSLABEL_NAME_LEN = 64,
-};
-
-struct namespace_index {
-	char sig[NSINDEX_SIG_LEN];
-	u8 flags[3];
-	u8 labelsize;
-	le32 seq;
-	le64 myoff;
-	le64 mysize;
-	le64 otheroff;
-	le64 labeloff;
-	le32 nslot;
-	le16 major;
-	le16 minor;
-	le64 checksum;
-	char free[0];
-};
-
-struct namespace_label {
-	char uuid[NSLABEL_UUID_LEN];
-	char name[NSLABEL_NAME_LEN];
-	le32 flags;
-	le16 nlabel;
-	le16 position;
-	le64 isetcookie;
-	le64 lbasize;
-	le64 dpa;
-	le64 rawsize;
-	le32 slot;
-	/*
-	 * Accessing fields past this point should be gated by a
-	 * namespace_label_has() check.
-	 */
-	u8 align;
-	u8 reserved[3];
-	char type_guid[NSLABEL_UUID_LEN];
-	char abstraction_guid[NSLABEL_UUID_LEN];
-	u8 reserved2[88];
-	le64 checksum;
-};
 
 struct nvdimm_data {
 	struct ndctl_dimm *dimm;

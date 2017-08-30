@@ -28,7 +28,6 @@
 #include <util/parse-options.h>
 #include <ccan/minmax/minmax.h>
 #include <ccan/array_size/array_size.h>
-#include "check.h"
 
 #ifdef HAVE_NDCTL_H
 #include <linux/ndctl.h>
@@ -836,13 +835,15 @@ static int namespace_reconfig(struct ndctl_region *region,
 	return setup_namespace(region, ndns, &p);
 }
 
+int namespace_check(struct ndctl_namespace *ndns, bool verbose, bool force,
+		bool repair);
+
 static int do_xaction_namespace(const char *namespace,
 		enum namespace_action action, struct ndctl_ctx *ctx)
 {
 	struct ndctl_namespace *ndns, *_n;
 	int rc = -ENXIO, success = 0;
 	struct ndctl_region *region;
-	struct check_opts opts;
 	const char *ndns_name;
 	struct ndctl_bus *bus;
 
@@ -898,10 +899,8 @@ static int do_xaction_namespace(const char *namespace,
 					rc = namespace_destroy(region, ndns);
 					break;
 				case ACTION_CHECK:
-					opts.verbose = verbose;
-					opts.repair = repair;
-					opts.force = force;
-					rc = namespace_check(ndns, &opts);
+					rc = namespace_check(ndns, verbose,
+							force, repair);
 					if (rc < 0)
 						return rc;
 					break;

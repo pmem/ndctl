@@ -36,6 +36,7 @@
 
 #include <util/sysfs.h>
 #include <ndctl/libndctl.h>
+#include <ndctl/namespace.h>
 #include <daxctl/libdaxctl.h>
 #include "private.h"
 
@@ -55,7 +56,7 @@ static uuid_t null_uuid;
  */
 NDCTL_EXPORT size_t ndctl_sizeof_namespace_index(void)
 {
-	return sizeof_namespace_index();
+	return ALIGN(sizeof(struct namespace_index), NSINDEX_ALIGN);
 }
 
 /**
@@ -71,7 +72,8 @@ NDCTL_EXPORT size_t ndctl_min_namespace_size(void)
  */
 NDCTL_EXPORT size_t ndctl_sizeof_namespace_label(void)
 {
-	return sizeof(struct namespace_label);
+	/* TODO: v1.2 label support */
+	return offsetof(struct namespace_label, type_guid);
 }
 
 struct ndctl_ctx;

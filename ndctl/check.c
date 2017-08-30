@@ -30,17 +30,59 @@
 #include <util/bitmap.h>
 #include <util/fletcher.h>
 #include <ndctl/libndctl.h>
+#include <ndctl/namespace.h>
 #include <ccan/endian/endian.h>
 #include <ccan/minmax/minmax.h>
 #include <ccan/array_size/array_size.h>
 #include <ccan/short_types/short_types.h>
-#include "check.h"
 
 #ifdef HAVE_NDCTL_H
 #include <linux/ndctl.h>
 #else
 #include <ndctl.h>
 #endif
+
+struct check_opts {
+	bool verbose;
+	bool force;
+	bool repair;
+};
+
+struct btt_chk {
+	char *path;
+	int fd;
+	uuid_t parent_uuid;
+	unsigned long long rawsize;
+	unsigned long long nlba;
+	int start_off;
+	int num_arenas;
+	long sys_page_size;
+	struct arena_info *arena;
+	struct check_opts *opts;
+	struct log_ctx ctx;
+};
+
+struct arena_info {
+	struct arena_map map;
+	u64 size;	/* Total bytes for this arena */
+	u64 external_lba_start;
+	u32 internal_nlba;
+	u32 internal_lbasize;
+	u32 external_nlba;
+	u32 external_lbasize;
+	u32 nfree;
+	u16 version_major;
+	u16 version_minor;
+	u64 nextoff;
+	u64 infooff;
+	u64 dataoff;
+	u64 mapoff;
+	u64 logoff;
+	u64 info2off;
+	u32 flags;
+	int num;
+	struct btt_chk *bttc;
+};
 
 static sigjmp_buf sj_env;
 
@@ -922,9 +964,15 @@ static int btt_recover_first_sb(struct btt_chk *bttc)
 	return rc;
 }
 
-int namespace_check(struct ndctl_namespace *ndns, struct check_opts *opts)
+int namespace_check(struct ndctl_namespace *ndns, bool verbose, bool force,
+		bool repair)
 {
 	const char *devname = ndctl_namespace_get_devname(ndns);
+	struct check_opts __opts = {
+		.verbose = verbose,
+		.force = force,
+		.repair = repair,
+	}, *opts = &__opts;
 	int raw_mode, rc, disabled_flag = 0, open_flags;
 	struct btt_sb *btt_sb;
 	struct btt_chk *bttc;

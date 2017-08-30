@@ -1,0 +1,162 @@
+/*
+ * Copyright (c) 2014-2017, Intel Corporation.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU Lesser General Public License,
+ * version 2.1, as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
+ * more details.
+ */
+#ifndef __NDCTL_NAMESPACE_H__
+#define __NDCTL_NAMESPACE_H__
+#include <util/size.h>
+#include <ccan/endian/endian.h>
+#include <ccan/short_types/short_types.h>
+
+enum {
+	NSINDEX_SIG_LEN = 16,
+	NSINDEX_ALIGN = 256,
+	NSINDEX_SEQ_MASK = 0x3,
+	NSLABEL_UUID_LEN = 16,
+	NSLABEL_NAMESPACE_MIN_SIZE = SZ_16M,
+	NSLABEL_NAME_LEN = 64,
+};
+
+/**
+ * struct namespace_index - label set superblock
+ * @sig: NAMESPACE_INDEX\0
+ * @flags: placeholder
+ * @seq: sequence number for this index
+ * @myoff: offset of this index in label area
+ * @mysize: size of this index struct
+ * @otheroff: offset of other index
+ * @labeloff: offset of first label slot
+ * @nslot: total number of label slots
+ * @major: label area major version
+ * @minor: label area minor version
+ * @checksum: fletcher64 of all fields
+ * @free[0]: bitmap, nlabel bits
+ *
+ * The size of free[] is rounded up so the total struct size is a
+ * multiple of NSINDEX_ALIGN bytes.  Any bits this allocates beyond
+ * nlabel bits must be zero.
+ */
+struct namespace_index {
+	char sig[NSINDEX_SIG_LEN];
+	u8 flags[3];
+	u8 labelsize;
+	le32 seq;
+	le64 myoff;
+	le64 mysize;
+	le64 otheroff;
+	le64 labeloff;
+	le32 nslot;
+	le16 major;
+	le16 minor;
+	le64 checksum;
+	char free[0];
+};
+
+/**
+ * struct namespace_label - namespace superblock
+ * @uuid: UUID per RFC 4122
+ * @name: optional name (NULL-terminated)
+ * @flags: see NSLABEL_FLAG_*
+ * @nlabel: num labels to describe this ns
+ * @position: labels position in set
+ * @isetcookie: interleave set cookie
+ * @lbasize: LBA size in bytes or 0 for pmem
+ * @dpa: DPA of NVM range on this DIMM
+ * @rawsize: size of namespace
+ * @slot: slot of this label in label area
+ */
+struct namespace_label {
+	char uuid[NSLABEL_UUID_LEN];
+	char name[NSLABEL_NAME_LEN];
+	le32 flags;
+	le16 nlabel;
+	le16 position;
+	le64 isetcookie;
+	le64 lbasize;
+	le64 dpa;
+	le64 rawsize;
+	le32 slot;
+	/*
+	 * Accessing fields past this point should be gated by a
+	 * namespace_label_has() check.
+	 */
+	u8 align;
+	u8 reserved[3];
+	char type_guid[NSLABEL_UUID_LEN];
+	char abstraction_guid[NSLABEL_UUID_LEN];
+	u8 reserved2[88];
+	le64 checksum;
+};
+
+#define BTT_SIG_LEN 16
+#define BTT_SIG "BTT_ARENA_INFO\0"
+#define MAP_TRIM_SHIFT 31
+#define MAP_ERR_SHIFT 30
+#define MAP_LBA_MASK (~((1 << MAP_TRIM_SHIFT) | (1 << MAP_ERR_SHIFT)))
+#define MAP_ENT_NORMAL 0xC0000000
+#define ARENA_MIN_SIZE (1UL << 24)	/* 16 MB */
+#define ARENA_MAX_SIZE (1ULL << 39)	/* 512 GB */
+#define BTT_INFO_SIZE 4096
+#define IB_FLAG_ERROR_MASK 0x00000001
+
+#define BTT_NUM_OFFSETS 2
+#define BTT1_START_OFFSET 4096
+#define BTT2_START_OFFSET 0
+
+struct log_entry {
+	le32 lba;
+	le32 old_map;
+	le32 new_map;
+	le32 seq;
+	le64 padding[2];
+};
+
+struct btt_sb {
+	u8 signature[BTT_SIG_LEN];
+	u8 uuid[16];
+	u8 parent_uuid[16];
+	le32 flags;
+	le16 version_major;
+	le16 version_minor;
+	le32 external_lbasize;
+	le32 external_nlba;
+	le32 internal_lbasize;
+	le32 internal_nlba;
+	le32 nfree;
+	le32 infosize;
+	le64 nextoff;
+	le64 dataoff;
+	le64 mapoff;
+	le64 logoff;
+	le64 info2off;
+	u8 padding[3968];
+	le64 checksum;
+};
+
+struct free_entry {
+	u32 block;
+	u8 sub;
+	u8 seq;
+};
+
+struct arena_map {
+	struct btt_sb *info;
+	size_t info_len;
+	void *data;
+	size_t data_len;
+	u32 *map;
+	size_t map_len;
+	struct log_entry *log;
+	size_t log_len;
+	struct btt_sb *info2;
+	size_t info2_len;
+};
+#endif /* __NDCTL_NAMESPACE_H__ */
