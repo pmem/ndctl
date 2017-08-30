@@ -39,7 +39,6 @@ struct nvdimm_data {
 	void *data;
 	unsigned long config_size;
 	size_t nslabel_size;
-	int nsindex_size;
 	int ns_current, ns_next;
 };
 

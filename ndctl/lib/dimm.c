@@ -13,6 +13,7 @@
 #include <ndctl/namespace.h>
 #include <ndctl/libndctl.h>
 #include <util/fletcher.h>
+#include <util/bitmap.h>
 #include <util/sysfs.h>
 #include <stdlib.h>
 #include "private.h"
@@ -65,12 +66,16 @@ static unsigned int sizeof_namespace_label(struct nvdimm_data *ndd)
 	return ndctl_dimm_sizeof_namespace_label(to_dimm(ndd));
 }
 
+static int nvdimm_num_label_slots(struct nvdimm_data *ndd)
+{
+	return ndd->config_size / (sizeof_namespace_label(ndd) + 1);
+}
+
 static unsigned int sizeof_namespace_index(struct nvdimm_data *ndd)
 {
-	u32 index_span;
-
-	if (ndd->nsindex_size)
-		return ndd->nsindex_size;
+	u32 nslot, space, size;
+	struct ndctl_dimm *dimm = to_dimm(ndd);
+	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
 
 	/*
 	 * The minimum index space is 512 bytes, with that amount of
@@ -80,16 +85,17 @@ static unsigned int sizeof_namespace_index(struct nvdimm_data *ndd)
 	 * starts to waste space at larger config_sizes, but it's
 	 * unlikely we'll ever see anything but 128K.
 	 */
-	index_span = ndd->config_size / (sizeof_namespace_label(ndd) + 1);
-	index_span /= NSINDEX_ALIGN * 2;
-	ndd->nsindex_size = index_span * NSINDEX_ALIGN;
+	nslot = nvdimm_num_label_slots(ndd);
+	space = ndd->config_size - nslot * sizeof_namespace_label(ndd);
+	size = ALIGN(sizeof(struct namespace_index) + DIV_ROUND_UP(nslot, 8),
+			NSINDEX_ALIGN) * 2;
+	if (size <= space)
+		return size / 2;
 
-	return ndd->nsindex_size;
-}
-
-static int nvdimm_num_label_slots(struct nvdimm_data *ndd)
-{
-	return ndd->config_size / (sizeof_namespace_label(ndd) + 1);
+	err(ctx, "%s: label area (%ld) too small to host (%d byte) labels\n",
+			ndctl_dimm_get_devname(dimm), ndd->config_size,
+			sizeof_namespace_label(ndd));
+	return 0;
 }
 
 static struct namespace_index *to_namespace_index(struct nvdimm_data *ndd,
@@ -356,7 +362,6 @@ static void init_ndd(struct nvdimm_data *ndd, struct ndctl_cmd *cmd_read)
 	ndctl_cmd_ref(cmd_read);
 	ndd->data = cmd_read->iter.total_buf;
 	ndd->config_size = cmd_read->iter.total_xfer;
-	ndd->nsindex_size = 0;
 	ndd->ns_current = -1;
 	ndd->ns_next = -1;
 }
