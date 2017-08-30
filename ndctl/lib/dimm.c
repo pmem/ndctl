@@ -15,38 +15,56 @@
 #include <stdlib.h>
 #include "private.h"
 
+NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_read_labels(struct ndctl_dimm *dimm)
+{
+        struct ndctl_bus *bus = ndctl_dimm_get_bus(dimm);
+        struct ndctl_cmd *cmd_size, *cmd_read;
+        int rc;
+
+        rc = ndctl_bus_wait_probe(bus);
+        if (rc < 0)
+                return NULL;
+
+        cmd_size = ndctl_dimm_cmd_new_cfg_size(dimm);
+        if (!cmd_size)
+                return NULL;
+        rc = ndctl_cmd_submit(cmd_size);
+        if (rc || ndctl_cmd_get_firmware_status(cmd_size))
+                goto out_size;
+
+        cmd_read = ndctl_dimm_cmd_new_cfg_read(cmd_size);
+        if (!cmd_read)
+                goto out_size;
+        rc = ndctl_cmd_submit(cmd_read);
+        if (rc || ndctl_cmd_get_firmware_status(cmd_read))
+                goto out_read;
+
+        ndctl_cmd_unref(cmd_size);
+        return cmd_read;
+
+ out_read:
+        ndctl_cmd_unref(cmd_read);
+ out_size:
+        ndctl_cmd_unref(cmd_size);
+        return NULL;
+}
+
 NDCTL_EXPORT int ndctl_dimm_zero_labels(struct ndctl_dimm *dimm)
 {
-	struct ndctl_cmd *cmd_size, *cmd_read, *cmd_write;
 	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
-	struct ndctl_bus *bus = ndctl_dimm_get_bus(dimm);
+	struct ndctl_cmd *cmd_read, *cmd_write;
 	int rc;
 
-	rc = ndctl_bus_wait_probe(bus);
-	if (rc < 0)
-		return rc;
+	cmd_read = ndctl_dimm_read_labels(dimm);
+	if (!cmd_read)
+		return -ENXIO;
 
 	if (ndctl_dimm_is_active(dimm)) {
 		dbg(ctx, "%s: regions active, abort label write\n",
 			ndctl_dimm_get_devname(dimm));
-		return -EBUSY;
-	}
-
-	cmd_size = ndctl_dimm_cmd_new_cfg_size(dimm);
-	if (!cmd_size)
-		return -ENOTTY;
-	rc = ndctl_cmd_submit(cmd_size);
-	if (rc || ndctl_cmd_get_firmware_status(cmd_size))
-		goto out_size;
-
-	cmd_read = ndctl_dimm_cmd_new_cfg_read(cmd_size);
-	if (!cmd_read) {
-		rc = -ENOTTY;
-		goto out_size;
-	}
-	rc = ndctl_cmd_submit(cmd_read);
-	if (rc || ndctl_cmd_get_firmware_status(cmd_read))
+		rc = -EBUSY;
 		goto out_read;
+	}
 
 	cmd_write = ndctl_dimm_cmd_new_cfg_write(cmd_read);
 	if (!cmd_write) {
@@ -77,8 +95,6 @@ NDCTL_EXPORT int ndctl_dimm_zero_labels(struct ndctl_dimm *dimm)
 	ndctl_cmd_unref(cmd_write);
  out_read:
 	ndctl_cmd_unref(cmd_read);
- out_size:
-	ndctl_cmd_unref(cmd_size);
 
 	return rc;
 }

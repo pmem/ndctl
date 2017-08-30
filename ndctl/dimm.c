@@ -358,40 +358,6 @@ static int rw_bin(FILE *f, struct ndctl_cmd *cmd, ssize_t size, int rw)
 	return 0;
 }
 
-static struct ndctl_cmd *read_labels(struct ndctl_dimm *dimm)
-{
-	struct ndctl_bus *bus = ndctl_dimm_get_bus(dimm);
-	struct ndctl_cmd *cmd_size, *cmd_read;
-	int rc;
-
-	rc = ndctl_bus_wait_probe(bus);
-	if (rc < 0)
-		return NULL;
-
-	cmd_size = ndctl_dimm_cmd_new_cfg_size(dimm);
-	if (!cmd_size)
-		return NULL;
-	rc = ndctl_cmd_submit(cmd_size);
-	if (rc || ndctl_cmd_get_firmware_status(cmd_size))
-		goto out_size;
-
-	cmd_read = ndctl_dimm_cmd_new_cfg_read(cmd_size);
-	if (!cmd_read)
-		goto out_size;
-	rc = ndctl_cmd_submit(cmd_read);
-	if (rc || ndctl_cmd_get_firmware_status(cmd_read))
-		goto out_read;
-
-	ndctl_cmd_unref(cmd_size);
-	return cmd_read;
-
- out_read:
-	ndctl_cmd_unref(cmd_read);
- out_size:
-	ndctl_cmd_unref(cmd_size);
-	return NULL;
-}
-
 static int action_write(struct ndctl_dimm *dimm, struct action_context *actx)
 {
 	struct ndctl_cmd *cmd_read, *cmd_write;
@@ -403,7 +369,7 @@ static int action_write(struct ndctl_dimm *dimm, struct action_context *actx)
 		return -EBUSY;
 	}
 
-	cmd_read = read_labels(dimm);
+	cmd_read = ndctl_dimm_read_labels(dimm);
 	if (!cmd_read)
 		return -ENXIO;
 
@@ -441,7 +407,7 @@ static int action_read(struct ndctl_dimm *dimm, struct action_context *actx)
 	ssize_t size;
 	int rc = 0;
 
-	cmd_read = read_labels(dimm);
+	cmd_read = ndctl_dimm_read_labels(dimm);
 	if (!cmd_read)
 		return -ENXIO;
 
@@ -794,7 +760,7 @@ static int __action_init(struct ndctl_dimm *dimm, int version, int chk_only)
 	int rc = 0, i;
 	ssize_t size;
 
-	cmd_read = read_labels(dimm);
+	cmd_read = ndctl_dimm_read_labels(dimm);
 	if (!cmd_read)
 		return -ENXIO;
 
