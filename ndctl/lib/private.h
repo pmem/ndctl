@@ -101,6 +101,8 @@ struct ndctl_dimm {
 	int format[0];
 };
 
+void region_flag_refresh(struct ndctl_region *region);
+
 /**
  * struct ndctl_ctx - library user context to find "nd" instances
  *

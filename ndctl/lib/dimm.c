@@ -422,14 +422,26 @@ static int write_label_index(struct ndctl_dimm *dimm,
 NDCTL_EXPORT int ndctl_dimm_init_labels(struct ndctl_dimm *dimm,
 		enum ndctl_namespace_version v)
 {
+	struct ndctl_bus *bus = ndctl_dimm_get_bus(dimm);
 	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
 	struct nvdimm_data *ndd = &dimm->ndd;
+	struct ndctl_region *region;
 	int i;
 
 	if (!ndd->cmd_read) {
 		err(ctx, "%s: needs to be initialized by ndctl_dimm_read_labels\n",
 				ndctl_dimm_get_devname(dimm));
 		return -EINVAL;
+	}
+
+	ndctl_region_foreach(bus, region) {
+		struct ndctl_dimm *match;
+
+		ndctl_dimm_foreach_in_region(region, match)
+			if (match == dimm) {
+				region_flag_refresh(region);
+				break;
+			}
 	}
 
 	for (i = 0; i < 2; i++) {

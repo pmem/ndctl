@@ -152,6 +152,7 @@ struct ndctl_region {
 	int btts_init;
 	int pfns_init;
 	int daxs_init;
+	int refresh_type;
 	unsigned long long size;
 	char *region_path;
 	char *region_buf;
@@ -2400,8 +2401,18 @@ NDCTL_EXPORT int ndctl_region_enable(struct ndctl_region *region)
 		return -ENXIO;
 	}
 
+	if (region->refresh_type) {
+		region->refresh_type = 0;
+		region_set_type(region, region->region_buf);
+	}
+
 	dbg(ctx, "%s: enabled\n", devname);
 	return 0;
+}
+
+void region_flag_refresh(struct ndctl_region *region)
+{
+	region->refresh_type = 1;
 }
 
 NDCTL_EXPORT void ndctl_region_cleanup(struct ndctl_region *region)
