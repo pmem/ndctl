@@ -1552,6 +1552,32 @@ static struct ndctl_dimm *ndctl_dimm_get_by_id(struct ndctl_bus *bus, unsigned i
 	return NULL;
 }
 
+static int region_set_type(struct ndctl_region *region, char *path)
+{
+	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
+	char buf[SYSFS_ATTR_SIZE];
+	int rc;
+
+	sprintf(path, "%s/nstype", region->region_path);
+	rc = sysfs_read_attr(ctx, path, buf);
+	if (rc < 0)
+		return rc;
+	region->nstype = strtoul(buf, NULL, 0);
+
+	sprintf(path, "%s/set_cookie", region->region_path);
+	if (region->nstype == ND_DEVICE_NAMESPACE_PMEM) {
+		rc = sysfs_read_attr(ctx, path, buf);
+		if (rc < 0)
+			return rc;
+		region->iset.cookie = strtoull(buf, NULL, 0);
+		dbg(ctx, "%s: iset-%#.16llx added\n",
+				ndctl_region_get_devname(region),
+				region->iset.cookie);
+	}
+
+	return 0;
+}
+
 static void *add_region(void *parent, int id, const char *region_base)
 {
 	char buf[SYSFS_ATTR_SIZE];
@@ -1575,6 +1601,7 @@ static void *add_region(void *parent, int id, const char *region_base)
 	list_head_init(&region->mappings);
 	list_head_init(&region->namespaces);
 	list_head_init(&region->stale_namespaces);
+	region->region_path = (char *) region_base;
 	region->bus = bus;
 	region->id = id;
 
@@ -1588,11 +1615,6 @@ static void *add_region(void *parent, int id, const char *region_base)
 		goto err_read;
 	region->num_mappings = strtoul(buf, NULL, 0);
 
-	sprintf(path, "%s/nstype", region_base);
-	if (sysfs_read_attr(ctx, path, buf) < 0)
-		goto err_read;
-	region->nstype = strtoul(buf, NULL, 0);
-
 	sprintf(path, "%s/nfit/range_index", region_base);
 	if (ndctl_bus_has_nfit(bus)) {
 		if (sysfs_read_attr(ctx, path, buf) < 0)
@@ -1600,15 +1622,6 @@ static void *add_region(void *parent, int id, const char *region_base)
 		region->range_index = strtoul(buf, NULL, 0);
 	} else
 		region->range_index = -1;
-
-	sprintf(path, "%s/set_cookie", region_base);
-	if (region->nstype == ND_DEVICE_NAMESPACE_PMEM) {
-		if (sysfs_read_attr(ctx, path, buf) < 0)
-			goto err_read;
-		region->iset.cookie = strtoull(buf, NULL, 0);
-		dbg(ctx, "region%d: iset-%#.16llx added\n", id,
-				region->iset.cookie);
-	}
 
 	sprintf(path, "%s/read_only", region_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
@@ -1619,6 +1632,9 @@ static void *add_region(void *parent, int id, const char *region_base)
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		goto err_read;
 	region->module = to_module(ctx, buf);
+
+	if (region_set_type(region, path) < 0)
+		goto err_read;
 
         region->region_buf = calloc(1, strlen(region_base) + 50);
         if (!region->region_buf)
