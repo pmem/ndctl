@@ -248,12 +248,6 @@ static int set_defaults(enum namespace_action mode)
 			error("invalid sector size: %s\n", param.sector_size);
 			rc = -EINVAL;
 		}
-
-		if (param.type && param.mode && strcmp(param.type, "pmem") == 0
-				&& strcmp(param.mode, "safe") != 0) {
-			error("'pmem' namespaces do not support setting 'sector size'\n");
-			rc = -EINVAL;
-		}
 	} else if (!param.reconfig
 			&& ((param.type && strcmp(param.type, "blk") == 0)
 				|| (param.mode
@@ -360,7 +354,7 @@ static int setup_namespace(struct ndctl_region *region,
 		try(ndctl_namespace, set_size, ndns, p->size);
 	}
 
-	if (ndctl_namespace_get_type(ndns) == ND_DEVICE_NAMESPACE_BLK)
+	if (p->sector_size && p->sector_size < UINT_MAX)
 		try(ndctl_namespace, set_sector_size, ndns, p->sector_size);
 
 	uuid_generate(uuid);
@@ -394,6 +388,13 @@ static int setup_namespace(struct ndctl_region *region,
 	} else if (p->mode == NDCTL_NS_MODE_SAFE) {
 		struct ndctl_btt *btt = ndctl_region_get_btt_seed(region);
 
+		/*
+		 * Handle the case of btt on a pmem namespace where the
+		 * pmem kernel support is pre-v1.2 namespace labels
+		 * support (does not support sector size settings).
+		 */
+		if (p->sector_size == UINT_MAX)
+			p->sector_size = 4096;
 		try(ndctl_btt, set_uuid, btt, uuid);
 		try(ndctl_btt, set_sector_size, btt, p->sector_size);
 		try(ndctl_btt, set_namespace, btt, ndns);
@@ -632,11 +633,23 @@ static int validate_namespace_options(struct ndctl_region *region,
 
 		if (btt)
 			p->sector_size = ndctl_btt_get_sector_size(btt);
-		else if (ndctl_namespace_get_type(ndns)
-				== ND_DEVICE_NAMESPACE_BLK)
+		else
 			p->sector_size = ndctl_namespace_get_sector_size(ndns);
-		else if (p->mode == NDCTL_NS_MODE_SAFE)
-				p->sector_size = 4096;
+	} else {
+		struct ndctl_namespace *seed;
+
+		seed = ndctl_region_get_namespace_seed(region);
+		if (ndctl_namespace_get_type(seed) == ND_DEVICE_NAMESPACE_BLK)
+			debug("%s: set_defaults() should preclude this?\n",
+				ndctl_region_get_devname(region));
+		/*
+		 * Pick a default sector size for a pmem namespace based
+		 * on what the kernel supports.
+		 */
+		if (ndctl_namespace_get_num_sector_sizes(seed) == 0)
+			p->sector_size = UINT_MAX;
+		else
+			p->sector_size = 512;
 	}
 
 	if (param.map) {
