@@ -952,7 +952,7 @@ OPT_STRING('i', "input", &param.infile, "input-file", \
 #define INIT_OPTIONS() \
 OPT_BOOLEAN('f', "force", &param.force, \
 		"force initialization even if existing index-block present"), \
-OPT_STRING('V', "--label-version", &param.labelversion, "version-number", \
+OPT_STRING('V', "label-version", &param.labelversion, "version-number", \
 	"namespace label specification version (default: 1.1)")
 
 static const struct option read_options[] = {
