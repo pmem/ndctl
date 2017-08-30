@@ -42,6 +42,7 @@ static struct parameters {
 	bool do_scan;
 	bool mode_default;
 	bool align_default;
+	bool autolabel;
 	const char *bus;
 	const char *map;
 	const char *type;
@@ -53,7 +54,9 @@ static struct parameters {
 	const char *reconfig;
 	const char *sector_size;
 	const char *align;
-} param;
+} param = {
+	.autolabel = true,
+};
 
 void builtin_xaction_namespace_reset(void)
 {
@@ -76,6 +79,7 @@ struct parsed_parameters {
 	unsigned long long size;
 	unsigned long sector_size;
 	unsigned long align;
+	bool autolabel;
 };
 
 #define debug(fmt, ...) \
@@ -111,7 +115,8 @@ OPT_STRING('t', "type", &param.type, "type", \
 	"specify the type of namespace to create 'pmem' or 'blk'"), \
 OPT_STRING('a', "align", &param.align, "align", \
 	"specify the namespace alignment in bytes (default: 2M)"), \
-OPT_BOOLEAN('f', "force", &force, "reconfigure namespace even if currently active")
+OPT_BOOLEAN('f', "force", &force, "reconfigure namespace even if currently active"), \
+OPT_BOOLEAN('L', "autolabel", &param.autolabel, "automatically initialize labels")
 
 #define CHECK_OPTIONS() \
 OPT_BOOLEAN('R', "repair", &repair, "perform metadata repairs"), \
@@ -675,6 +680,8 @@ static int validate_namespace_options(struct ndctl_region *region,
 		}
 	}
 
+	p->autolabel = param.autolabel;
+
 	return 0;
 }
 
@@ -810,6 +817,87 @@ static int namespace_destroy(struct ndctl_region *region,
 	return 0;
 }
 
+static int enable_labels(struct ndctl_region *region)
+{
+	int mappings = ndctl_region_get_mappings(region);
+	struct ndctl_cmd *cmd_read = NULL;
+	enum ndctl_namespace_version v;
+	struct ndctl_dimm *dimm;
+	int count;
+
+	/* no dimms => no labels */
+	if (!mappings)
+		return 0;
+
+	count = 0;
+	ndctl_dimm_foreach_in_region(region, dimm) {
+		if (!ndctl_dimm_is_cmd_supported(dimm, ND_CMD_GET_CONFIG_SIZE))
+			break;
+		if (!ndctl_dimm_is_cmd_supported(dimm, ND_CMD_GET_CONFIG_DATA))
+			break;
+		if (!ndctl_dimm_is_cmd_supported(dimm, ND_CMD_SET_CONFIG_DATA))
+			break;
+		count++;
+	}
+
+	/* all the dimms must support labeling */
+	if (count != mappings)
+		return 0;
+
+	ndctl_region_disable_invalidate(region);
+	count = 0;
+	ndctl_dimm_foreach_in_region(region, dimm)
+		if (ndctl_dimm_is_active(dimm)) {
+			count++;
+			break;
+		}
+
+	/* some of the dimms belong to multiple regions?? */
+	if (count)
+		goto out;
+
+	v = NDCTL_NS_VERSION_1_2;
+retry:
+	ndctl_dimm_foreach_in_region(region, dimm) {
+		int num_labels, avail;
+
+		ndctl_cmd_unref(cmd_read);
+		cmd_read = ndctl_dimm_read_labels(dimm);
+		if (!cmd_read)
+			continue;
+
+		num_labels = ndctl_dimm_init_labels(dimm, v);
+		if (num_labels < 0)
+			continue;
+
+		ndctl_dimm_disable(dimm);
+		ndctl_dimm_enable(dimm);
+
+		/*
+		 * If the kernel appears to not understand v1.2 labels,
+		 * try v1.1. Note, we increment avail by 1 to account
+		 * for the one free label that the kernel always
+		 * maintains for ongoing updates.
+		 */
+		avail = ndctl_dimm_get_available_labels(dimm) + 1;
+		if (num_labels != avail && v == NDCTL_NS_VERSION_1_2) {
+			v = NDCTL_NS_VERSION_1_1;
+			goto retry;
+		}
+
+	}
+	ndctl_cmd_unref(cmd_read);
+out:
+	ndctl_region_enable(region);
+	if (ndctl_region_get_nstype(region) != ND_DEVICE_NAMESPACE_PMEM) {
+		debug("%s: failed to initialize labels\n",
+				ndctl_region_get_devname(region));
+		return -ENXIO;
+	}
+
+	return 0;
+}
+
 static int namespace_reconfig(struct ndctl_region *region,
 		struct ndctl_namespace *ndns)
 {
@@ -823,6 +911,14 @@ static int namespace_reconfig(struct ndctl_region *region,
 	rc = namespace_destroy(region, ndns);
 	if (rc)
 		return rc;
+
+	/* check if we can enable labels on this region */
+	if (ndctl_region_get_nstype(region) == ND_DEVICE_NAMESPACE_IO
+			&& p.autolabel) {
+		rc = enable_labels(region);
+		if (rc)
+			return rc;
+	}
 
 	ndns = region_get_namespace(region);
 	if (!ndns || is_namespace_active(ndns)) {
