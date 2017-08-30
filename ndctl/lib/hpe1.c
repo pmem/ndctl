@@ -15,9 +15,9 @@
 #include <limits.h>
 #include <util/log.h>
 #include <ndctl/libndctl.h>
-#include "libndctl-private.h"
+#include "private.h"
 
-#include "ndctl-hpe1.h"
+#include "hpe1.h"
 
 #define CMD_HPE1(_c) ((_c)->hpe1)
 #define CMD_HPE1_SMART(_c) (CMD_HPE1(_c)->u.smart.data)

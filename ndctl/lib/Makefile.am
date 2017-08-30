@@ -12,7 +12,7 @@ lib_LTLIBRARIES = libndctl.la
 
 libndctl_la_SOURCES =\
 	libndctl.h \
-	libndctl-private.h \
+	private.h \
 	../../util/log.c \
 	../../util/log.h \
 	../../util/sysfs.c \
@@ -26,13 +26,13 @@ libndctl_la_LIBADD =\
 	$(KMOD_LIBS)
 
 if ENABLE_ARS
-libndctl_la_SOURCES += libndctl-ars.c
+libndctl_la_SOURCES += ars.c
 endif
 
 if ENABLE_SMART
-libndctl_la_SOURCES += libndctl-smart.c
-libndctl_la_SOURCES += libndctl-hpe1.c
-libndctl_la_SOURCES += libndctl-msft.c
+libndctl_la_SOURCES += smart.c
+libndctl_la_SOURCES += hpe1.c
+libndctl_la_SOURCES += msft.c
 endif
 
 EXTRA_DIST += libndctl.sym

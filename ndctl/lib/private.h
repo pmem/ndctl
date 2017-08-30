@@ -31,8 +31,8 @@
 #include <ndctl/libndctl.h>
 #include <ccan/endian/endian.h>
 #include <ccan/short_types/short_types.h>
-#include "ndctl-hpe1.h"
-#include "ndctl-msft.h"
+#include "hpe1.h"
+#include "msft.h"
 
 #define SZ_16M 0x01000000
 

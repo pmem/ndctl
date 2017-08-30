@@ -16,8 +16,8 @@
 #include <limits.h>
 #include <util/log.h>
 #include <ndctl/libndctl.h>
-#include "libndctl-private.h"
-#include "ndctl-msft.h"
+#include "private.h"
+#include "msft.h"
 
 #define CMD_MSFT(_c) ((_c)->msft)
 #define CMD_MSFT_SMART(_c) (CMD_MSFT(_c)->u.smart.data)

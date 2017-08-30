@@ -12,7 +12,7 @@
  */
 #include <stdlib.h>
 #include <ndctl/libndctl.h>
-#include "libndctl-private.h"
+#include "private.h"
 
 NDCTL_EXPORT struct ndctl_cmd *ndctl_bus_cmd_new_ars_cap(struct ndctl_bus *bus,
 		unsigned long long address, unsigned long long len)

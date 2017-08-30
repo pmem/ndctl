@@ -14,7 +14,7 @@
 #include <limits.h>
 #include <util/log.h>
 #include <ndctl/libndctl.h>
-#include "libndctl-private.h"
+#include "private.h"
 
 /*
  * Define the wrappers around the ndctl_smart_ops:

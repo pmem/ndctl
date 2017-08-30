@@ -37,7 +37,7 @@
 #include <util/sysfs.h>
 #include <ndctl/libndctl.h>
 #include <daxctl/libdaxctl.h>
-#include "libndctl-private.h"
+#include "private.h"
 
 static uuid_t null_uuid;
 
