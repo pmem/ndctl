@@ -3549,8 +3549,15 @@ NDCTL_EXPORT int ndctl_namespace_set_sector_size(struct ndctl_namespace *ndns,
 	char sector_str[40];
 	int i;
 
-	if (ndns->lbasize.num == 0)
-		return -ENXIO;
+	for (i = 0; i < ndns->lbasize.num; i++)
+		if (ndns->lbasize.supported[i] == sector_size)
+			break;
+
+	if (i > ndns->lbasize.num) {
+		err(ctx, "%s: unsupported sector size %d\n",
+				ndctl_namespace_get_devname(ndns), sector_size);
+		return -EOPNOTSUPP;
+	}
 
 	if (snprintf(path, len, "%s/sector_size", ndns->ndns_path) >= len) {
 		err(ctx, "%s: buffer too small!\n",
@@ -3563,9 +3570,8 @@ NDCTL_EXPORT int ndctl_namespace_set_sector_size(struct ndctl_namespace *ndns,
 	if (rc != 0)
 		return rc;
 
-	for (i = 0; i < ndns->lbasize.num; i++)
-		if (ndns->lbasize.supported[i] == sector_size)
-			ndns->lbasize.select = i;
+	ndns->lbasize.select = i;
+
 	return 0;
 }
 
