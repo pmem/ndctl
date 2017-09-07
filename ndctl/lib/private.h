@@ -127,6 +127,36 @@ struct ndctl_ctx {
 };
 
 /**
+ * struct ndctl_bus - a nfit table instance
+ * @major: control character device major number
+ * @minor: control character device minor number
+ * @revision: NFIT table revision number
+ * @provider: identifier for the source of the NFIT table
+ *
+ * The expectation is one NFIT/nd bus per system provided by platform
+ * firmware (for example @provider == "ACPI.NFIT").  However, the
+ * nfit_test module provides multiple test busses with provider names of
+ * the format "nfit_test.N"
+ */
+struct ndctl_bus {
+	struct ndctl_ctx *ctx;
+	unsigned int id, major, minor, revision;
+	char *provider;
+	struct list_head dimms;
+	struct list_head regions;
+	struct list_node list;
+	int dimms_init;
+	int regions_init;
+	int has_nfit;
+	char *bus_path;
+	char *bus_buf;
+	size_t buf_len;
+	char *wait_probe_path;
+	unsigned long dsm_mask;
+	unsigned long nfit_dsm_mask;
+};
+
+/**
  * struct ndctl_cmd - device-specific-method (_DSM ioctl) container
  * @dimm: set if the command is relative to a dimm, NULL otherwise
  * @bus: set if the command is relative to a bus (like ARS), NULL otherwise

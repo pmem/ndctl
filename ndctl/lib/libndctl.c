@@ -77,34 +77,6 @@ NDCTL_EXPORT size_t ndctl_sizeof_namespace_label(void)
 }
 
 struct ndctl_ctx;
-/**
- * struct ndctl_bus - a nfit table instance
- * @major: control character device major number
- * @minor: control character device minor number
- * @revision: NFIT table revision number
- * @provider: identifier for the source of the NFIT table
- *
- * The expectation is one NFIT/nd bus per system provided by platform
- * firmware (for example @provider == "ACPI.NFIT").  However, the
- * nfit_test module provides multiple test busses with provider names of
- * the format "nfit_test.N"
- */
-struct ndctl_bus {
-	struct ndctl_ctx *ctx;
-	unsigned int id, major, minor, revision;
-	char *provider;
-	struct list_head dimms;
-	struct list_head regions;
-	struct list_node list;
-	int dimms_init;
-	int regions_init;
-	int has_nfit;
-	char *bus_path;
-	char *bus_buf;
-	size_t buf_len;
-	char *wait_probe_path;
-	unsigned long dsm_mask;
-};
 
 /**
  * struct ndctl_mapping - dimm extent relative to a region
@@ -792,6 +764,12 @@ static void *add_bus(void *parent, int id, const char *ctl_base)
 		bus->has_nfit = 1;
 		bus->revision = strtoul(buf, NULL, 0);
 	}
+
+	sprintf(path, "%s/device/nfit/dsm_mask", ctl_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		bus->nfit_dsm_mask = 0;
+	else
+		bus->nfit_dsm_mask = strtoul(buf, NULL, 0);
 
 	sprintf(path, "%s/device/provider", ctl_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
