@@ -67,11 +67,17 @@ static int cmd_help(int argc, const char **argv, void *ctx)
 }
 
 int cmd_list(int argc, const char **argv, void *ctx);
+#ifdef ENABLE_DAXIO
+int cmd_io(int argc, const char **argv, void *ctx);
+#endif
 
 static struct cmd_struct commands[] = {
 	{ "version", cmd_version },
 	{ "list", cmd_list },
 	{ "help", cmd_help },
+#ifdef ENABLE_DAXIO
+	{ "io", cmd_io },
+#endif
 };
 
 int main(int argc, const char **argv)

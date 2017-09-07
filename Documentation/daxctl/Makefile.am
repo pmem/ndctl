@@ -16,7 +16,8 @@ asciidoc.conf: ../asciidoc.conf.in
 
 man1_MANS = \
 	daxctl.1 \
-	daxctl-list.1
+	daxctl-list.1 \
+	daxctl-io.1
 
 CLEANFILES = $(man1_MANS)
 
