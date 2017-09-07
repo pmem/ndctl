@@ -366,6 +366,15 @@ struct json_object *util_daxctl_region_to_json(struct daxctl_region *region,
 	return NULL;
 }
 
+static struct ndctl_dimm *badblock_to_dimm(struct ndctl_region *region,
+		unsigned long long spa)
+{
+	struct ndctl_bus *bus;
+
+	bus = ndctl_region_get_bus(region);
+	return ndctl_bus_get_dimm_by_physical_address(bus, spa);
+}
+
 struct json_object *util_region_badblocks_to_json(struct ndctl_region *region,
 		unsigned int *bb_count, unsigned long flags)
 {
@@ -381,6 +390,18 @@ struct json_object *util_region_badblocks_to_json(struct ndctl_region *region,
 
 	ndctl_region_badblock_foreach(region, bb) {
 		if (flags & UTIL_JSON_MEDIA_ERRORS) {
+			struct ndctl_dimm *dimm = NULL;
+			unsigned long long spa;
+
+			/* get start address of region */
+			spa = ndctl_region_get_resource(region);
+			if (spa == ULONG_MAX)
+				goto err_array;
+
+			/* get address of bad block */
+			spa += bb->offset << 9;
+			dimm = badblock_to_dimm(region, spa);
+
 			jbb = json_object_new_object();
 			if (!jbb)
 				goto err_array;
@@ -395,6 +416,12 @@ struct json_object *util_region_badblocks_to_json(struct ndctl_region *region,
 				goto err;
 			json_object_object_add(jbb, "length", jobj);
 
+			if (dimm) {
+				jobj = json_object_new_string(ndctl_dimm_get_devname(dimm));
+				if (!jobj)
+					goto err;
+				json_object_object_add(jbb, "dimm", jobj);
+			}
 			json_object_array_add(jbbs, jbb);
 		}
 
@@ -436,6 +463,7 @@ static struct json_object *dev_badblocks_to_json(struct ndctl_region *region,
 
 	ndctl_region_badblock_foreach(region, bb) {
 		unsigned long long bb_begin, bb_end, begin, end;
+		struct ndctl_dimm *dimm = NULL;
 
 		bb_begin = region_begin + (bb->offset << 9);
 		bb_end = bb_begin + (bb->len << 9) - 1;
@@ -456,6 +484,8 @@ static struct json_object *dev_badblocks_to_json(struct ndctl_region *region,
 		offset = (begin - dev_begin) >> 9;
 		len = (end - begin + 1) >> 9;
 
+		dimm = badblock_to_dimm(region, begin);
+
 		if (flags & UTIL_JSON_MEDIA_ERRORS) {
 			/* add to json */
 			jbb = json_object_new_object();
@@ -471,6 +501,13 @@ static struct json_object *dev_badblocks_to_json(struct ndctl_region *region,
 			if (!jobj)
 				goto err;
 			json_object_object_add(jbb, "length", jobj);
+
+			if (dimm) {
+				jobj = json_object_new_string(ndctl_dimm_get_devname(dimm));
+				if (!jobj)
+					goto err;
+				json_object_object_add(jbb, "dimm", jobj);
+			}
 
 			json_object_array_add(jbbs, jbb);
 		}
