@@ -77,4 +77,6 @@ struct nd_cmd_ars_err_inj_stat {
 	} __attribute__((packed)) record[0];
 } __attribute__((packed));
 
+int ndctl_bus_is_nfit_cmd_supported(struct ndctl_bus *bus, int cmd);
+
 #endif /* __LIBNDCTL_NFIT_H__ */

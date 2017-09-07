@@ -36,6 +36,8 @@ global:
 	ndctl_bus_get_provider;
 	ndctl_bus_get_ctx;
 	ndctl_bus_wait_probe;
+	ndctl_bus_get_region_by_physical_address;
+	ndctl_bus_get_dimm_by_physical_address;
 	ndctl_dimm_get_first;
 	ndctl_dimm_get_next;
 	ndctl_dimm_get_handle;

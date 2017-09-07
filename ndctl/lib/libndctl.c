@@ -38,6 +38,7 @@
 #include <ndctl/libndctl.h>
 #include <ndctl/namespace.h>
 #include <daxctl/libdaxctl.h>
+#include <ndctl/libndctl-nfit.h>
 #include "private.h"
 
 static uuid_t null_uuid;
@@ -1529,6 +1530,77 @@ static struct ndctl_dimm *ndctl_dimm_get_by_id(struct ndctl_bus *bus, unsigned i
 	ndctl_dimm_foreach(bus, dimm)
 		if (ndctl_dimm_get_id(dimm) == id)
 			return dimm;
+	return NULL;
+}
+
+/**
+ * ndctl_bus_get_region_by_physical_address - get region by physical address
+ * @bus: ndctl_bus instance
+ * @address: (System) Physical Address
+ *
+ * If @bus and @address is valid, returns a region address, which
+ * physical address belongs to.
+ */
+NDCTL_EXPORT struct ndctl_region *ndctl_bus_get_region_by_physical_address(
+		struct ndctl_bus *bus, unsigned long long address)
+{
+	unsigned long long region_start, region_end;
+	struct ndctl_region *region;
+
+	ndctl_region_foreach(bus, region) {
+		region_start = ndctl_region_get_resource(region);
+		region_end = region_start + ndctl_region_get_size(region);
+		if (region_start <= address && address < region_end)
+			return region;
+	}
+
+	return NULL;
+}
+
+/**
+ * ndctl_bus_get_dimm_by_physical_address - get ndctl_dimm pointer by physical address
+ * @bus: ndctl_bus instance
+ * @address: (System) Physical Address
+ *
+ * Returns address of ndctl_dimm on success.
+ */
+NDCTL_EXPORT struct ndctl_dimm *ndctl_bus_get_dimm_by_physical_address(
+		struct ndctl_bus *bus, unsigned long long address)
+{
+	unsigned int handle;
+	unsigned long long dpa;
+	struct ndctl_region *region;
+
+	if (!bus)
+		return NULL;
+
+	region = ndctl_bus_get_region_by_physical_address(bus, address);
+	if (!region)
+		return NULL;
+
+	if (ndctl_region_get_interleave_ways(region) == 1) {
+		struct ndctl_mapping *mapping = ndctl_mapping_get_first(region);
+
+		/* No need to ask firmware, there's only one dimm */
+		if (!mapping)
+			return NULL;
+		return ndctl_mapping_get_dimm(mapping);
+	}
+
+	/*
+	 * Since the region is interleaved, we need to ask firmware about it.
+	 * If it supports Translate SPA, the dimm is returned.
+	 */
+	if (ndctl_bus_has_nfit(bus)) {
+		int rc;
+
+		rc = ndctl_bus_nfit_translate_spa(bus, address, &handle, &dpa);
+		if (rc)
+			return NULL;
+
+		return ndctl_dimm_get_by_handle(bus, handle);
+	}
+	/* No way to get dimm info */
 	return NULL;
 }
 

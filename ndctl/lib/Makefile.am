@@ -36,6 +36,8 @@ libndctl_la_SOURCES += hpe1.c
 libndctl_la_SOURCES += msft.c
 endif
 
+libndctl_la_SOURCES += nfit.c
+
 EXTRA_DIST += libndctl.sym
 
 libndctl_la_LDFLAGS = $(AM_LDFLAGS) \
