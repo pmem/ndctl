@@ -2190,6 +2190,7 @@ static int to_ioctl_cmd(int cmd, int dimm)
 #ifdef HAVE_NDCTL_CLEAR_ERROR
 		case ND_CMD_CLEAR_ERROR:     return ND_IOCTL_CLEAR_ERROR;
 #endif
+		case ND_CMD_CALL:            return ND_IOCTL_CALL;
 		default:
 						       return 0;
 		};
