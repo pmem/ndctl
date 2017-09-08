@@ -285,6 +285,7 @@ LIBNDCTL_13 {
 global:
 	ndctl_bus_get_region_by_physical_address;
 	ndctl_bus_get_dimm_by_physical_address;
+	ndctl_bus_is_nfit_cmd_supported;
 	ndctl_dimm_read_labels;
 	ndctl_dimm_validate_labels;
 	ndctl_dimm_init_labels;
