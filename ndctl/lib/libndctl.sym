@@ -36,8 +36,6 @@ global:
 	ndctl_bus_get_provider;
 	ndctl_bus_get_ctx;
 	ndctl_bus_wait_probe;
-	ndctl_bus_get_region_by_physical_address;
-	ndctl_bus_get_dimm_by_physical_address;
 	ndctl_dimm_get_first;
 	ndctl_dimm_get_next;
 	ndctl_dimm_get_handle;
@@ -115,11 +113,7 @@ global:
 	ndctl_cmd_smart_threshold_get_temperature;
 	ndctl_cmd_smart_threshold_get_spares;
 	ndctl_dimm_zero_labels;
-	ndctl_dimm_read_labels;
-	ndctl_dimm_validate_labels;
-	ndctl_dimm_init_labels;
 	ndctl_dimm_get_available_labels;
-	ndctl_dimm_sizeof_namespace_label;
 	ndctl_region_get_first;
 	ndctl_region_get_next;
 	ndctl_region_get_id;
@@ -163,7 +157,6 @@ global:
 	ndctl_mapping_get_region;
 	ndctl_mapping_get_offset;
 	ndctl_mapping_get_length;
-	ndctl_mapping_get_position;
 	ndctl_namespace_get_first;
 	ndctl_namespace_get_next;
 	ndctl_namespace_get_ctx;
@@ -176,8 +169,6 @@ global:
 	ndctl_namespace_get_devname;
 	ndctl_namespace_get_block_device;
 	ndctl_namespace_get_mode;
-	ndctl_namespace_set_enforce_mode;
-	ndctl_namespace_get_enforce_mode;
 	ndctl_region_get_nstype;
 	ndctl_namespace_get_type;
 	ndctl_namespace_get_type_name;
@@ -289,3 +280,16 @@ global:
 	ndctl_dax_is_configured;
 	ndctl_dax_get_daxctl_region;
 } LIBNDCTL_1;
+
+LIBNDCTL_13 {
+global:
+	ndctl_bus_get_region_by_physical_address;
+	ndctl_bus_get_dimm_by_physical_address;
+	ndctl_dimm_read_labels;
+	ndctl_dimm_validate_labels;
+	ndctl_dimm_init_labels;
+	ndctl_dimm_sizeof_namespace_label;
+	ndctl_mapping_get_position;
+	ndctl_namespace_set_enforce_mode;
+	ndctl_namespace_get_enforce_mode;
+} LIBNDCTL_3;
