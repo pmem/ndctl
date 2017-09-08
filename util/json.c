@@ -389,43 +389,46 @@ struct json_object *util_region_badblocks_to_json(struct ndctl_region *region,
 	}
 
 	ndctl_region_badblock_foreach(region, bb) {
-		if (flags & UTIL_JSON_MEDIA_ERRORS) {
-			struct ndctl_dimm *dimm = NULL;
-			unsigned long long spa;
-
-			/* get start address of region */
-			spa = ndctl_region_get_resource(region);
-			if (spa == ULONG_MAX)
-				goto err_array;
-
-			/* get address of bad block */
-			spa += bb->offset << 9;
-			dimm = badblock_to_dimm(region, spa);
-
-			jbb = json_object_new_object();
-			if (!jbb)
-				goto err_array;
-
-			jobj = json_object_new_int64(bb->offset);
-			if (!jobj)
-				goto err;
-			json_object_object_add(jbb, "offset", jobj);
-
-			jobj = json_object_new_int(bb->len);
-			if (!jobj)
-				goto err;
-			json_object_object_add(jbb, "length", jobj);
-
-			if (dimm) {
-				jobj = json_object_new_string(ndctl_dimm_get_devname(dimm));
-				if (!jobj)
-					goto err;
-				json_object_object_add(jbb, "dimm", jobj);
-			}
-			json_object_array_add(jbbs, jbb);
-		}
+		struct ndctl_dimm *dimm;
+		unsigned long long addr;
+		const char *devname;
 
 		bbs += bb->len;
+
+		if (!(flags & UTIL_JSON_MEDIA_ERRORS))
+			continue;
+
+		/* get start address of region */
+		addr = ndctl_region_get_resource(region);
+		if (addr == ULONG_MAX)
+			goto err_array;
+
+		/* get address of bad block */
+		addr += bb->offset << 9;
+		dimm = badblock_to_dimm(region, addr);
+
+		jbb = json_object_new_object();
+		if (!jbb)
+			goto err_array;
+
+		jobj = json_object_new_int64(bb->offset);
+		if (!jobj)
+			goto err;
+		json_object_object_add(jbb, "offset", jobj);
+
+		jobj = json_object_new_int(bb->len);
+		if (!jobj)
+			goto err;
+		json_object_object_add(jbb, "length", jobj);
+
+		if (dimm) {
+			devname = ndctl_dimm_get_devname(dimm);
+			jobj = json_object_new_string(devname);
+			if (!jobj)
+				goto err;
+			json_object_object_add(jbb, "dimm", jobj);
+		}
+		json_object_array_add(jbbs, jbb);
 	}
 
 	*bb_count = bbs;
@@ -463,7 +466,8 @@ static struct json_object *dev_badblocks_to_json(struct ndctl_region *region,
 
 	ndctl_region_badblock_foreach(region, bb) {
 		unsigned long long bb_begin, bb_end, begin, end;
-		struct ndctl_dimm *dimm = NULL;
+		struct ndctl_dimm *dimm;
+		const char *devname;
 
 		bb_begin = region_begin + (bb->offset << 9);
 		bb_end = bb_begin + (bb->len << 9) - 1;
@@ -486,32 +490,34 @@ static struct json_object *dev_badblocks_to_json(struct ndctl_region *region,
 
 		dimm = badblock_to_dimm(region, begin);
 
-		if (flags & UTIL_JSON_MEDIA_ERRORS) {
-			/* add to json */
-			jbb = json_object_new_object();
-			if (!jbb)
-				goto err_array;
-
-			jobj = json_object_new_int64(offset);
-			if (!jobj)
-				goto err;
-			json_object_object_add(jbb, "offset", jobj);
-
-			jobj = json_object_new_int(len);
-			if (!jobj)
-				goto err;
-			json_object_object_add(jbb, "length", jobj);
-
-			if (dimm) {
-				jobj = json_object_new_string(ndctl_dimm_get_devname(dimm));
-				if (!jobj)
-					goto err;
-				json_object_object_add(jbb, "dimm", jobj);
-			}
-
-			json_object_array_add(jbbs, jbb);
-		}
 		bbs += len;
+
+		if (!(flags & UTIL_JSON_MEDIA_ERRORS))
+			continue;
+
+		jbb = json_object_new_object();
+		if (!jbb)
+			goto err_array;
+
+		jobj = json_object_new_int64(offset);
+		if (!jobj)
+			goto err;
+		json_object_object_add(jbb, "offset", jobj);
+
+		jobj = json_object_new_int(len);
+		if (!jobj)
+			goto err;
+		json_object_object_add(jbb, "length", jobj);
+
+		if (dimm) {
+			devname = ndctl_dimm_get_devname(dimm);
+			jobj = json_object_new_string(devname);
+			if (!jobj)
+				goto err;
+			json_object_object_add(jbb, "dimm", jobj);
+		}
+
+		json_object_array_add(jbbs, jbb);
 	}
 
 	*bb_count = bbs;
