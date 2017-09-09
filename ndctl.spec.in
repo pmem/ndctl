@@ -20,7 +20,9 @@ BuildRequires:	pkgconfig(libudev)
 BuildRequires:	pkgconfig(uuid)
 BuildRequires:	pkgconfig(json-c)
 BuildRequires:	pkgconfig(bash-completion)
+%ifarch x86_64
 BuildRequires:	pkgconfig(libpmem)
+%endif
 
 %description
 Utility library for managing the "libnvdimm" subsystem.  The "libnvdimm"
@@ -91,7 +93,11 @@ control API for these devices.
 %build
 echo "VERSION" > version
 ./autogen.sh
+%ifarch x86_64
 %configure --disable-static --enable-local --disable-silent-rules --with-libpmem
+%else
+%configure --disable-static --enable-local --disable-silent-rules
+%endif
 make %{?_smp_mflags}
 
 %install
