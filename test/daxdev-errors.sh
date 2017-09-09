@@ -20,7 +20,6 @@ json2var="s/[{}\",]//g; s/:/=/g"
 rc=77
 
 err() {
-	rc=1
 	echo "test/daxdev-errors: failed at line $1"
 	exit $rc
 }
