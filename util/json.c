@@ -366,6 +366,21 @@ struct json_object *util_daxctl_region_to_json(struct daxctl_region *region,
 	return NULL;
 }
 
+static int compare_dimm_number(const void *p1, const void *p2)
+{
+	struct ndctl_dimm *dimm1 = *(struct ndctl_dimm **)p1;
+	struct ndctl_dimm *dimm2 = *(struct ndctl_dimm **)p2;
+	const char *dimm1_name = ndctl_dimm_get_devname(dimm1);
+	const char *dimm2_name = ndctl_dimm_get_devname(dimm2);
+	int num1, num2;
+
+	sscanf(dimm1_name, "nmem%d", &num1);
+	sscanf(dimm2_name, "nmem%d", &num2);
+
+	return num1 - num2;
+
+}
+
 static struct json_object *badblocks_to_jdimms(struct ndctl_region *region,
 		unsigned long long addr, unsigned long len)
 {
@@ -398,6 +413,8 @@ static struct json_object *badblocks_to_jdimms(struct ndctl_region *region,
 
 	if (!found)
 		goto err_found;
+
+	qsort(dimms, found, sizeof(dimm), compare_dimm_number);
 
 	for (i = 0; i < found; i++) {
 		const char *devname = ndctl_dimm_get_devname(dimms[i]);
