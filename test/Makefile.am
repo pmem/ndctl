@@ -13,7 +13,8 @@ TESTS =\
 	multi-dax.sh \
 	btt-check.sh \
 	label-compat.sh \
-	blk-exhaust.sh
+	blk-exhaust.sh \
+	sector-mode.sh
 
 check_PROGRAMS =\
 	libndctl \
