@@ -354,8 +354,30 @@ static int setup_namespace(struct ndctl_region *region,
 		try(ndctl_namespace, set_size, ndns, p->size);
 	}
 
-	if (p->sector_size && p->sector_size < UINT_MAX)
-		try(ndctl_namespace, set_sector_size, ndns, p->sector_size);
+	if (p->sector_size && p->sector_size < UINT_MAX) {
+		int i, num = ndctl_namespace_get_num_sector_sizes(ndns);
+
+		/*
+		 * With autolabel support we need to recheck if the
+		 * namespace gained sector_size support late in
+		 * namespace_reconfig().
+		 */
+		for (i = 0; i < num; i++)
+			if (ndctl_namespace_get_supported_sector_size(ndns, i)
+					== p->sector_size)
+				break;
+		if (i < num)
+			try(ndctl_namespace, set_sector_size, ndns,
+					p->sector_size);
+		else if (p->mode == NDCTL_NS_MODE_SAFE)
+			/* pass, the btt sector_size will override */;
+		else if (p->sector_size != 512) {
+			error("%s: sector_size: %ld not supported\n",
+					ndctl_namespace_get_devname(ndns),
+					p->sector_size);
+			return -EINVAL;
+		}
+	}
 
 	uuid_generate(uuid);
 
