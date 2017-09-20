@@ -653,7 +653,12 @@ static int validate_namespace_options(struct ndctl_region *region,
 	} else if (ndns) {
 		struct ndctl_btt *btt = ndctl_namespace_get_btt(ndns);
 
-		if (btt)
+		/*
+		 * If the target mode is still 'safe' carry forward the
+		 * sector size, otherwise fall back to what the
+		 * namespace supports.
+		 */
+		if (btt && p->mode == NDCTL_NS_MODE_SAFE)
 			p->sector_size = ndctl_btt_get_sector_size(btt);
 		else
 			p->sector_size = ndctl_namespace_get_sector_size(ndns);
