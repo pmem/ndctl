@@ -294,3 +294,9 @@ global:
 	ndctl_namespace_set_enforce_mode;
 	ndctl_namespace_get_enforce_mode;
 } LIBNDCTL_3;
+
+LIBNDCTL_14 {
+global:
+	ndctl_dimm_locked;
+	ndctl_dimm_aliased;
+} LIBNDCTL_13;

@@ -729,6 +729,26 @@ static void parse_nfit_mem_flags(struct ndctl_dimm *dimm, char *flags)
 				ndctl_dimm_get_devname(dimm), flags);
 }
 
+static void parse_dimm_flags(struct ndctl_dimm *dimm, char *flags)
+{
+	char *start, *end;
+
+	dimm->locked = 0;
+	dimm->aliased = 0;
+	start = flags;
+	while ((end = strchr(start, ' '))) {
+		*end = '\0';
+		if (strcmp(start, "lock") == 0)
+			dimm->locked = 1;
+		else if (strcmp(start, "alias") == 0)
+			dimm->aliased = 1;
+		start = end + 1;
+	}
+	if (end != start)
+		dbg(ndctl_dimm_get_ctx(dimm), "%s: %s\n",
+				ndctl_dimm_get_devname(dimm), flags);
+}
+
 static void *add_bus(void *parent, int id, const char *ctl_base)
 {
 	char buf[SYSFS_ATTR_SIZE];
@@ -1152,6 +1172,13 @@ static void *add_dimm(void *parent, int id, const char *dimm_base)
 	for (i = 0; i < formats; i++)
 		dimm->format[i] = -1;
 
+	sprintf(path, "%s/flags", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0) {
+		dimm->locked = -1;
+		dimm->aliased = -1;
+	} else
+		parse_dimm_flags(dimm, buf);
+
 	if (!ndctl_bus_has_nfit(bus))
 		goto out;
 
@@ -1384,6 +1411,16 @@ NDCTL_EXPORT int ndctl_dimm_has_errors(struct ndctl_dimm *dimm)
 
 	flags.f_notify = 0;
 	return flags.flags != 0;
+}
+
+NDCTL_EXPORT int ndctl_dimm_locked(struct ndctl_dimm *dimm)
+{
+	return dimm->locked;
+}
+
+NDCTL_EXPORT int ndctl_dimm_aliased(struct ndctl_dimm *dimm)
+{
+	return dimm->aliased;
 }
 
 NDCTL_EXPORT int ndctl_dimm_has_notifications(struct ndctl_dimm *dimm)

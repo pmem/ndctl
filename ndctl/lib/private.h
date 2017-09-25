@@ -95,6 +95,8 @@ struct ndctl_dimm {
 			unsigned int f_notify:1;
 		};
 	} flags;
+	int locked;
+	int aliased;
 	struct list_node list;
 	int formats;
 	int format[0];
