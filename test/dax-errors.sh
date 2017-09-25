@@ -21,7 +21,6 @@ json2var="s/[{}\",]//g; s/:/=/g"
 rc=77
 
 err() {
-	rc=1
 	echo "test/dax-errors: failed at line $1"
 	rm -f $FILE
 	rm -f $MNT/$FILE
