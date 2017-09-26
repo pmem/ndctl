@@ -452,7 +452,7 @@ NDCTL_EXPORT int ndctl_dimm_init_labels(struct ndctl_dimm *dimm,
 	for (i = 0; i < 2; i++) {
 		int rc;
 
-		rc = write_label_index(dimm, v, i, i*2);
+		rc = write_label_index(dimm, v, i, 3 - i);
 		if (rc < 0)
 			return rc;
 	}
