@@ -563,6 +563,19 @@ static int validate_namespace_options(struct ndctl_region *region,
 			return -ENXIO;
 		}
 
+		/*
+		 * Fallback to a 4K default alignment if the region is
+		 * not 2MB (typical default) aligned. This mainly helps
+		 * the nfit_test use case where it is backed by vmalloc
+		 * memory.
+		 */
+		if (param.align_default && (ndctl_region_get_resource(region)
+					& (SZ_2M - 1))) {
+			debug("%s: falling back to a 4K alignment\n",
+					region_name);
+			p->align = SZ_4K;
+		}
+
 		switch (p->align) {
 		case SZ_4K:
 		case SZ_2M:

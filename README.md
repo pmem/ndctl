@@ -88,3 +88,8 @@ to /etc/depmod.d with the following contents:
 `override nd_btt * extra`  
 `override nd_e820 * extra`  
 `override nd_pmem * extra`  
+
+The nfit_test module emulates pmem with memory allocated via vmalloc().
+One of the side effects is that this breaks 'physically contiguous'
+assumptions in the driver. Use the '--align=4K option to 'ndctl
+create-namespace' to avoid these corner case scenarios.
