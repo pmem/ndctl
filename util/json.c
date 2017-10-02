@@ -374,11 +374,12 @@ static int compare_dimm_number(const void *p1, const void *p2)
 	const char *dimm2_name = ndctl_dimm_get_devname(dimm2);
 	int num1, num2;
 
-	sscanf(dimm1_name, "nmem%d", &num1);
-	sscanf(dimm2_name, "nmem%d", &num2);
+	if (sscanf(dimm1_name, "nmem%d", &num1) != 1)
+		num1 = 0;
+	if (sscanf(dimm2_name, "nmem%d", &num2) != 1)
+		num2 = 0;
 
 	return num1 - num2;
-
 }
 
 static struct json_object *badblocks_to_jdimms(struct ndctl_region *region,
