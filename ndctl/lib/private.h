@@ -154,6 +154,7 @@ struct ndctl_bus {
 	char *bus_buf;
 	size_t buf_len;
 	char *wait_probe_path;
+	char *scrub_path;
 	unsigned long dsm_mask;
 	unsigned long nfit_dsm_mask;
 };

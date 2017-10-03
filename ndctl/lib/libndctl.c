@@ -10,7 +10,9 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
  * more details.
  */
+#include <poll.h>
 #include <stdio.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdarg.h>
@@ -555,6 +557,7 @@ static void free_bus(struct ndctl_bus *bus, struct list_head *head)
 	free(bus->bus_path);
 	free(bus->bus_buf);
 	free(bus->wait_probe_path);
+	free(bus->scrub_path);
 	free(bus);
 }
 
@@ -805,6 +808,11 @@ static void *add_bus(void *parent, int id, const char *ctl_base)
 	if (!bus->wait_probe_path)
 		goto err_read;
 
+	sprintf(path, "%s/device/nfit/scrub", ctl_base);
+	bus->scrub_path = strdup(path);
+	if (!bus->scrub_path)
+		goto err_read;
+
 	bus->bus_path = parent_dev_path("char", bus->major, bus->minor);
 	if (!bus->bus_path)
 		goto err_dev_path;
@@ -830,6 +838,7 @@ static void *add_bus(void *parent, int id, const char *ctl_base)
  err_dev_path:
  err_read:
 	free(bus->wait_probe_path);
+	free(bus->scrub_path);
 	free(bus->provider);
 	free(bus->bus_buf);
 	free(bus);
@@ -1099,6 +1108,97 @@ NDCTL_EXPORT int ndctl_bus_wait_probe(struct ndctl_bus *bus)
 		dbg(ctx, "waited %d millisecond%s for bus%d...\n", sleep,
 				sleep == 1 ? "" : "s", ndctl_bus_get_id(bus));
 
+	return rc < 0 ? -ENXIO : 0;
+}
+
+NDCTL_EXPORT unsigned int ndctl_bus_get_scrub_count(struct ndctl_bus *bus)
+{
+	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
+	char buf[SYSFS_ATTR_SIZE];
+	unsigned int scrub_count;
+	char in_progress = '\0';
+	int rc;
+
+	rc = sysfs_read_attr(ctx, bus->scrub_path, buf);
+	if (rc < 0)
+		return UINT_MAX;
+
+	rc = sscanf(buf, "%u%c", &scrub_count, &in_progress);
+	if (rc < 0)
+		return UINT_MAX;
+	if (rc == 0) {
+		/* unable to read scrub count */
+		return UINT_MAX;
+	}
+	if (rc >= 1)
+		return scrub_count;
+
+	return UINT_MAX;
+}
+
+/**
+ * ndctl_bus_wait_for_scrub - wait for a scrub to complete
+ * @bus: bus for which to check whether a scrub is in progress
+ *
+ * Upon return this bus has completed any in-progress scrubs. This is
+ * different from ndctl_cmd_ars_in_progress in that the latter checks
+ * the output of an ars_status command to see if the in-progress flag
+ * is set, i.e. provides the firmware's view of whether a scrub is in
+ * progress. ndctl_bus_wait_for_scrub instead checks the kernel's view
+ * of whether a scrub is in progress by looking at the 'scrub' file in
+ * sysfs.
+ */
+NDCTL_EXPORT int ndctl_bus_wait_for_scrub_completion(struct ndctl_bus *bus)
+{
+	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
+	unsigned int tmo = 120, scrub_count;
+	char buf[SYSFS_ATTR_SIZE];
+	char in_progress = '\0';
+	struct pollfd fds;
+	int fd = 0, rc;
+
+	fd = open(bus->scrub_path, O_RDONLY|O_CLOEXEC);
+	fds.fd = fd;
+	fds.events =  POLLPRI | POLLIN;
+	do {
+		rc = sysfs_read_attr(ctx, bus->scrub_path, buf);
+		if (rc < 0)
+			break;
+
+		rc = sscanf(buf, "%u%c", &scrub_count, &in_progress);
+		if (rc < 0)
+			break;
+		else if (rc <= 1) {
+			/* scrub complete, break successfully */
+			rc = 0;
+			break;
+		} else if (rc == 2 && in_progress == '+') {
+			/* scrub in progress, wait */
+			rc = poll(&fds, 1, tmo);
+			if (rc < 0) {
+				dbg(ctx, "poll error: %d\n", errno);
+				break;
+			} else if (rc == 0) {
+				dbg(ctx, "poll timeout after: %d seconds", tmo);
+				rc = -ENXIO;
+				break;
+			}
+			if (fds.revents & (POLLERR | POLLHUP | POLLNVAL)) {
+				dbg(ctx, "poll error, revents: %d\n",
+					fds.revents);
+				rc = -ENXIO;
+				break;
+			}
+		} else {
+			/* unknown condition */
+			rc = -ENXIO;
+			break;
+		}
+	} while (in_progress);
+
+	dbg(ctx, "bus%d: scrub complete\n", ndctl_bus_get_id(bus));
+	if (fd)
+		close (fd);
 	return rc < 0 ? -ENXIO : 0;
 }
 

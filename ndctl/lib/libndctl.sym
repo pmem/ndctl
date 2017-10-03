@@ -300,4 +300,6 @@ global:
 	ndctl_dimm_locked;
 	ndctl_dimm_aliased;
 	ndctl_cmd_smart_get_shutdown_count;
+	ndctl_bus_wait_for_scrub_completion;
+	ndctl_bus_get_scrub_count;
 } LIBNDCTL_13;
