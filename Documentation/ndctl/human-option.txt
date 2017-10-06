@@ -1,0 +1,5 @@
+-u::
+--human::
+	Format numbers representing storage sizes, or offsets as human
+	readable strings with units instead of the default machine-friendly
+	raw-integer data. Convert other numeric fields into hexadecimal strings.

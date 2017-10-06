@@ -180,12 +180,7 @@ include::xable-region-options.txt[]
   ]
 }
 
--u::
---human::
-	By default 'ndctl list' will output machine-friendly raw-integer
-	data. Instead, with this flag, numbers representing storage size
-	will be formatted as human readable strings with units, other
-	fields are converted to hexadecimal strings.  Example:
+include::human-option.txt[]
 
 [verse]
 # ndctl list --region=7
@@ -198,6 +193,7 @@ include::xable-region-options.txt[]
   "badblock_count":8
 }
 
+[verse]
 # ndctl list --human --region=7
 {
   "dev":"region7",
