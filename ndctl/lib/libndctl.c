@@ -829,6 +829,7 @@ static void *add_bus(void *parent, int id, const char *ctl_base)
 
  err_dev_path:
  err_read:
+	free(bus->wait_probe_path);
 	free(bus->provider);
 	free(bus->bus_buf);
 	free(bus);
