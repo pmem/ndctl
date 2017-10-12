@@ -25,6 +25,7 @@ struct nd_cmd_smart {
 #define ND_SMART_USED_VALID	(1 << 2)
 #define ND_SMART_TEMP_VALID 	(1 << 3)
 #define ND_SMART_CTEMP_VALID 	(1 << 4)
+#define ND_SMART_SHUTDOWN_COUNT_VALID	(1 << 5)
 #define ND_SMART_ALARM_VALID	(1 << 9)
 #define ND_SMART_SHUTDOWN_VALID	(1 << 10)
 #define ND_SMART_VENDOR_VALID	(1 << 11)
@@ -44,7 +45,10 @@ struct nd_smart_payload {
 	__u8 alarm_flags;
 	__u16 temperature;
 	__u16 ctrl_temperature;
-	__u8 reserved1[15];
+	__u32 shutdown_count;
+	__u8 ait_status;
+	__u16 pmic_temperature;
+	__u8 reserved1[8];
 	__u8 shutdown_state;
 	__u32 vendor_size;
 	__u8 vendor_data[92];
