@@ -282,6 +282,7 @@ unsigned int ndctl_cmd_smart_get_spares(struct ndctl_cmd *cmd);
 unsigned int ndctl_cmd_smart_get_alarm_flags(struct ndctl_cmd *cmd);
 unsigned int ndctl_cmd_smart_get_life_used(struct ndctl_cmd *cmd);
 unsigned int ndctl_cmd_smart_get_shutdown_state(struct ndctl_cmd *cmd);
+unsigned int ndctl_cmd_smart_get_shutdown_count(struct ndctl_cmd *cmd);
 unsigned int ndctl_cmd_smart_get_vendor_size(struct ndctl_cmd *cmd);
 unsigned char *ndctl_cmd_smart_get_vendor_data(struct ndctl_cmd *cmd);
 struct ndctl_cmd *ndctl_dimm_cmd_new_smart_threshold(struct ndctl_dimm *dimm);
@@ -318,6 +319,10 @@ static inline unsigned int ndctl_cmd_smart_get_life_used(struct ndctl_cmd *cmd)
 	return 0;
 }
 static inline unsigned int ndctl_cmd_smart_get_shutdown_state(struct ndctl_cmd *cmd)
+{
+	return 0;
+}
+static inline unsigned int ndctl_cmd_smart_get_shutdown_count(struct ndctl_cmd *cmd)
 {
 	return 0;
 }

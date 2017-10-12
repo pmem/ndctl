@@ -169,6 +169,14 @@ struct json_object *util_dimm_health_to_json(struct ndctl_dimm *dimm)
 			json_object_object_add(jhealth, "shutdown_state", jobj);
 	}
 
+	if (flags & ND_SMART_SHUTDOWN_COUNT_VALID) {
+		unsigned int shutdown = ndctl_cmd_smart_get_shutdown_count(cmd);
+
+		jobj = json_object_new_int(shutdown);
+		if (jobj)
+			json_object_object_add(jhealth, "shutdown_count", jobj);
+	}
+
 	ndctl_cmd_unref(cmd);
 	return jhealth;
  err:

@@ -299,4 +299,5 @@ LIBNDCTL_14 {
 global:
 	ndctl_dimm_locked;
 	ndctl_dimm_aliased;
+	ndctl_cmd_smart_get_shutdown_count;
 } LIBNDCTL_13;

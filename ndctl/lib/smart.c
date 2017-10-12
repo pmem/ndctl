@@ -58,6 +58,7 @@ smart_cmd_op(ndctl_cmd_smart_get_spares, smart_get_spares, unsigned int, 0)
 smart_cmd_op(ndctl_cmd_smart_get_alarm_flags, smart_get_alarm_flags, unsigned int, 0)
 smart_cmd_op(ndctl_cmd_smart_get_life_used, smart_get_life_used, unsigned int, 0)
 smart_cmd_op(ndctl_cmd_smart_get_shutdown_state, smart_get_shutdown_state, unsigned int, 0)
+smart_cmd_op(ndctl_cmd_smart_get_shutdown_count, smart_get_shutdown_count, unsigned int, 0)
 smart_cmd_op(ndctl_cmd_smart_get_vendor_size, smart_get_vendor_size, unsigned int, 0)
 smart_cmd_op(ndctl_cmd_smart_get_vendor_data, smart_get_vendor_data, unsigned char *, NULL)
 smart_cmd_op(ndctl_cmd_smart_threshold_get_alarm_control, smart_threshold_get_alarm_control, unsigned int, 0)
@@ -122,6 +123,7 @@ intel_smart_get_field(cmd, spares)
 intel_smart_get_field(cmd, alarm_flags)
 intel_smart_get_field(cmd, life_used)
 intel_smart_get_field(cmd, shutdown_state)
+intel_smart_get_field(cmd, shutdown_count)
 intel_smart_get_field(cmd, vendor_size)
 
 static unsigned char *intel_cmd_smart_get_vendor_data(struct ndctl_cmd *cmd)
@@ -196,6 +198,7 @@ struct ndctl_smart_ops * const intel_smart_ops = &(struct ndctl_smart_ops) {
 	.smart_get_alarm_flags = intel_cmd_smart_get_alarm_flags,
 	.smart_get_life_used = intel_cmd_smart_get_life_used,
 	.smart_get_shutdown_state = intel_cmd_smart_get_shutdown_state,
+	.smart_get_shutdown_count = intel_cmd_smart_get_shutdown_count,
 	.smart_get_vendor_size = intel_cmd_smart_get_vendor_size,
 	.smart_get_vendor_data = intel_cmd_smart_get_vendor_data,
 	.new_smart_threshold = intel_dimm_cmd_new_smart_threshold,

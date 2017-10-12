@@ -227,6 +227,7 @@ struct ndctl_smart_ops {
 	unsigned int (*smart_get_alarm_flags)(struct ndctl_cmd *);
 	unsigned int (*smart_get_life_used)(struct ndctl_cmd *);
 	unsigned int (*smart_get_shutdown_state)(struct ndctl_cmd *);
+	unsigned int (*smart_get_shutdown_count)(struct ndctl_cmd *);
 	unsigned int (*smart_get_vendor_size)(struct ndctl_cmd *);
 	unsigned char *(*smart_get_vendor_data)(struct ndctl_cmd *);
 	struct ndctl_cmd *(*new_smart_threshold)(struct ndctl_dimm *);
