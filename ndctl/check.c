@@ -508,7 +508,7 @@ static int btt_check_bitmap(struct arena_info *a)
 {
 	unsigned long *bm;
 	u32 i, btt_mapping;
-	int rc;
+	int rc = BTT_BITMAP_ERROR;
 
 	bm = bitmap_alloc(a->internal_nlba);
 	if (bm == NULL)
@@ -521,7 +521,6 @@ static int btt_check_bitmap(struct arena_info *a)
 			info(a->bttc,
 				"arena %d: internal block %#x is referenced by two map entries\n",
 				a->num, btt_mapping);
-			rc = BTT_BITMAP_ERROR;
 			goto out;
 		}
 		bitmap_set(bm, btt_mapping, 1);
