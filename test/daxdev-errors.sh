@@ -37,13 +37,14 @@ check_min_kver "4.12" || { echo "kernel $KVER lacks dax dev error handling"; exi
 
 set -e
 trap 'err $LINENO' ERR
-rc=1
 
 # setup (reset nfit_test dimms)
 modprobe nfit_test
 $NDCTL disable-region $BUS all
 $NDCTL zero-labels $BUS all
 $NDCTL enable-region $BUS all
+
+rc=1
 
 query=". | sort_by(.available_size) | reverse | .[0].dev"
 region=$($NDCTL list $BUS -t pmem -Ri | jq -r "$query")
