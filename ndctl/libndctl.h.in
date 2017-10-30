@@ -115,6 +115,7 @@ const char *ndctl_bus_get_provider(struct ndctl_bus *bus);
 int ndctl_bus_wait_probe(struct ndctl_bus *bus);
 int ndctl_bus_wait_for_scrub_completion(struct ndctl_bus *bus);
 unsigned int ndctl_bus_get_scrub_count(struct ndctl_bus *bus);
+int ndctl_bus_has_error_injection(struct ndctl_bus *bus);
 
 struct ndctl_dimm;
 struct ndctl_dimm *ndctl_dimm_get_first(struct ndctl_bus *bus);
@@ -548,6 +549,25 @@ int ndctl_namespace_set_sector_size(struct ndctl_namespace *ndns,
 int ndctl_namespace_get_raw_mode(struct ndctl_namespace *ndns);
 int ndctl_namespace_set_raw_mode(struct ndctl_namespace *ndns, int raw_mode);
 int ndctl_namespace_get_numa_node(struct ndctl_namespace *ndns);
+int ndctl_namespace_inject_error(struct ndctl_namespace *ndns,
+		unsigned long long block, unsigned long long count,
+		bool notify);
+int ndctl_namespace_uninject_error(struct ndctl_namespace *ndns,
+		unsigned long long block, unsigned long long count);
+int ndctl_namespace_injection_status(struct ndctl_namespace *ndns);
+
+struct ndctl_bb;
+unsigned long long ndctl_bb_get_block(struct ndctl_bb *bb);
+unsigned long long ndctl_bb_get_count(struct ndctl_bb *bb);
+struct ndctl_bb *ndctl_namespace_injection_get_first_bb(
+		struct ndctl_namespace *ndns);
+struct ndctl_bb *ndctl_namespace_injection_get_next_bb(
+		struct ndctl_namespace *ndns, struct ndctl_bb *bb);
+#define ndctl_namespace_bb_foreach(ndns, bb) \
+        for (bb = ndctl_namespace_injection_get_first_bb(ndns); \
+             bb != NULL; \
+             bb = ndctl_namespace_injection_get_next_bb(ndns, bb))
+
 struct ndctl_btt;
 struct ndctl_btt *ndctl_btt_get_first(struct ndctl_region *region);
 struct ndctl_btt *ndctl_btt_get_next(struct ndctl_btt *btt);

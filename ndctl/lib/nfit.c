@@ -143,3 +143,92 @@ int ndctl_bus_nfit_translate_spa(struct ndctl_bus *bus,
 
 	return rc;
 }
+
+struct ndctl_cmd *ndctl_bus_cmd_new_err_inj(struct ndctl_bus *bus)
+{
+	struct nd_cmd_ars_err_inj *err_inj;
+	size_t size, cmd_length;
+	struct nd_cmd_pkg *pkg;
+	struct ndctl_cmd *cmd;
+
+	cmd_length = sizeof(struct nd_cmd_ars_err_inj);
+	size = sizeof(*cmd) + sizeof(*pkg) + cmd_length;
+	cmd = calloc(1, size);
+	if (!cmd)
+		return NULL;
+
+	cmd->bus = bus;
+	ndctl_cmd_ref(cmd);
+	cmd->type = ND_CMD_CALL;
+	cmd->size = size;
+	cmd->status = 1;
+	pkg = (struct nd_cmd_pkg *)&cmd->cmd_buf[0];
+	pkg->nd_command = NFIT_CMD_ARS_INJECT_SET;
+	pkg->nd_size_in = (2 * sizeof(u64)) + sizeof(u32);
+	pkg->nd_size_out = cmd_length;
+	pkg->nd_fw_size = cmd_length;
+	err_inj = (struct nd_cmd_ars_err_inj *)&pkg->nd_payload[0];
+	cmd->firmware_status = &err_inj->status;
+
+	return cmd;
+}
+
+struct ndctl_cmd *ndctl_bus_cmd_new_err_inj_clr(struct ndctl_bus *bus)
+{
+	struct nd_cmd_ars_err_inj_clr *err_inj_clr;
+	size_t size, cmd_length;
+	struct nd_cmd_pkg *pkg;
+	struct ndctl_cmd *cmd;
+
+	cmd_length = sizeof(struct nd_cmd_ars_err_inj_clr);
+	size = sizeof(*cmd) + sizeof(*pkg) + cmd_length;
+	cmd = calloc(1, size);
+	if (!cmd)
+		return NULL;
+
+	cmd->bus = bus;
+	ndctl_cmd_ref(cmd);
+	cmd->type = ND_CMD_CALL;
+	cmd->size = size;
+	cmd->status = 1;
+	pkg = (struct nd_cmd_pkg *)&cmd->cmd_buf[0];
+	pkg->nd_command = NFIT_CMD_ARS_INJECT_CLEAR;
+	pkg->nd_size_in = 2 * sizeof(u64);
+	pkg->nd_size_out = cmd_length;
+	pkg->nd_fw_size = cmd_length;
+	err_inj_clr = (struct nd_cmd_ars_err_inj_clr *)&pkg->nd_payload[0];
+	cmd->firmware_status = &err_inj_clr->status;
+
+	return cmd;
+}
+
+struct ndctl_cmd *ndctl_bus_cmd_new_err_inj_stat(struct ndctl_bus *bus,
+	u32 buf_size)
+{
+	struct nd_cmd_ars_err_inj_stat *err_inj_stat;
+	size_t size, cmd_length;
+	struct nd_cmd_pkg *pkg;
+	struct ndctl_cmd *cmd;
+
+
+	cmd_length = sizeof(struct nd_cmd_ars_err_inj_stat);
+	size = sizeof(*cmd) + sizeof(*pkg) + cmd_length + buf_size;
+	cmd = calloc(1, size);
+	if (!cmd)
+		return NULL;
+
+	cmd->bus = bus;
+	ndctl_cmd_ref(cmd);
+	cmd->type = ND_CMD_CALL;
+	cmd->size = size;
+	cmd->status = 1;
+	pkg = (struct nd_cmd_pkg *)&cmd->cmd_buf[0];
+	pkg->nd_command = NFIT_CMD_ARS_INJECT_GET;
+	pkg->nd_size_in = cmd_length;
+	pkg->nd_size_out = cmd_length + buf_size;
+	pkg->nd_fw_size = cmd_length + buf_size;
+	err_inj_stat = (struct nd_cmd_ars_err_inj_stat *)&pkg->nd_payload[0];
+	cmd->firmware_status = &err_inj_stat->status;
+
+	return cmd;
+}

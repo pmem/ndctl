@@ -160,6 +160,49 @@ struct ndctl_bus {
 };
 
 /**
+ * struct ndctl_lbasize - lbasize info for btt and blk-namespace devices
+ * @select: currently selected sector_size
+ * @supported: possible sector_size options
+ * @num: number of entries in @supported
+ */
+struct ndctl_lbasize {
+	int select;
+	unsigned int *supported;
+	int num;
+};
+
+/**
+ * struct ndctl_namespace - device claimed by the nd_blk or nd_pmem driver
+ * @module: kernel module
+ * @type: integer nd-bus device-type
+ * @type_name: 'namespace_io', 'namespace_pmem', or 'namespace_block'
+ * @namespace_path: devpath for namespace device
+ * @bdev: associated block_device of a namespace
+ * @size: unsigned
+ * @numa_node: numa node attribute
+ *
+ * A 'namespace' is the resulting device after region-aliasing and
+ * label-parsing is resolved.
+ */
+struct ndctl_namespace {
+	struct kmod_module *module;
+	struct ndctl_region *region;
+	struct list_node list;
+	char *ndns_path;
+	char *ndns_buf;
+	char *bdev;
+	int type, id, buf_len, raw_mode;
+	int generation;
+	unsigned long long resource, size;
+	enum ndctl_namespace_mode enforce_mode;
+	char *alt_name;
+	uuid_t uuid;
+	struct ndctl_lbasize lbasize;
+	int numa_node;
+	struct list_head injected_bb;
+};
+
+/**
  * struct ndctl_cmd - device-specific-method (_DSM ioctl) container
  * @dimm: set if the command is relative to a dimm, NULL otherwise
  * @bus: set if the command is relative to a bus (like ARS), NULL otherwise
@@ -217,6 +260,12 @@ struct ndctl_cmd {
 		struct nd_cmd_vendor_hdr vendor[0];
 		char cmd_buf[0];
 	};
+};
+
+struct ndctl_bb {
+	u64 block;
+	u64 count;
+	struct list_node list;
 };
 
 struct ndctl_smart_ops {
@@ -283,5 +332,9 @@ static inline int check_kmod(struct kmod_ctx *kmod_ctx)
 
 int ndctl_bus_nfit_translate_spa(struct ndctl_bus *bus, unsigned long long addr,
 		unsigned int *handle, unsigned long long *dpa);
+struct ndctl_cmd *ndctl_bus_cmd_new_err_inj(struct ndctl_bus *bus);
+struct ndctl_cmd *ndctl_bus_cmd_new_err_inj_clr(struct ndctl_bus *bus);
+struct ndctl_cmd *ndctl_bus_cmd_new_err_inj_stat(struct ndctl_bus *bus,
+	u32 buf_size);
 
 #endif /* _LIBNDCTL_PRIVATE_H_ */

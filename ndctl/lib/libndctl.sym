@@ -302,4 +302,12 @@ global:
 	ndctl_cmd_smart_get_shutdown_count;
 	ndctl_bus_wait_for_scrub_completion;
 	ndctl_bus_get_scrub_count;
+	ndctl_bus_has_error_injection;
+	ndctl_namespace_inject_error;
+	ndctl_namespace_uninject_error;
+	ndctl_namespace_injection_status;
+	ndctl_namespace_injection_get_first_bb;
+	ndctl_namespace_injection_get_next_bb;
+	ndctl_bb_get_block;
+	ndctl_bb_get_count;
 } LIBNDCTL_13;

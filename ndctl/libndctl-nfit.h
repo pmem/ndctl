@@ -16,6 +16,8 @@
 #ifndef __LIBNDCTL_NFIT_H__
 #define __LIBNDCTL_NFIT_H__
 
+#include <linux/types.h>
+
 /*
  * libndctl-nfit.h : definitions for NFIT related commands/functions.
  */

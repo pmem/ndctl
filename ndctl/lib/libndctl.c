@@ -157,48 +157,6 @@ struct ndctl_region {
 };
 
 /**
- * struct ndctl_lbasize - lbasize info for btt and blk-namespace devices
- * @select: currently selected sector_size
- * @supported: possible sector_size options
- * @num: number of entries in @supported
- */
-struct ndctl_lbasize {
-	int select;
-	unsigned int *supported;
-	int num;
-};
-
-/**
- * struct ndctl_namespace - device claimed by the nd_blk or nd_pmem driver
- * @module: kernel module
- * @type: integer nd-bus device-type
- * @type_name: 'namespace_io', 'namespace_pmem', or 'namespace_block'
- * @namespace_path: devpath for namespace device
- * @bdev: associated block_device of a namespace
- * @size: unsigned
- * @numa_node: numa node attribute
- *
- * A 'namespace' is the resulting device after region-aliasing and
- * label-parsing is resolved.
- */
-struct ndctl_namespace {
-	struct kmod_module *module;
-	struct ndctl_region *region;
-	struct list_node list;
-	char *ndns_path;
-	char *ndns_buf;
-	char *bdev;
-	int type, id, buf_len, raw_mode;
-	int generation;
-	unsigned long long resource, size;
-	enum ndctl_namespace_mode enforce_mode;
-	char *alt_name;
-	uuid_t uuid;
-	struct ndctl_lbasize lbasize;
-	int numa_node;
-};
-
-/**
  * struct ndctl_btt - stacked block device provided sector atomicity
  * @module: kernel module (nd_btt)
  * @lbasize: sector size info
@@ -391,8 +349,12 @@ NDCTL_EXPORT struct ndctl_ctx *ndctl_ref(struct ndctl_ctx *ctx)
 
 static void free_namespace(struct ndctl_namespace *ndns, struct list_head *head)
 {
+	struct ndctl_bb *bb, *next;
+
 	if (head)
 		list_del_from(head, &ndns->list);
+	list_for_each_safe(&ndns->injected_bb, bb, next, list)
+		free(bb);
 	free(ndns->lbasize.supported);
 	free(ndns->ndns_path);
 	free(ndns->ndns_buf);
@@ -2992,6 +2954,7 @@ static void *add_namespace(void *parent, int id, const char *ndns_base)
 	ndns->id = id;
 	ndns->region = region;
 	ndns->generation = region->generation;
+	list_head_init(&ndns->injected_bb);
 
 	sprintf(path, "%s/nstype", ndns_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
