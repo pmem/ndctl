@@ -15,7 +15,8 @@ TESTS =\
 	label-compat.sh \
 	blk-exhaust.sh \
 	sector-mode.sh \
-	inject-error.sh
+	inject-error.sh \
+	btt-errors.sh
 
 check_PROGRAMS =\
 	libndctl \
