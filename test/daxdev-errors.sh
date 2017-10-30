@@ -37,6 +37,7 @@ check_min_kver "4.12" || { echo "kernel $KVER lacks dax dev error handling"; exi
 
 set -e
 trap 'err $LINENO' ERR
+rc=1
 
 # setup (reset nfit_test dimms)
 modprobe nfit_test
@@ -68,18 +69,28 @@ chardev=$(echo $json | jq ". | select(.mode == \"dax\") | .daxregion.devices[0].
 #  }
 #}
 
+json1=$($NDCTL list $BUS --mode=dax --namespaces)
+eval $(echo $json1 | sed -e "$json2var")
+nsdev=$dev
+
 json1=$($NDCTL list $BUS)
 eval $(echo $json1 | sed -e "$json2var")
+busdev=$dev
 
-read sector len < /sys/bus/platform/devices/nfit_test.0/$dev/$region/badblocks
+# inject errors in the middle of the namespace
+err_sector="$(((size/512) / 2))"
+err_count=8
+$NDCTL inject-error --block="$err_sector" --count=$err_count $nsdev
+
+read sector len < /sys/bus/nd/devices/$region/badblocks
 echo "sector: $sector len: $len"
 
 # run the daxdev-errors test
 test -x ./daxdev-errors
-./daxdev-errors $dev $region
+./daxdev-errors $busdev $region
 
 # check badblocks, should be empty
-if read sector len < /sys/bus/platform/devices/nfit_test.0/$dev/$region/badblocks; then
+if read sector len < /sys/bus/platform/devices/nfit_test.0/$busdev/$region/badblocks; then
 	echo "badblocks empty, expected"
 fi
 [ -n "$sector" ] && echo "fail: $LINENO" && exit 1

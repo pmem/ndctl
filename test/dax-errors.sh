@@ -63,7 +63,10 @@ eval $(echo $json | sed -e "$json2var")
 [ $dev = "x" ] && echo "fail: $LINENO" && exit 1
 [ $mode != "raw" ] && echo "fail: $LINENO" && exit 1
 
-# check for expected errors in the middle of the namespace
+# inject errors in the middle of the namespace, verify that reading fails
+err_sector="$(((size/512) / 2))"
+err_count=8
+$NDCTL inject-error --block="$err_sector" --count=$err_count $dev
 read sector len < /sys/block/$blockdev/badblocks
 [ $((sector * 2)) -ne $((size /512)) ] && echo "fail: $LINENO" && exit 1
 if dd if=/dev/$blockdev of=/dev/null iflag=direct bs=512 skip=$sector count=$len; then
