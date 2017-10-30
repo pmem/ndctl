@@ -33,6 +33,14 @@ enum {
 /* error number of Translate SPA by firmware  */
 #define ND_TRANSLATE_SPA_STATUS_INVALID_SPA  2
 
+/* status definitions for error injection */
+#define ND_ARS_ERR_INJ_STATUS_NOT_SUPP 1
+#define ND_ARS_ERR_INJ_STATUS_INVALID_PARAM 2
+
+enum err_inj_options {
+	ND_ARS_ERR_INJ_OPT_NOTIFY = 0,
+};
+
 /*
  * The following structures are command packages which are
  * defined by ACPI 6.2 (or later).

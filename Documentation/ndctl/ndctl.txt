@@ -50,6 +50,7 @@ linkndctl:ndctl-enable-namespace[1],
 linkndctl:ndctl-disable-namespace[1],
 linkndctl:ndctl-zero-labels[1],
 linkndctl:ndctl-read-labels[1],
+linkndctl:ndctl-inject-error[1],
 linkndctl:ndctl-list[1],
 https://www.kernel.org/doc/Documentation/nvdimm/nvdimm.txt[LIBNVDIMM
 Overview],

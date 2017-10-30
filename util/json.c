@@ -20,6 +20,7 @@
 #include <ndctl/libndctl.h>
 #include <daxctl/libdaxctl.h>
 #include <ccan/array_size/array_size.h>
+#include <ccan/short_types/short_types.h>
 
 #ifdef HAVE_NDCTL_H
 #include <linux/ndctl.h>
@@ -867,5 +868,30 @@ struct json_object *util_mapping_to_json(struct ndctl_mapping *mapping,
 	return jmapping;
  err:
 	json_object_put(jmapping);
+	return NULL;
+}
+
+struct json_object *util_badblock_rec_to_json(u64 block, u64 count,
+		unsigned long flags)
+{
+	struct json_object *jerr = json_object_new_object();
+	struct json_object *jobj;
+
+	if (!jerr)
+		return NULL;
+
+	jobj = util_json_object_hex(block, flags);
+	if (!jobj)
+		goto err;
+	json_object_object_add(jerr, "block", jobj);
+
+	jobj = util_json_object_hex(count, flags);
+	if (!jobj)
+		goto err;
+	json_object_object_add(jerr, "count", jobj);
+
+	return jerr;
+ err:
+	json_object_put(jerr);
 	return NULL;
 }

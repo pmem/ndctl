@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <ndctl/libndctl.h>
+#include <ccan/short_types/short_types.h>
 
 enum util_json_flags {
 	UTIL_JSON_IDLE = (1 << 0),
@@ -32,6 +33,8 @@ struct json_object *util_dimm_to_json(struct ndctl_dimm *dimm,
 struct json_object *util_mapping_to_json(struct ndctl_mapping *mapping,
 		unsigned long flags);
 struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
+		unsigned long flags);
+struct json_object *util_badblock_rec_to_json(u64 block, u64 count,
 		unsigned long flags);
 struct daxctl_region;
 struct daxctl_dev;

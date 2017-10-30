@@ -30,6 +30,7 @@ man1_MANS = \
 	ndctl-create-namespace.1 \
 	ndctl-destroy-namespace.1 \
 	ndctl-check-namespace.1 \
+	ndctl-inject-error.1 \
 	ndctl-list.1
 
 CLEANFILES = $(man1_MANS)
