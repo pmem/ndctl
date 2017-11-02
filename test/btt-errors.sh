@@ -142,6 +142,30 @@ dd if=/dev/zero of=$MNT/$FILE oflag=direct bs=4096 count=1
 # read again and that should succeed
 dd if=$MNT/$FILE of=/dev/null iflag=direct bs=4096 count=1
 
+
+## ensure we get an EIO for errors in namespace metadata
+
+# reset everything to get a clean log
+$NDCTL disable-region -b "$BUS" all
+$NDCTL zero-labels -b "$BUS" all
+$NDCTL enable-region -b "$BUS" all
+dev="x"
+json=$($NDCTL create-namespace -b "$BUS" -t pmem -m sector)
+eval "$(echo "$json" | sed -e "$json2var")"
+[ $dev = "x" ] && echo "fail: $LINENO" && exit 1
+
+# insert error at an arbitrary offset in the map (sector 0)
+force_raw 1
+map=$(hexdump -s 96 -n 4 "/dev/$raw_bdev" | head -1 | cut -d' ' -f2-)
+map=$(tr -d ' ' <<< "0x${map#* }${map%% *}")
+bb_inj=$((map/512))
+$NDCTL inject-error --block="$bb_inj" --count=1 $dev
+force_raw 0
+
+# make sure reading the first block of the namespace fails
+: The following 'dd' is expected to hit an I/O Error
+dd if=/dev/$blockdev of=/dev/null iflag=direct bs=4096 count=1 && err $LINENO || true
+
 # done, exit
 $NDCTL disable-region -b "$BUS" all
 $NDCTL zero-labels -b "$BUS" all
