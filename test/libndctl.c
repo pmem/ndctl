@@ -2210,6 +2210,7 @@ static int check_smart_threshold(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 	};
 	struct ndctl_cmd *cmd = ndctl_dimm_cmd_new_smart_threshold(dimm);
 	struct timeval tm;
+	char buf[4096];
 	fd_set fds;
 	int rc, fd;
 
@@ -2221,6 +2222,8 @@ static int check_smart_threshold(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 
 	fd = ndctl_dimm_get_health_eventfd(dimm);
 	FD_ZERO(&fds);
+	FD_SET(fd, &fds);
+	rc = pread(fd, buf, sizeof(buf), 0);
 	tm.tv_sec = 0;
 	tm.tv_usec = 500;
 	rc = select(fd + 1, NULL, NULL, &fds, &tm);
@@ -2245,6 +2248,7 @@ static int check_smart_threshold(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 			rc = select(fd + 1, NULL, NULL, &fds, &tm);
 			if (rc != 1 || !FD_ISSET(fd, &fds))
 				exit(EXIT_FAILURE);
+			rc = pread(fd, buf, sizeof(buf), 0);
 			exit(EXIT_SUCCESS);
 		}
 	}
