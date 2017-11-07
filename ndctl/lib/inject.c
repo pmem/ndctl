@@ -199,6 +199,7 @@ static int bb_add_record(struct list_head *h, u64 block, u64 count)
 			/* bb_iter is the first entry */
 			if (bb->block < bb_iter->block) {
 				list_add(h, &bb->list);
+				bb = NULL;
 				break;
 			}
 		}
@@ -210,12 +211,14 @@ static int bb_add_record(struct list_head *h, u64 block, u64 count)
 			 * following checks for the previous iteration.
 			 */
 			list_add_tail(h, &bb->list);
+			bb = NULL;
 			break;
 		}
 		/* Add to the left of bb_iter */
 		if (bb->block <= bb_iter->block) {
 			if (bb_prev && (bb_prev->block <= bb->block)) {
 				list_add_after(h, &bb_prev->list, &bb->list);
+				bb = NULL;
 				break;
 			}
 		}
@@ -223,9 +226,16 @@ static int bb_add_record(struct list_head *h, u64 block, u64 count)
 		if (bb_iter->block <= bb->block) {
 			if (bb_next && (bb->block <= bb_next->block)) {
 				list_add_after(h, &bb_iter->list, &bb->list);
+				bb = NULL;
 				break;
 			}
 		}
+	}
+
+	/* ensure bb has actually been consumed (set to NULL earlier) */
+	if (bb != NULL) {
+		free(bb);
+		return -ENXIO;
 	}
 
 	/* second pass over the list looking for mergeable entries */
@@ -357,6 +367,11 @@ NDCTL_EXPORT int ndctl_namespace_injection_status(struct ndctl_namespace *ndns)
 		}
 		rc = injection_status_to_bb(ndns, err_inj_stat,
 			ns_offset, ns_size);
+		if (rc) {
+			dbg(ctx, "Error converting status to badblocks: %d\n",
+				rc);
+			goto out;
+		}
 	}
 
  out:
