@@ -164,9 +164,9 @@ struct ndctl_cmd *ndctl_bus_cmd_new_err_inj(struct ndctl_bus *bus)
 	cmd->status = 1;
 	pkg = (struct nd_cmd_pkg *)&cmd->cmd_buf[0];
 	pkg->nd_command = NFIT_CMD_ARS_INJECT_SET;
-	pkg->nd_size_in = (2 * sizeof(u64)) + sizeof(u32);
-	pkg->nd_size_out = cmd_length;
-	pkg->nd_fw_size = cmd_length;
+	pkg->nd_size_in = offsetof(struct nd_cmd_ars_err_inj, status);
+	pkg->nd_size_out = cmd_length - pkg->nd_size_in;
+	pkg->nd_fw_size = pkg->nd_size_out;
 	err_inj = (struct nd_cmd_ars_err_inj *)&pkg->nd_payload[0];
 	cmd->firmware_status = &err_inj->status;
 
@@ -193,9 +193,9 @@ struct ndctl_cmd *ndctl_bus_cmd_new_err_inj_clr(struct ndctl_bus *bus)
 	cmd->status = 1;
 	pkg = (struct nd_cmd_pkg *)&cmd->cmd_buf[0];
 	pkg->nd_command = NFIT_CMD_ARS_INJECT_CLEAR;
-	pkg->nd_size_in = 2 * sizeof(u64);
-	pkg->nd_size_out = cmd_length;
-	pkg->nd_fw_size = cmd_length;
+	pkg->nd_size_in = offsetof(struct nd_cmd_ars_err_inj_clr, status);
+	pkg->nd_size_out = cmd_length - pkg->nd_size_in;
+	pkg->nd_fw_size = pkg->nd_size_out;
 	err_inj_clr = (struct nd_cmd_ars_err_inj_clr *)&pkg->nd_payload[0];
 	cmd->firmware_status = &err_inj_clr->status;
 
@@ -224,9 +224,9 @@ struct ndctl_cmd *ndctl_bus_cmd_new_err_inj_stat(struct ndctl_bus *bus,
 	cmd->status = 1;
 	pkg = (struct nd_cmd_pkg *)&cmd->cmd_buf[0];
 	pkg->nd_command = NFIT_CMD_ARS_INJECT_GET;
-	pkg->nd_size_in = cmd_length;
+	pkg->nd_size_in = 0;
 	pkg->nd_size_out = cmd_length + buf_size;
-	pkg->nd_fw_size = cmd_length + buf_size;
+	pkg->nd_fw_size = pkg->nd_size_out;
 	err_inj_stat = (struct nd_cmd_ars_err_inj_stat *)&pkg->nd_payload[0];
 	cmd->firmware_status = &err_inj_stat->status;
 
