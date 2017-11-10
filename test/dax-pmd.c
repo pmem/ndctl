@@ -27,8 +27,10 @@
 #include <linux/fiemap.h>
 
 #define NUM_EXTENTS 5
-#define fail() fprintf(stderr, "%s: failed at: %d\n", __func__, __LINE__)
-#define faili(i) fprintf(stderr, "%s: failed at: %d: %d\n", __func__, __LINE__, i)
+#define fail() fprintf(stderr, "%s: failed at: %d (%s)\n", \
+	__func__, __LINE__, strerror(errno))
+#define faili(i) fprintf(stderr, "%s: failed at: %d: %d (%s)\n", \
+	__func__, __LINE__, i, strerror(errno))
 #define TEST_FILE "test_dax_data"
 
 int test_dax_directio(int dax_fd, unsigned long align, void *dax_addr, off_t offset)
@@ -39,7 +41,7 @@ int test_dax_directio(int dax_fd, unsigned long align, void *dax_addr, off_t off
 	if (posix_memalign(&buf, 4096, 4096) != 0)
 		return -ENOMEM;
 
-	for (i = 0; i < 3; i++) {
+	for (i = 0; i < 5; i++) {
 		void *addr = mmap(dax_addr, 2*align,
 				PROT_READ|PROT_WRITE, MAP_SHARED, dax_fd,
 				offset);
@@ -62,8 +64,17 @@ int test_dax_directio(int dax_fd, unsigned long align, void *dax_addr, off_t off
 		fprintf(stderr, "%s: test: %d\n", __func__, i);
 		rc = 0;
 		switch (i) {
-		case 0: /* test O_DIRECT of unfaulted address */
+		case 0: /* test O_DIRECT read of unfaulted address */
 			if (write(fd2, addr, 4096) != 4096) {
+				faili(i);
+				rc = -ENXIO;
+			}
+
+			/*
+			 * test O_DIRECT write of pre-faulted read-only
+			 * address
+			 */
+			if (pread(fd2, addr, 4096, 0) != 4096) {
 				faili(i);
 				rc = -ENXIO;
 			}
@@ -99,6 +110,26 @@ int test_dax_directio(int dax_fd, unsigned long align, void *dax_addr, off_t off
 				}
 			} else
 				faili(i);
+			break;
+		case 3: /* convert ro mapping to rw */
+			rc = *(volatile int *) addr;
+			*(volatile int *) addr = rc;
+			rc = 0;
+			break;
+		case 4: /* test O_DIRECT write of unfaulted address */
+			sprintf(buf, "O_DIRECT write of unfaulted address\n");
+			if (pwrite(fd2, buf, 4096, 0) < 4096) {
+				faili(i);
+				rc = -ENXIO;
+				break;
+			}
+
+			if (pread(fd2, addr, 4096, 0) < 4096) {
+				faili(i);
+				rc = -ENXIO;
+				break;
+			}
+			rc = 0;
 			break;
 		default:
 			faili(i);
