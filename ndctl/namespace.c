@@ -17,6 +17,7 @@
 #include <unistd.h>
 #include <limits.h>
 #include <syslog.h>
+#include "action.h"
 #include <sys/stat.h>
 #include <uuid/uuid.h>
 #include <sys/types.h>
@@ -146,15 +147,7 @@ static const struct option check_options[] = {
 	OPT_END(),
 };
 
-enum namespace_action {
-	ACTION_ENABLE,
-	ACTION_DISABLE,
-	ACTION_CREATE,
-	ACTION_DESTROY,
-	ACTION_CHECK,
-};
-
-static int set_defaults(enum namespace_action mode)
+static int set_defaults(enum device_action mode)
 {
 	int rc = 0;
 
@@ -264,7 +257,7 @@ static int set_defaults(enum namespace_action mode)
  * looking at actual namespace devices and available resources.
  */
 static const char *parse_namespace_options(int argc, const char **argv,
-		enum namespace_action mode, const struct option *options,
+		enum device_action mode, const struct option *options,
 		char *xable_usage)
 {
 	const char * const u[] = {
@@ -989,7 +982,7 @@ int namespace_check(struct ndctl_namespace *ndns, bool verbose, bool force,
 		bool repair);
 
 static int do_xaction_namespace(const char *namespace,
-		enum namespace_action action, struct ndctl_ctx *ctx)
+		enum device_action action, struct ndctl_ctx *ctx)
 {
 	struct ndctl_namespace *ndns, *_n;
 	int rc = -ENXIO, success = 0;

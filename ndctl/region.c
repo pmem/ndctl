@@ -14,6 +14,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include "action.h"
 #include <util/filter.h>
 #include <util/parse-options.h>
 #include <ndctl/libndctl.h>
@@ -67,8 +68,32 @@ static const char *parse_region_options(int argc, const char **argv,
 	return argv[0];
 }
 
-static int do_xable_region(const char *region_arg,
-		int (*xable_fn)(struct ndctl_region *), struct ndctl_ctx *ctx)
+static int region_action(struct ndctl_region *region, enum device_action mode)
+{
+	struct ndctl_namespace *ndns;
+	int rc = 0;
+
+	switch (mode) {
+	case ACTION_ENABLE:
+		rc = ndctl_region_enable(region);
+		break;
+	case ACTION_DISABLE:
+		ndctl_namespace_foreach(region, ndns) {
+			rc = ndctl_namespace_disable_safe(ndns);
+			if (rc)
+				return rc;
+		}
+		rc = ndctl_region_disable_invalidate(region);
+		break;
+	default:
+		break;
+	}
+
+	return 0;
+}
+
+static int do_xable_region(const char *region_arg, enum device_action mode,
+		struct ndctl_ctx *ctx)
 {
 	int rc = -ENXIO, success = 0;
 	struct ndctl_region *region;
@@ -88,7 +113,7 @@ static int do_xable_region(const char *region_arg,
 				continue;
 			if (!util_region_filter(region, region_arg))
 				continue;
-			if (xable_fn(region) == 0)
+			if (region_action(region, mode) == 0)
 				success++;
 		}
 	}
@@ -103,8 +128,7 @@ int cmd_disable_region(int argc, const char **argv, void *ctx)
 {
 	char *xable_usage = "ndctl disable-region <region> [<options>]";
 	const char *region = parse_region_options(argc, argv, xable_usage);
-	int disabled = do_xable_region(region, ndctl_region_disable_invalidate,
-			ctx);
+	int disabled = do_xable_region(region, ACTION_DISABLE, ctx);
 
 	if (disabled < 0) {
 		fprintf(stderr, "error disabling regions: %s\n",
@@ -124,7 +148,7 @@ int cmd_enable_region(int argc, const char **argv, void *ctx)
 {
 	char *xable_usage = "ndctl enable-region <region> [<options>]";
 	const char *region = parse_region_options(argc, argv, xable_usage);
-	int enabled = do_xable_region(region, ndctl_region_enable, ctx);
+	int enabled = do_xable_region(region, ACTION_ENABLE, ctx);
 
 	if (enabled < 0) {
 		fprintf(stderr, "error enabling regions: %s\n",
