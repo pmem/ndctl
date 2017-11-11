@@ -20,7 +20,10 @@ include::xable-namespace-options.txt[]
 	Unless this option is specified the 'destroy namespace'
 	operation will fail if the namespace is presently active.
 	Specifying --force causes the namespace to be disabled before
-	the operation is attempted.
+	the operation is attempted. However, if the namespace is
+	mounted then the 'disable namespace' and 'destroy
+	namespace' operations will be aborted.  The namespace must be
+	unmounted before being destroyed.
 
 COPYRIGHT
 ---------

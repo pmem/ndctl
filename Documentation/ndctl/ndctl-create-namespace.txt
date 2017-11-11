@@ -133,10 +133,13 @@ OPTIONS
 
 -f::
 --force::
-	Unless this option is specified a 'reconfigure
-	namespace' operation will fail if the namespace is presently
-	active.  Specifying --force causes the namespace to be disabled
-	before reconfiguring.
+	Unless this option is specified the 'reconfigure namespace'
+	operation will fail if the namespace is presently active.
+	Specifying --force causes the namespace to be disabled before
+	the operation is attempted. However, if the namespace is
+	mounted then the 'disable namespace' and 'reconfigure
+	namespace' operations will be aborted.  The namespace must be
+	unmounted before being reconfigured.
 
 -v::
 --verbose::
