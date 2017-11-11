@@ -901,8 +901,10 @@ static int enable_labels(struct ndctl_region *region)
 	count = 0;
 	ndctl_dimm_foreach_in_region(region, dimm)
 		if (ndctl_dimm_is_active(dimm)) {
+			warning("%s is active in %s, failing autolabel\n",
+					ndctl_dimm_get_devname(dimm),
+					ndctl_region_get_devname(region));
 			count++;
-			break;
 		}
 
 	/* some of the dimms belong to multiple regions?? */
@@ -945,7 +947,7 @@ out:
 	if (ndctl_region_get_nstype(region) != ND_DEVICE_NAMESPACE_PMEM) {
 		debug("%s: failed to initialize labels\n",
 				ndctl_region_get_devname(region));
-		return -ENXIO;
+		return -EBUSY;
 	}
 
 	return 0;
@@ -968,9 +970,8 @@ static int namespace_reconfig(struct ndctl_region *region,
 	/* check if we can enable labels on this region */
 	if (ndctl_region_get_nstype(region) == ND_DEVICE_NAMESPACE_IO
 			&& p.autolabel) {
-		rc = enable_labels(region);
-		if (rc)
-			return rc;
+		/* if this fails, try to continue label-less */
+		enable_labels(region);
 	}
 
 	ndns = region_get_namespace(region);
