@@ -46,6 +46,7 @@ struct io_dev {
 	const char *parm_path;
 	char *real_path;
 	uint64_t offset;
+	uint64_t offset_diff;
 	enum io_direction direction;
 	bool is_dax;
 	bool is_char;
@@ -84,7 +85,7 @@ static bool is_stdinout(struct io_dev *io_dev)
 static int setup_device(struct io_dev *io_dev, size_t size)
 {
 	int flags, rc;
-	uint64_t align;
+	uint64_t align, offset;
 
 	if (is_stdinout(io_dev))
 		return 0;
@@ -112,8 +113,11 @@ static int setup_device(struct io_dev *io_dev, size_t size)
 
 	io_dev->mmap_size = ALIGN(size, align);
 	flags = (io_dev->direction == IO_READ) ? PROT_READ : PROT_WRITE;
+	offset = ALIGN_DOWN(io_dev->offset, align);
+	io_dev->offset_diff = io_dev->offset - offset;
+
 	io_dev->mmap = mmap(NULL, io_dev->mmap_size, flags,
-			MAP_SHARED, io_dev->fd, 0);
+			MAP_SHARED, io_dev->fd, offset);
 	if (io_dev->mmap == MAP_FAILED) {
 		rc = -errno;
 		perror("mmap");
@@ -372,17 +376,17 @@ static int64_t __do_io(struct io_dev *dst_dev, struct io_dev *src_dev,
 	ssize_t rc, count = 0;
 
 	if (zero && dst_dev->is_dax) {
-		dst = (uint8_t *)dst_dev->mmap + dst_dev->offset;
+		dst = (uint8_t *)dst_dev->mmap + dst_dev->offset_diff;
 		memset(dst, 0, len);
 		pmem_persist(dst, len);
 		rc = len;
 	} else if (dst_dev->is_dax && src_dev->is_dax) {
-		src = (uint8_t *)src_dev->mmap + src_dev->offset;
-		dst = (uint8_t *)dst_dev->mmap + dst_dev->offset;
+		src = (uint8_t *)src_dev->mmap + src_dev->offset_diff;
+		dst = (uint8_t *)dst_dev->mmap + dst_dev->offset_diff;
 		pmem_memcpy_persist(dst, src, len);
 		rc = len;
 	} else if (src_dev->is_dax) {
-		src = (uint8_t *)src_dev->mmap + src_dev->offset;
+		src = (uint8_t *)src_dev->mmap + src_dev->offset_diff;
 		if (dst_dev->offset) {
 			rc = lseek(dst_dev->fd, dst_dev->offset, SEEK_SET);
 			if (rc < 0) {
@@ -407,7 +411,7 @@ static int64_t __do_io(struct io_dev *dst_dev, struct io_dev *src_dev,
 			printf("Requested size %lu larger than source.\n",
 					len);
 	} else if (dst_dev->is_dax) {
-		dst = (uint8_t *)dst_dev->mmap + dst_dev->offset;
+		dst = (uint8_t *)dst_dev->mmap + dst_dev->offset_diff;
 		if (src_dev->offset) {
 			rc = lseek(src_dev->fd, src_dev->offset, SEEK_SET);
 			if (rc < 0) {
