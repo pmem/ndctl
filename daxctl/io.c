@@ -55,6 +55,7 @@ struct io_dev {
 	struct ndctl_region *region;
 	struct ndctl_dax *dax;
 	uint64_t size;
+	uint64_t mmap_size;
 };
 
 static struct {
@@ -83,6 +84,7 @@ static bool is_stdinout(struct io_dev *io_dev)
 static int setup_device(struct io_dev *io_dev, size_t size)
 {
 	int flags, rc;
+	uint64_t align;
 
 	if (is_stdinout(io_dev))
 		return 0;
@@ -104,8 +106,14 @@ static int setup_device(struct io_dev *io_dev, size_t size)
 	if (!io_dev->is_dax)
 		return 0;
 
+	align = ndctl_dax_get_align(io_dev->dax);
+	if (align == ULONG_MAX)
+		return -ERANGE;
+
+	io_dev->mmap_size = ALIGN(size, align);
 	flags = (io_dev->direction == IO_READ) ? PROT_READ : PROT_WRITE;
-	io_dev->mmap = mmap(NULL, size, flags, MAP_SHARED, io_dev->fd, 0);
+	io_dev->mmap = mmap(NULL, io_dev->mmap_size, flags,
+			MAP_SHARED, io_dev->fd, 0);
 	if (io_dev->mmap == MAP_FAILED) {
 		rc = -errno;
 		perror("mmap");
@@ -501,6 +509,8 @@ static void cleanup(void)
 	for (i = 0; i < 2; i++) {
 		if (is_stdinout(&io.dev[i]))
 			continue;
+		if (io.dev[i].mmap_size)
+			munmap(io.dev[i].mmap, io.dev[i].mmap_size);
 		close(io.dev[i].fd);
 	}
 }
