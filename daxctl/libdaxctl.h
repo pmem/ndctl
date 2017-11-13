@@ -15,7 +15,12 @@
 
 #include <stdarg.h>
 #include <unistd.h>
-#include <uuid.h>
+
+#ifdef HAVE_LIBUUID
+#include <uuid/uuid.h>
+#else
+typedef unsigned char uuid_t[16];
+#endif
 
 #ifdef __cplusplus
 extern "C" {
