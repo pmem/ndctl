@@ -208,8 +208,9 @@ static int set_defaults(enum device_action mode)
 
 	/* check for incompatible mode and type combinations */
 	if (param.type && param.mode && strcmp(param.type, "blk") == 0
-			&& strcmp(param.mode, "memory") == 0) {
-		error("only 'pmem' namespaces can be placed into 'memory' mode\n");
+			&& (strcmp(param.mode, "memory") == 0
+				|| strcmp(param.mode, "dax") == 0)) {
+		error("only 'pmem' namespaces support dax operation\n");
 		rc = -ENXIO;
 	}
 
