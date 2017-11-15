@@ -171,10 +171,14 @@ static int set_defaults(enum device_action mode)
 		      param.mode = "safe"; /* pass */
 		else if (strcmp(param.mode, "memory") == 0)
 		      /* pass */;
+		else if (strcmp(param.mode, "fsdax") == 0)
+			param.mode = "memory"; /* pass */
 		else if (strcmp(param.mode, "raw") == 0)
 		      /* pass */;
 		else if (strcmp(param.mode, "dax") == 0)
 		      /* pass */;
+		else if (strcmp(param.mode, "devdax") == 0)
+			param.mode = "dax"; /* pass */
 		else {
 			error("invalid mode '%s'\n", param.mode);
 			rc = -EINVAL;
@@ -200,7 +204,7 @@ static int set_defaults(enum device_action mode)
 		if (!param.reconfig && param.mode
 				&& strcmp(param.mode, "memory") != 0
 				&& strcmp(param.mode, "dax") != 0) {
-			error("--map only valid for a memory mode pmem namespace\n");
+			error("--map only valid for an dax mode pmem namespace\n");
 			rc = -EINVAL;
 		}
 	} else if (!param.reconfig)
@@ -514,7 +518,7 @@ static int validate_namespace_options(struct ndctl_region *region,
 					|| p->mode == NDCTL_NS_MODE_DAX)) {
 			debug("blk %s does not support %s mode\n", region_name,
 					p->mode == NDCTL_NS_MODE_MEMORY
-					? "memory" : "dax");
+					? "fsdax" : "devdax");
 			return -EAGAIN;
 		}
 	} else if (ndns)

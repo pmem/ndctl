@@ -188,7 +188,7 @@ __ndctl_comp_options()
 			fi
 			;;
 		--mode)
-			opts="raw sector memory dax"
+			opts="raw sector fsdax devdax memory dax"
 			if [[ "$type_filter" == "blk" ]]; then
 				opts="raw sector"
 			fi

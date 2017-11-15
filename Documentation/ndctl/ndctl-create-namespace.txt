@@ -15,7 +15,8 @@ include::namespace-description.txt[]
 EXAMPLES
 --------
 
-Create a maximally sized pmem namespace in 'memory' mode
+Create a maximally sized pmem namespace in 'fsdax' mode (the
+default)
 [verse]
 ndctl create-namespace
 
@@ -28,24 +29,26 @@ OPTIONS
 -t::
 --type=::
 	Create a 'pmem' or 'blk' namespace (subject to available
-	capacity).  A pmem namespace supports the DAX (direct access)
+	capacity).  A pmem namespace supports the dax (direct access)
 	capability to linkndctl:mmap[2] persistent memory directly into
 	a process address space.  A blk namespace access persistent
 	memory through a block-window-aperture.  Compared to pmem it
 	supports a traditional storage error model (EIO on error rather
 	than a cpu exception on a bad memory access), but it does not
-	support DAX.
+	support dax.
 
 -m::
 --mode=::
-	- "raw": expose the namespace capacity directly with some
-	  limitations.  Neither a raw pmem namepace nor raw blk namespace
-	  support sector atomicity by default (see "sector" mode below).  A
-	  raw pmem namespace may have limited support for passing a DAX
-	  mapping to other syscalls.  I.e. direct-I/O to/from a DAX buffer
-	  may fail for a pmem namespace in raw mode.
+	- "raw": expose the namespace capacity directly with
+	  limitations.  Neither a raw pmem namepace nor raw blk
+	  namespace support sector atomicity by default (see "sector"
+	  mode below).  A raw pmem namespace may have limited to no dax
+	  support depending the kernel. In other words operations like
+	  direct-I/O targeting a dax buffer may fail for a pmem
+	  namespace in raw mode or indirect through a page-cache buffer.
+	  See "fsdax" and "devdax" mode for dax operation.
 
-	- "sector" or "safe": persistent memory, given that it is byte
+	- "sector": persistent memory, given that it is byte
 	  addressable, does not support sector atomicity.  The
 	  problematic aspect of sector tearing is that most applications
 	  do not know they have a atomic sector update dependency.  At
@@ -54,27 +57,34 @@ OPTIONS
 	  Persistent memory devices will always tear and always
 	  silently.  Until an application is audited to be robust in the
 	  presence of sector-tearing "safe" mode is recommended.  This
-	  imposes some performance overhead and disables the DAX
-	  capability.
+	  imposes some performance overhead and disables the dax
+	  capability. (also known as "safe" or "btt" mode)
 
-	- "memory": A pmem namespace in this mode supports direct I/O
-	  to/from DAX mappings.  Depending on the kernel this mode may
-	  come at the cost of allocating per-pmem-page metadata.  If that
-	  allocation is required the capacity can be allocated from
-	  "System RAM" or from a reserved portion of pmem (see the --map=
-	  option).
+	- "fsdax": A pmem namespace in this mode supports dax
+	  operation with a block-device based filesystem (in previous
+	  ndctl releases this mode was named "memory" mode). This mode
+	  comes at the cost of allocating per-page metadata. The
+	  capacity can be allocated from "System RAM", or from a
+	  reserved portion of "Persistent Memory" (see the --map=
+	  option).  Note that a filesystem is required for dax
+	  operation, the resulting raw block device (/dev/pmemX) will
+	  use the page cache. See "devdax" mode for raw device access
+	  that supports dax.
 
-	- "dax": Device DAX is the device-centric analogue of Filesystem
-	  DAX (CONFIG_FS_DAX).  It allows memory ranges to be allocated
-	  and mapped without need of an intervening file system.  Device
-	  DAX is strict, precise and predictable.  Specifically this
-	  interface:
+	- "devdax": The device-dax character device interface is a
+	  statically allocated / raw access analogue of filesystem-dax
+	  (in previous ndctl releases this mode was named "dax" mode).
+	  It allows memory ranges to be mapped without need of an
+	  intervening filesystem.  The device-dax is interface strict,
+	  precise and predictable. Specifically the interface:
 
 	  * Guarantees fault granularity with respect to a given page
-	    size (pte, pmd, or pud) set at configuration time.
+	    size (4K, 2M, or 1G on x86) set at configuration time.
 
 	  * Enforces deterministic behavior by being strict about what
-	    fault scenarios are supported.
+	    fault scenarios are supported. I.e. if a device is
+	    configured with a 2M alignment an attempt to fault a 4K
+	    aligned offset will result in SIGBUS.
 
 -s::
 --size=::
@@ -90,12 +100,16 @@ OPTIONS
 
 -a::
 --align::
-	Applications that want to establish DAX memory mappings
-	with page table entries greater than 4K in size need a
-	persistent memory namespace that is sufficiently aligned. For
-	"memory" and "dax" mode this defaults to 2M. Note that "dax"
-	mode enforces all mappings to be aligned to this value,
-	i.e. fails unaligned mapping attempts.
+	Applications that want to establish dax memory mappings with
+	page table entries greater than system base page size (4K on
+	x86) need a persistent memory namespace that is sufficiently
+	aligned. For "fsdax" and "devdax" mode this defaults to 2M.
+	Note that "devdax" mode enforces all mappings to be aligned to
+	this value, i.e. it fails unaligned mapping attempts. The
+	"fsdax" alignment setting determines the starting alignment of
+	filesystem extents and may limit the possible granularities,
+	if a large mapping is not possible it will silently fall back
+	to a smaller page size.
 
 -e::
 --reconfig=::
@@ -116,20 +130,24 @@ OPTIONS
 --name=::
 	For NVDIMM devices that support namespace labels,
 	specify a human friendly name for a namespace.  This name is
-	available as device attribute for use in udev rules or
-	elsewhere.
+	available as a device attribute for use in udev rules.
 
 -l::
 --sector-size::
-	Specify the logical sector size (LBA size) of the block storage
-	device associated with a namespace.
+	Specify the logical sector size (LBA size) of the
+	Linux block device associated with an namespace.
 
 -M::
 --map=::
-	A pmem namespace in "memory" mode may require allocation
-	of per-page metadata.  The allocation can be drawn from either:
+	A pmem namespace in "fsdax" or "devdax" mode requires allocation of
+	per-page metadata.  The allocation can be drawn from either:
 	- "mem": typical system memory
 	- "dev": persistent memory reserved from the namespace
+
+	Given relative capacities of "Persistent Memory" to "System
+	RAM" the allocation defaults to reserving space out of the
+	namespace directly ("--map=dev"). The overhead is 64-bytes per
+	4K (16GB per 1TB) on x86.
 
 -f::
 --force::

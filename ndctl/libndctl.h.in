@@ -511,9 +511,11 @@ const char *ndctl_namespace_get_type_name(struct ndctl_namespace *ndns);
 const char *ndctl_namespace_get_block_device(struct ndctl_namespace *ndns);
 enum ndctl_namespace_mode {
 	NDCTL_NS_MODE_MEMORY,
+	NDCTL_NS_MODE_FSDAX = NDCTL_NS_MODE_MEMORY,
 	NDCTL_NS_MODE_SAFE,
 	NDCTL_NS_MODE_RAW,
 	NDCTL_NS_MODE_DAX,
+	NDCTL_NS_MODE_DEVDAX = NDCTL_NS_MODE_DAX,
 	NDCTL_NS_MODE_UNKNOWN, /* must be last entry */
 };
 enum ndctl_namespace_mode ndctl_namespace_get_mode(
