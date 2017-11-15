@@ -67,5 +67,4 @@ SEE ALSO
 --------
 linkndctl:ndctl-disable-namespace[1],
 linkndctl:ndctl-enable-namespace[1],
-http://pmem.io/documents/NVDIMM_Namespace_Spec.pdf[NVDIMM Namespace
-Specification]
+http://www.uefi.org/sites/default/files/resources/UEFI_Spec_2_7.pdf[UEFI NVDIMM Label Protocol]

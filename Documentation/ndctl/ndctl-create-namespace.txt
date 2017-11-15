@@ -159,6 +159,48 @@ OPTIONS
 	namespace' operations will be aborted.  The namespace must be
 	unmounted before being reconfigured.
 
+-L::
+--autolabel::
+--no-autolabel::
+	Legacy NVDIMM devices do not support namespace labels. In that
+	case the kernel creates region-sized namespaces that can not
+	be deleted.  Their mode can be changed, but they can not be
+	resized smaller than their parent region. This is termed a
+	"label-less namespace". In contrast, NVDIMMs and hypervisors
+	that support the ACPI 6.2 label area definition (ACPI 6.2
+	Section 6.5.10 NVDIMM Label Methods) support "labelled
+	namespace" operation.
+
+	There are two cases where the kernel will default to
+	label-less operation:
+
+	* NVDIMM does not support labels
+
+	* The NVDIMM supports labels, but the Label Index Block (see
+	  UEFI 2.7) is not present and there is no capacity aliasing
+	  between 'blk' and 'pmem' regions.
+
+	In the latter case the configuration can be upgraded to
+	labelled operation by writing an index block on all DIMMs in a
+	region and re-enabling that region. The 'autolabel' capability
+	of 'ndctl create-namespace --reconfig' tries to do this by
+	default if it can determine that all DIMM capacity is
+	referenced by the namespace being reconfigured. It will
+	otherwise fail to autolabel and remain in label-less mode if
+	it finds a DIMM contributes capacity to more than one region.
+	This check prevents inadvertent data loss of that other region
+	is in active use. The --autolabel option is implied by
+	default, the --no-autolabel option can be used to disable this
+	behavior. When automatic labeling fails and labelled operation
+	is still desired the safety policy can be bypassed by the
+	following commands, note that all data on all regions is
+	forfeited by running these commands:
+
+	[verse]
+	ndctl disable-region all
+	ndctl init-labels all
+	ndctl enable-region all
+
 -v::
 --verbose::
 	Emit debug messages for the namespace creation process
@@ -177,7 +219,8 @@ the extent permitted by law.
 SEE ALSO
 --------
 linkndctl:ndctl-zero-labels[1],
+linkndctl:ndctl-init-labels[1],
 linkndctl:ndctl-disable-namespace[1],
 linkndctl:ndctl-enable-namespace[1],
-http://pmem.io/documents/NVDIMM_Namespace_Spec.pdf[NVDIMM Namespace
-Specification]
+http://www.uefi.org/sites/default/files/resources/UEFI_Spec_2_7.pdf[UEFI NVDIMM Label Protocol
+]
