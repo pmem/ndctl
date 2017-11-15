@@ -198,7 +198,8 @@ static int set_defaults(enum device_action mode)
 		}
 
 		if (!param.reconfig && param.mode
-				&& strcmp(param.mode, "memory") != 0) {
+				&& strcmp(param.mode, "memory") != 0
+				&& strcmp(param.mode, "dax") != 0) {
 			error("--map only valid for a memory mode pmem namespace\n");
 			rc = -EINVAL;
 		}
