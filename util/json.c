@@ -747,12 +747,18 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 		} else if (dax_region) {
 			struct daxctl_dev *dev;
 
+			/*
+			 * We can only find/list these device-dax
+			 * details when the instance is enabled.
+			 */
 			dev = daxctl_dev_get_first(dax_region);
-			name = daxctl_dev_get_devname(dev);
-			jobj = json_object_new_string(name);
-			if (!jobj)
-				goto err;
-			json_object_object_add(jndns, "chardev", jobj);
+			if (dev) {
+				name = daxctl_dev_get_devname(dev);
+				jobj = json_object_new_string(name);
+				if (!jobj)
+					goto err;
+				json_object_object_add(jndns, "chardev", jobj);
+			}
 		}
 	} else if (ndctl_namespace_get_type(ndns) != ND_DEVICE_NAMESPACE_IO) {
 		ndctl_namespace_get_uuid(ndns, uuid);
