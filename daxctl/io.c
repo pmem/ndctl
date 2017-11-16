@@ -526,15 +526,11 @@ int cmd_io(int argc, const char **argv, void *daxctl_ctx)
 	struct ndctl_ctx *ndctl_ctx;
 
 	argc = parse_options(argc, argv, options, u, 0);
-	for (i = 0; i < argc; i++) {
+	for (i = 0; i < argc; i++)
 		fail("Unknown parameter \"%s\"\n", argv[i]);
-		return -EINVAL;
-	}
 
-	if (argc) {
+	if (argc)
 		usage_with_options(u, options);
-		return 0;
-	}
 
 	if (!io.dev[0].parm_path && !io.dev[1].parm_path) {
 		usage_with_options(u, options);
