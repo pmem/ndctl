@@ -91,7 +91,7 @@ control API for these devices.
 %setup -q ndctl-%{version}
 
 %build
-echo "VERSION" > version
+echo %{version} > version
 ./autogen.sh
 %ifarch x86_64
 %configure --disable-static --enable-local --disable-silent-rules --with-libpmem
