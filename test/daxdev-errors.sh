@@ -44,6 +44,8 @@ $NDCTL disable-region $BUS all
 $NDCTL zero-labels $BUS all
 $NDCTL enable-region $BUS all
 
+rc=1
+
 query=". | sort_by(.available_size) | reverse | .[0].dev"
 region=$($NDCTL list $BUS -t pmem -Ri | jq -r "$query")
 
