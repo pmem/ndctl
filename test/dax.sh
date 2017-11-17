@@ -18,7 +18,6 @@ json2var="s/[{}\",]//g; s/:/=/g"
 blockdev=""
 
 err() {
-	rc=1
 	echo "test-dax: failed at line $1"
 	if [ -n "$blockdev" ]; then
 		umount /dev/$blockdev
@@ -36,6 +35,7 @@ trap 'err $LINENO' ERR
 dev=$(./dax-dev)
 json=$($NDCTL list -N -n $dev)
 eval $(echo $json | sed -e "$json2var")
+rc=1
 
 mkfs.ext4 /dev/$blockdev
 mount /dev/$blockdev $MNT -o dax
