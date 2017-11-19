@@ -622,7 +622,7 @@ static int device_parse(struct ndctl_ctx *ctx, struct ndctl_bus *bus,
 	return sysfs_device_parse(ctx, base_path, dev_name, parent, add_dev);
 }
 
-static int to_dsm_index(const char *name, int dimm)
+static int to_cmd_index(const char *name, int dimm)
 {
 	const char *(*cmd_name_fn)(unsigned cmd);
 	int i, end_cmd;
@@ -650,7 +650,7 @@ static int to_dsm_index(const char *name, int dimm)
 
 static unsigned long parse_commands(char *commands, int dimm)
 {
-	unsigned long dsm_mask = 0;
+	unsigned long cmd_mask = 0;
 	char *start, *end;
 
 	start = commands;
@@ -658,12 +658,12 @@ static unsigned long parse_commands(char *commands, int dimm)
 		int cmd;
 
 		*end = '\0';
-		cmd = to_dsm_index(start, dimm);
+		cmd = to_cmd_index(start, dimm);
 		if (cmd)
-			dsm_mask |= 1 << cmd;
+			cmd_mask |= 1 << cmd;
 		start = end + 1;
 	}
-	return dsm_mask;
+	return cmd_mask;
 }
 
 static void parse_nfit_mem_flags(struct ndctl_dimm *dimm, char *flags)
@@ -740,7 +740,7 @@ static void *add_bus(void *parent, int id, const char *ctl_base)
 	sprintf(path, "%s/device/commands", ctl_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		goto err_read;
-	bus->dsm_mask = parse_commands(buf, 0);
+	bus->cmd_mask = parse_commands(buf, 0);
 
 	sprintf(path, "%s/device/nfit/revision", ctl_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0) {
@@ -1016,7 +1016,7 @@ NDCTL_EXPORT const char *ndctl_bus_get_cmd_name(struct ndctl_bus *bus, int cmd)
 NDCTL_EXPORT int ndctl_bus_is_cmd_supported(struct ndctl_bus *bus,
 		int cmd)
 {
-	return !!(bus->dsm_mask & (1ULL << cmd));
+	return !!(bus->cmd_mask & (1ULL << cmd));
 }
 
 NDCTL_EXPORT unsigned int ndctl_bus_get_revision(struct ndctl_bus *bus)
@@ -1202,7 +1202,7 @@ static void *add_dimm(void *parent, int id, const char *dimm_base)
 	sprintf(path, "%s/commands", dimm_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		goto err_read;
-	dimm->dsm_mask = parse_commands(buf, 1);
+	dimm->cmd_mask = parse_commands(buf, 1);
 
 	dimm->dimm_buf = calloc(1, strlen(dimm_base) + 50);
 	if (!dimm->dimm_buf)
@@ -1231,7 +1231,7 @@ static void *add_dimm(void *parent, int id, const char *dimm_base)
 	dimm->subsystem_revision_id = -1;
 	dimm->manufacturing_date = -1;
 	dimm->manufacturing_location = -1;
-	dimm->dsm_family = -1;
+	dimm->cmd_family = -1;
 	for (i = 0; i < formats; i++)
 		dimm->format[i] = -1;
 
@@ -1304,10 +1304,10 @@ static void *add_dimm(void *parent, int id, const char *dimm_base)
 
 	sprintf(path, "%s/nfit/family", dimm_base);
 	if (sysfs_read_attr(ctx, path, buf) == 0)
-		dimm->dsm_family = strtoul(buf, NULL, 0);
-	if (dimm->dsm_family == NVDIMM_FAMILY_HPE1)
+		dimm->cmd_family = strtoul(buf, NULL, 0);
+	if (dimm->cmd_family == NVDIMM_FAMILY_HPE1)
 		dimm->smart_ops = hpe1_smart_ops;
-	if (dimm->dsm_family == NVDIMM_FAMILY_MSFT)
+	if (dimm->cmd_family == NVDIMM_FAMILY_MSFT)
 		dimm->smart_ops = msft_smart_ops;
 
 	dimm->formats = formats;
@@ -1524,7 +1524,7 @@ NDCTL_EXPORT int ndctl_dimm_failed_map(struct ndctl_dimm *dimm)
 NDCTL_EXPORT int ndctl_dimm_is_cmd_supported(struct ndctl_dimm *dimm,
 		int cmd)
 {
-	return !!(dimm->dsm_mask & (1ULL << cmd));
+	return !!(dimm->cmd_mask & (1ULL << cmd));
 }
 
 NDCTL_EXPORT int ndctl_dimm_get_health_eventfd(struct ndctl_dimm *dimm)

@@ -75,8 +75,8 @@ struct ndctl_dimm {
 	unsigned short subsystem_revision_id;
 	unsigned short manufacturing_date;
 	unsigned char manufacturing_location;
-	unsigned long dsm_family;
-	unsigned long dsm_mask;
+	unsigned long cmd_family;
+	unsigned long cmd_mask;
 	char *unique_id;
 	char *dimm_path;
 	char *dimm_buf;
@@ -155,7 +155,7 @@ struct ndctl_bus {
 	size_t buf_len;
 	char *wait_probe_path;
 	char *scrub_path;
-	unsigned long dsm_mask;
+	unsigned long cmd_mask;
 	unsigned long nfit_dsm_mask;
 };
 
