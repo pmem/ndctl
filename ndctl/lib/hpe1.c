@@ -36,6 +36,12 @@ static struct ndctl_cmd *hpe1_dimm_cmd_new_smart(struct ndctl_dimm *dimm)
 		return NULL;
 	}
 
+	if (test_dimm_dsm(dimm, NDN_HPE1_CMD_SMART)
+			== DIMM_DSM_UNSUPPORTED) {
+		dbg(ctx, "unsupported function\n");
+		return NULL;
+	}
+
 	size = sizeof(*cmd) + sizeof(struct ndn_pkg_hpe1);
 	cmd = calloc(1, size);
 	if (!cmd)
@@ -211,6 +217,12 @@ static struct ndctl_cmd *hpe1_dimm_cmd_new_smart_threshold(struct ndctl_dimm *di
 
 	if (!ndctl_dimm_is_cmd_supported(dimm, ND_CMD_CALL)) {
 		dbg(ctx, "unsupported cmd\n");
+		return NULL;
+	}
+
+	if (test_dimm_dsm(dimm, NDN_HPE1_CMD_SMART_THRESHOLD)
+			== DIMM_DSM_UNSUPPORTED) {
+		dbg(ctx, "unsupported function\n");
 		return NULL;
 	}
 

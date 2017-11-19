@@ -35,6 +35,11 @@ static struct ndctl_cmd *msft_dimm_cmd_new_smart(struct ndctl_dimm *dimm)
 		return NULL;
 	}
 
+	if (test_dimm_dsm(dimm, NDN_MSFT_CMD_SMART) == DIMM_DSM_UNSUPPORTED) {
+		dbg(ctx, "unsupported function\n");
+		return NULL;
+	}
+
 	size = sizeof(*cmd) + sizeof(struct ndn_pkg_msft);
 	cmd = calloc(1, size);
 	if (!cmd)

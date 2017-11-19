@@ -1232,6 +1232,7 @@ static void *add_dimm(void *parent, int id, const char *dimm_base)
 	dimm->manufacturing_date = -1;
 	dimm->manufacturing_location = -1;
 	dimm->cmd_family = -1;
+	dimm->nfit_dsm_mask = ULONG_MAX;
 	for (i = 0; i < formats; i++)
 		dimm->format[i] = -1;
 
@@ -1309,6 +1310,10 @@ static void *add_dimm(void *parent, int id, const char *dimm_base)
 		dimm->smart_ops = hpe1_smart_ops;
 	if (dimm->cmd_family == NVDIMM_FAMILY_MSFT)
 		dimm->smart_ops = msft_smart_ops;
+
+	sprintf(path, "%s/nfit/dsm_mask", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) == 0)
+		dimm->nfit_dsm_mask = strtoul(buf, NULL, 0);
 
 	dimm->formats = formats;
 	sprintf(path, "%s/nfit/format", dimm_base);

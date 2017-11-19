@@ -77,6 +77,7 @@ struct ndctl_dimm {
 	unsigned char manufacturing_location;
 	unsigned long cmd_family;
 	unsigned long cmd_mask;
+	unsigned long nfit_dsm_mask;
 	char *unique_id;
 	char *dimm_path;
 	char *dimm_buf;
@@ -101,6 +102,21 @@ struct ndctl_dimm {
 	int formats;
 	int format[0];
 };
+
+enum dsm_support {
+	DIMM_DSM_UNSUPPORTED, /* don't attempt command */
+	DIMM_DSM_SUPPORTED, /* good to go */
+	DIMM_DSM_UNKNOWN, /* try ND_CMD_CALL on older kernels */
+};
+
+static inline enum dsm_support test_dimm_dsm(struct ndctl_dimm *dimm, int fn)
+{
+	if (dimm->nfit_dsm_mask == ULONG_MAX) {
+		return DIMM_DSM_UNKNOWN;
+	} else if (dimm->nfit_dsm_mask & (1 << fn))
+		return DIMM_DSM_SUPPORTED;
+	return DIMM_DSM_UNSUPPORTED;
+}
 
 void region_flag_refresh(struct ndctl_region *region);
 
