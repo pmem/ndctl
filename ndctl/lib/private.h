@@ -288,7 +288,7 @@ struct ndctl_smart_ops {
 	struct ndctl_cmd *(*new_smart)(struct ndctl_dimm *);
 	unsigned int (*smart_get_flags)(struct ndctl_cmd *);
 	unsigned int (*smart_get_health)(struct ndctl_cmd *);
-	unsigned int (*smart_get_temperature)(struct ndctl_cmd *);
+	unsigned int (*smart_get_media_temperature)(struct ndctl_cmd *);
 	unsigned int (*smart_get_spares)(struct ndctl_cmd *);
 	unsigned int (*smart_get_alarm_flags)(struct ndctl_cmd *);
 	unsigned int (*smart_get_life_used)(struct ndctl_cmd *);
@@ -298,7 +298,7 @@ struct ndctl_smart_ops {
 	unsigned char *(*smart_get_vendor_data)(struct ndctl_cmd *);
 	struct ndctl_cmd *(*new_smart_threshold)(struct ndctl_dimm *);
 	unsigned int (*smart_threshold_get_alarm_control)(struct ndctl_cmd *);
-	unsigned int (*smart_threshold_get_temperature)(struct ndctl_cmd *);
+	unsigned int (*smart_threshold_get_media_temperature)(struct ndctl_cmd *);
 	unsigned int (*smart_threshold_get_spares)(struct ndctl_cmd *);
 };
 

@@ -120,7 +120,7 @@ static unsigned int msft_cmd_smart_get_health(struct ndctl_cmd *cmd)
 	return health;
 }
 
-static unsigned int msft_cmd_smart_get_temperature(struct ndctl_cmd *cmd)
+static unsigned int msft_cmd_smart_get_media_temperature(struct ndctl_cmd *cmd)
 {
 	if (msft_smart_valid(cmd) < 0)
 		return UINT_MAX;
@@ -140,6 +140,6 @@ struct ndctl_smart_ops * const msft_smart_ops = &(struct ndctl_smart_ops) {
 	.new_smart = msft_dimm_cmd_new_smart,
 	.smart_get_flags = msft_cmd_smart_get_flags,
 	.smart_get_health = msft_cmd_smart_get_health,
-	.smart_get_temperature = msft_cmd_smart_get_temperature,
+	.smart_get_media_temperature = msft_cmd_smart_get_media_temperature,
 	.smart_get_life_used = msft_cmd_smart_get_life_used,
 };

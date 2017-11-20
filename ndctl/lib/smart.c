@@ -53,7 +53,8 @@ NDCTL_EXPORT rettype name(struct ndctl_cmd *cmd) \
 
 smart_cmd_op(ndctl_cmd_smart_get_flags, smart_get_flags, unsigned int, 0)
 smart_cmd_op(ndctl_cmd_smart_get_health, smart_get_health, unsigned int, 0)
-smart_cmd_op(ndctl_cmd_smart_get_temperature, smart_get_temperature, unsigned int, 0)
+smart_cmd_op(ndctl_cmd_smart_get_media_temperature, smart_get_media_temperature,
+		unsigned int, 0)
 smart_cmd_op(ndctl_cmd_smart_get_spares, smart_get_spares, unsigned int, 0)
 smart_cmd_op(ndctl_cmd_smart_get_alarm_flags, smart_get_alarm_flags, unsigned int, 0)
 smart_cmd_op(ndctl_cmd_smart_get_life_used, smart_get_life_used, unsigned int, 0)
@@ -62,8 +63,20 @@ smart_cmd_op(ndctl_cmd_smart_get_shutdown_count, smart_get_shutdown_count, unsig
 smart_cmd_op(ndctl_cmd_smart_get_vendor_size, smart_get_vendor_size, unsigned int, 0)
 smart_cmd_op(ndctl_cmd_smart_get_vendor_data, smart_get_vendor_data, unsigned char *, NULL)
 smart_cmd_op(ndctl_cmd_smart_threshold_get_alarm_control, smart_threshold_get_alarm_control, unsigned int, 0)
-smart_cmd_op(ndctl_cmd_smart_threshold_get_temperature, smart_threshold_get_temperature, unsigned int, 0)
+smart_cmd_op(ndctl_cmd_smart_threshold_get_media_temperature,
+		smart_threshold_get_media_temperature, unsigned int, 0)
 smart_cmd_op(ndctl_cmd_smart_threshold_get_spares, smart_threshold_get_spares, unsigned int, 0)
+
+NDCTL_EXPORT unsigned int ndctl_cmd_smart_get_temperature(struct ndctl_cmd *cmd)
+{
+	return ndctl_cmd_smart_get_media_temperature(cmd);
+}
+
+NDCTL_EXPORT unsigned int ndctl_cmd_smart_threshold_get_temperature(
+		struct ndctl_cmd *cmd)
+{
+	return ndctl_cmd_smart_threshold_get_media_temperature(cmd);
+}
 
 /*
  * The following intel_dimm_*() and intel_smart_*() functions implement
@@ -126,6 +139,12 @@ intel_smart_get_field(cmd, shutdown_state)
 intel_smart_get_field(cmd, shutdown_count)
 intel_smart_get_field(cmd, vendor_size)
 
+static unsigned int intel_cmd_smart_get_media_temperature(
+		struct ndctl_cmd *cmd)
+{
+	return intel_cmd_smart_get_temperature(cmd);
+}
+
 static unsigned char *intel_cmd_smart_get_vendor_data(struct ndctl_cmd *cmd)
 {
 	struct nd_smart_payload *smart_data;
@@ -158,6 +177,12 @@ static unsigned int intel_cmd_smart_threshold_get_##field( \
 intel_smart_threshold_get_field(cmd, alarm_control)
 intel_smart_threshold_get_field(cmd, temperature)
 intel_smart_threshold_get_field(cmd, spares)
+
+static unsigned int intel_cmd_smart_threshold_get_media_temperature(
+		struct ndctl_cmd *cmd)
+{
+	return intel_cmd_smart_threshold_get_temperature(cmd);
+}
 
 static struct ndctl_cmd *intel_dimm_cmd_new_smart_threshold(
 		struct ndctl_dimm *dimm)
@@ -193,7 +218,7 @@ struct ndctl_smart_ops * const intel_smart_ops = &(struct ndctl_smart_ops) {
 	.new_smart = intel_dimm_cmd_new_smart,
 	.smart_get_flags = intel_cmd_smart_get_flags,
 	.smart_get_health = intel_cmd_smart_get_health,
-	.smart_get_temperature = intel_cmd_smart_get_temperature,
+	.smart_get_media_temperature = intel_cmd_smart_get_media_temperature,
 	.smart_get_spares = intel_cmd_smart_get_spares,
 	.smart_get_alarm_flags = intel_cmd_smart_get_alarm_flags,
 	.smart_get_life_used = intel_cmd_smart_get_life_used,
@@ -203,6 +228,7 @@ struct ndctl_smart_ops * const intel_smart_ops = &(struct ndctl_smart_ops) {
 	.smart_get_vendor_data = intel_cmd_smart_get_vendor_data,
 	.new_smart_threshold = intel_dimm_cmd_new_smart_threshold,
 	.smart_threshold_get_alarm_control = intel_cmd_smart_threshold_get_alarm_control,
-	.smart_threshold_get_temperature = intel_cmd_smart_threshold_get_temperature,
+	.smart_threshold_get_media_temperature
+		= intel_cmd_smart_threshold_get_media_temperature,
 	.smart_threshold_get_spares = intel_cmd_smart_threshold_get_spares,
 };

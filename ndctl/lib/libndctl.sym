@@ -310,4 +310,6 @@ global:
 	ndctl_namespace_injection_get_next_bb;
 	ndctl_bb_get_block;
 	ndctl_bb_get_count;
+	ndctl_cmd_smart_get_media_temperature;
+	ndctl_cmd_smart_threshold_get_media_temperature;
 } LIBNDCTL_13;
