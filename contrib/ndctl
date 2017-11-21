@@ -143,9 +143,9 @@ __ndctl_get_dimms()
 
 __ndctl_get_sector_sizes()
 {
-	if [[ "$mode_filter" == @(raw|memory) ]]; then
+	if [[ "$mode_filter" == @(raw|memory|fsdax) ]]; then
 		echo "512 4096"
-	elif [[ "$mode_filter" == @(dax) ]]; then
+	elif [[ "$mode_filter" == @(dax|devdax) ]]; then
 		return
 	else
 		echo "512 520 528 4096 4104 4160 4224"
@@ -183,12 +183,12 @@ __ndctl_comp_options()
 			;;
 		--type)
 			opts="pmem blk"
-			if [[ "$mode_filter" == @(dax|memory) ]]; then
+			if [[ "$mode_filter" == @(dax|memory|fsdax|devdax) ]]; then
 				opts="pmem"
 			fi
 			;;
 		--mode)
-			opts="raw sector fsdax devdax memory dax"
+			opts="raw sector fsdax devdax"
 			if [[ "$type_filter" == "blk" ]]; then
 				opts="raw sector"
 			fi
