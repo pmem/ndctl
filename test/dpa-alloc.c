@@ -24,15 +24,10 @@
 #include <uuid/uuid.h>
 
 #include <test.h>
+#include <ndctl.h>
 #include <linux/version.h>
 #include <ndctl/libndctl.h>
 #include <ccan/array_size/array_size.h>
-
-#ifdef HAVE_NDCTL_H
-#include <linux/ndctl.h>
-#else
-#include <ndctl.h>
-#endif
 
 static const char *NFIT_PROVIDER0 = "nfit_test.0";
 static const char *NFIT_PROVIDER1 = "nfit_test.1";

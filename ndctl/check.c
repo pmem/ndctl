@@ -18,6 +18,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <ndctl.h>
 #include <limits.h>
 #include <stdbool.h>
 #include <sys/mman.h>
@@ -35,12 +36,6 @@
 #include <ccan/minmax/minmax.h>
 #include <ccan/array_size/array_size.h>
 #include <ccan/short_types/short_types.h>
-
-#ifdef HAVE_NDCTL_H
-#include <linux/ndctl.h>
-#else
-#include <ndctl.h>
-#endif
 
 struct check_opts {
 	bool verbose;

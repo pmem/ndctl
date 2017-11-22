@@ -51,13 +51,5 @@ struct json_object *util_json_object_size(unsigned long long size,
 		unsigned long flags);
 struct json_object *util_json_object_hex(unsigned long long val,
 		unsigned long flags);
-#ifdef HAVE_NDCTL_SMART
 struct json_object *util_dimm_health_to_json(struct ndctl_dimm *dimm);
-#else
-static inline struct json_object *util_dimm_health_to_json(
-		struct ndctl_dimm *dimm)
-{
-	return NULL;
-}
-#endif
 #endif /* __NDCTL_JSON_H__ */

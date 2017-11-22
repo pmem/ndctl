@@ -43,7 +43,6 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_bus_cmd_new_ars_cap(struct ndctl_bus *bus,
 	return cmd;
 }
 
-#ifdef HAVE_NDCTL_CLEAR_ERROR
 static bool is_power_of_2(unsigned int v)
 {
 	return v && ((v & (v - 1)) == 0);
@@ -55,12 +54,6 @@ static bool validate_clear_error(struct ndctl_cmd *ars_cap)
 		return false;
 	return true;
 }
-#else
-static bool validate_clear_error(struct ndctl_cmd *ars_cap)
-{
-	return true;
-}
-#endif
 
 static bool __validate_ars_cap(struct ndctl_cmd *ars_cap)
 {
@@ -253,7 +246,6 @@ NDCTL_EXPORT unsigned long long ndctl_cmd_ars_get_record_len(
 	return 0;
 }
 
-#ifdef HAVE_NDCTL_CLEAR_ERROR
 NDCTL_EXPORT struct ndctl_cmd *ndctl_bus_cmd_new_clear_error(
 		unsigned long long address, unsigned long long len,
 		struct ndctl_cmd *ars_cap)
@@ -314,4 +306,3 @@ NDCTL_EXPORT unsigned long long ndctl_cmd_clear_error_get_cleared(
 	dbg(ctx, "invalid clear_err\n");
 	return 0;
 }
-#endif

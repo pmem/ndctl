@@ -16,12 +16,7 @@
 #include <json-c/json.h>
 #include <ndctl/libndctl.h>
 #include <ccan/array_size/array_size.h>
-
-#ifdef HAVE_NDCTL_H
-#include <linux/ndctl.h>
-#else
 #include <ndctl.h>
-#endif
 
 static double parse_smart_temperature(unsigned int temp)
 {
@@ -96,8 +91,6 @@ struct json_object *util_dimm_health_to_json(struct ndctl_dimm *dimm)
 
 	rc = ndctl_cmd_submit(cmd);
 	if (rc || ndctl_cmd_get_firmware_status(cmd)) {
-		if (!ndctl_dimm_is_cmd_supported(dimm, ND_CMD_SMART))
-			goto err;
 		jobj = json_object_new_string("unknown");
 		if (jobj)
 			json_object_object_add(jhealth, "health_state", jobj);

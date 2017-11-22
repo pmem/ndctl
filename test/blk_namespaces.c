@@ -23,18 +23,13 @@
 #include <syslog.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <ndctl.h>
 #include <unistd.h>
 #include <uuid/uuid.h>
 #include <linux/version.h>
 #include <test.h>
 #include <libkmod.h>
 #include <ccan/array_size/array_size.h>
-
-#ifdef HAVE_NDCTL_H
-#include <linux/ndctl.h>
-#else
-#include <ndctl.h>
-#endif
 
 /* The purpose of this test is to verify that we can successfully do I/O to
  * multiple nd_blk namespaces that have discontiguous segments.  It first

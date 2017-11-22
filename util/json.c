@@ -21,12 +21,7 @@
 #include <daxctl/libdaxctl.h>
 #include <ccan/array_size/array_size.h>
 #include <ccan/short_types/short_types.h>
-
-#ifdef HAVE_NDCTL_H
-#include <linux/ndctl.h>
-#else
 #include <ndctl.h>
-#endif
 
 /* adapted from mdadm::human_size_brief() */
 static int display_size(struct json_object *jobj, struct printbuf *pbuf,

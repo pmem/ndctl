@@ -30,14 +30,10 @@
 
 #include <util/log.h>
 #include <util/sysfs.h>
+#include <daxctl/libdaxctl.h>
 #include <ccan/array_size/array_size.h>
 #include <ndctl/libndctl.h>
-#include <daxctl/libdaxctl.h>
-#ifdef HAVE_NDCTL_H
-#include <linux/ndctl.h>
-#else
 #include <ndctl.h>
-#endif
 
 #define fail() fprintf(stderr, "%s: failed at: %d\n", __func__, __LINE__)
 

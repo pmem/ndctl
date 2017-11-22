@@ -23,11 +23,8 @@
 #include <uuid/uuid.h>
 #include <ccan/list/list.h>
 #include <ccan/array_size/array_size.h>
-#ifdef HAVE_NDCTL_H
-#include <linux/ndctl.h>
-#else
+
 #include <ndctl.h>
-#endif
 #include <ndctl/libndctl.h>
 #include <ccan/endian/endian.h>
 #include <ccan/short_types/short_types.h>
@@ -259,14 +256,10 @@ struct ndctl_cmd {
 	} iter;
 	struct ndctl_cmd *source;
 	union {
-#ifdef HAVE_NDCTL_ARS
 		struct nd_cmd_ars_cap ars_cap[0];
 		struct nd_cmd_ars_start ars_start[0];
 		struct nd_cmd_ars_status ars_status[0];
-#endif
-#ifdef HAVE_NDCTL_CLEAR_ERROR
 		struct nd_cmd_clear_error clear_err[0];
-#endif
 		struct ndn_pkg_hpe1 hpe1[0];
 		struct ndn_pkg_msft msft[0];
 		struct nd_pkg_intel intel[0];
@@ -302,30 +295,9 @@ struct ndctl_smart_ops {
 	unsigned int (*smart_threshold_get_spares)(struct ndctl_cmd *);
 };
 
-#if HAS_SMART == 1
 struct ndctl_smart_ops * const intel_smart_ops;
 struct ndctl_smart_ops * const hpe1_smart_ops;
 struct ndctl_smart_ops * const msft_smart_ops;
-#else
-static struct ndctl_smart_ops * const intel_smart_ops = NULL;
-static struct ndctl_smart_ops * const hpe1_smart_ops = NULL;
-static struct ndctl_smart_ops * const msft_smart_ops = NULL;
-#endif
-
-/* internal library helpers for conditionally defined command numbers */
-#ifdef HAVE_NDCTL_ARS
-static const int nd_cmd_ars_status = ND_CMD_ARS_STATUS;
-static const int nd_cmd_ars_cap = ND_CMD_ARS_CAP;
-#else
-static const int nd_cmd_ars_status;
-static const int nd_cmd_ars_cap;
-#endif
-
-#ifdef HAVE_NDCTL_CLEAR_ERROR
-static const int nd_cmd_clear_error = ND_CMD_CLEAR_ERROR;
-#else
-static const int nd_cmd_clear_error;
-#endif
 
 static inline struct ndctl_bus *cmd_to_bus(struct ndctl_cmd *cmd)
 {

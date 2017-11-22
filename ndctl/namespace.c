@@ -17,6 +17,8 @@
 #include <unistd.h>
 #include <limits.h>
 #include <syslog.h>
+
+#include <ndctl.h>
 #include "action.h"
 #include <sys/stat.h>
 #include <uuid/uuid.h>
@@ -28,13 +30,6 @@
 #include <ndctl/libndctl.h>
 #include <util/parse-options.h>
 #include <ccan/minmax/minmax.h>
-#include <ccan/array_size/array_size.h>
-
-#ifdef HAVE_NDCTL_H
-#include <linux/ndctl.h>
-#else
-#include <ndctl.h>
-#endif
 
 static bool verbose;
 static bool force;

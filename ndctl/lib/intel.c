@@ -107,9 +107,15 @@ static unsigned int intel_cmd_smart_get_flags(struct ndctl_cmd *cmd)
 	if (intel_flags & ND_INTEL_SMART_USED_VALID)
 		flags |= ND_SMART_USED_VALID;
 	if (intel_flags & ND_INTEL_SMART_MTEMP_VALID)
-		flags |= ND_SMART_TEMP_VALID;
+		flags |= ND_SMART_MTEMP_VALID;
+	if (intel_flags & ND_INTEL_SMART_CTEMP_VALID)
+		flags |= ND_SMART_CTEMP_VALID;
 	if (intel_flags & ND_INTEL_SMART_SHUTDOWN_COUNT_VALID)
 		flags |= ND_SMART_SHUTDOWN_COUNT_VALID;
+	if (intel_flags & ND_INTEL_SMART_AIT_STATUS_VALID)
+		flags |= ND_SMART_AIT_STATUS_VALID;
+	if (intel_flags & ND_INTEL_SMART_PTEMP_VALID)
+		flags |= ND_SMART_PTEMP_VALID;
 	if (intel_flags & ND_INTEL_SMART_ALARM_VALID)
 		flags |= ND_SMART_ALARM_VALID;
 	if (intel_flags & ND_INTEL_SMART_SHUTDOWN_VALID)

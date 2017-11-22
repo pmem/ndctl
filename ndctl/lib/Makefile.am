@@ -1,9 +1,5 @@
 include $(top_srcdir)/Makefile.am.in
 
-BUILT_SOURCES = ../libndctl.h
-../libndctl.h: ../libndctl.h.in
-	touch $(top_srcdir)/version.m4
-
 %.pc: %.pc.in Makefile
 	$(SED_PROCESS)
 
@@ -19,6 +15,12 @@ libndctl_la_SOURCES =\
 	../../util/sysfs.h \
 	dimm.c \
 	inject.c \
+	nfit.c \
+	smart.c \
+	intel.c \
+	hpe1.c \
+	msft.c \
+	ars.c \
 	libndctl.c
 
 libndctl_la_LIBADD =\
@@ -26,19 +28,6 @@ libndctl_la_LIBADD =\
 	$(UDEV_LIBS) \
 	$(UUID_LIBS) \
 	$(KMOD_LIBS)
-
-if ENABLE_ARS
-libndctl_la_SOURCES += ars.c
-endif
-
-if ENABLE_SMART
-libndctl_la_SOURCES += smart.c
-libndctl_la_SOURCES += intel.c
-libndctl_la_SOURCES += hpe1.c
-libndctl_la_SOURCES += msft.c
-endif
-
-libndctl_la_SOURCES += nfit.c
 
 EXTRA_DIST += libndctl.sym
 

@@ -28,12 +28,7 @@
 #include <ndctl/libndctl.h>
 #include <ccan/array_size/array_size.h>
 
-#ifdef HAVE_NDCTL_H
-#include <linux/ndctl.h>
-#else
 #include <ndctl.h>
-#endif
-
 #include <builtin.h>
 #include <test.h>
 

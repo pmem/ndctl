@@ -174,8 +174,6 @@ int ndctl_dimm_disable(struct ndctl_dimm *dimm);
 int ndctl_dimm_enable(struct ndctl_dimm *dimm);
 
 struct ndctl_cmd;
-#define HAS_ARS HAVE_NDCTL_ARS
-#if HAS_ARS == 1
 struct ndctl_cmd *ndctl_bus_cmd_new_ars_cap(struct ndctl_bus *bus,
 		unsigned long long address, unsigned long long len);
 struct ndctl_cmd *ndctl_bus_cmd_new_ars_start(struct ndctl_cmd *ars_cap, int type);
@@ -193,95 +191,40 @@ unsigned long long ndctl_cmd_ars_get_record_addr(struct ndctl_cmd *ars_stat,
 		unsigned int rec_index);
 unsigned long long ndctl_cmd_ars_get_record_len(struct ndctl_cmd *ars_stat,
 		unsigned int rec_index);
-
-#define HAS_CLEAR_ERROR HAVE_NDCTL_CLEAR_ERROR
-#if HAS_CLEAR_ERROR == 1
-/*
- * clear_error requires ars_cap, so we require HAS_CLEAR_ERROR to export
- * the clear_error capability
- */
 struct ndctl_cmd *ndctl_bus_cmd_new_clear_error(unsigned long long address,
 		unsigned long long len, struct ndctl_cmd *ars_cap);
 unsigned long long ndctl_cmd_clear_error_get_cleared(
 		struct ndctl_cmd *clear_err);
-#endif
-#else /* HAS_ARS == 0 */
-static inline struct ndctl_cmd *ndctl_bus_cmd_new_ars_cap(struct ndctl_bus *bus,
-		unsigned long long address, unsigned long long len)
-{
-	return NULL;
-}
-
-static inline struct ndctl_cmd *ndctl_bus_cmd_new_ars_start(
-		struct ndctl_cmd *ars_cap, int type)
-{
-	return NULL;
-}
-
-static inline struct ndctl_cmd *ndctl_bus_cmd_new_ars_status(
-		struct ndctl_cmd *ars_cap)
-{
-	return NULL;
-}
-
-static inline unsigned int ndctl_cmd_ars_cap_get_size(struct ndctl_cmd *ars_cap)
-{
-	return 0;
-}
-
-struct ndctl_range;
-static inline int ndctl_cmd_ars_cap_get_range(struct ndctl_cmd *ars_cap,
-		struct ndctl_range *range)
-{
-	return -ENXIO;
-}
-
-static inline unsigned int ndctl_cmd_ars_in_progress(struct ndctl_cmd *ars_status)
-{
-	return 0;
-}
-
-static inline unsigned int ndctl_cmd_ars_num_records(struct ndctl_cmd *ars_stat)
-{
-	return 0;
-}
-
-static inline unsigned long long ndctl_cmd_ars_get_record_addr(
-		struct ndctl_cmd *ars_stat, unsigned int rec_index)
-{
-	return 0;
-}
-
-static inline unsigned long long ndctl_cmd_ars_get_record_len(
-		struct ndctl_cmd *ars_stat, unsigned int rec_index)
-{
-	return 0;
-}
-#define HAS_CLEAR_ERROR 0
-#endif /* HAS_ARS */
-
-#if HAS_CLEAR_ERROR == 0
-static inline struct ndctl_cmd *ndctl_bus_cmd_new_clear_error(
-		unsigned long long address, unsigned long long len,
-		struct ndctl_cmd *ars_cap)
-{
-	return NULL;
-}
-
-static inline unsigned long long ndctl_cmd_clear_error_get_cleared(
-		struct ndctl_cmd *clear_err)
-{
-	return 0;
-}
-#endif
 
 /*
  * Note: ndctl_cmd_smart_get_temperature is an alias for
  * ndctl_cmd_smart_get_temperature
  */
 
-#define HAS_SMART HAVE_NDCTL_SMART
-#if HAS_SMART == 1
+/*
+ * the ndctl.h definition of these are deprecated, libndctl.h is the
+ * authoritative defintion.
+ */
+#define ND_SMART_HEALTH_VALID	(1 << 0)
+#define ND_SMART_SPARES_VALID	(1 << 1)
+#define ND_SMART_USED_VALID	(1 << 2)
+#define ND_SMART_MTEMP_VALID 	(1 << 3)
+#define ND_SMART_TEMP_VALID 	ND_SMART_MTEMP_VALID
+#define ND_SMART_CTEMP_VALID 	(1 << 4)
+#define ND_SMART_SHUTDOWN_COUNT_VALID	(1 << 5)
+#define ND_SMART_AIT_STATUS_VALID (1 << 6)
+#define ND_SMART_PTEMP_VALID	(1 << 7)
+#define ND_SMART_ALARM_VALID	(1 << 9)
+#define ND_SMART_SHUTDOWN_VALID	(1 << 10)
+#define ND_SMART_VENDOR_VALID	(1 << 11)
+#define ND_SMART_SPARE_TRIP	(1 << 0)
+#define ND_SMART_MTEMP_TRIP	(1 << 1)
+#define ND_SMART_TEMP_TRIP	ND_SMART_MTEMP_TRIP
+#define ND_SMART_CTEMP_TRIP	(1 << 2)
+#define ND_SMART_NON_CRITICAL_HEALTH	(1 << 0)
+#define ND_SMART_CRITICAL_HEALTH	(1 << 1)
+#define ND_SMART_FATAL_HEALTH		(1 << 2)
+
 struct ndctl_cmd *ndctl_dimm_cmd_new_smart(struct ndctl_dimm *dimm);
 unsigned int ndctl_cmd_smart_get_flags(struct ndctl_cmd *cmd);
 unsigned int ndctl_cmd_smart_get_health(struct ndctl_cmd *cmd);
@@ -299,82 +242,6 @@ unsigned int ndctl_cmd_smart_threshold_get_alarm_control(struct ndctl_cmd *cmd);
 unsigned int ndctl_cmd_smart_threshold_get_temperature(struct ndctl_cmd *cmd);
 unsigned int ndctl_cmd_smart_threshold_get_media_temperature(struct ndctl_cmd *cmd);
 unsigned int ndctl_cmd_smart_threshold_get_spares(struct ndctl_cmd *cmd);
-#else
-static inline struct ndctl_cmd *ndctl_dimm_cmd_new_smart(struct ndctl_dimm *dimm)
-{
-	return NULL;
-}
-static inline unsigned int ndctl_cmd_smart_get_flags(struct ndctl_cmd *cmd)
-{
-	return 0;
-}
-static inline unsigned int ndctl_cmd_smart_get_health(struct ndctl_cmd *cmd)
-{
-	return 0;
-}
-static inline unsigned int ndctl_cmd_smart_get_temperature(struct ndctl_cmd *cmd)
-{
-	return 0;
-}
-static inline unsigned int ndctl_cmd_smart_get_media_temperature(
-		struct ndctl_cmd *cmd)
-{
-	return 0;
-}
-static inline unsigned int ndctl_cmd_smart_get_spares(struct ndctl_cmd *cmd)
-{
-	return 0;
-}
-static inline unsigned int ndctl_cmd_smart_get_alarm_flags(struct ndctl_cmd *cmd)
-{
-	return 0;
-}
-static inline unsigned int ndctl_cmd_smart_get_life_used(struct ndctl_cmd *cmd)
-{
-	return 0;
-}
-static inline unsigned int ndctl_cmd_smart_get_shutdown_state(struct ndctl_cmd *cmd)
-{
-	return 0;
-}
-static inline unsigned int ndctl_cmd_smart_get_shutdown_count(struct ndctl_cmd *cmd)
-{
-	return 0;
-}
-static inline unsigned int ndctl_cmd_smart_get_vendor_size(struct ndctl_cmd *cmd)
-{
-	return 0;
-}
-static inline unsigned char *ndctl_cmd_smart_get_vendor_data(struct ndctl_cmd *cmd)
-{
-	return NULL;
-}
-static inline struct ndctl_cmd *ndctl_dimm_cmd_new_smart_threshold(
-		struct ndctl_dimm *dimm)
-{
-	return NULL;
-}
-static inline unsigned int ndctl_cmd_smart_threshold_get_alarm_control(
-		struct ndctl_cmd *cmd)
-{
-	return 0;
-}
-static inline unsigned int ndctl_cmd_smart_threshold_get_temperature(
-		struct ndctl_cmd *cmd)
-{
-	return 0;
-}
-static inline unsigned int ndctl_cmd_smart_threshold_get_media_temperature(
-		struct ndctl_cmd *cmd)
-{
-	return 0;
-}
-static inline unsigned int ndctl_cmd_smart_threshold_get_spares(
-		struct ndctl_cmd *cmd)
-{
-	return 0;
-}
-#endif
 
 struct ndctl_cmd *ndctl_dimm_cmd_new_vendor_specific(struct ndctl_dimm *dimm,
 		unsigned int opcode, size_t input_size, size_t output_size);

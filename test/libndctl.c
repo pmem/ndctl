@@ -31,11 +31,7 @@
 #include <ccan/array_size/array_size.h>
 #include <ndctl/libndctl.h>
 #include <daxctl/libdaxctl.h>
-#ifdef HAVE_NDCTL_H
-#include <linux/ndctl.h>
-#else
 #include <ndctl.h>
-#endif
 #include <test.h>
 
 #define BLKROGET _IO(0x12,94) /* get read-only status (0 = read_write) */
@@ -409,18 +405,10 @@ static unsigned long dimm_commands0 = 1UL << ND_CMD_GET_CONFIG_SIZE
 		| 1UL << ND_CMD_SET_CONFIG_DATA | 1UL << ND_CMD_SMART
 		| 1UL << ND_CMD_SMART_THRESHOLD;
 
-#ifdef HAVE_NDCTL_CLEAR_ERROR
 #define CLEAR_ERROR_CMDS (1UL << ND_CMD_CLEAR_ERROR)
-#else
-#define CLEAR_ERROR_CMDS 0
-#endif
 
-#ifdef HAVE_NDCTL_ARS
 #define ARS_CMDS (1UL << ND_CMD_ARS_CAP | 1UL << ND_CMD_ARS_START \
 		| 1UL << ND_CMD_ARS_STATUS)
-#else
-#define ARS_CMDS 0
-#endif
 
 static unsigned long bus_commands0 = CLEAR_ERROR_CMDS | ARS_CMDS;
 
@@ -2132,7 +2120,6 @@ static int check_set_config_data(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 	return 0;
 }
 
-#ifdef HAVE_NDCTL_SMART
 #define __check_smart(dimm, cmd, field) ({ \
 	if (ndctl_cmd_smart_get_##field(cmd) != smart_data.field) { \
 		fprintf(stderr, "%s dimm: %#x expected field %#x got: %#x\n", \
@@ -2144,10 +2131,19 @@ static int check_set_config_data(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 	} \
 })
 
+/*
+ * Note, this is not a command payload, this is just a namespace for
+ * smart parameters.
+ */
+struct smart {
+	unsigned int flags, health, temperature, spares, alarm_flags,
+		     life_used, shutdown_state, vendor_size;
+};
+
 static int check_smart(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 		struct check_cmd *check)
 {
-	static const struct nd_smart_payload smart_data = {
+	static const struct smart smart_data = {
 		.flags = ND_SMART_HEALTH_VALID | ND_SMART_TEMP_VALID
 			| ND_SMART_SPARES_VALID | ND_SMART_ALARM_VALID
 			| ND_SMART_USED_VALID | ND_SMART_SHUTDOWN_VALID,
@@ -2200,10 +2196,18 @@ static int check_smart(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 	} \
 })
 
+/*
+ * Note, this is not a command payload, this is just a namespace for
+ * smart_threshold parameters.
+ */
+struct smart_threshold {
+	unsigned int alarm_control, temperature, spares;
+};
+
 static int check_smart_threshold(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 		struct check_cmd *check)
 {
-	static const struct nd_smart_threshold_payload smart_t_data = {
+	static const struct smart_threshold smart_t_data = {
 		.alarm_control = ND_SMART_SPARE_TRIP | ND_SMART_TEMP_TRIP,
 		.temperature = 40 * 16,
 		.spares = 5,
@@ -2277,21 +2281,6 @@ static int check_smart_threshold(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 	ndctl_cmd_unref(cmd);
 	return 0;
 }
-#else
-static int check_smart(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
-		struct check_cmd *check)
-{
-	fprintf(stderr, "%s: HAVE_NDCTL_SMART disabled, skipping\n", __func__);
-	return 0;
-}
-
-static int check_smart_threshold(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
-		struct check_cmd *check)
-{
-	fprintf(stderr, "%s: HAVE_NDCTL_SMART disabled, skipping\n", __func__);
-	return 0;
-}
-#endif
 
 #define BITS_PER_LONG 32
 static int check_commands(struct ndctl_bus *bus, struct ndctl_dimm *dimm,

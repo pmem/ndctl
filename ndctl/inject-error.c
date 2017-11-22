@@ -22,6 +22,7 @@
 #include <sys/types.h>
 #include <sys/ioctl.h>
 
+#include <ndctl.h>
 #include <util/log.h>
 #include <util/size.h>
 #include <util/json.h>
@@ -31,11 +32,6 @@
 #include <util/parse-options.h>
 #include <ccan/array_size/array_size.h>
 #include <ccan/short_types/short_types.h>
-#ifdef HAVE_NDCTL_H
-#include <linux/ndctl.h>
-#else
-#include <ndctl.h>
-#endif
 
 #include "private.h"
 #include <builtin.h>

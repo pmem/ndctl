@@ -30,12 +30,7 @@
 #include <ccan/array_size/array_size.h>
 #include <ccan/build_assert/build_assert.h>
 
-#ifdef HAVE_NDCTL_H
-#include <linux/ndctl.h>
-#else
 #include <ndctl.h>
-#endif
-
 #include <util/sysfs.h>
 #include <ndctl/libndctl.h>
 #include <ndctl/namespace.h>
@@ -631,9 +626,9 @@ static int to_cmd_index(const char *name, int dimm)
 		end_cmd = ND_CMD_CALL;
 		cmd_name_fn = nvdimm_cmd_name;
 	} else {
-		end_cmd = nd_cmd_clear_error;
+		end_cmd = ND_CMD_CLEAR_ERROR;
 		if (!end_cmd)
-			end_cmd = nd_cmd_ars_status;
+			end_cmd = ND_CMD_ARS_STATUS;
 		cmd_name_fn = nvdimm_bus_cmd_name;
 	}
 
@@ -1944,9 +1939,7 @@ static const char *ndctl_device_type_name(int type)
 	case ND_DEVICE_NAMESPACE_IO:   return "namespace_io";
 	case ND_DEVICE_NAMESPACE_PMEM: return "namespace_pmem";
 	case ND_DEVICE_NAMESPACE_BLK:  return "namespace_blk";
-#ifdef HAVE_NDCTL_DEVICE_DAX
 	case ND_DEVICE_DAX_PMEM:       return "dax_pmem";
-#endif
 	default:                       return "unknown";
 	}
 }
@@ -2360,23 +2353,17 @@ static int to_ioctl_cmd(int cmd, int dimm)
 {
 	if (!dimm) {
 		switch (cmd) {
-#ifdef HAVE_NDCTL_ARS
 		case ND_CMD_ARS_CAP:         return ND_IOCTL_ARS_CAP;
 		case ND_CMD_ARS_START:       return ND_IOCTL_ARS_START;
 		case ND_CMD_ARS_STATUS:      return ND_IOCTL_ARS_STATUS;
-#endif
-#ifdef HAVE_NDCTL_CLEAR_ERROR
 		case ND_CMD_CLEAR_ERROR:     return ND_IOCTL_CLEAR_ERROR;
-#endif
 		case ND_CMD_CALL:            return ND_IOCTL_CALL;
 		default:
-						       return 0;
+					     return 0;
 		};
 	}
 
 	switch (cmd) {
-	case ND_CMD_SMART:                  return ND_IOCTL_SMART;
-	case ND_CMD_SMART_THRESHOLD:        return ND_IOCTL_SMART_THRESHOLD;
 	case ND_CMD_DIMM_FLAGS:             return ND_IOCTL_DIMM_FLAGS;
 	case ND_CMD_GET_CONFIG_SIZE:        return ND_IOCTL_GET_CONFIG_SIZE;
 	case ND_CMD_GET_CONFIG_DATA:        return ND_IOCTL_GET_CONFIG_DATA;
@@ -2386,7 +2373,7 @@ static int to_ioctl_cmd(int cmd, int dimm)
 	case ND_CMD_VENDOR_EFFECT_LOG_SIZE:
 	case ND_CMD_VENDOR_EFFECT_LOG:
 	default:
-					      return 0;
+					    return 0;
 	}
 }
 

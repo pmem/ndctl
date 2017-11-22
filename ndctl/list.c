@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <limits.h>
+
 #include <util/json.h>
 #include <util/filter.h>
 #include <json-c/json.h>
@@ -22,11 +23,7 @@
 #include <util/parse-options.h>
 #include <ccan/array_size/array_size.h>
 
-#ifdef HAVE_NDCTL_H
-#include <linux/ndctl.h>
-#else
 #include <ndctl.h>
-#endif
 
 static struct {
 	bool buses;
