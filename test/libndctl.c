@@ -2122,8 +2122,9 @@ static int check_set_config_data(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 
 #define __check_smart(dimm, cmd, field) ({ \
 	if (ndctl_cmd_smart_get_##field(cmd) != smart_data.field) { \
-		fprintf(stderr, "%s dimm: %#x expected field %#x got: %#x\n", \
-				__func__, ndctl_dimm_get_handle(dimm), \
+		fprintf(stderr, "%s dimm: %#x expected \'" #field \
+				"\' %#x got: %#x\n", __func__, \
+				ndctl_dimm_get_handle(dimm), \
 				smart_data.field, \
 				ndctl_cmd_smart_get_##field(cmd)); \
 		ndctl_cmd_unref(cmd); \
@@ -2187,8 +2188,9 @@ static int check_smart(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 
 #define __check_smart_threshold(dimm, cmd, field) ({ \
 	if (ndctl_cmd_smart_threshold_get_##field(cmd) != smart_t_data.field) { \
-		fprintf(stderr, "%s dimm: %#x expected field %#x got: %#x\n", \
-				__func__, ndctl_dimm_get_handle(dimm), \
+		fprintf(stderr, "%s dimm: %#x expected \'" #field \
+				"\' %#x got: %#x\n", __func__, \
+				ndctl_dimm_get_handle(dimm), \
 				smart_t_data.field, \
 				ndctl_cmd_smart_threshold_get_##field(cmd)); \
 		ndctl_cmd_unref(cmd); \
