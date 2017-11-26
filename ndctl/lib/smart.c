@@ -40,8 +40,8 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_smart_threshold(
 		return NULL;
 }
 
-#define smart_cmd_op(name, op, rettype, defretvalue) \
-NDCTL_EXPORT rettype name(struct ndctl_cmd *cmd) \
+#define smart_cmd_op(op, rettype, defretvalue) \
+NDCTL_EXPORT rettype ndctl_cmd_##op(struct ndctl_cmd *cmd) \
 { \
 	if (cmd->dimm) { \
 		struct ndctl_smart_ops *ops = ndctl_dimm_get_smart_ops(cmd->dimm); \
@@ -51,21 +51,19 @@ NDCTL_EXPORT rettype name(struct ndctl_cmd *cmd) \
 	return defretvalue; \
 }
 
-smart_cmd_op(ndctl_cmd_smart_get_flags, smart_get_flags, unsigned int, 0)
-smart_cmd_op(ndctl_cmd_smart_get_health, smart_get_health, unsigned int, 0)
-smart_cmd_op(ndctl_cmd_smart_get_media_temperature, smart_get_media_temperature,
-		unsigned int, 0)
-smart_cmd_op(ndctl_cmd_smart_get_spares, smart_get_spares, unsigned int, 0)
-smart_cmd_op(ndctl_cmd_smart_get_alarm_flags, smart_get_alarm_flags, unsigned int, 0)
-smart_cmd_op(ndctl_cmd_smart_get_life_used, smart_get_life_used, unsigned int, 0)
-smart_cmd_op(ndctl_cmd_smart_get_shutdown_state, smart_get_shutdown_state, unsigned int, 0)
-smart_cmd_op(ndctl_cmd_smart_get_shutdown_count, smart_get_shutdown_count, unsigned int, 0)
-smart_cmd_op(ndctl_cmd_smart_get_vendor_size, smart_get_vendor_size, unsigned int, 0)
-smart_cmd_op(ndctl_cmd_smart_get_vendor_data, smart_get_vendor_data, unsigned char *, NULL)
-smart_cmd_op(ndctl_cmd_smart_threshold_get_alarm_control, smart_threshold_get_alarm_control, unsigned int, 0)
-smart_cmd_op(ndctl_cmd_smart_threshold_get_media_temperature,
-		smart_threshold_get_media_temperature, unsigned int, 0)
-smart_cmd_op(ndctl_cmd_smart_threshold_get_spares, smart_threshold_get_spares, unsigned int, 0)
+smart_cmd_op(smart_get_flags, unsigned int, 0)
+smart_cmd_op(smart_get_health, unsigned int, 0)
+smart_cmd_op(smart_get_media_temperature, unsigned int, 0)
+smart_cmd_op(smart_get_spares, unsigned int, 0)
+smart_cmd_op(smart_get_alarm_flags, unsigned int, 0)
+smart_cmd_op(smart_get_life_used, unsigned int, 0)
+smart_cmd_op(smart_get_shutdown_state, unsigned int, 0)
+smart_cmd_op(smart_get_shutdown_count, unsigned int, 0)
+smart_cmd_op(smart_get_vendor_size, unsigned int, 0)
+smart_cmd_op(smart_get_vendor_data, unsigned char *, NULL)
+smart_cmd_op(smart_threshold_get_alarm_control, unsigned int, 0)
+smart_cmd_op(smart_threshold_get_media_temperature, unsigned int, 0)
+smart_cmd_op(smart_threshold_get_spares, unsigned int, 0)
 
 NDCTL_EXPORT unsigned int ndctl_cmd_smart_get_temperature(struct ndctl_cmd *cmd)
 {
