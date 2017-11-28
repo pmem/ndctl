@@ -44,7 +44,7 @@ static const char *parse_region_options(int argc, const char **argv,
         argc = parse_options(argc, argv, region_options, u, 0);
 
 	if (argc == 0)
-		error("specify a region to delete, or \"all\"\n");
+		error("specify a specific region id to act on, or \"all\"\n");
 	for (i = 1; i < argc; i++)
 		error("unknown extra parameter \"%s\"\n", argv[i]);
 	if (argc == 0 || argc > 1) {
