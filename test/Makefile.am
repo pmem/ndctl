@@ -16,6 +16,7 @@ TESTS =\
 	blk-exhaust.sh \
 	sector-mode.sh \
 	inject-error.sh \
+	hugetlb \
 	btt-errors.sh
 
 check_PROGRAMS =\
@@ -27,6 +28,7 @@ check_PROGRAMS =\
 	dax-errors \
 	smart-notify \
 	smart-listen \
+	hugetlb \
 	daxdev-errors
 
 if ENABLE_DESTRUCTIVE
@@ -82,6 +84,8 @@ dax_dev_SOURCES = dax-dev.c $(testcore)
 dax_dev_LDADD = $(LIBNDCTL_LIB) $(KMOD_LIBS)
 
 dax_pmd_SOURCES = dax-pmd.c
+hugetlb_SOURCES = hugetlb.c \
+		  dax-pmd.c
 mmap_SOURCES = mmap.c
 dax_errors_SOURCES = dax-errors.c
 daxdev_errors_SOURCES = daxdev-errors.c \

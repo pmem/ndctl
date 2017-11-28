@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/mman.h>
+#include <linux/mman.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
@@ -42,12 +43,50 @@ int test_dax_directio(int dax_fd, unsigned long align, void *dax_addr, off_t off
 		return -ENOMEM;
 
 	for (i = 0; i < 5; i++) {
-		void *addr = mmap(dax_addr, 2*align,
-				PROT_READ|PROT_WRITE, MAP_SHARED, dax_fd,
-				offset);
+		unsigned long flags;
+		void *addr;
 		int fd2;
 
+		if (dax_fd >= 0)
+			flags = MAP_SHARED;
+		else {
+			/* hugetlbfs instead of device-dax */
+			const char *base = "/sys/kernel/mm/hugepages";
+			FILE *f_nrhuge;
+			char path[256];
+
+			flags = MAP_SHARED | MAP_ANONYMOUS;
+			if (align >= SZ_2M) {
+				char setting[] = { "2\n" };
+
+				sprintf(path, "%s/hugepages-%ldkB/nr_hugepages",
+						base, align / 1024);
+				f_nrhuge = fopen(path, "r+");
+				if (!f_nrhuge) {
+					rc = -errno;
+					faili(i);
+					return rc;
+				}
+				if (fwrite(setting, sizeof(setting), 1, f_nrhuge) != 1) {
+					rc = -errno;
+					faili(i);
+					fclose(f_nrhuge);
+					return rc;
+				}
+				fclose(f_nrhuge);
+
+				/* FIXME: support non-x86 page sizes */
+				if (align > SZ_2M)
+					flags |= MAP_HUGETLB | MAP_HUGE_1GB;
+				else
+					flags |= MAP_HUGETLB | MAP_HUGE_2MB;
+			}
+		}
+		addr = mmap(dax_addr, 2*align,
+				PROT_READ|PROT_WRITE, flags, dax_fd, offset);
+
 		if (addr == MAP_FAILED) {
+			rc = -errno;
 			faili(i);
 			break;
 		}
