@@ -33,6 +33,7 @@ endif
 
 if ENABLE_SMART
 libndctl_la_SOURCES += smart.c
+libndctl_la_SOURCES += intel.c
 libndctl_la_SOURCES += hpe1.c
 libndctl_la_SOURCES += msft.c
 endif

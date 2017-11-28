@@ -1218,7 +1218,6 @@ static void *add_dimm(void *parent, int id, const char *dimm_base)
 		goto err_read;
 	dimm->module = to_module(ctx, buf);
 
-	dimm->smart_ops = intel_smart_ops;
 	dimm->handle = -1;
 	dimm->phys_id = -1;
 	dimm->serial = -1;
@@ -1306,6 +1305,8 @@ static void *add_dimm(void *parent, int id, const char *dimm_base)
 	sprintf(path, "%s/nfit/family", dimm_base);
 	if (sysfs_read_attr(ctx, path, buf) == 0)
 		dimm->cmd_family = strtoul(buf, NULL, 0);
+	if (dimm->cmd_family == NVDIMM_FAMILY_INTEL)
+		dimm->smart_ops = intel_smart_ops;
 	if (dimm->cmd_family == NVDIMM_FAMILY_HPE1)
 		dimm->smart_ops = hpe1_smart_ops;
 	if (dimm->cmd_family == NVDIMM_FAMILY_MSFT)
