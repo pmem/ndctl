@@ -80,7 +80,7 @@ include::xable-region-options.txt[]
 
 -m::
 --mode=::
-	Filter listing by the mode ('raw', 'memory', 'sector' or 'dax')
+	Filter listing by the mode ('raw', 'fsdax', 'sector' or 'devdax')
 	of the namespace(s).
 
 -B::
