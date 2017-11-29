@@ -74,6 +74,19 @@ NDCTL_EXPORT size_t ndctl_sizeof_namespace_label(void)
 	return offsetof(struct namespace_label, type_guid);
 }
 
+NDCTL_EXPORT double ndctl_decode_smart_temperature(unsigned int temp)
+{
+	bool negative = !!(temp & (1 << 15));
+	double t;
+
+	temp &= ~(1 << 15);
+	t = temp;
+	t /= 16;
+	if (negative)
+		t *= -1;
+	return t;
+}
+
 struct ndctl_ctx;
 
 /**

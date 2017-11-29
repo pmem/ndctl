@@ -18,19 +18,6 @@
 #include <ccan/array_size/array_size.h>
 #include <ndctl.h>
 
-static double parse_smart_temperature(unsigned int temp)
-{
-	bool negative = !!(temp & (1 << 15));
-	double t;
-
-	temp &= ~(1 << 15);
-	t = temp;
-	t /= 16;
-	if (negative)
-		t *= -1;
-	return t;
-}
-
 static void smart_threshold_to_json(struct ndctl_dimm *dimm,
 		struct json_object *jhealth)
 {
@@ -53,7 +40,7 @@ static void smart_threshold_to_json(struct ndctl_dimm *dimm,
 		double t;
 
 		temp = ndctl_cmd_smart_threshold_get_temperature(cmd);
-		t = parse_smart_temperature(temp);
+		t = ndctl_decode_smart_temperature(temp);
 		jobj = json_object_new_double(t);
 		if (jobj)
 			json_object_object_add(jhealth,
@@ -115,7 +102,7 @@ struct json_object *util_dimm_health_to_json(struct ndctl_dimm *dimm)
 
 	if (flags & ND_SMART_TEMP_VALID) {
 		unsigned int temp = ndctl_cmd_smart_get_temperature(cmd);
-		double t = parse_smart_temperature(temp);
+		double t = ndctl_decode_smart_temperature(temp);
 
 		jobj = json_object_new_double(t);
 		if (jobj)

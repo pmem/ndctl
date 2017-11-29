@@ -321,4 +321,5 @@ global:
 	ndctl_cmd_smart_threshold_set_media_temperature;
 	ndctl_cmd_smart_threshold_set_ctrl_temperature;
 	ndctl_cmd_smart_threshold_set_spares;
+	ndctl_decode_smart_temperature;
 } LIBNDCTL_13;

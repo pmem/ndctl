@@ -74,6 +74,7 @@ extern "C" {
 size_t ndctl_min_namespace_size(void);
 size_t ndctl_sizeof_namespace_index(void);
 size_t ndctl_sizeof_namespace_label(void);
+double ndctl_decode_smart_temperature(unsigned int temp);
 
 struct ndctl_ctx;
 struct ndctl_ctx *ndctl_ref(struct ndctl_ctx *ctx);
