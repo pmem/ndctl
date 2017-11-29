@@ -2182,7 +2182,7 @@ static int check_smart(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 	__check_smart(dimm, cmd, shutdown_state);
 	__check_smart(dimm, cmd, vendor_size);
 
-	ndctl_cmd_unref(cmd);
+	check->cmd = cmd;
 	return 0;
 }
 
@@ -2203,7 +2203,7 @@ static int check_smart(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
  * smart_threshold parameters.
  */
 struct smart_threshold {
-	unsigned int alarm_control, temperature, spares;
+	unsigned int alarm_control, media_temperature, ctrl_temperature, spares;
 };
 
 static int check_smart_threshold(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
@@ -2211,10 +2211,13 @@ static int check_smart_threshold(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 {
 	static const struct smart_threshold smart_t_data = {
 		.alarm_control = ND_SMART_SPARE_TRIP | ND_SMART_TEMP_TRIP,
-		.temperature = 40 * 16,
+		.media_temperature = 40 * 16,
+		.ctrl_temperature = 30 * 16,
 		.spares = 5,
 	};
 	struct ndctl_cmd *cmd = ndctl_dimm_cmd_new_smart_threshold(dimm);
+	struct ndctl_cmd *cmd_smart = check_cmds[ND_CMD_SMART].cmd;
+	struct ndctl_cmd *cmd_set;
 	struct timeval tm;
 	char buf[4096];
 	fd_set fds;
@@ -2249,7 +2252,7 @@ static int check_smart_threshold(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 		if (pid == 0) {
 			FD_ZERO(&fds);
 			FD_SET(fd, &fds);
-			tm.tv_sec = 1;
+			tm.tv_sec = 5;
 			tm.tv_usec = 0;
 			rc = select(fd + 1, NULL, NULL, &fds, &tm);
 			if (rc != 1 || !FD_ISSET(fd, &fds))
@@ -2267,6 +2270,50 @@ static int check_smart_threshold(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 		return rc;
 	}
 
+	__check_smart_threshold(dimm, cmd, alarm_control);
+	__check_smart_threshold(dimm, cmd, media_temperature);
+	__check_smart_threshold(dimm, cmd, ctrl_temperature);
+	__check_smart_threshold(dimm, cmd, spares);
+
+	/*
+	 * The same kernel change that adds nfit_test support for this
+	 * command is the same change that moves notifications to
+	 * require set_threshold. If we fail to get a command, but the
+	 * notification fires then we are on an old kernel, otherwise
+	 * whether old kernel or new kernel the notification should
+	 * fire.
+	 */
+	cmd_set = ndctl_dimm_cmd_new_smart_set_threshold(cmd);
+	if (cmd_set) {
+		/*
+		 * Set all thresholds to match current values and set
+		 * all alarms.
+		 */
+		rc = ndctl_cmd_smart_threshold_set_alarm_control(cmd_set,
+				ndctl_cmd_smart_threshold_get_supported_alarms(cmd_set));
+		rc |= ndctl_cmd_smart_threshold_set_media_temperature(cmd_set,
+				ndctl_cmd_smart_get_media_temperature(cmd_smart));
+		rc |= ndctl_cmd_smart_threshold_set_ctrl_temperature(cmd_set,
+				ndctl_cmd_smart_get_ctrl_temperature(cmd_smart));
+		rc |= ndctl_cmd_smart_threshold_set_spares(cmd_set,
+				ndctl_cmd_smart_get_spares(cmd_smart));
+		if (rc) {
+			fprintf(stderr, "%s: failed set threshold parameters\n",
+					__func__);
+			ndctl_cmd_unref(cmd_set);
+			return -ENXIO;
+		}
+
+		rc = ndctl_cmd_submit(cmd_set);
+		if (rc) {
+			fprintf(stderr, "%s: dimm: %#x failed to submit cmd_set: %d\n",
+					__func__, ndctl_dimm_get_handle(dimm), rc);
+			ndctl_cmd_unref(cmd_set);
+			return rc;
+		}
+		ndctl_cmd_unref(cmd_set);
+	}
+
 	if (ndctl_test_attempt(check->test, KERNEL_VERSION(4, 9, 0))) {
 		wait(&rc);
 		if (WEXITSTATUS(rc) == EXIT_FAILURE) {
@@ -2275,10 +2322,6 @@ static int check_smart_threshold(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 			return -ENXIO;
 		}
 	}
-
-	__check_smart_threshold(dimm, cmd, alarm_control);
-	__check_smart_threshold(dimm, cmd, temperature);
-	__check_smart_threshold(dimm, cmd, spares);
 
 	ndctl_cmd_unref(cmd);
 	return 0;

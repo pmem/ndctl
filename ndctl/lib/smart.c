@@ -40,6 +40,25 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_smart_threshold(
 		return NULL;
 }
 
+/*
+ * smart_set_threshold is a read-modify-write command it depends on a
+ * successfully completed smart_threshold command for its defaults.
+ */
+NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_smart_set_threshold(
+		struct ndctl_cmd *cmd)
+{
+	struct ndctl_smart_ops *ops;
+
+	if (!cmd || !cmd->dimm)
+		return NULL;
+	ops = ndctl_dimm_get_smart_ops(cmd->dimm);
+
+	if (ops && ops->new_smart_set_threshold)
+		return ops->new_smart_set_threshold(cmd);
+	else
+		return NULL;
+}
+
 #define smart_cmd_op(op, rettype, defretvalue) \
 NDCTL_EXPORT rettype ndctl_cmd_##op(struct ndctl_cmd *cmd) \
 { \
@@ -54,6 +73,7 @@ NDCTL_EXPORT rettype ndctl_cmd_##op(struct ndctl_cmd *cmd) \
 smart_cmd_op(smart_get_flags, unsigned int, 0)
 smart_cmd_op(smart_get_health, unsigned int, 0)
 smart_cmd_op(smart_get_media_temperature, unsigned int, 0)
+smart_cmd_op(smart_get_ctrl_temperature, unsigned int, 0)
 smart_cmd_op(smart_get_spares, unsigned int, 0)
 smart_cmd_op(smart_get_alarm_flags, unsigned int, 0)
 smart_cmd_op(smart_get_life_used, unsigned int, 0)
@@ -63,6 +83,7 @@ smart_cmd_op(smart_get_vendor_size, unsigned int, 0)
 smart_cmd_op(smart_get_vendor_data, unsigned char *, NULL)
 smart_cmd_op(smart_threshold_get_alarm_control, unsigned int, 0)
 smart_cmd_op(smart_threshold_get_media_temperature, unsigned int, 0)
+smart_cmd_op(smart_threshold_get_ctrl_temperature, unsigned int, 0)
 smart_cmd_op(smart_threshold_get_spares, unsigned int, 0)
 
 NDCTL_EXPORT unsigned int ndctl_cmd_smart_get_temperature(struct ndctl_cmd *cmd)
@@ -75,3 +96,21 @@ NDCTL_EXPORT unsigned int ndctl_cmd_smart_threshold_get_temperature(
 {
 	return ndctl_cmd_smart_threshold_get_media_temperature(cmd);
 }
+
+smart_cmd_op(smart_threshold_get_supported_alarms, unsigned int, 0);
+
+#define smart_cmd_set_op(op) \
+NDCTL_EXPORT int ndctl_cmd_##op(struct ndctl_cmd *cmd, unsigned int val) \
+{ \
+	if (cmd->dimm) { \
+		struct ndctl_smart_ops *ops = ndctl_dimm_get_smart_ops(cmd->dimm); \
+		if (ops && ops->op) \
+			return ops->op(cmd, val); \
+	} \
+	return -ENXIO; \
+}
+
+smart_cmd_set_op(smart_threshold_set_alarm_control)
+smart_cmd_set_op(smart_threshold_set_media_temperature)
+smart_cmd_set_op(smart_threshold_set_ctrl_temperature)
+smart_cmd_set_op(smart_threshold_set_spares)

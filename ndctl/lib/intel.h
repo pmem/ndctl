@@ -5,6 +5,7 @@
 #define __INTEL_H__
 #define ND_INTEL_SMART 1
 #define ND_INTEL_SMART_THRESHOLD 2
+#define ND_INTEL_SMART_SET_THRESHOLD 17
 
 #define ND_INTEL_SMART_HEALTH_VALID             (1 << 0)
 #define ND_INTEL_SMART_SPARES_VALID             (1 << 1)
@@ -62,11 +63,20 @@ struct nd_intel_smart_threshold {
 	};
 } __attribute__((packed));
 
+struct nd_intel_smart_set_threshold {
+	__u16 alarm_control;
+	__u8 spares;
+	__u16 media_temperature;
+	__u16 ctrl_temperature;
+	__u32 status;
+} __attribute__((packed));
+
 struct nd_pkg_intel {
 	struct nd_cmd_pkg gen;
 	union {
 		struct nd_intel_smart smart;
 		struct nd_intel_smart_threshold	thresh;
+		struct nd_intel_smart_set_threshold set_thresh;
 	};
 };
 #endif /* __INTEL_H__ */

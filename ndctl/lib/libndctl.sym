@@ -312,4 +312,13 @@ global:
 	ndctl_bb_get_count;
 	ndctl_cmd_smart_get_media_temperature;
 	ndctl_cmd_smart_threshold_get_media_temperature;
+	ndctl_cmd_smart_get_ctrl_temperature;
+	ndctl_cmd_smart_threshold_get_ctrl_temperature;
+	ndctl_dimm_cmd_new_smart_set_threshold;
+	ndctl_cmd_smart_threshold_get_supported_alarms;
+	ndctl_cmd_smart_threshold_set_alarm_control;
+	ndctl_cmd_smart_threshold_set_temperature;
+	ndctl_cmd_smart_threshold_set_media_temperature;
+	ndctl_cmd_smart_threshold_set_ctrl_temperature;
+	ndctl_cmd_smart_threshold_set_spares;
 } LIBNDCTL_13;

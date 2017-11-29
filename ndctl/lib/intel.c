@@ -143,6 +143,7 @@ static unsigned int intel_cmd_smart_get_health(struct ndctl_cmd *cmd)
 }
 
 intel_smart_get_field(cmd, media_temperature)
+intel_smart_get_field(cmd, ctrl_temperature)
 intel_smart_get_field(cmd, spares)
 intel_smart_get_field(cmd, alarm_flags)
 intel_smart_get_field(cmd, life_used)
@@ -198,6 +199,7 @@ static unsigned int intel_cmd_smart_threshold_get_alarm_control(
 }
 
 intel_smart_threshold_get_field(cmd, media_temperature)
+intel_smart_threshold_get_field(cmd, ctrl_temperature)
 intel_smart_threshold_get_field(cmd, spares)
 
 static struct ndctl_cmd *intel_dimm_cmd_new_smart_threshold(
@@ -216,11 +218,77 @@ static struct ndctl_cmd *intel_dimm_cmd_new_smart_threshold(
 	return cmd;
 }
 
+static struct ndctl_cmd *intel_dimm_cmd_new_smart_set_threshold(
+		struct ndctl_cmd *cmd_thresh)
+{
+	struct ndctl_cmd *cmd;
+	struct nd_intel_smart_threshold *thresh;
+	struct nd_intel_smart_set_threshold *set_thresh;
+
+	BUILD_ASSERT(sizeof(struct nd_intel_smart_set_threshold) == 11);
+
+	if (intel_smart_threshold_valid(cmd_thresh) < 0)
+		return NULL;
+
+	cmd = alloc_intel_cmd(cmd_thresh->dimm, ND_INTEL_SMART_SET_THRESHOLD,
+			offsetof(typeof(*set_thresh), status), 4);
+	if (!cmd)
+		return NULL;
+
+	cmd->source = cmd_thresh;
+	ndctl_cmd_ref(cmd_thresh);
+	set_thresh = &cmd->intel->set_thresh;
+	thresh = &cmd_thresh->intel->thresh;
+	set_thresh->alarm_control = thresh->alarm_control;
+	set_thresh->spares = thresh->spares;
+	set_thresh->media_temperature = thresh->media_temperature;
+	set_thresh->ctrl_temperature = thresh->ctrl_temperature;
+	cmd->firmware_status = &set_thresh->status;
+
+	return cmd;
+}
+
+static int intel_smart_set_threshold_valid(struct ndctl_cmd *cmd)
+{
+	struct nd_pkg_intel *pkg = cmd->intel;
+
+	if (cmd->type != ND_CMD_CALL || cmd->status != 1
+			|| pkg->gen.nd_family != NVDIMM_FAMILY_INTEL
+			|| pkg->gen.nd_command != ND_INTEL_SMART_SET_THRESHOLD)
+		return -EINVAL;
+	return 0;
+}
+
+#define intel_smart_set_threshold_field(field) \
+static int intel_cmd_smart_threshold_set_##field( \
+			struct ndctl_cmd *cmd, unsigned int val) \
+{ \
+	if (intel_smart_set_threshold_valid(cmd) < 0) \
+		return -EINVAL; \
+	cmd->intel->set_thresh.field = val; \
+	return 0; \
+}
+
+static unsigned int intel_cmd_smart_threshold_get_supported_alarms(
+		struct ndctl_cmd *cmd)
+{
+	if (intel_smart_set_threshold_valid(cmd) < 0)
+		return 0;
+	return ND_SMART_SPARE_TRIP | ND_SMART_MTEMP_TRIP
+		| ND_SMART_CTEMP_TRIP;
+}
+
+intel_smart_set_threshold_field(alarm_control)
+intel_smart_set_threshold_field(spares)
+intel_smart_set_threshold_field(media_temperature)
+intel_smart_set_threshold_field(ctrl_temperature)
+
 struct ndctl_smart_ops * const intel_smart_ops = &(struct ndctl_smart_ops) {
 	.new_smart = intel_dimm_cmd_new_smart,
 	.smart_get_flags = intel_cmd_smart_get_flags,
 	.smart_get_health = intel_cmd_smart_get_health,
 	.smart_get_media_temperature = intel_cmd_smart_get_media_temperature,
+	.smart_get_ctrl_temperature = intel_cmd_smart_get_ctrl_temperature,
 	.smart_get_spares = intel_cmd_smart_get_spares,
 	.smart_get_alarm_flags = intel_cmd_smart_get_alarm_flags,
 	.smart_get_life_used = intel_cmd_smart_get_life_used,
@@ -229,8 +297,21 @@ struct ndctl_smart_ops * const intel_smart_ops = &(struct ndctl_smart_ops) {
 	.smart_get_vendor_size = intel_cmd_smart_get_vendor_size,
 	.smart_get_vendor_data = intel_cmd_smart_get_vendor_data,
 	.new_smart_threshold = intel_dimm_cmd_new_smart_threshold,
-	.smart_threshold_get_alarm_control = intel_cmd_smart_threshold_get_alarm_control,
+	.smart_threshold_get_alarm_control
+		= intel_cmd_smart_threshold_get_alarm_control,
 	.smart_threshold_get_media_temperature
 		= intel_cmd_smart_threshold_get_media_temperature,
+	.smart_threshold_get_ctrl_temperature
+		= intel_cmd_smart_threshold_get_ctrl_temperature,
 	.smart_threshold_get_spares = intel_cmd_smart_threshold_get_spares,
+	.new_smart_set_threshold = intel_dimm_cmd_new_smart_set_threshold,
+	.smart_threshold_get_supported_alarms
+		= intel_cmd_smart_threshold_get_supported_alarms,
+	.smart_threshold_set_alarm_control
+		= intel_cmd_smart_threshold_set_alarm_control,
+	.smart_threshold_set_media_temperature
+		= intel_cmd_smart_threshold_set_media_temperature,
+	.smart_threshold_set_ctrl_temperature
+		= intel_cmd_smart_threshold_set_ctrl_temperature,
+	.smart_threshold_set_spares = intel_cmd_smart_threshold_set_spares,
 };

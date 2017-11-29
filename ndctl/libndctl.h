@@ -230,6 +230,7 @@ unsigned int ndctl_cmd_smart_get_flags(struct ndctl_cmd *cmd);
 unsigned int ndctl_cmd_smart_get_health(struct ndctl_cmd *cmd);
 unsigned int ndctl_cmd_smart_get_temperature(struct ndctl_cmd *cmd);
 unsigned int ndctl_cmd_smart_get_media_temperature(struct ndctl_cmd *cmd);
+unsigned int ndctl_cmd_smart_get_ctrl_temperature(struct ndctl_cmd *cmd);
 unsigned int ndctl_cmd_smart_get_spares(struct ndctl_cmd *cmd);
 unsigned int ndctl_cmd_smart_get_alarm_flags(struct ndctl_cmd *cmd);
 unsigned int ndctl_cmd_smart_get_life_used(struct ndctl_cmd *cmd);
@@ -241,7 +242,20 @@ struct ndctl_cmd *ndctl_dimm_cmd_new_smart_threshold(struct ndctl_dimm *dimm);
 unsigned int ndctl_cmd_smart_threshold_get_alarm_control(struct ndctl_cmd *cmd);
 unsigned int ndctl_cmd_smart_threshold_get_temperature(struct ndctl_cmd *cmd);
 unsigned int ndctl_cmd_smart_threshold_get_media_temperature(struct ndctl_cmd *cmd);
+unsigned int ndctl_cmd_smart_threshold_get_ctrl_temperature(struct ndctl_cmd *cmd);
 unsigned int ndctl_cmd_smart_threshold_get_spares(struct ndctl_cmd *cmd);
+struct ndctl_cmd *ndctl_dimm_cmd_new_smart_set_threshold(struct ndctl_cmd *cmd);
+unsigned int ndctl_cmd_smart_threshold_get_supported_alarms(struct ndctl_cmd *cmd);
+int ndctl_cmd_smart_threshold_set_alarm_control(struct ndctl_cmd *cmd,
+		unsigned int val);
+int ndctl_cmd_smart_threshold_set_temperature(struct ndctl_cmd *cmd,
+		unsigned int val);
+int ndctl_cmd_smart_threshold_set_media_temperature(struct ndctl_cmd *cmd,
+		unsigned int val);
+int ndctl_cmd_smart_threshold_set_ctrl_temperature(struct ndctl_cmd *cmd,
+		unsigned int val);
+int ndctl_cmd_smart_threshold_set_spares(struct ndctl_cmd *cmd,
+		unsigned int val);
 
 struct ndctl_cmd *ndctl_dimm_cmd_new_vendor_specific(struct ndctl_dimm *dimm,
 		unsigned int opcode, size_t input_size, size_t output_size);
