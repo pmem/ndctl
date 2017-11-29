@@ -2372,26 +2372,39 @@ static int to_ioctl_cmd(int cmd, int dimm)
 	}
 }
 
+static const char *ndctl_dimm_get_cmd_subname(struct ndctl_cmd *cmd)
+{
+	struct ndctl_dimm *dimm = cmd->dimm;
+	struct ndctl_dimm_ops *ops = dimm ? dimm->ops : NULL;
+
+	if (!dimm || cmd->type != ND_CMD_CALL || !ops || !ops->cmd_desc)
+		return NULL;
+	return ops->cmd_desc(cmd->pkg->nd_command);
+}
+
 static int do_cmd(int fd, int ioctl_cmd, struct ndctl_cmd *cmd)
 {
 	int rc;
 	u32 offset;
-	const char *name;
+	const char *name, *sub_name = NULL;
+	struct ndctl_dimm *dimm = cmd->dimm;
 	struct ndctl_bus *bus = cmd_to_bus(cmd);
 	struct ndctl_cmd_iter *iter = &cmd->iter;
 	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
 
-	if (cmd->dimm)
-		name = ndctl_dimm_get_cmd_name(cmd->dimm, cmd->type);
-	else
+	if (dimm) {
+		name = ndctl_dimm_get_cmd_name(dimm, cmd->type);
+		sub_name = ndctl_dimm_get_cmd_subname(cmd);
+	} else
 		name = ndctl_bus_get_cmd_name(cmd->bus, cmd->type);
+
 
 	if (iter->total_xfer == 0) {
 		rc = ioctl(fd, ioctl_cmd, cmd->cmd_buf);
-		dbg(ctx, "bus: %d dimm: %#x cmd: %s status: %d fw: %d (%s)\n",
-				bus->id, cmd->dimm
-				? ndctl_dimm_get_handle(cmd->dimm) : 0,
-				name, rc, *(cmd->firmware_status), rc < 0 ?
+		dbg(ctx, "bus: %d dimm: %#x cmd: %s%s%s status: %d fw: %d (%s)\n",
+				bus->id, dimm ? ndctl_dimm_get_handle(dimm) : 0,
+				name, sub_name ? ":" : "", sub_name ? sub_name : "",
+				rc, *(cmd->firmware_status), rc < 0 ?
 				strerror(errno) : "success");
 		if (rc < 0)
 			return -errno;
@@ -2421,10 +2434,10 @@ static int do_cmd(int fd, int ioctl_cmd, struct ndctl_cmd *cmd)
 		}
 	}
 
-	dbg(ctx, "bus: %d dimm: %#x cmd: %s total: %d max_xfer: %d status: %d fw: %d (%s)\n",
-			bus->id,
-			cmd->dimm ? ndctl_dimm_get_handle(cmd->dimm) : 0,
-			name, iter->total_xfer, iter->max_xfer, rc,
+	dbg(ctx, "bus: %d dimm: %#x cmd: %s%s%s total: %d max_xfer: %d status: %d fw: %d (%s)\n",
+			bus->id, dimm ? ndctl_dimm_get_handle(dimm) : 0,
+			name, sub_name ? ":" : "", sub_name ? sub_name : "",
+			iter->total_xfer, iter->max_xfer, rc,
 			*(cmd->firmware_status),
 			rc < 0 ? strerror(errno) : "success");
 

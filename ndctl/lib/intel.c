@@ -283,7 +283,24 @@ intel_smart_set_threshold_field(spares)
 intel_smart_set_threshold_field(media_temperature)
 intel_smart_set_threshold_field(ctrl_temperature)
 
+static const char *intel_cmd_desc(int fn)
+{
+	static const char *descs[] = {
+		[ND_INTEL_SMART] = "smart",
+		[ND_INTEL_SMART_THRESHOLD] = "smart_thresh",
+		[ND_INTEL_SMART_SET_THRESHOLD] = "smart_set_thresh",
+	};
+	const char *desc = descs[fn];
+
+	if (fn >= (int) ARRAY_SIZE(descs))
+		return "unknown";
+	if (!desc)
+		return "unknown";
+	return desc;
+}
+
 struct ndctl_dimm_ops * const intel_dimm_ops = &(struct ndctl_dimm_ops) {
+	.cmd_desc = intel_cmd_desc,
 	.new_smart = intel_dimm_cmd_new_smart,
 	.smart_get_flags = intel_cmd_smart_get_flags,
 	.smart_get_health = intel_cmd_smart_get_health,
