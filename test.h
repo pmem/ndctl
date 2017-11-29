@@ -29,7 +29,8 @@ void builtin_xaction_namespace_reset(void);
 struct kmod_ctx;
 struct kmod_module;
 int nfit_test_init(struct kmod_ctx **ctx, struct kmod_module **mod,
-	int log_level, struct ndctl_test *test);
+		struct ndctl_ctx *nd_ctx, int log_level,
+		struct ndctl_test *test);
 
 struct ndctl_ctx;
 int test_parent_uuid(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx);

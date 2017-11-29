@@ -20,6 +20,7 @@
 
 #include <util/log.h>
 #include <util/sysfs.h>
+#include <ndctl/libndctl.h>
 #include <ccan/array_size/array_size.h>
 
 #define KVER_STRLEN 20
@@ -116,11 +117,13 @@ int ndctl_test_get_skipped(struct ndctl_test *test)
 }
 
 int nfit_test_init(struct kmod_ctx **ctx, struct kmod_module **mod,
-		int log_level, struct ndctl_test *test)
+		struct ndctl_ctx *nd_ctx, int log_level,
+		struct ndctl_test *test)
 {
 	int rc;
 	unsigned int i;
 	const char *name;
+	struct ndctl_bus *bus;
 	struct log_ctx log_ctx;
 	const char *list[] = {
 		"nfit",
@@ -217,6 +220,26 @@ retry:
 	if (rc < 0) {
 		kmod_unref(*ctx);
 		return rc;
+	}
+
+	if (nd_ctx) {
+		/* caller wants a full nfit_test reset */
+		ndctl_bus_foreach(nd_ctx, bus) {
+			struct ndctl_region *region;
+
+			if (strncmp(ndctl_bus_get_provider(bus),
+						"nfit_test", 9) != 0)
+				continue;
+			ndctl_region_foreach(bus, region)
+				ndctl_region_disable_invalidate(region);
+		}
+
+		rc = kmod_module_remove_module(*mod, 0);
+		if (rc < 0 && rc != -ENOENT) {
+			kmod_unref(*ctx);
+			return rc;
+		}
+		ndctl_invalidate(nd_ctx);
 	}
 
 	rc = kmod_module_probe_insert_module(*mod, KMOD_PROBE_APPLY_BLACKLIST,
