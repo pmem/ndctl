@@ -283,7 +283,7 @@ intel_smart_set_threshold_field(spares)
 intel_smart_set_threshold_field(media_temperature)
 intel_smart_set_threshold_field(ctrl_temperature)
 
-struct ndctl_smart_ops * const intel_smart_ops = &(struct ndctl_smart_ops) {
+struct ndctl_dimm_ops * const intel_dimm_ops = &(struct ndctl_dimm_ops) {
 	.new_smart = intel_dimm_cmd_new_smart,
 	.smart_get_flags = intel_cmd_smart_get_flags,
 	.smart_get_health = intel_cmd_smart_get_health,

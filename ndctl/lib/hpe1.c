@@ -296,7 +296,7 @@ static unsigned int hpe1_cmd_smart_threshold_get_spares(struct ndctl_cmd *cmd)
 	return CMD_HPE1_SMART_THRESH(cmd)->spare_block_threshold;
 }
 
-struct ndctl_smart_ops * const hpe1_smart_ops = &(struct ndctl_smart_ops) {
+struct ndctl_dimm_ops * const hpe1_dimm_ops = &(struct ndctl_dimm_ops) {
 	.new_smart = hpe1_dimm_cmd_new_smart,
 	.smart_get_flags = hpe1_cmd_smart_get_flags,
 	.smart_get_health = hpe1_cmd_smart_get_health,

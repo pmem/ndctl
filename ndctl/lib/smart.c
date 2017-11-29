@@ -17,13 +17,14 @@
 #include "private.h"
 
 /*
- * Define the wrappers around the ndctl_smart_ops:
+ * Define the wrappers around the ndctl_dimm_ops:
  */
 
 NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_smart(
 		struct ndctl_dimm *dimm)
 {
-	struct ndctl_smart_ops *ops = ndctl_dimm_get_smart_ops(dimm);
+	struct ndctl_dimm_ops *ops = dimm->ops;
+
 	if (ops && ops->new_smart)
 		return ops->new_smart(dimm);
 	else
@@ -33,7 +34,8 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_smart(
 NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_smart_threshold(
 		struct ndctl_dimm *dimm)
 {
-	struct ndctl_smart_ops *ops = ndctl_dimm_get_smart_ops(dimm);
+	struct ndctl_dimm_ops *ops = dimm->ops;
+
 	if (ops && ops->new_smart_threshold)
 		return ops->new_smart_threshold(dimm);
 	else
@@ -47,11 +49,11 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_smart_threshold(
 NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_smart_set_threshold(
 		struct ndctl_cmd *cmd)
 {
-	struct ndctl_smart_ops *ops;
+	struct ndctl_dimm_ops *ops;
 
 	if (!cmd || !cmd->dimm)
 		return NULL;
-	ops = ndctl_dimm_get_smart_ops(cmd->dimm);
+	ops = cmd->dimm->ops;
 
 	if (ops && ops->new_smart_set_threshold)
 		return ops->new_smart_set_threshold(cmd);
@@ -63,7 +65,7 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_smart_set_threshold(
 NDCTL_EXPORT rettype ndctl_cmd_##op(struct ndctl_cmd *cmd) \
 { \
 	if (cmd->dimm) { \
-		struct ndctl_smart_ops *ops = ndctl_dimm_get_smart_ops(cmd->dimm); \
+		struct ndctl_dimm_ops *ops = cmd->dimm->ops; \
 		if (ops && ops->op) \
 			return ops->op(cmd); \
 	} \
@@ -103,7 +105,7 @@ smart_cmd_op(smart_threshold_get_supported_alarms, unsigned int, 0);
 NDCTL_EXPORT int ndctl_cmd_##op(struct ndctl_cmd *cmd, unsigned int val) \
 { \
 	if (cmd->dimm) { \
-		struct ndctl_smart_ops *ops = ndctl_dimm_get_smart_ops(cmd->dimm); \
+		struct ndctl_dimm_ops *ops = cmd->dimm->ops; \
 		if (ops && ops->op) \
 			return ops->op(cmd, val); \
 	} \

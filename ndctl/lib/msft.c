@@ -136,7 +136,7 @@ static unsigned int msft_cmd_smart_get_life_used(struct ndctl_cmd *cmd)
 	return 100 - CMD_MSFT_SMART(cmd)->nvm_lifetime;
 }
 
-struct ndctl_smart_ops * const msft_smart_ops = &(struct ndctl_smart_ops) {
+struct ndctl_dimm_ops * const msft_dimm_ops = &(struct ndctl_dimm_ops) {
 	.new_smart = msft_dimm_cmd_new_smart,
 	.smart_get_flags = msft_cmd_smart_get_flags,
 	.smart_get_health = msft_cmd_smart_get_health,

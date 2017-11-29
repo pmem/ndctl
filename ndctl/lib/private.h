@@ -61,7 +61,7 @@ struct nvdimm_data {
 struct ndctl_dimm {
 	struct kmod_module *module;
 	struct ndctl_bus *bus;
-	struct ndctl_smart_ops *smart_ops;
+	struct ndctl_dimm_ops *ops;
 	struct nvdimm_data ndd;
 	unsigned int handle, major, minor, serial;
 	unsigned short phys_id;
@@ -277,7 +277,7 @@ struct ndctl_bb {
 	struct list_node list;
 };
 
-struct ndctl_smart_ops {
+struct ndctl_dimm_ops {
 	struct ndctl_cmd *(*new_smart)(struct ndctl_dimm *);
 	unsigned int (*smart_get_flags)(struct ndctl_cmd *);
 	unsigned int (*smart_get_health)(struct ndctl_cmd *);
@@ -303,9 +303,9 @@ struct ndctl_smart_ops {
 	int (*smart_threshold_set_spares)(struct ndctl_cmd *, unsigned int);
 };
 
-struct ndctl_smart_ops * const intel_smart_ops;
-struct ndctl_smart_ops * const hpe1_smart_ops;
-struct ndctl_smart_ops * const msft_smart_ops;
+struct ndctl_dimm_ops * const intel_dimm_ops;
+struct ndctl_dimm_ops * const hpe1_dimm_ops;
+struct ndctl_dimm_ops * const msft_dimm_ops;
 
 static inline struct ndctl_bus *cmd_to_bus(struct ndctl_cmd *cmd)
 {

@@ -1301,11 +1301,11 @@ static void *add_dimm(void *parent, int id, const char *dimm_base)
 	if (sysfs_read_attr(ctx, path, buf) == 0)
 		dimm->cmd_family = strtoul(buf, NULL, 0);
 	if (dimm->cmd_family == NVDIMM_FAMILY_INTEL)
-		dimm->smart_ops = intel_smart_ops;
+		dimm->ops = intel_dimm_ops;
 	if (dimm->cmd_family == NVDIMM_FAMILY_HPE1)
-		dimm->smart_ops = hpe1_smart_ops;
+		dimm->ops = hpe1_dimm_ops;
 	if (dimm->cmd_family == NVDIMM_FAMILY_MSFT)
-		dimm->smart_ops = msft_smart_ops;
+		dimm->ops = msft_dimm_ops;
 
 	sprintf(path, "%s/nfit/dsm_mask", dimm_base);
 	if (sysfs_read_attr(ctx, path, buf) == 0)
@@ -1561,11 +1561,6 @@ NDCTL_EXPORT unsigned int ndctl_dimm_handle_get_dimm(struct ndctl_dimm *dimm)
 NDCTL_EXPORT struct ndctl_bus *ndctl_dimm_get_bus(struct ndctl_dimm *dimm)
 {
 	return dimm->bus;
-}
-
-NDCTL_EXPORT struct ndctl_smart_ops *ndctl_dimm_get_smart_ops(struct ndctl_dimm *dimm)
-{
-	return dimm->smart_ops;
 }
 
 NDCTL_EXPORT struct ndctl_ctx *ndctl_dimm_get_ctx(struct ndctl_dimm *dimm)
