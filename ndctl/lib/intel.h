@@ -6,6 +6,7 @@
 #define ND_INTEL_SMART 1
 #define ND_INTEL_SMART_THRESHOLD 2
 #define ND_INTEL_SMART_SET_THRESHOLD 17
+#define ND_INTEL_SMART_INJECT 18
 
 #define ND_INTEL_SMART_HEALTH_VALID             (1 << 0)
 #define ND_INTEL_SMART_SPARES_VALID             (1 << 1)
@@ -24,6 +25,10 @@
 #define ND_INTEL_SMART_NON_CRITICAL_HEALTH      (1 << 0)
 #define ND_INTEL_SMART_CRITICAL_HEALTH          (1 << 1)
 #define ND_INTEL_SMART_FATAL_HEALTH             (1 << 2)
+#define ND_INTEL_SMART_INJECT_MTEMP		(1 << 0)
+#define ND_INTEL_SMART_INJECT_SPARE		(1 << 1)
+#define ND_INTEL_SMART_INJECT_FATAL		(1 << 2)
+#define ND_INTEL_SMART_INJECT_SHUTDOWN		(1 << 3)
 
 struct nd_intel_smart {
         __u32 status;
@@ -71,10 +76,22 @@ struct nd_intel_smart_set_threshold {
 	__u32 status;
 } __attribute__((packed));
 
+struct nd_intel_smart_inject {
+	__u64 flags;
+	__u8 mtemp_enable;
+	__u16 media_temperature;
+	__u8 spare_enable;
+	__u8 spares;
+	__u8 fatal_enable;
+	__u8 unsafe_shutdown_enable;
+	__u32 status;
+} __attribute__((packed));
+
 struct nd_pkg_intel {
 	struct nd_cmd_pkg gen;
 	union {
 		struct nd_intel_smart smart;
+		struct nd_intel_smart_inject inject;
 		struct nd_intel_smart_threshold	thresh;
 		struct nd_intel_smart_set_threshold set_thresh;
 	};

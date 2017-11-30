@@ -283,10 +283,90 @@ intel_smart_set_threshold_field(spares)
 intel_smart_set_threshold_field(media_temperature)
 intel_smart_set_threshold_field(ctrl_temperature)
 
+static int intel_smart_inject_valid(struct ndctl_cmd *cmd)
+{
+	struct nd_pkg_intel *pkg = cmd->intel;
+
+	if (cmd->type != ND_CMD_CALL || cmd->status != 1
+			|| pkg->gen.nd_family != NVDIMM_FAMILY_INTEL
+			|| pkg->gen.nd_command != ND_INTEL_SMART_INJECT)
+		return cmd->status < 0 ? cmd->status : -EINVAL;
+	return 0;
+}
+
+static struct ndctl_cmd *intel_new_smart_inject(struct ndctl_dimm *dimm)
+{
+	struct ndctl_cmd *cmd;
+
+	BUILD_ASSERT(sizeof(struct nd_intel_smart_inject) == 19);
+
+	cmd = alloc_intel_cmd(dimm, ND_INTEL_SMART_INJECT,
+			offsetof(struct nd_intel_smart_inject, status), 4);
+	if (!cmd)
+		return NULL;
+	cmd->firmware_status = &cmd->intel->inject.status;
+
+	return cmd;
+}
+
+static int intel_cmd_smart_inject_media_temperature(struct ndctl_cmd *cmd,
+		bool enable, unsigned int mtemp)
+{
+	struct nd_intel_smart_inject *inj;
+
+	if (intel_smart_inject_valid(cmd) < 0)
+		return -EINVAL;
+	inj = &cmd->intel->inject;
+	inj->flags |= ND_INTEL_SMART_INJECT_MTEMP;
+	inj->mtemp_enable = enable == true;
+	inj->media_temperature = mtemp;
+	return 0;
+}
+
+static int intel_cmd_smart_inject_spares(struct ndctl_cmd *cmd,
+		bool enable, unsigned int spares)
+{
+	struct nd_intel_smart_inject *inj;
+
+	if (intel_smart_inject_valid(cmd) < 0)
+		return -EINVAL;
+	inj = &cmd->intel->inject;
+	inj->flags |= ND_INTEL_SMART_INJECT_SPARE;
+	inj->spare_enable = enable == true;
+	inj->spares = spares;
+	return 0;
+}
+
+static int intel_cmd_smart_inject_fatal(struct ndctl_cmd *cmd, bool enable)
+{
+	struct nd_intel_smart_inject *inj;
+
+	if (intel_smart_inject_valid(cmd) < 0)
+		return -EINVAL;
+	inj = &cmd->intel->inject;
+	inj->flags |= ND_INTEL_SMART_INJECT_FATAL;
+	inj->fatal_enable = enable == true;
+	return 0;
+}
+
+static int intel_cmd_smart_inject_unsafe_shutdown(struct ndctl_cmd *cmd,
+		bool enable)
+{
+	struct nd_intel_smart_inject *inj;
+
+	if (intel_smart_inject_valid(cmd) < 0)
+		return -EINVAL;
+	inj = &cmd->intel->inject;
+	inj->flags |= ND_INTEL_SMART_INJECT_SHUTDOWN;
+	inj->unsafe_shutdown_enable = enable == true;
+	return 0;
+}
+
 static const char *intel_cmd_desc(int fn)
 {
 	static const char *descs[] = {
 		[ND_INTEL_SMART] = "smart",
+		[ND_INTEL_SMART_INJECT] = "smart_inject",
 		[ND_INTEL_SMART_THRESHOLD] = "smart_thresh",
 		[ND_INTEL_SMART_SET_THRESHOLD] = "smart_set_thresh",
 	};
@@ -331,4 +411,9 @@ struct ndctl_dimm_ops * const intel_dimm_ops = &(struct ndctl_dimm_ops) {
 	.smart_threshold_set_ctrl_temperature
 		= intel_cmd_smart_threshold_set_ctrl_temperature,
 	.smart_threshold_set_spares = intel_cmd_smart_threshold_set_spares,
+	.new_smart_inject = intel_new_smart_inject,
+	.smart_inject_media_temperature = intel_cmd_smart_inject_media_temperature,
+	.smart_inject_spares = intel_cmd_smart_inject_spares,
+	.smart_inject_fatal = intel_cmd_smart_inject_fatal,
+	.smart_inject_unsafe_shutdown = intel_cmd_smart_inject_unsafe_shutdown,
 };

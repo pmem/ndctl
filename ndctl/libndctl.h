@@ -256,6 +256,13 @@ int ndctl_cmd_smart_threshold_set_ctrl_temperature(struct ndctl_cmd *cmd,
 		unsigned int val);
 int ndctl_cmd_smart_threshold_set_spares(struct ndctl_cmd *cmd,
 		unsigned int val);
+struct ndctl_cmd *ndctl_dimm_cmd_new_smart_inject(struct ndctl_dimm *dimm);
+int ndctl_cmd_smart_inject_media_temperature(struct ndctl_cmd *cmd, bool enable,
+		unsigned int mtemp);
+int ndctl_cmd_smart_inject_spares(struct ndctl_cmd *cmd, bool enable,
+		unsigned int spares);
+int ndctl_cmd_smart_inject_fatal(struct ndctl_cmd *cmd, bool enable);
+int ndctl_cmd_smart_inject_unsafe_shutdown(struct ndctl_cmd *cmd, bool enable);
 
 struct ndctl_cmd *ndctl_dimm_cmd_new_vendor_specific(struct ndctl_dimm *dimm,
 		unsigned int opcode, size_t input_size, size_t output_size);

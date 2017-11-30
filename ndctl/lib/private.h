@@ -303,6 +303,11 @@ struct ndctl_dimm_ops {
 	int (*smart_threshold_set_media_temperature)(struct ndctl_cmd *, unsigned int);
 	int (*smart_threshold_set_ctrl_temperature)(struct ndctl_cmd *, unsigned int);
 	int (*smart_threshold_set_spares)(struct ndctl_cmd *, unsigned int);
+	struct ndctl_cmd *(*new_smart_inject)(struct ndctl_dimm *);
+	int (*smart_inject_media_temperature)(struct ndctl_cmd *, bool, unsigned int);
+	int (*smart_inject_spares)(struct ndctl_cmd *, bool, unsigned int);
+	int (*smart_inject_fatal)(struct ndctl_cmd *, bool);
+	int (*smart_inject_unsafe_shutdown)(struct ndctl_cmd *, bool);
 };
 
 struct ndctl_dimm_ops * const intel_dimm_ops;

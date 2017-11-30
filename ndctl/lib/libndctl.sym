@@ -322,4 +322,9 @@ global:
 	ndctl_cmd_smart_threshold_set_ctrl_temperature;
 	ndctl_cmd_smart_threshold_set_spares;
 	ndctl_decode_smart_temperature;
+	ndctl_dimm_cmd_new_smart_inject;
+	ndctl_cmd_smart_inject_media_temperature;
+	ndctl_cmd_smart_inject_spares;
+	ndctl_cmd_smart_inject_fatal;
+	ndctl_cmd_smart_inject_unsafe_shutdown;
 } LIBNDCTL_13;

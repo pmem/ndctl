@@ -116,3 +116,42 @@ smart_cmd_set_op(smart_threshold_set_alarm_control)
 smart_cmd_set_op(smart_threshold_set_media_temperature)
 smart_cmd_set_op(smart_threshold_set_ctrl_temperature)
 smart_cmd_set_op(smart_threshold_set_spares)
+
+NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_smart_inject(
+		struct ndctl_dimm *dimm)
+{
+	struct ndctl_dimm_ops *ops = dimm->ops;
+
+	if (ops && ops->new_smart_inject)
+		return ops->new_smart_inject(dimm);
+	else
+		return NULL;
+}
+
+#define smart_cmd_inject_val(op) \
+NDCTL_EXPORT int ndctl_cmd_##op(struct ndctl_cmd *cmd, bool enable, unsigned int val) \
+{ \
+	if (cmd->dimm) { \
+		struct ndctl_dimm_ops *ops = cmd->dimm->ops; \
+		if (ops && ops->op) \
+			return ops->op(cmd, enable, val); \
+	} \
+	return -ENXIO; \
+}
+
+smart_cmd_inject_val(smart_inject_media_temperature)
+smart_cmd_inject_val(smart_inject_spares)
+
+#define smart_cmd_inject(op) \
+NDCTL_EXPORT int ndctl_cmd_##op(struct ndctl_cmd *cmd, bool enable) \
+{ \
+	if (cmd->dimm) { \
+		struct ndctl_dimm_ops *ops = cmd->dimm->ops; \
+		if (ops && ops->op) \
+			return ops->op(cmd, enable); \
+	} \
+	return -ENXIO; \
+}
+
+smart_cmd_inject(smart_inject_fatal)
+smart_cmd_inject(smart_inject_unsafe_shutdown)
