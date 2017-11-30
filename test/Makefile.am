@@ -26,6 +26,7 @@ check_PROGRAMS =\
 	multi-pmem \
 	dax-errors \
 	smart-notify \
+	smart-listen \
 	daxdev-errors
 
 if ENABLE_DESTRUCTIVE
@@ -103,6 +104,8 @@ device_dax_LDADD = \
 
 smart_notify_SOURCES = smart-notify.c
 smart_notify_LDADD = $(LIBNDCTL_LIB)
+smart_listen_SOURCES = smart-listen.c
+smart_listen_LDADD = $(LIBNDCTL_LIB)
 
 multi_pmem_SOURCES = \
 		multi-pmem.c \
