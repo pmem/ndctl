@@ -25,6 +25,7 @@ check_PROGRAMS =\
 	parent-uuid \
 	multi-pmem \
 	dax-errors \
+	smart-notify \
 	daxdev-errors
 
 if ENABLE_DESTRUCTIVE
@@ -99,6 +100,9 @@ device_dax_LDADD = \
 		$(KMOD_LIBS) \
 		$(JSON_LIBS) \
 		../libutil.a
+
+smart_notify_SOURCES = smart-notify.c
+smart_notify_LDADD = $(LIBNDCTL_LIB)
 
 multi_pmem_SOURCES = \
 		multi-pmem.c \
