@@ -146,6 +146,7 @@ dd if=$MNT/$FILE of=/dev/null iflag=direct bs=4096 count=1
 ## ensure we get an EIO for errors in namespace metadata
 
 # reset everything to get a clean log
+if grep -q "$MNT" /proc/mounts; then umount $MNT; fi
 $NDCTL disable-region -b "$BUS" all
 $NDCTL zero-labels -b "$BUS" all
 $NDCTL enable-region -b "$BUS" all
