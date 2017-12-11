@@ -640,8 +640,6 @@ static int to_cmd_index(const char *name, int dimm)
 		cmd_name_fn = nvdimm_cmd_name;
 	} else {
 		end_cmd = ND_CMD_CLEAR_ERROR;
-		if (!end_cmd)
-			end_cmd = ND_CMD_ARS_STATUS;
 		cmd_name_fn = nvdimm_bus_cmd_name;
 	}
 
