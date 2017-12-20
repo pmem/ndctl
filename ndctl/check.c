@@ -582,9 +582,10 @@ static int btt_check_arenas(struct btt_chk *bttc)
 			break;
 	}
 
-	btt_xlat_status(a, rc);
-	if (rc)
+	if (a && rc != BTT_OK) {
+		btt_xlat_status(a, rc);
 		return -ENXIO;
+	}
 	return 0;
 }
 

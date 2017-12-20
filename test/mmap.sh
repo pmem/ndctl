@@ -17,9 +17,9 @@ DEV=""
 TEST=./mmap
 NDCTL="../ndctl/ndctl"
 json2var="s/[{}\",]//g; s/:/=/g"
+rc=77
 
 err() {
-	rc=1
 	echo "test-mmap: failed at line $1"
 	if [ -n "$DEV" ]; then
 		umount $DEV
@@ -64,6 +64,7 @@ dev=$(./dax-dev)
 json=$($NDCTL list -N -n $dev)
 eval $(echo $json | sed -e "$json2var")
 DEV="/dev/${blockdev}"
+rc=1
 
 mkfs.ext4 $DEV
 mount $DEV $MNT -o dax

@@ -20,7 +20,6 @@ json2var="s/[{}\",]//g; s/:/=/g"
 rc=77
 
 err() {
-	rc=1
 	echo "test/multi-dax: failed at line $1"
 	exit $rc
 }
@@ -44,6 +43,7 @@ modprobe nfit_test
 $NDCTL disable-region $BUS all
 $NDCTL zero-labels $BUS all
 $NDCTL enable-region $BUS all
+rc=1
 
 query=". | sort_by(.available_size) | reverse | .[0].dev"
 region=$($NDCTL list $BUS -t pmem -Ri | jq -r "$query")
