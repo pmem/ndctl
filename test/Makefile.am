@@ -8,7 +8,7 @@ TESTS =\
 	multi-pmem \
 	create.sh \
 	clear.sh \
-	dax-errors.sh \
+	pmem-errors.sh \
 	daxdev-errors.sh \
 	multi-dax.sh \
 	btt-check.sh \
