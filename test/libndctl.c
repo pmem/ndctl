@@ -2270,11 +2270,6 @@ static int check_smart_threshold(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 		return rc;
 	}
 
-	__check_smart_threshold(dimm, cmd, alarm_control);
-	__check_smart_threshold(dimm, cmd, media_temperature);
-	__check_smart_threshold(dimm, cmd, ctrl_temperature);
-	__check_smart_threshold(dimm, cmd, spares);
-
 	/*
 	 * The same kernel change that adds nfit_test support for this
 	 * command is the same change that moves notifications to
@@ -2285,6 +2280,17 @@ static int check_smart_threshold(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 	 */
 	cmd_set = ndctl_dimm_cmd_new_smart_set_threshold(cmd);
 	if (cmd_set) {
+
+		/*
+		 * These values got reworked when nfit_test gained
+		 * set_threshold support
+		 */
+		__check_smart_threshold(dimm, cmd, media_temperature);
+		__check_smart_threshold(dimm, cmd, ctrl_temperature);
+		__check_smart_threshold(dimm, cmd, spares);
+		__check_smart_threshold(dimm, cmd, alarm_control);
+
+
 		/*
 		 * Set all thresholds to match current values and set
 		 * all alarms.
