@@ -459,7 +459,7 @@ static char *dax_region_path(const char *base, const char *device)
 		return NULL;
 
 	/* dax_region must be the instance's direct parent */
-	region_path = canonicalize_file_name(path);
+	region_path = realpath(path, NULL);
 	free(path);
 	if (!region_path)
 		return NULL;
