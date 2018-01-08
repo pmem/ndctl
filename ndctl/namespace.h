@@ -107,6 +107,8 @@ struct namespace_label {
 #define ARENA_MAX_SIZE (1ULL << 39)	/* 512 GB */
 #define BTT_INFO_SIZE 4096
 #define IB_FLAG_ERROR_MASK 0x00000001
+#define LOG_GRP_SIZE sizeof(struct log_group)
+#define LOG_ENT_SIZE sizeof(struct log_entry)
 
 #define BTT_NUM_OFFSETS 2
 #define BTT1_START_OFFSET 4096
@@ -117,7 +119,47 @@ struct log_entry {
 	le32 old_map;
 	le32 new_map;
 	le32 seq;
-	le64 padding[2];
+};
+
+/*
+ * A log group represents one log 'lane', and consists of four log entries.
+ * Two of the four entries are valid entries, and the remaining two are
+ * padding. Due to an old bug in the padding location, we need to perform a
+ * test to determine the padding scheme being used, and use that scheme
+ * thereafter.
+ *
+ * In kernels prior to 4.15, 'log group' would have actual log entries at
+ * indices (0, 2) and padding at indices (1, 3), where as the correct/updated
+ * format has log entries at indices (0, 1) and padding at indices (2, 3).
+ *
+ * Old (pre 4.15) format:
+ * +-----------------+-----------------+
+ * |      ent[0]     |      ent[1]     |
+ * |       16B       |       16B       |
+ * | lba/old/new/seq |       pad       |
+ * +-----------------------------------+
+ * |      ent[2]     |      ent[3]     |
+ * |       16B       |       16B       |
+ * | lba/old/new/seq |       pad       |
+ * +-----------------+-----------------+
+ *
+ * New format:
+ * +-----------------+-----------------+
+ * |      ent[0]     |      ent[1]     |
+ * |       16B       |       16B       |
+ * | lba/old/new/seq | lba/old/new/seq |
+ * +-----------------------------------+
+ * |      ent[2]     |      ent[3]     |
+ * |       16B       |       16B       |
+ * |       pad       |       pad       |
+ * +-----------------+-----------------+
+ *
+ * We detect during start-up which format is in use, and set
+ * arena->log_index[(0, 1)] with the detected format.
+ */
+
+struct log_group {
+	struct log_entry ent[4];
 };
 
 struct btt_sb {
@@ -155,7 +197,7 @@ struct arena_map {
 	size_t data_len;
 	u32 *map;
 	size_t map_len;
-	struct log_entry *log;
+	struct log_group *log;
 	size_t log_len;
 	struct btt_sb *info2;
 	size_t info2_len;
