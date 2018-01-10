@@ -50,7 +50,8 @@ git://git.kernel.org/pub/scm/linux/kernel/git/nvdimm/nvdimm.git`
 `CONFIG_ND_BLK=m`  
 `CONFIG_BTT=y`  
 `CONFIG_NVDIMM_PFN=y`  
-`CONFIG_NVDIMM_DAX=y`  
+`CONFIG_NVDIMM_DAX=y` 
+`CONFIG_DEV_DAX_PMEM=m`
 
 4. Build and install the unit test enabled libnvdimm modules in the
    following order.  The unit test modules need to be in place prior to
