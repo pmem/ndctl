@@ -44,6 +44,7 @@ git://git.kernel.org/pub/scm/linux/kernel/git/nvdimm/nvdimm.git`
 3. Compile the libnvdimm sub-system as a module, make sure "zone device"
    memory is enabled, and enable the btt, pfn, and dax features of the
    sub-system:  
+`CONFIG_X86_PMEM_LEGACY=m`  
 `CONFIG_ZONE_DEVICE=y`  
 `CONFIG_LIBNVDIMM=m`  
 `CONFIG_BLK_DEV_PMEM=m`  
