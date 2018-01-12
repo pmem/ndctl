@@ -41,6 +41,7 @@ struct check_opts {
 	bool verbose;
 	bool force;
 	bool repair;
+	bool logfix;
 };
 
 struct btt_chk {
@@ -241,6 +242,12 @@ static void btt_log_group_read(struct arena_info *a, u32 lane,
 	memcpy(log, &a->map.log[lane], LOG_GRP_SIZE);
 }
 
+static void btt_log_group_write(struct arena_info *a, u32 lane,
+			struct log_group *log)
+{
+	memcpy(&a->map.log[lane], log, LOG_GRP_SIZE);
+}
+
 static u32 log_seq(struct log_group *log, int log_idx)
 {
 	return le32_to_cpu(log->ent[log_idx].seq);
@@ -353,6 +360,7 @@ enum btt_errcodes {
 	BTT_LOG_MAP_ERR,
 	BTT_MAP_OOB,
 	BTT_BITMAP_ERROR,
+	BTT_LOGFIX_ERR,
 };
 
 static void btt_xlat_status(struct arena_info *a, int errcode)
@@ -398,6 +406,11 @@ static void btt_xlat_status(struct arena_info *a, int errcode)
 	case BTT_BITMAP_ERROR:
 		err(a->bttc,
 			"arena %d: bitmap error: internal blocks are incorrectly referenced\n",
+			a->num);
+		break;
+	case BTT_LOGFIX_ERR:
+		err(a->bttc,
+			"arena %d: rewrite-log error: log may be in an unknown/unrecoverable state\n",
 			a->num);
 		break;
 	default:
@@ -558,6 +571,44 @@ static int btt_check_bitmap(struct arena_info *a)
 	return rc;
 }
 
+static int btt_rewrite_log(struct arena_info *a)
+{
+	struct log_group log;
+	int rc;
+	u32 i;
+
+	info(a->bttc, "arena %d: rewriting log\n", a->num);
+	/*
+	 * To rewrite the log, we implicitly use the 'new' padding scheme of
+	 * (0, 1) but resetting the log to a completely initial state (i.e.
+	 * slot-0 contains a made-up entry containing the 'free' block from
+	 * the existing current log entry, and a sequence number of '1'. All
+	 * other slots are zeroed.
+	 *
+	 * This way of rewriting the log is the most flexible as it can be
+	 * (ab)used to convert a new padding format back to the old one.
+	 * Since it only recreates slot-0, which is common between both
+	 * existing formats, an older kernel will simply initialize the free
+	 * list using those slot-0 entries, and run with it as though slot-2
+	 * is the other valid slot.
+	 */
+	memset(&log, 0, LOG_GRP_SIZE);
+	for (i = 0; i < a->nfree; i++) {
+		struct log_entry ent;
+
+		rc = btt_log_read(a, i, &ent);
+		if (rc)
+			return BTT_LOGFIX_ERR;
+
+		log.ent[0].lba = ent.lba;
+		log.ent[0].old_map = ent.old_map;
+		log.ent[0].new_map = ent.new_map;
+		log.ent[0].seq = 1;
+		btt_log_group_write(a, i, &log);
+	}
+	return 0;
+}
+
 static int btt_check_arenas(struct btt_chk *bttc)
 {
 	struct arena_info *a = NULL;
@@ -586,6 +637,12 @@ static int btt_check_arenas(struct btt_chk *bttc)
 		rc = btt_check_bitmap(a);
 		if (rc)
 			break;
+
+		if (bttc->opts->logfix) {
+			rc = btt_rewrite_log(a);
+			if (rc)
+				break;
+		}
 	}
 
 	if (a && rc != BTT_OK) {
@@ -1089,13 +1146,14 @@ static int btt_recover_first_sb(struct btt_chk *bttc)
 }
 
 int namespace_check(struct ndctl_namespace *ndns, bool verbose, bool force,
-		bool repair)
+		bool repair, bool logfix)
 {
 	const char *devname = ndctl_namespace_get_devname(ndns);
 	struct check_opts __opts = {
 		.verbose = verbose,
 		.force = force,
 		.repair = repair,
+		.logfix = logfix,
 	}, *opts = &__opts;
 	int raw_mode, rc, disabled_flag = 0, open_flags;
 	struct btt_sb *btt_sb;
@@ -1120,6 +1178,16 @@ int namespace_check(struct ndctl_namespace *ndns, bool verbose, bool force,
 		err(bttc, "Unable to set sigaction\n");
 		rc = -errno;
 		goto out_bttc;
+	}
+
+	if (opts->logfix) {
+		if (!opts->repair) {
+			err(bttc, "--rewrite-log also requires --repair\n");
+			rc = -EINVAL;
+			goto out_bttc;
+		}
+		info(bttc,
+			"WARNING: interruption may cause unrecoverable metadata corruption\n");
 	}
 
 	bttc->opts = opts;

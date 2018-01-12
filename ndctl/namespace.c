@@ -34,6 +34,7 @@
 static bool verbose;
 static bool force;
 static bool repair;
+static bool logfix;
 static struct parameters {
 	bool do_scan;
 	bool mode_default;
@@ -116,6 +117,7 @@ OPT_BOOLEAN('L', "autolabel", &param.autolabel, "automatically initialize labels
 
 #define CHECK_OPTIONS() \
 OPT_BOOLEAN('R', "repair", &repair, "perform metadata repairs"), \
+OPT_BOOLEAN('L', "rewrite-log", &logfix, "regenerate the log"), \
 OPT_BOOLEAN('f', "force", &force, "check namespace even if currently active")
 
 static const struct option base_options[] = {
@@ -980,7 +982,7 @@ static int namespace_reconfig(struct ndctl_region *region,
 }
 
 int namespace_check(struct ndctl_namespace *ndns, bool verbose, bool force,
-		bool repair);
+		bool repair, bool logfix);
 
 static int do_xaction_namespace(const char *namespace,
 		enum device_action action, struct ndctl_ctx *ctx)
@@ -1044,7 +1046,7 @@ static int do_xaction_namespace(const char *namespace,
 					break;
 				case ACTION_CHECK:
 					rc = namespace_check(ndns, verbose,
-							force, repair);
+							force, repair, logfix);
 					if (rc < 0)
 						return rc;
 					break;

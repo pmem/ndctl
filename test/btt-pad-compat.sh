@@ -193,6 +193,15 @@ do_tests()
 	cycle_ns "$dev"
 	verify_idx 0 2
 
+	# rewrite log using ndctl, verify conversion to new format
+	ndctl check-namespace --rewrite-log --repair --force --verbose $dev
+	do_random_io "/dev/$blockdev"
+	cycle_ns "$dev"
+	verify_idx 0 1
+
+	# check-namespace again to make sure everything is ok
+	ndctl check-namespace --force --verbose $dev
+
 	# the old format btt metadata was created with a null parent uuid,
 	# making it 'stickier' than a normally created btt. Be sure to clean
 	# it up by wiping the info block
