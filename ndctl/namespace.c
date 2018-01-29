@@ -244,12 +244,10 @@ static int set_defaults(enum device_action mode)
 			error("invalid sector size: %s\n", param.sector_size);
 			rc = -EINVAL;
 		}
-	} else if (!param.reconfig
-			&& ((param.type && strcmp(param.type, "blk") == 0)
-				|| (param.mode
-					&& strcmp(param.mode, "safe") == 0))) {
-			/* default sector size for blk-type or safe-mode */
-			param.sector_size = "4096";
+	} else if (((param.type && strcmp(param.type, "blk") == 0)
+			|| (param.mode && strcmp(param.mode, "safe") == 0))) {
+		/* default sector size for blk-type or safe-mode */
+		param.sector_size = "4096";
 	}
 
 	return rc;
