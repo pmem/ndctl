@@ -718,11 +718,6 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 			goto err;
 		json_object_object_add(jndns, "uuid", jobj);
 
-		jobj = json_object_new_int(ndctl_btt_get_sector_size(btt));
-		if (!jobj)
-			goto err;
-		json_object_object_add(jndns, "sector_size", jobj);
-
 		bdev = ndctl_btt_get_block_device(btt);
 	} else if (pfn) {
 		ndctl_pfn_get_uuid(pfn, uuid);
@@ -773,6 +768,30 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 		bdev = ndctl_namespace_get_block_device(ndns);
 	} else
 		bdev = ndctl_namespace_get_block_device(ndns);
+
+	jobj = NULL;
+	if (btt) {
+		jobj = json_object_new_int(ndctl_btt_get_sector_size(btt));
+		if (!jobj)
+			goto err;
+	} else if (!dax) {
+		unsigned int sector_size = ndctl_namespace_get_sector_size(ndns);
+
+		/*
+		 * The kernel will default to a 512 byte sector size on PMEM
+		 * namespaces that don't explicitly have a sector size. This
+		 * happens because they use pre-v1.2 labels or because they
+		 * don't have a label space (devtype=nd_namespace_io).
+		 */
+		if (!sector_size)
+			sector_size = 512;
+
+		jobj = json_object_new_int(sector_size);
+		if (!jobj)
+			goto err;
+	}
+	if (jobj)
+		json_object_object_add(jndns, "sector_size", jobj);
 
 	if (bdev && bdev[0]) {
 		jobj = json_object_new_string(bdev);
