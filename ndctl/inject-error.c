@@ -263,8 +263,6 @@ static int injection_status(struct ndctl_namespace *ndns)
 		printf("%s\n", json_object_to_json_string_ext(jobj,
 			JSON_C_TO_STRING_PRETTY));
 	}
-
-	json_object_put(jbbs);
 	json_object_put(jobj);
 
 	return rc;
