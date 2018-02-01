@@ -33,7 +33,7 @@ static struct ndctl_cmd *alloc_intel_cmd(struct ndctl_dimm *dimm,
 		return NULL;
 	}
 
-	size = sizeof(*cmd) + sizeof(struct nd_pkg_intel);
+	size = sizeof(*cmd) + sizeof(struct nd_pkg_intel) + in_size + out_size;
 	cmd = calloc(1, size);
 	if (!cmd)
 		return NULL;
