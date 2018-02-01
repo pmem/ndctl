@@ -15,6 +15,7 @@
 
 #include <stdbool.h>
 #include <stdarg.h>
+#include <stdint.h>
 #include <unistd.h>
 #include <errno.h>
 
@@ -587,6 +588,41 @@ int ndctl_dax_enable(struct ndctl_dax *dax);
 int ndctl_dax_delete(struct ndctl_dax *dax);
 int ndctl_dax_is_configured(struct ndctl_dax *dax);
 struct daxctl_region *ndctl_dax_get_daxctl_region(struct ndctl_dax *dax);
+
+enum ND_FW_STATUS {
+	FW_SUCCESS = 0,		/* success */
+	FW_ENOTSUPP,		/* not supported */
+	FW_ENOTEXIST,		/* device not exist */
+	FW_EINVAL,		/* invalid input */
+	FW_EHWERR,		/* hardware error */
+	FW_ERETRY,		/* try again */
+	FW_EUNKNOWN,		/* unknown reason */
+	FW_ENORES,		/* out of resource */
+	FW_ENOTREADY,		/* hardware not ready */
+	FW_EBUSY,		/* firmware inprogress */
+	FW_EINVAL_CTX,		/* invalid context passed in */
+	FW_ALREADY_DONE,	/* firmware already updated */
+	FW_EBADFW,		/* firmware failed verification */
+	FW_ABORTED,		/* update sequence aborted success */
+	FW_ESEQUENCE,		/* update sequence incorrect */
+};
+
+struct ndctl_cmd *ndctl_dimm_cmd_new_fw_get_info(struct ndctl_dimm *dimm);
+struct ndctl_cmd *ndctl_dimm_cmd_new_fw_start_update(struct ndctl_dimm *dimm);
+struct ndctl_cmd *ndctl_dimm_cmd_new_fw_send(struct ndctl_cmd *start,
+		unsigned int offset, unsigned int len, void *data);
+struct ndctl_cmd *ndctl_dimm_cmd_new_fw_finish(struct ndctl_cmd *start);
+struct ndctl_cmd *ndctl_dimm_cmd_new_fw_abort(struct ndctl_cmd *start);
+struct ndctl_cmd *ndctl_dimm_cmd_new_fw_finish_query(struct ndctl_cmd *start);
+unsigned int ndctl_cmd_fw_info_get_storage_size(struct ndctl_cmd *cmd);
+unsigned int ndctl_cmd_fw_info_get_max_send_len(struct ndctl_cmd *cmd);
+unsigned int ndctl_cmd_fw_info_get_query_interval(struct ndctl_cmd *cmd);
+unsigned int ndctl_cmd_fw_info_get_max_query_time(struct ndctl_cmd *cmd);
+unsigned long long ndctl_cmd_fw_info_get_run_version(struct ndctl_cmd *cmd);
+unsigned long long ndctl_cmd_fw_info_get_updated_version(struct ndctl_cmd *cmd);
+unsigned int ndctl_cmd_fw_start_get_context(struct ndctl_cmd *cmd);
+unsigned long long ndctl_cmd_fw_fquery_get_fw_rev(struct ndctl_cmd *cmd);
+enum ND_FW_STATUS ndctl_cmd_fw_xlat_firmware_status(struct ndctl_cmd *cmd);
 
 #ifdef __cplusplus
 } /* extern "C" */

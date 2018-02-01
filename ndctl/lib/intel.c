@@ -368,6 +368,11 @@ static const char *intel_cmd_desc(int fn)
 		[ND_INTEL_SMART] = "smart",
 		[ND_INTEL_SMART_INJECT] = "smart_inject",
 		[ND_INTEL_SMART_THRESHOLD] = "smart_thresh",
+		[ND_INTEL_FW_GET_INFO] = "firmware_get_info",
+		[ND_INTEL_FW_START_UPDATE] = "firmware_start_update",
+		[ND_INTEL_FW_SEND_DATA] = "firmware_send_data",
+		[ND_INTEL_FW_FINISH_UPDATE] = "firmware_finish_update",
+		[ND_INTEL_FW_FINISH_STATUS_QUERY] = "firmware_finish_query",
 		[ND_INTEL_SMART_SET_THRESHOLD] = "smart_set_thresh",
 	};
 	const char *desc = descs[fn];
@@ -377,6 +382,248 @@ static const char *intel_cmd_desc(int fn)
 	if (!desc)
 		return "unknown";
 	return desc;
+}
+
+static struct ndctl_cmd *intel_dimm_cmd_new_fw_get_info(struct ndctl_dimm *dimm)
+{
+	struct ndctl_cmd *cmd;
+
+	BUILD_ASSERT(sizeof(struct nd_intel_fw_info) == 44);
+
+	cmd = alloc_intel_cmd(dimm, ND_INTEL_FW_GET_INFO,
+			0, sizeof(cmd->intel->info));
+	if (!cmd)
+		return NULL;
+
+	cmd->firmware_status = &cmd->intel->info.status;
+	return cmd;
+}
+
+static int intel_fw_get_info_valid(struct ndctl_cmd *cmd)
+{
+	struct nd_pkg_intel *pkg = cmd->intel;
+
+	if (cmd->type != ND_CMD_CALL || cmd->status != 0
+			|| pkg->gen.nd_family != NVDIMM_FAMILY_INTEL
+			|| pkg->gen.nd_command != ND_INTEL_FW_GET_INFO)
+		return -EINVAL;
+	return 0;
+}
+
+#define intel_fw_info_get_field32(cmd, field) \
+static unsigned int intel_cmd_fw_info_get_##field( \
+			struct ndctl_cmd *cmd) \
+{ \
+	if (intel_fw_get_info_valid(cmd) < 0) \
+		return UINT_MAX; \
+	return cmd->intel->info.field; \
+}
+
+#define intel_fw_info_get_field64(cmd, field) \
+static unsigned long long intel_cmd_fw_info_get_##field( \
+			struct ndctl_cmd *cmd) \
+{ \
+	if (intel_fw_get_info_valid(cmd) < 0) \
+		return ULLONG_MAX; \
+	return cmd->intel->info.field; \
+}
+
+intel_fw_info_get_field32(cmd, storage_size)
+intel_fw_info_get_field32(cmd, max_send_len)
+intel_fw_info_get_field32(cmd, query_interval)
+intel_fw_info_get_field32(cmd, max_query_time);
+intel_fw_info_get_field64(cmd, run_version);
+intel_fw_info_get_field64(cmd, updated_version);
+
+static struct ndctl_cmd *intel_dimm_cmd_new_fw_start(struct ndctl_dimm *dimm)
+{
+	struct ndctl_cmd *cmd;
+
+	BUILD_ASSERT(sizeof(struct nd_intel_fw_start) == 8);
+
+	cmd = alloc_intel_cmd(dimm, ND_INTEL_FW_START_UPDATE,
+			sizeof(cmd->intel->start) - 4, 4);
+	if (!cmd)
+		return NULL;
+
+	cmd->firmware_status = &cmd->intel->start.status;
+	return cmd;
+}
+
+static int intel_fw_start_valid(struct ndctl_cmd *cmd)
+{
+	struct nd_pkg_intel *pkg = cmd->intel;
+
+	if (cmd->type != ND_CMD_CALL || cmd->status != 0
+			|| pkg->gen.nd_family != NVDIMM_FAMILY_INTEL
+			|| pkg->gen.nd_command != ND_INTEL_FW_START_UPDATE)
+		return -EINVAL;
+	return 0;
+}
+
+static unsigned int intel_cmd_fw_start_get_context(struct ndctl_cmd *cmd)
+{
+	if (intel_fw_start_valid(cmd) < 0)
+		return UINT_MAX;
+	return cmd->intel->start.context;
+}
+
+static struct ndctl_cmd *intel_dimm_cmd_new_fw_send(struct ndctl_cmd *start,
+		unsigned int offset, unsigned int len, void *data)
+{
+	struct ndctl_cmd *cmd;
+
+	BUILD_ASSERT(sizeof(struct nd_intel_fw_send_data) == 12);
+
+	cmd = alloc_intel_cmd(start->dimm, ND_INTEL_FW_SEND_DATA,
+		sizeof(cmd->intel->send) + len, 4);
+	if (!cmd)
+		return NULL;
+
+	cmd->intel->send.context = start->intel->start.context;
+	cmd->intel->send.offset = offset;
+	cmd->intel->send.length = len;
+	memcpy(cmd->intel->send.data, data, len);
+	/* the last dword is reserved for status */
+	cmd->firmware_status =
+		(unsigned int *)(&cmd->intel->send.data[0] + len);
+	return cmd;
+}
+
+static struct ndctl_cmd *intel_dimm_cmd_new_fw_finish(struct ndctl_cmd *start)
+{
+	struct ndctl_cmd *cmd;
+
+	BUILD_ASSERT(sizeof(struct nd_intel_fw_finish_update) == 12);
+
+	cmd = alloc_intel_cmd(start->dimm, ND_INTEL_FW_FINISH_UPDATE,
+			offsetof(struct nd_intel_fw_finish_update, status), 4);
+	if (!cmd)
+		return NULL;
+
+	cmd->intel->finish.context = start->intel->start.context;
+	cmd->intel->finish.ctrl_flags = 0;
+	cmd->firmware_status = &cmd->intel->finish.status;
+	return cmd;
+}
+
+static struct ndctl_cmd *intel_dimm_cmd_new_fw_abort(struct ndctl_cmd *start)
+{
+	struct ndctl_cmd *cmd;
+
+	BUILD_ASSERT(sizeof(struct nd_intel_fw_finish_update) == 12);
+
+	cmd = alloc_intel_cmd(start->dimm, ND_INTEL_FW_FINISH_UPDATE,
+			sizeof(cmd->intel->finish) - 4, 4);
+	if (!cmd)
+		return NULL;
+
+	cmd->intel->finish.context = start->intel->start.context;
+	cmd->intel->finish.ctrl_flags = 1;
+	cmd->firmware_status = &cmd->intel->finish.status;
+	return cmd;
+}
+
+static struct ndctl_cmd *
+intel_dimm_cmd_new_fw_finish_query(struct ndctl_cmd *start)
+{
+	struct ndctl_cmd *cmd;
+
+	BUILD_ASSERT(sizeof(struct nd_intel_fw_finish_query) == 16);
+
+	cmd = alloc_intel_cmd(start->dimm, ND_INTEL_FW_FINISH_STATUS_QUERY,
+			4, sizeof(cmd->intel->fquery) - 4);
+	if (!cmd)
+		return NULL;
+
+	cmd->intel->fquery.context = start->intel->start.context;
+	cmd->firmware_status = &cmd->intel->fquery.status;
+	return cmd;
+}
+
+static int intel_fw_fquery_valid(struct ndctl_cmd *cmd)
+{
+	struct nd_pkg_intel *pkg = cmd->intel;
+
+	if (cmd->type != ND_CMD_CALL || cmd->status != 0
+			|| pkg->gen.nd_family != NVDIMM_FAMILY_INTEL
+			|| pkg->gen.nd_command != ND_INTEL_FW_FINISH_STATUS_QUERY)
+		return -EINVAL;
+	return 0;
+}
+
+static unsigned long long
+intel_cmd_fw_fquery_get_fw_rev(struct ndctl_cmd *cmd)
+{
+	if (intel_fw_fquery_valid(cmd) < 0)
+		return ULLONG_MAX;
+	return cmd->intel->fquery.updated_fw_rev;
+}
+
+static enum ND_FW_STATUS
+intel_cmd_fw_xlat_extend_firmware_status(struct ndctl_cmd *cmd,
+		unsigned int status)
+{
+	/*
+	 * Note: the cases commented out are identical to the ones that are
+	 * not. They are there for reference.
+	 */
+	switch (status & ND_INTEL_STATUS_EXTEND_MASK) {
+	case ND_INTEL_STATUS_START_BUSY:
+	/* case ND_INTEL_STATUS_SEND_CTXINVAL: */
+	/* case ND_INTEL_STATUS_FIN_CTXINVAL: */
+	/* case ND_INTEL_STATUS_FQ_CTXINVAL: */
+		if (cmd->intel->gen.nd_command == ND_INTEL_FW_START_UPDATE)
+			return FW_EBUSY;
+		else
+			return FW_EINVAL_CTX;
+	case ND_INTEL_STATUS_FIN_DONE:
+	/* case ND_INTEL_STATUS_FQ_BUSY: */
+		if (cmd->intel->gen.nd_command == ND_INTEL_FW_FINISH_UPDATE)
+			return FW_ALREADY_DONE;
+		else
+			return FW_EBUSY;
+	case ND_INTEL_STATUS_FIN_BAD:
+	/* case ND_INTEL_STATUS_FQ_BAD: */
+		return FW_EBADFW;
+	case ND_INTEL_STATUS_FIN_ABORTED:
+	/* case ND_INTEL_STATUS_FQ_ORDER: */
+		if (cmd->intel->gen.nd_command == ND_INTEL_FW_FINISH_UPDATE)
+			return FW_ABORTED;
+		else
+			return FW_ESEQUENCE;
+	}
+
+	return FW_EUNKNOWN;
+}
+
+static enum ND_FW_STATUS
+intel_cmd_fw_xlat_firmware_status(struct ndctl_cmd *cmd)
+{
+	unsigned int status = *cmd->firmware_status;
+
+	switch (status & ND_INTEL_STATUS_MASK) {
+	case ND_INTEL_STATUS_SUCCESS:
+		return FW_SUCCESS;
+	case ND_INTEL_STATUS_NOTSUPP:
+		return FW_ENOTSUPP;
+	case ND_INTEL_STATUS_NOTEXIST:
+		return FW_ENOTEXIST;
+	case ND_INTEL_STATUS_INVALPARM:
+		return FW_EINVAL;
+	case ND_INTEL_STATUS_HWERR:
+		return FW_EHWERR;
+	case ND_INTEL_STATUS_RETRY:
+		return FW_ERETRY;
+	case ND_INTEL_STATUS_EXTEND:
+		return intel_cmd_fw_xlat_extend_firmware_status(cmd, status);
+	case ND_INTEL_STATUS_NORES:
+		return FW_ENORES;
+	case ND_INTEL_STATUS_NOTREADY:
+		return FW_ENOTREADY;
+	}
+
+	return FW_EUNKNOWN;
 }
 
 struct ndctl_dimm_ops * const intel_dimm_ops = &(struct ndctl_dimm_ops) {
@@ -416,4 +663,19 @@ struct ndctl_dimm_ops * const intel_dimm_ops = &(struct ndctl_dimm_ops) {
 	.smart_inject_spares = intel_cmd_smart_inject_spares,
 	.smart_inject_fatal = intel_cmd_smart_inject_fatal,
 	.smart_inject_unsafe_shutdown = intel_cmd_smart_inject_unsafe_shutdown,
+	.new_fw_get_info = intel_dimm_cmd_new_fw_get_info,
+	.fw_info_get_storage_size = intel_cmd_fw_info_get_storage_size,
+	.fw_info_get_max_send_len = intel_cmd_fw_info_get_max_send_len,
+	.fw_info_get_query_interval = intel_cmd_fw_info_get_query_interval,
+	.fw_info_get_max_query_time = intel_cmd_fw_info_get_max_query_time,
+	.fw_info_get_run_version = intel_cmd_fw_info_get_run_version,
+	.fw_info_get_updated_version = intel_cmd_fw_info_get_updated_version,
+	.new_fw_start_update = intel_dimm_cmd_new_fw_start,
+	.fw_start_get_context = intel_cmd_fw_start_get_context,
+	.new_fw_send = intel_dimm_cmd_new_fw_send,
+	.new_fw_finish = intel_dimm_cmd_new_fw_finish,
+	.new_fw_abort = intel_dimm_cmd_new_fw_abort,
+	.new_fw_finish_query = intel_dimm_cmd_new_fw_finish_query,
+	.fw_fquery_get_fw_rev = intel_cmd_fw_fquery_get_fw_rev,
+	.fw_xlat_firmware_status = intel_cmd_fw_xlat_firmware_status,
 };

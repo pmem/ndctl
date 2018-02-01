@@ -308,6 +308,22 @@ struct ndctl_dimm_ops {
 	int (*smart_inject_spares)(struct ndctl_cmd *, bool, unsigned int);
 	int (*smart_inject_fatal)(struct ndctl_cmd *, bool);
 	int (*smart_inject_unsafe_shutdown)(struct ndctl_cmd *, bool);
+	struct ndctl_cmd *(*new_fw_get_info)(struct ndctl_dimm *);
+	unsigned int (*fw_info_get_storage_size)(struct ndctl_cmd *);
+	unsigned int (*fw_info_get_max_send_len)(struct ndctl_cmd *);
+	unsigned int (*fw_info_get_query_interval)(struct ndctl_cmd *);
+	unsigned int (*fw_info_get_max_query_time)(struct ndctl_cmd *);
+	unsigned long long (*fw_info_get_run_version)(struct ndctl_cmd *);
+	unsigned long long (*fw_info_get_updated_version)(struct ndctl_cmd *);
+	struct ndctl_cmd *(*new_fw_start_update)(struct ndctl_dimm *);
+	unsigned int (*fw_start_get_context)(struct ndctl_cmd *);
+	struct ndctl_cmd *(*new_fw_send)(struct ndctl_cmd *,
+			unsigned int, unsigned int, void *);
+	struct ndctl_cmd *(*new_fw_finish)(struct ndctl_cmd *);
+	struct ndctl_cmd *(*new_fw_abort)(struct ndctl_cmd *);
+	struct ndctl_cmd *(*new_fw_finish_query)(struct ndctl_cmd *);
+	unsigned long long (*fw_fquery_get_fw_rev)(struct ndctl_cmd *);
+	enum ND_FW_STATUS (*fw_xlat_firmware_status)(struct ndctl_cmd *);
 };
 
 struct ndctl_dimm_ops * const intel_dimm_ops;

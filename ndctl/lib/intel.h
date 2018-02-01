@@ -5,6 +5,12 @@
 #define __INTEL_H__
 #define ND_INTEL_SMART 1
 #define ND_INTEL_SMART_THRESHOLD 2
+
+#define ND_INTEL_FW_GET_INFO 12
+#define ND_INTEL_FW_START_UPDATE 13
+#define ND_INTEL_FW_SEND_DATA 14
+#define ND_INTEL_FW_FINISH_UPDATE 15
+#define ND_INTEL_FW_FINISH_STATUS_QUERY 16
 #define ND_INTEL_SMART_SET_THRESHOLD 17
 #define ND_INTEL_SMART_INJECT 18
 
@@ -87,6 +93,47 @@ struct nd_intel_smart_inject {
 	__u32 status;
 } __attribute__((packed));
 
+struct nd_intel_fw_info {
+	__u32 status;
+	__u32 storage_size;
+	__u32 max_send_len;
+	__u32 query_interval;
+	__u32 max_query_time;
+	__u8 update_cap;
+	__u8 reserved[3];
+	__u32 fis_version;
+	__u64 run_version;
+	__u64 updated_version;
+} __attribute__((packed));
+
+struct nd_intel_fw_start {
+	__u32 status;
+	__u32 context;
+} __attribute__((packed));
+
+/* this one has the output first because the variable input data size */
+struct nd_intel_fw_send_data {
+	__u32 context;
+	__u32 offset;
+	__u32 length;
+	__u8 data[0];
+/* reserving last 4 bytes as status */
+/*	__u32 status; */
+} __attribute__((packed));
+
+struct nd_intel_fw_finish_update {
+	__u8 ctrl_flags;
+	__u8 reserved[3];
+	__u32 context;
+	__u32 status;
+} __attribute__((packed));
+
+struct nd_intel_fw_finish_query {
+	__u32 context;
+	__u32 status;
+	__u64 updated_fw_rev;
+} __attribute__((packed));
+
 struct nd_pkg_intel {
 	struct nd_cmd_pkg gen;
 	union {
@@ -94,6 +141,36 @@ struct nd_pkg_intel {
 		struct nd_intel_smart_inject inject;
 		struct nd_intel_smart_threshold	thresh;
 		struct nd_intel_smart_set_threshold set_thresh;
+		struct nd_intel_fw_info info;
+		struct nd_intel_fw_start start;
+		struct nd_intel_fw_send_data send;
+		struct nd_intel_fw_finish_update finish;
+		struct nd_intel_fw_finish_query fquery;
 	};
 };
+
+#define ND_INTEL_STATUS_MASK		0xffff
+#define ND_INTEL_STATUS_SUCCESS		0
+#define ND_INTEL_STATUS_NOTSUPP		1
+#define ND_INTEL_STATUS_NOTEXIST	2
+#define ND_INTEL_STATUS_INVALPARM	3
+#define ND_INTEL_STATUS_HWERR		4
+#define ND_INTEL_STATUS_RETRY		5
+#define ND_INTEL_STATUS_UNKNOWN		6
+#define ND_INTEL_STATUS_EXTEND		7
+#define ND_INTEL_STATUS_NORES		8
+#define ND_INTEL_STATUS_NOTREADY	9
+
+#define ND_INTEL_STATUS_EXTEND_MASK	0xffff0000
+#define ND_INTEL_STATUS_START_BUSY	0x10000
+#define ND_INTEL_STATUS_SEND_CTXINVAL	0x10000
+#define ND_INTEL_STATUS_FIN_CTXINVAL	0x10000
+#define ND_INTEL_STATUS_FIN_DONE	0x20000
+#define ND_INTEL_STATUS_FIN_BAD		0x30000
+#define ND_INTEL_STATUS_FIN_ABORTED	0x40000
+#define ND_INTEL_STATUS_FQ_CTXINVAL	0x10000
+#define ND_INTEL_STATUS_FQ_BUSY		0x20000
+#define ND_INTEL_STATUS_FQ_BAD		0x30000
+#define ND_INTEL_STATUS_FQ_ORDER	0x40000
+
 #endif /* __INTEL_H__ */
