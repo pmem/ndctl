@@ -16,9 +16,10 @@ TESTS =\
 	blk-exhaust.sh \
 	sector-mode.sh \
 	inject-error.sh \
-	hugetlb \
 	btt-errors.sh \
-	btt-pad-compat.sh
+	hugetlb \
+	btt-pad-compat.sh \
+	firmware-update.sh
 
 check_PROGRAMS =\
 	libndctl \
