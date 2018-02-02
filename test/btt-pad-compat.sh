@@ -41,17 +41,6 @@ err()
 	exit "$rc"
 }
 
-check_min_kver()
-{
-	local ver="$1"
-	: "${KVER:=$(uname -r)}"
-
-	[ -n "$ver" ] || return 1
-	[[ "$ver" == "$(echo -e "$ver\n$KVER" | sort -V | head -1)" ]]
-}
-
-check_min_kver "4.15" || { echo "kernel $KVER may not have btt padding compat fixes"; exit "$rc"; }
-
 check_prereq()
 {
 	if ! command -v "$1" >/dev/null; then
@@ -70,6 +59,10 @@ create()
 	[ $size -gt 0 ] || err "$LINENO" 2
 	bttdev=$(cat /sys/bus/nd/devices/$dev/holder)
 	[ -n "$bttdev" ] || err "$LINENO" 2
+	if [ ! -e /sys/kernel/debug/btt/$bttdev/arena0/log_index_0 ]; then
+		echo "kernel $(uname -r) seems to be missing the BTT compatibility fixes, skipping"
+		exit 77
+	fi
 }
 
 reset()
