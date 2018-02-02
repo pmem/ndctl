@@ -15,6 +15,7 @@
 
 #include <ccan/array_size/array_size.h>
 #include <linux/types.h>
+#include <sys/user.h>
 
 struct nd_cmd_dimm_flags {
 	__u32 status;
@@ -210,7 +211,7 @@ enum nd_driver_flags {
 };
 
 enum {
-	ND_MIN_NAMESPACE_SIZE = 0x00400000,
+	ND_MIN_NAMESPACE_SIZE = PAGE_SIZE,
 };
 
 enum ars_masks {

@@ -232,6 +232,11 @@ static int do_test(struct ndctl_ctx *ctx, struct ndctl_test *test)
 
 		uuid_unparse(namespaces[i].uuid, uuid_str);
 		size = ndctl_namespace_get_size(victim);
+		rc = ndctl_namespace_disable(victim);
+		if (rc) {
+			fprintf(stderr, "failed to disable %s\n", uuid_str);
+			return rc;
+		}
 		rc = ndctl_namespace_delete(victim);
 		if (rc) {
 			fprintf(stderr, "failed to delete %s\n", uuid_str);
