@@ -338,7 +338,8 @@ static int do_inject(const char *namespace, struct ndctl_ctx *ctx)
 		}
 	}
 
-	return 0;
+	error("%s: no such namespace\n", namespace);
+	return rc;
 }
 
 int cmd_inject_error(int argc, const char **argv, void *ctx)
