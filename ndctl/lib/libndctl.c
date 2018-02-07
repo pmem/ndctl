@@ -87,6 +87,22 @@ NDCTL_EXPORT double ndctl_decode_smart_temperature(unsigned int temp)
 	return t;
 }
 
+NDCTL_EXPORT unsigned int ndctl_encode_smart_temperature(double temp)
+{
+	bool negative = false;
+	unsigned int t;
+
+	if  (temp < 0) {
+		negative = true;
+		temp *= -1;
+	}
+	t = temp;
+	t *= 16;
+	if (negative)
+		t |= (1 << 15);
+	return t;
+}
+
 struct ndctl_ctx;
 
 /**
