@@ -43,4 +43,5 @@ int cmd_test(int argc, const char **argv, void *ctx);
 #ifdef ENABLE_DESTRUCTIVE
 int cmd_bat(int argc, const char **argv, void *ctx);
 #endif
+int cmd_update_firmware(int argc, const char **argv, void *ctx);
 #endif /* _NDCTL_BUILTIN_H_ */
