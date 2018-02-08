@@ -91,7 +91,7 @@ __ndctlcomp()
 
 	COMPREPLY=( $( compgen -W "$1" -- "$2" ) )
 	for cword in "${COMPREPLY[@]}"; do
-		if [[ "$cword" == @(--bus|--region|--type|--mode|--size|--dimm|--reconfig|--uuid|--name|--sector-size|--map|--namespace|--input|--output|--label-version|--align|--block|--count|--firmware) ]]; then
+		if [[ "$cword" == @(--bus|--region|--type|--mode|--size|--dimm|--reconfig|--uuid|--name|--sector-size|--map|--namespace|--input|--output|--label-version|--align|--block|--count|--firmware|--media-temperature|--ctrl-temperature|--spares|--media-temperature-threshold|--ctrl-temperature-threshold|--spares-threshold|--media-temperature-alarm|--ctrl-temperature-alarm|--spares-alarm) ]]; then
 			COMPREPLY[$i]="${cword}="
 		else
 			COMPREPLY[$i]="${cword} "
@@ -210,6 +210,13 @@ __ndctl_comp_options()
 		--label-version)
 			opts="1.1 1.2"
 			;;
+		--media-temperature-alarm)
+			;&
+		--ctrl-temperature-alarm)
+			;&
+		--spares-alarm)
+			opts="on off"
+			;;
 		*)
 			return
 			;;
@@ -261,6 +268,9 @@ __ndctl_comp_non_option_args()
 		;;
 	inject-error)
 		opts="$(__ndctl_get_ns -i)"
+		;;
+	inject-smart)
+		opts="$(__ndctl_get_dimms -i)"
 		;;
 	*)
 		return
