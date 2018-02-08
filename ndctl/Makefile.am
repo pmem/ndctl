@@ -14,7 +14,8 @@ ndctl_SOURCES = ndctl.c \
 		../util/json.c \
 		util/json-smart.c \
 		inject-error.c \
-		update.c
+		update.c \
+		inject-smart.c
 
 if ENABLE_DESTRUCTIVE
 ndctl_SOURCES += ../test/blk_namespaces.c \
