@@ -50,6 +50,8 @@ static int log_priority(const char *priority)
 		return LOG_INFO;
 	if (strncmp(priority, "debug", 5) == 0)
 		return LOG_DEBUG;
+	if (strncmp(priority, "notice", 6) == 0)
+		return LOG_NOTICE;
 	return 0;
 }
 

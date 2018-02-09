@@ -48,15 +48,18 @@ do { \
 #  endif
 #  define log_info(ctx, arg...) log_cond(ctx, LOG_INFO, ## arg)
 #  define log_err(ctx, arg...) log_cond(ctx, LOG_ERR, ## arg)
+#  define log_notice(ctx, arg...) log_cond(ctx, LOG_NOTICE, ## arg)
 #else
 #  define log_dbg(ctx, arg...) log_null(ctx, ## arg)
 #  define log_info(ctx, arg...) log_null(ctx, ## arg)
 #  define log_err(ctx, arg...) log_null(ctx, ## arg)
+#  define log_notice(ctx, arg...) log_null(ctx, ## arg)
 #endif
 
 #define dbg(x, arg...) log_dbg(&(x)->ctx, ## arg)
 #define info(x, arg...) log_info(&(x)->ctx, ## arg)
 #define err(x, arg...) log_err(&(x)->ctx, ## arg)
+#define notice(x, arg...) log_notice(&(x)->ctx, ## arg)
 
 #ifndef HAVE_SECURE_GETENV
 #  ifdef HAVE___SECURE_GETENV
