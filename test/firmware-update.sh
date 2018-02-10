@@ -53,8 +53,7 @@ do_tests()
 	$ndctl update-firmware -d $dev -f $image
 }
 
-check_min_kver "4.16" || { echo "kernel $KVER may lack firmware update test handling"; exit
-$rc; }
+check_min_kver "4.16" || { echo "kernel $KVER may lack firmware update test handling"; exit $rc; }
 modprobe nfit_test
 rc=1
 reset
