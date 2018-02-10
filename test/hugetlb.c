@@ -13,12 +13,10 @@ static int test_hugetlb(void)
 	for (i = 0; i < (int) ARRAY_SIZE(aligns); i++) {
 		fprintf(stderr, "%s: page_size: %#lx\n", __func__, aligns[i]);
 		rc = test_dax_directio(-1, aligns[i], NULL, 0);
-		if (rc == -ENOMEM || rc == -EACCES)
-			return 77;
-		else if (rc == -ENOENT && aligns[i] == SZ_1G)
+		if (rc == -ENOENT && aligns[i] == SZ_1G)
 			continue; /* system not configured for 1G pages */
 		else if (rc)
-			return rc;
+			return 77;
 	}
 	return 0;
 }
