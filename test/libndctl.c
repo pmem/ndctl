@@ -2297,7 +2297,8 @@ static int check_smart_threshold(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 		 */
 		rc = ndctl_cmd_smart_threshold_set_alarm_control(cmd_set,
 				ndctl_cmd_smart_threshold_get_supported_alarms(cmd_set));
-		rc |= ndctl_cmd_smart_threshold_set_media_temperature(cmd_set,
+		/* 'set_temperature' and 'set_media_temperature' are aliases */
+		rc |= ndctl_cmd_smart_threshold_set_temperature(cmd_set,
 				ndctl_cmd_smart_get_media_temperature(cmd_smart));
 		rc |= ndctl_cmd_smart_threshold_set_ctrl_temperature(cmd_set,
 				ndctl_cmd_smart_get_ctrl_temperature(cmd_smart));

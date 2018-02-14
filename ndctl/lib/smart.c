@@ -117,6 +117,12 @@ smart_cmd_set_op(smart_threshold_set_media_temperature)
 smart_cmd_set_op(smart_threshold_set_ctrl_temperature)
 smart_cmd_set_op(smart_threshold_set_spares)
 
+NDCTL_EXPORT int ndctl_cmd_smart_threshold_set_temperature(
+		struct ndctl_cmd *cmd, unsigned int val)
+{
+	return ndctl_cmd_smart_threshold_set_media_temperature(cmd, val);
+}
+
 NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_smart_inject(
 		struct ndctl_dimm *dimm)
 {
