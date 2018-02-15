@@ -19,7 +19,8 @@ TESTS =\
 	btt-errors.sh \
 	hugetlb \
 	btt-pad-compat.sh \
-	firmware-update.sh
+	firmware-update.sh \
+	ack-shutdown-count-set
 
 check_PROGRAMS =\
 	libndctl \
@@ -31,7 +32,8 @@ check_PROGRAMS =\
 	smart-notify \
 	smart-listen \
 	hugetlb \
-	daxdev-errors
+	daxdev-errors \
+	ack-shutdown-count-set
 
 if ENABLE_DESTRUCTIVE
 TESTS +=\
@@ -69,6 +71,12 @@ dsm_fail_SOURCES =\
 	$(testcore)
 
 dsm_fail_LDADD = $(LIBNDCTL_LIB) $(KMOD_LIBS)
+
+ack_shutdown_count_set_SOURCES =\
+	ack-shutdown-count-set.c \
+	$(testcore)
+
+ack_shutdown_count_set_LDADD = $(LIBNDCTL_LIB) $(KMOD_LIBS)
 
 blk_ns_SOURCES = blk_namespaces.c $(testcore)
 blk_ns_LDADD = $(LIBNDCTL_LIB) $(KMOD_LIBS)
