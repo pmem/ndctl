@@ -161,3 +161,14 @@ NDCTL_EXPORT int ndctl_cmd_##op(struct ndctl_cmd *cmd, bool enable) \
 
 smart_cmd_inject(smart_inject_fatal)
 smart_cmd_inject(smart_inject_unsafe_shutdown)
+
+NDCTL_EXPORT struct ndctl_cmd *
+ndctl_dimm_cmd_new_ack_shutdown_count(struct ndctl_dimm *dimm)
+{
+	struct ndctl_dimm_ops *ops = dimm->ops;
+
+	if (ops && ops->new_ack_shutdown_count)
+		return ops->new_ack_shutdown_count(dimm);
+	else
+		return NULL;
+}

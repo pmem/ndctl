@@ -624,6 +624,7 @@ unsigned long long ndctl_cmd_fw_info_get_updated_version(struct ndctl_cmd *cmd);
 unsigned int ndctl_cmd_fw_start_get_context(struct ndctl_cmd *cmd);
 unsigned long long ndctl_cmd_fw_fquery_get_fw_rev(struct ndctl_cmd *cmd);
 enum ND_FW_STATUS ndctl_cmd_fw_xlat_firmware_status(struct ndctl_cmd *cmd);
+struct ndctl_cmd *ndctl_dimm_cmd_new_ack_shutdown_count(struct ndctl_dimm *dimm);
 
 #ifdef __cplusplus
 } /* extern "C" */

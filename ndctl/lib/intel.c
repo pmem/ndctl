@@ -626,6 +626,22 @@ intel_cmd_fw_xlat_firmware_status(struct ndctl_cmd *cmd)
 	return FW_EUNKNOWN;
 }
 
+static struct ndctl_cmd *
+intel_dimm_cmd_new_lss(struct ndctl_dimm *dimm)
+{
+	struct ndctl_cmd *cmd;
+
+	BUILD_ASSERT(sizeof(struct nd_intel_lss) == 5);
+
+	cmd = alloc_intel_cmd(dimm, ND_INTEL_ENABLE_LSS_STATUS, 1, 4);
+	if (!cmd)
+		return NULL;
+
+	cmd->intel->lss.enable = 1;
+	cmd->firmware_status = &cmd->intel->lss.status;
+	return cmd;
+}
+
 struct ndctl_dimm_ops * const intel_dimm_ops = &(struct ndctl_dimm_ops) {
 	.cmd_desc = intel_cmd_desc,
 	.new_smart = intel_dimm_cmd_new_smart,
@@ -678,4 +694,5 @@ struct ndctl_dimm_ops * const intel_dimm_ops = &(struct ndctl_dimm_ops) {
 	.new_fw_finish_query = intel_dimm_cmd_new_fw_finish_query,
 	.fw_fquery_get_fw_rev = intel_cmd_fw_fquery_get_fw_rev,
 	.fw_xlat_firmware_status = intel_cmd_fw_xlat_firmware_status,
+	.new_ack_shutdown_count = intel_dimm_cmd_new_lss,
 };

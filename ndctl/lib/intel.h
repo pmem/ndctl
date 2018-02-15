@@ -6,6 +6,7 @@
 #define ND_INTEL_SMART 1
 #define ND_INTEL_SMART_THRESHOLD 2
 
+#define ND_INTEL_ENABLE_LSS_STATUS 10
 #define ND_INTEL_FW_GET_INFO 12
 #define ND_INTEL_FW_START_UPDATE 13
 #define ND_INTEL_FW_SEND_DATA 14
@@ -134,6 +135,11 @@ struct nd_intel_fw_finish_query {
 	__u64 updated_fw_rev;
 } __attribute__((packed));
 
+struct nd_intel_lss {
+	__u8 enable;
+	__u32 status;
+} __attribute__((packed));
+
 struct nd_pkg_intel {
 	struct nd_cmd_pkg gen;
 	union {
@@ -146,6 +152,7 @@ struct nd_pkg_intel {
 		struct nd_intel_fw_send_data send;
 		struct nd_intel_fw_finish_update finish;
 		struct nd_intel_fw_finish_query fquery;
+		struct nd_intel_lss lss;
 	};
 };
 

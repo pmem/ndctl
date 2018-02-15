@@ -324,6 +324,7 @@ struct ndctl_dimm_ops {
 	struct ndctl_cmd *(*new_fw_finish_query)(struct ndctl_cmd *);
 	unsigned long long (*fw_fquery_get_fw_rev)(struct ndctl_cmd *);
 	enum ND_FW_STATUS (*fw_xlat_firmware_status)(struct ndctl_cmd *);
+	struct ndctl_cmd *(*new_ack_shutdown_count)(struct ndctl_dimm *);
 };
 
 struct ndctl_dimm_ops * const intel_dimm_ops;
