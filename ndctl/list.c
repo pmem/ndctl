@@ -35,6 +35,7 @@ static struct {
 	bool dax;
 	bool media_errors;
 	bool human;
+	bool firmware;
 } list;
 
 static unsigned long listopts_to_flags(void)
@@ -277,6 +278,7 @@ int cmd_list(int argc, const char **argv, void *ctx)
 				"filter by region-type"),
 		OPT_BOOLEAN('B', "buses", &list.buses, "include bus info"),
 		OPT_BOOLEAN('D', "dimms", &list.dimms, "include dimm info"),
+		OPT_BOOLEAN('F', "firmware", &list.firmware, "include firmware info"),
 		OPT_BOOLEAN('H', "health", &list.health, "include dimm health"),
 		OPT_BOOLEAN('R', "regions", &list.regions,
 				"include region info"),
@@ -418,6 +420,17 @@ int cmd_list(int argc, const char **argv, void *ctx)
 					fail("\n");
 					continue;
 				}
+			}
+
+			if (list.firmware) {
+				struct json_object *jfirmware;
+
+				jfirmware = util_dimm_firmware_to_json(dimm,
+						listopts_to_flags());
+				if (jfirmware)
+					json_object_object_add(jdimm,
+							"firmware",
+							jfirmware);
 			}
 
 			/*

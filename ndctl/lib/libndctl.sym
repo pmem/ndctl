@@ -339,7 +339,7 @@ global:
 	ndctl_cmd_fw_info_get_query_interval;
 	ndctl_cmd_fw_info_get_max_query_time;
 	ndctl_cmd_fw_info_get_run_version;
-	ndctl_cmd_fw_info_get_updated_version;
+	ndctl_cmd_fw_info_get_next_version;
 	ndctl_cmd_fw_start_get_context;
 	ndctl_cmd_fw_fquery_get_fw_rev;
 	ndctl_cmd_fw_xlat_firmware_status;
