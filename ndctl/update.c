@@ -208,7 +208,7 @@ static int send_firmware(struct update_context *uctx)
 {
 	struct ndctl_cmd *cmd = NULL;
 	ssize_t read;
-	int rc;
+	int rc = -ENXIO;
 	enum ND_FW_STATUS status;
 	struct fw_info *fw = &uctx->dimm_fw;
 	uint32_t copied = 0, len, remain;
