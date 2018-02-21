@@ -59,7 +59,7 @@ force_raw()
 	fi
 }
 
-check_min_kver "4.14" || { echo "kernel $KVER may lack BTT error handling"; exit $rc; }
+check_min_kver "4.15" || { echo "kernel $KVER may lack BTT error handling"; exit $rc; }
 
 set -e
 mkdir -p $MNT

@@ -81,7 +81,9 @@ busdev=$dev
 # inject errors in the middle of the namespace
 err_sector="$(((size/512) / 2))"
 err_count=8
-$NDCTL inject-error --block="$err_sector" --count=$err_count $nsdev
+if ! read sector len < /sys/bus/nd/devices/$region/badblocks; then
+	$NDCTL inject-error --block="$err_sector" --count=$err_count $nsdev
+fi
 
 read sector len < /sys/bus/nd/devices/$region/badblocks
 echo "sector: $sector len: $len"
