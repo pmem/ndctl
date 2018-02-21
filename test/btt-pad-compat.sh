@@ -112,9 +112,9 @@ cycle_ns()
 force_raw()
 {
 	raw="$1"
-	ndctl disable-namespace "$dev"
+	$ndctl disable-namespace "$dev"
 	echo "$raw" > "/sys/bus/nd/devices/$dev/force_raw"
-	ndctl enable-namespace "$dev"
+	$ndctl enable-namespace "$dev"
 	echo "Set $dev to raw mode: $raw"
 	if [[ "$raw" == "1" ]]; then
 		raw_bdev=${blockdev%s}
@@ -187,13 +187,13 @@ do_tests()
 	verify_idx 0 2
 
 	# rewrite log using ndctl, verify conversion to new format
-	ndctl check-namespace --rewrite-log --repair --force --verbose $dev
+	$ndctl check-namespace --rewrite-log --repair --force --verbose $dev
 	do_random_io "/dev/$blockdev"
 	cycle_ns "$dev"
 	verify_idx 0 1
 
 	# check-namespace again to make sure everything is ok
-	ndctl check-namespace --force --verbose $dev
+	$ndctl check-namespace --force --verbose $dev
 
 	# the old format btt metadata was created with a null parent uuid,
 	# making it 'stickier' than a normally created btt. Be sure to clean

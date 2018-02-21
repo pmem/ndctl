@@ -47,9 +47,9 @@ force_raw()
 {
 	raw="$1"
 	if grep -q "$MNT" /proc/mounts; then umount $MNT; fi
-	ndctl disable-namespace "$dev"
+	$NDCTL disable-namespace "$dev"
 	echo "$raw" > "/sys/bus/nd/devices/$dev/force_raw"
-	ndctl enable-namespace "$dev"
+	$NDCTL enable-namespace "$dev"
 	echo "Set $dev to raw mode: $raw"
 	if [[ "$raw" == "1" ]]; then
 		raw_bdev=${blockdev%s}
