@@ -221,7 +221,7 @@ static int smart_init(void)
 static int smart_set_thresh(struct ndctl_dimm *dimm)
 {
 	const char *name = ndctl_dimm_get_devname(dimm);
-	struct ndctl_cmd *st_cmd, *sst_cmd;
+	struct ndctl_cmd *st_cmd = NULL, *sst_cmd = NULL;
 	int rc = -EOPNOTSUPP;
 
 	st_cmd = ndctl_dimm_cmd_new_smart_threshold(dimm);
@@ -332,7 +332,7 @@ out:
 static int smart_inject(struct ndctl_dimm *dimm)
 {
 	const char *name = ndctl_dimm_get_devname(dimm);
-	struct ndctl_cmd *si_cmd;
+	struct ndctl_cmd *si_cmd = NULL;
 	int rc = -EOPNOTSUPP;
 
 	send_inject_val(media_temperature)
