@@ -145,6 +145,7 @@ my_CFLAGS="\
 -Wsign-compare \
 -Wstrict-prototypes \
 -Wtype-limits \
+-Wmaybe-uninitialized
 "
 AC_SUBST([my_CFLAGS])
 
