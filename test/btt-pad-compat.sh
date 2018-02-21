@@ -137,7 +137,7 @@ copy_xxd_img()
 create_oldfmt_ns()
 {
 	# create null-uuid namespace
-	json=$($ndctl create-namespace -b "$bus" -t pmem -m raw -l 4096 -u 00000000-0000-0000-0000-000000000000)
+	json=$($ndctl create-namespace -b "$bus" -s 64M -t pmem -m raw -l 4096 -u 00000000-0000-0000-0000-000000000000)
 	eval "$(echo "$json" | sed -e "$json2var")"
 	[ -n "$dev" ] || err "$LINENO" 2
 	[ -n "$size" ] || err "$LINENO" 2
