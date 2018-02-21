@@ -254,8 +254,7 @@ static int send_firmware(struct update_context *uctx)
 	}
 
 cleanup:
-	if (cmd)
-		ndctl_cmd_unref(cmd);
+	ndctl_cmd_unref(cmd);
 	free(buf);
 	return rc;
 }
@@ -546,8 +545,7 @@ int cmd_update_firmware(int argc, const char **argv, void *ctx)
 	if (rc < 0)
 		return rc;
 
-	if (uctx.start)
-		ndctl_cmd_unref(uctx.start);
+	ndctl_cmd_unref(uctx.start);
 
 	return 0;
 }
