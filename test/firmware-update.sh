@@ -49,7 +49,7 @@ detect()
 
 do_tests()
 {
-	fallocate -l 196608 $image
+	truncate -s 196608 $image
 	$ndctl update-firmware -d $dev -f $image
 }
 
