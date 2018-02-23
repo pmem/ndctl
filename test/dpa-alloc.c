@@ -25,13 +25,13 @@
 
 #include <test.h>
 #include <ndctl.h>
+#include <util/size.h>
 #include <linux/version.h>
 #include <ndctl/libndctl.h>
 #include <ccan/array_size/array_size.h>
 
 static const char *NFIT_PROVIDER0 = "nfit_test.0";
 static const char *NFIT_PROVIDER1 = "nfit_test.1";
-#define SZ_4K 0x1000UL
 #define NUM_NAMESPACES 4
 
 struct test_dpa_namespace {
@@ -39,6 +39,8 @@ struct test_dpa_namespace {
 	unsigned long long size;
 	uuid_t uuid;
 } namespaces[NUM_NAMESPACES];
+
+#define MIN_SIZE SZ_4M
 
 static int do_test(struct ndctl_ctx *ctx, struct ndctl_test *test)
 {
@@ -97,8 +99,7 @@ static int do_test(struct ndctl_ctx *ctx, struct ndctl_test *test)
 	}
 	region = blk_region;
 
-	if (ndctl_region_get_available_size(region) / ND_MIN_NAMESPACE_SIZE
-			< NUM_NAMESPACES) {
+	if (ndctl_region_get_available_size(region) / MIN_SIZE < NUM_NAMESPACES) {
 		fprintf(stderr, "%s insufficient available_size\n",
 				ndctl_region_get_devname(region));
 		return -ENXIO;
@@ -119,7 +120,7 @@ static int do_test(struct ndctl_ctx *ctx, struct ndctl_test *test)
 		uuid_generate_random(uuid);
 		ndctl_namespace_set_uuid(ndns, uuid);
 		ndctl_namespace_set_sector_size(ndns, 512);
-		ndctl_namespace_set_size(ndns, ND_MIN_NAMESPACE_SIZE);
+		ndctl_namespace_set_size(ndns, MIN_SIZE);
 		rc = ndctl_namespace_enable(ndns);
 		if (rc) {
 			fprintf(stderr, "failed to enable %s: %d\n",
@@ -129,7 +130,7 @@ static int do_test(struct ndctl_ctx *ctx, struct ndctl_test *test)
 		ndctl_namespace_disable_invalidate(ndns);
 		rc = ndctl_namespace_set_size(ndns, SZ_4K);
 		if (rc) {
-			fprintf(stderr, "failed to init %s to size: %ld\n",
+			fprintf(stderr, "failed to init %s to size: %d\n",
 					ndctl_namespace_get_devname(ndns),
 					SZ_4K);
 			return rc;
