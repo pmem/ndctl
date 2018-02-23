@@ -136,8 +136,12 @@ copy_xxd_img()
 
 create_oldfmt_ns()
 {
-	# create null-uuid namespace
+	# create null-uuid namespace, note that this requires a kernel
+	# that supports a raw namespace with a 4K sector size, prior to
+	# v4.13 raw namespaces are limited to 512-byte sector size.
+	rc=77
 	json=$($ndctl create-namespace -b "$bus" -s 64M -t pmem -m raw -l 4096 -u 00000000-0000-0000-0000-000000000000)
+	rc=1
 	eval "$(echo "$json" | sed -e "$json2var")"
 	[ -n "$dev" ] || err "$LINENO" 2
 	[ -n "$size" ] || err "$LINENO" 2
