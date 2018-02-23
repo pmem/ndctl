@@ -470,12 +470,6 @@ static int verify_fw_file(struct update_context *uctx)
 	if (uctx->fw_fd < 0)
 		return -errno;
 
-	rc = flock(uctx->fw_fd, LOCK_EX | LOCK_NB);
-	if (rc < 0) {
-		rc = -errno;
-		goto cleanup;
-	}
-
 	if (fstat(uctx->fw_fd, &st) < 0) {
 		rc = -errno;
 		goto cleanup;
