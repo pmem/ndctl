@@ -14,6 +14,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <util/util.h>
+#include <ndctl/ndctl.h>
 #include <util/filter.h>
 #include <ndctl/libndctl.h>
 #include <daxctl/libdaxctl.h>
@@ -253,4 +255,114 @@ struct daxctl_dev *util_daxctl_dev_filter(struct daxctl_dev *dev,
 		return dev;
 
 	return NULL;
+}
+
+static enum ndctl_namespace_mode mode_to_type(const char *mode)
+{
+	if (!mode)
+		return -ENXIO;
+
+	if (strcasecmp(mode, "memory") == 0)
+		return NDCTL_NS_MODE_MEMORY;
+	else if (strcasecmp(mode, "fsdax") == 0)
+		return NDCTL_NS_MODE_MEMORY;
+	else if (strcasecmp(mode, "sector") == 0)
+		return NDCTL_NS_MODE_SAFE;
+	else if (strcasecmp(mode, "safe") == 0)
+		return NDCTL_NS_MODE_SAFE;
+	else if (strcasecmp(mode, "dax") == 0)
+		return NDCTL_NS_MODE_DAX;
+	else if (strcasecmp(mode, "devdax") == 0)
+		return NDCTL_NS_MODE_DAX;
+	else if (strcasecmp(mode, "raw") == 0)
+		return NDCTL_NS_MODE_RAW;
+
+	return NDCTL_NS_MODE_UNKNOWN;
+}
+
+int util_filter_walk(struct ndctl_ctx *ctx, struct util_filter_ctx *fctx,
+		struct util_filter_params *param)
+{
+	struct ndctl_bus *bus;
+	unsigned int type = 0;
+
+	if (param->type && (strcmp(param->type, "pmem") != 0
+				&& strcmp(param->type, "blk") != 0)) {
+		error("unknown type \"%s\" must be \"pmem\" or \"blk\"\n",
+				param->type);
+		return -EINVAL;
+	}
+
+	if (param->type) {
+		if (strcmp(param->type, "pmem") == 0)
+			type = ND_DEVICE_REGION_PMEM;
+		else
+			type = ND_DEVICE_REGION_BLK;
+	}
+
+	if (mode_to_type(param->mode) == NDCTL_NS_MODE_UNKNOWN) {
+		error("invalid mode: '%s'\n", param->mode);
+		return -EINVAL;
+	}
+
+	ndctl_bus_foreach(ctx, bus) {
+		struct ndctl_region *region;
+		struct ndctl_dimm *dimm;
+
+		if (!util_bus_filter(bus, param->bus)
+				|| !util_bus_filter_by_dimm(bus, param->dimm)
+				|| !util_bus_filter_by_region(bus, param->region)
+				|| !util_bus_filter_by_namespace(bus, param->namespace))
+			continue;
+
+		if (!fctx->filter_bus(bus, fctx))
+			continue;
+
+		ndctl_dimm_foreach(bus, dimm) {
+			if (!fctx->filter_dimm)
+				break;
+
+			if (!util_dimm_filter(dimm, param->dimm)
+					|| !util_dimm_filter_by_region(dimm,
+						param->region)
+					|| !util_dimm_filter_by_namespace(dimm,
+						param->namespace))
+				continue;
+
+			fctx->filter_dimm(dimm, fctx);
+		}
+
+		ndctl_region_foreach(bus, region) {
+			struct ndctl_namespace *ndns;
+
+			if (!util_region_filter(region, param->region)
+					|| !util_region_filter_by_dimm(region,
+						param->dimm)
+					|| !util_region_filter_by_namespace(region,
+						param->namespace))
+				continue;
+
+			if (type && ndctl_region_get_type(region) != type)
+				continue;
+
+			if (!fctx->filter_region(region, fctx))
+				continue;
+
+			ndctl_namespace_foreach(region, ndns) {
+				enum ndctl_namespace_mode mode;
+
+				if (!fctx->filter_namespace)
+					break;
+				if (!util_namespace_filter(ndns, param->namespace))
+					continue;
+
+				mode = ndctl_namespace_get_mode(ndns);
+				if (param->mode && mode_to_type(param->mode) != mode)
+					continue;
+
+				fctx->filter_namespace(ndns, fctx);
+			}
+		}
+	}
+	return 0;
 }
