@@ -20,7 +20,8 @@ TESTS =\
 	hugetlb \
 	btt-pad-compat.sh \
 	firmware-update.sh \
-	ack-shutdown-count-set
+	ack-shutdown-count-set \
+	rescan-partitions.sh
 
 check_PROGRAMS =\
 	libndctl \
