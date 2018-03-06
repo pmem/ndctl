@@ -94,17 +94,6 @@ PKG_CHECK_MODULES([UDEV], [libudev])
 PKG_CHECK_MODULES([UUID], [uuid])
 PKG_CHECK_MODULES([JSON], [json-c])
 
-AC_ARG_WITH([libpmem],
-	AS_HELP_STRING([--with-libpmem],
-		       [Install with libpmem support. @<:@default=no@:>@]),
-	[],
-	[with_libpmem=no])
-if test "x$with_libpmem" = "xyes"; then
-	PKG_CHECK_MODULES([PMEM], [libpmem])
-	AC_DEFINE(ENABLE_DAXIO, 1, [Enable daxctl io])
-fi
-AM_CONDITIONAL([ENABLE_DAXIO], [test "x$with_libpmem" = "xyes"])
-
 AC_ARG_WITH([bash-completion-dir],
 	AS_HELP_STRING([--with-bash-completion-dir[=PATH]],
 		[Install the bash auto-completion script in this directory. @<:@default=yes@:>@]),
