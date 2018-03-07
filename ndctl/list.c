@@ -73,6 +73,7 @@ static struct json_object *region_to_json(struct ndctl_region *region,
 	struct ndctl_interleave_set *iset;
 	struct ndctl_mapping *mapping;
 	unsigned int bb_count = 0;
+	int numa;
 
 	if (!jregion)
 		return NULL;
@@ -106,6 +107,13 @@ static struct json_object *region_to_json(struct ndctl_region *region,
 	if (!jobj)
 		goto err;
 	json_object_object_add(jregion, "type", jobj);
+
+	numa = ndctl_region_get_numa_node(region);
+	if (numa >= 0) {
+		jobj = json_object_new_int(numa);
+		if (jobj)
+			json_object_object_add(jregion, "numa_node", jobj);
+	}
 
 	iset = ndctl_region_get_interleave_set(region);
 	if (iset) {

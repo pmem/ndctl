@@ -344,4 +344,5 @@ global:
 	ndctl_cmd_fw_fquery_get_fw_rev;
 	ndctl_cmd_fw_xlat_firmware_status;
 	ndctl_dimm_cmd_new_ack_shutdown_count;
+	ndctl_region_get_numa_node;
 } LIBNDCTL_13;

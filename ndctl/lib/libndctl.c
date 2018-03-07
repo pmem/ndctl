@@ -132,6 +132,7 @@ struct ndctl_mapping {
  * @type_name: 'pmem' or 'block'
  * @generation: incremented everytime the region is disabled
  * @nstype: the resulting type of namespace this region produces
+ * @numa_node: numa node attribute
  *
  * A region may alias between pmem and block-window access methods.  The
  * region driver is tasked with parsing the label (if their is one) and
@@ -157,6 +158,7 @@ struct ndctl_region {
 	char *region_buf;
 	int buf_len;
 	int generation;
+	int numa_node;
 	struct list_head btts;
 	struct list_head pfns;
 	struct list_head daxs;
@@ -1808,6 +1810,12 @@ static void *add_region(void *parent, int id, const char *region_base)
 		goto err_read;
 	region->module = to_module(ctx, buf);
 
+	sprintf(path, "%s/numa_node", region_base);
+	if (sysfs_read_attr(ctx, path, buf) == 0)
+		region->numa_node = strtol(buf, NULL, 0);
+	else
+		region->numa_node = -1;
+
 	if (region_set_type(region, path) < 0)
 		goto err_read;
 
@@ -2009,6 +2017,11 @@ NDCTL_EXPORT struct ndctl_dimm *ndctl_region_get_next_dimm(struct ndctl_region *
 	}
 
 	return NULL;
+}
+
+NDCTL_EXPORT int ndctl_region_get_numa_node(struct ndctl_region *region)
+{
+	return region->numa_node;
 }
 
 static int regions_badblocks_init(struct ndctl_region *region)

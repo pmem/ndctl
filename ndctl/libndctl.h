@@ -340,6 +340,7 @@ struct ndctl_ctx *ndctl_region_get_ctx(struct ndctl_region *region);
 struct ndctl_dimm *ndctl_region_get_first_dimm(struct ndctl_region *region);
 struct ndctl_dimm *ndctl_region_get_next_dimm(struct ndctl_region *region,
 		struct ndctl_dimm *dimm);
+int ndctl_region_get_numa_node(struct ndctl_region *region);
 struct ndctl_region *ndctl_bus_get_region_by_physical_address(struct ndctl_bus *bus,
 		unsigned long long address);
 #define ndctl_dimm_foreach_in_region(region, dimm) \
