@@ -3008,6 +3008,8 @@ static void *add_namespace(void *parent, int id, const char *ndns_base)
 	sprintf(path, "%s/numa_node", ndns_base);
 	if (sysfs_read_attr(ctx, path, buf) == 0)
 		ndns->numa_node = strtol(buf, NULL, 0);
+	else
+		ndns->numa_node = -1;
 
 	sprintf(path, "%s/holder_class", ndns_base);
 	if (sysfs_read_attr(ctx, path, buf) == 0)
