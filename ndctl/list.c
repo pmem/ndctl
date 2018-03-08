@@ -400,6 +400,8 @@ int cmd_list(int argc, const char **argv, void *ctx)
 				"filter by namespace mode"),
 		OPT_STRING('t', "type", &param.type, "region-type",
 				"filter by region-type"),
+		OPT_STRING('U', "numa-node", &param.numa_node, "numa node",
+				"filter by numa node"),
 		OPT_BOOLEAN('B', "buses", &list.buses, "include bus info"),
 		OPT_BOOLEAN('D', "dimms", &list.dimms, "include dimm info"),
 		OPT_BOOLEAN('F', "firmware", &list.firmware, "include firmware info"),

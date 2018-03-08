@@ -20,6 +20,8 @@
 #include <ndctl/libndctl.h>
 #include <daxctl/libdaxctl.h>
 
+#define NUMA_NO_NODE    (-1)
+
 struct ndctl_bus *util_bus_filter(struct ndctl_bus *bus, const char *ident)
 {
 	char *end = NULL;
@@ -146,7 +148,6 @@ struct ndctl_bus *util_bus_filter_by_region(struct ndctl_bus *bus,
 	return NULL;
 }
 
-
 struct ndctl_bus *util_bus_filter_by_namespace(struct ndctl_bus *bus,
 		const char *ident)
 {
@@ -223,6 +224,25 @@ struct ndctl_dimm *util_dimm_filter_by_namespace(struct ndctl_dimm *dimm,
 	return NULL;
 }
 
+struct ndctl_dimm *util_dimm_filter_by_numa_node(struct ndctl_dimm *dimm,
+		int numa_node)
+{
+	struct ndctl_bus *bus = ndctl_dimm_get_bus(dimm);
+	struct ndctl_region *region;
+	struct ndctl_dimm *check;
+
+	if (numa_node == NUMA_NO_NODE)
+		return dimm;
+
+	ndctl_region_foreach(bus, region)
+		ndctl_dimm_foreach_in_region(region, check)
+			if (check == dimm &&
+			    ndctl_region_get_numa_node(region) == numa_node)
+				return dimm;
+
+	return NULL;
+}
+
 struct ndctl_region *util_region_filter_by_namespace(struct ndctl_region *region,
 		const char *ident)
 {
@@ -285,6 +305,8 @@ int util_filter_walk(struct ndctl_ctx *ctx, struct util_filter_ctx *fctx,
 {
 	struct ndctl_bus *bus;
 	unsigned int type = 0;
+	int numa_node = NUMA_NO_NODE;
+	char *end = NULL;
 
 	if (param->type && (strcmp(param->type, "pmem") != 0
 				&& strcmp(param->type, "blk") != 0)) {
@@ -303,6 +325,14 @@ int util_filter_walk(struct ndctl_ctx *ctx, struct util_filter_ctx *fctx,
 	if (mode_to_type(param->mode) == NDCTL_NS_MODE_UNKNOWN) {
 		error("invalid mode: '%s'\n", param->mode);
 		return -EINVAL;
+	}
+
+	if (param->numa_node && strcmp(param->numa_node, "all") != 0) {
+		numa_node = strtol(param->numa_node, &end, 0);
+		if (end == param->numa_node || end[0]) {
+			error("invalid numa_node: '%s'\n", param->numa_node);
+			return -EINVAL;
+		}
 	}
 
 	ndctl_bus_foreach(ctx, bus) {
@@ -326,7 +356,9 @@ int util_filter_walk(struct ndctl_ctx *ctx, struct util_filter_ctx *fctx,
 					|| !util_dimm_filter_by_region(dimm,
 						param->region)
 					|| !util_dimm_filter_by_namespace(dimm,
-						param->namespace))
+						param->namespace)
+					|| !util_dimm_filter_by_numa_node(dimm,
+						numa_node))
 				continue;
 
 			fctx->filter_dimm(dimm, fctx);
@@ -340,6 +372,10 @@ int util_filter_walk(struct ndctl_ctx *ctx, struct util_filter_ctx *fctx,
 						param->dimm)
 					|| !util_region_filter_by_namespace(region,
 						param->namespace))
+				continue;
+
+			if (numa_node != NUMA_NO_NODE &&
+			    ndctl_region_get_numa_node(region) != numa_node)
 				continue;
 
 			if (type && ndctl_region_get_type(region) != type)

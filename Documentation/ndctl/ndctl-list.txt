@@ -83,6 +83,10 @@ include::xable-region-options.txt[]
 	Filter listing by the mode ('raw', 'fsdax', 'sector' or 'devdax')
 	of the namespace(s).
 
+-U::
+--numa-node=::
+	Filter listing by numa node
+
 -B::
 --buses::
 	Include bus info in the listing

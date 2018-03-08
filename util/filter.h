@@ -77,6 +77,7 @@ struct util_filter_params {
 	const char *dimm;
 	const char *mode;
 	const char *namespace;
+	const char *numa_node;
 };
 
 struct ndctl_ctx;
