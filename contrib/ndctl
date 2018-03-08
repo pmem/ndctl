@@ -91,7 +91,7 @@ __ndctlcomp()
 
 	COMPREPLY=( $( compgen -W "$1" -- "$2" ) )
 	for cword in "${COMPREPLY[@]}"; do
-		if [[ "$cword" == @(--bus|--region|--type|--mode|--size|--dimm|--reconfig|--uuid|--name|--sector-size|--map|--namespace|--input|--output|--label-version|--align|--block|--count|--firmware|--media-temperature|--ctrl-temperature|--spares|--media-temperature-threshold|--ctrl-temperature-threshold|--spares-threshold|--media-temperature-alarm|--ctrl-temperature-alarm|--spares-alarm) ]]; then
+		if [[ "$cword" == @(--bus|--region|--type|--mode|--size|--dimm|--reconfig|--uuid|--name|--sector-size|--map|--namespace|--input|--output|--label-version|--align|--block|--count|--firmware|--media-temperature|--ctrl-temperature|--spares|--media-temperature-threshold|--ctrl-temperature-threshold|--spares-threshold|--media-temperature-alarm|--ctrl-temperature-alarm|--spares-alarm|--numa-node) ]]; then
 			COMPREPLY[$i]="${cword}="
 		else
 			COMPREPLY[$i]="${cword} "
@@ -150,6 +150,21 @@ __ndctl_get_sector_sizes()
 	else
 		echo "512 520 528 4096 4104 4160 4224"
 	fi
+}
+
+__ndctl_get_nodes()
+{
+	local nlist=""
+
+	for node in /sys/devices/system/node/node*; do
+		node="$(basename $node)"
+		if [[ $node =~ node([0-9]+) ]]; then
+			nlist="$nlist ${BASH_REMATCH[1]}"
+		else
+			continue
+		fi
+	done
+	echo "$nlist"
 }
 
 __ndctl_file_comp()
@@ -216,6 +231,9 @@ __ndctl_comp_options()
 			;&
 		--spares-alarm)
 			opts="on off"
+			;;
+		--numa-node)
+			opts=$(__ndctl_get_nodes)
 			;;
 		*)
 			return
