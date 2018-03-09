@@ -13,6 +13,8 @@
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <limits.h>
 #include <syslog.h>
@@ -28,12 +30,14 @@
 #include <util/parse-options.h>
 #include <ccan/minmax/minmax.h>
 #include <ccan/array_size/array_size.h>
+#include <ndctl/firmware-update.h>
 
 struct action_context {
 	struct json_object *jdimms;
 	enum ndctl_namespace_version labelversion;
 	FILE *f_out;
 	FILE *f_in;
+	struct update_context update;
 };
 
 static int action_disable(struct ndctl_dimm *dimm, struct action_context *actx)
@@ -371,6 +375,452 @@ static int action_read(struct ndctl_dimm *dimm, struct action_context *actx)
 	return rc;
 }
 
+static int update_verify_input(struct action_context *actx)
+{
+	int rc;
+	struct stat st;
+
+	rc = fstat(fileno(actx->f_in), &st);
+	if (rc == -1) {
+		rc = -errno;
+		fprintf(stderr, "fstat failed: %s\n", strerror(errno));
+		return rc;
+	}
+
+	if (!S_ISREG(st.st_mode)) {
+		fprintf(stderr, "Input not a regular file.\n");
+		return -EINVAL;
+	}
+
+	if (st.st_size == 0) {
+		fprintf(stderr, "Input file size is 0.\n");
+		return -EINVAL;
+	}
+
+	actx->update.fw_size = st.st_size;
+	return 0;
+}
+
+static int verify_fw_size(struct update_context *uctx)
+{
+	struct fw_info *fw = &uctx->dimm_fw;
+
+	if (uctx->fw_size > fw->store_size) {
+		error("Firmware file size greater than DIMM store\n");
+		return -ENOSPC;
+	}
+
+	return 0;
+}
+
+static int submit_get_firmware_info(struct ndctl_dimm *dimm,
+		struct action_context *actx)
+{
+	struct update_context *uctx = &actx->update;
+	struct fw_info *fw = &uctx->dimm_fw;
+	struct ndctl_cmd *cmd;
+	int rc;
+	enum ND_FW_STATUS status;
+
+	cmd = ndctl_dimm_cmd_new_fw_get_info(dimm);
+	if (!cmd)
+		return -ENXIO;
+
+	rc = ndctl_cmd_submit(cmd);
+	if (rc < 0)
+		return rc;
+
+	status = ndctl_cmd_fw_xlat_firmware_status(cmd);
+	if (status != FW_SUCCESS) {
+		fprintf(stderr, "GET FIRMWARE INFO on DIMM %s failed: %#x\n",
+				ndctl_dimm_get_devname(dimm), status);
+		return -ENXIO;
+	}
+
+	fw->store_size = ndctl_cmd_fw_info_get_storage_size(cmd);
+	if (fw->store_size == UINT_MAX)
+		return -ENXIO;
+
+	fw->update_size = ndctl_cmd_fw_info_get_max_send_len(cmd);
+	if (fw->update_size == UINT_MAX)
+		return -ENXIO;
+
+	fw->query_interval = ndctl_cmd_fw_info_get_query_interval(cmd);
+	if (fw->query_interval == UINT_MAX)
+		return -ENXIO;
+
+	fw->max_query = ndctl_cmd_fw_info_get_max_query_time(cmd);
+	if (fw->max_query == UINT_MAX)
+		return -ENXIO;
+
+	fw->run_version = ndctl_cmd_fw_info_get_run_version(cmd);
+	if (fw->run_version == ULLONG_MAX)
+		return -ENXIO;
+
+	rc = verify_fw_size(uctx);
+	ndctl_cmd_unref(cmd);
+	return rc;
+}
+
+static int submit_start_firmware_upload(struct ndctl_dimm *dimm,
+		struct action_context *actx)
+{
+	struct update_context *uctx = &actx->update;
+	struct fw_info *fw = &uctx->dimm_fw;
+	struct ndctl_cmd *cmd;
+	int rc;
+	enum ND_FW_STATUS status;
+
+	cmd = ndctl_dimm_cmd_new_fw_start_update(dimm);
+	if (!cmd)
+		return -ENXIO;
+
+	rc = ndctl_cmd_submit(cmd);
+	if (rc < 0)
+		return rc;
+
+	status = ndctl_cmd_fw_xlat_firmware_status(cmd);
+	if (status != FW_SUCCESS) {
+		fprintf(stderr,
+			"START FIRMWARE UPDATE on DIMM %s failed: %#x\n",
+			ndctl_dimm_get_devname(dimm), status);
+		if (status == FW_EBUSY)
+			fprintf(stderr, "Another firmware upload in progress"
+					" or firmware already updated.\n");
+		return -ENXIO;
+	}
+
+	fw->context = ndctl_cmd_fw_start_get_context(cmd);
+	if (fw->context == UINT_MAX) {
+		fprintf(stderr,
+			"Retrieved firmware context invalid on DIMM %s\n",
+			ndctl_dimm_get_devname(dimm));
+		return -ENXIO;
+	}
+
+	uctx->start = cmd;
+
+	return 0;
+}
+
+static int get_fw_data_from_file(FILE *file, void *buf, uint32_t len)
+{
+	size_t rc;
+
+	rc = fread(buf, len, 1, file);
+	if (rc != 1) {
+		if (feof(file))
+			fprintf(stderr,
+				"Firmware file shorter than expected\n");
+		else if (ferror(file))
+			fprintf(stderr, "Firmware file read error\n");
+		return -EBADF;
+	}
+
+	return len;
+}
+
+static int send_firmware(struct ndctl_dimm *dimm,
+		struct action_context *actx)
+{
+	struct update_context *uctx = &actx->update;
+	struct fw_info *fw = &uctx->dimm_fw;
+	struct ndctl_cmd *cmd = NULL;
+	ssize_t read;
+	int rc = -ENXIO;
+	enum ND_FW_STATUS status;
+	uint32_t copied = 0, len, remain;
+	void *buf;
+
+	buf = malloc(fw->update_size);
+	if (!buf)
+		return -ENOMEM;
+
+	remain = uctx->fw_size;
+
+	while (remain) {
+		len = min(fw->update_size, remain);
+		read = get_fw_data_from_file(actx->f_in, buf, len);
+		if (read < 0) {
+			rc = read;
+			goto cleanup;
+		}
+
+		cmd = ndctl_dimm_cmd_new_fw_send(uctx->start, copied, read,
+				buf);
+		if (!cmd) {
+			rc = -ENXIO;
+			goto cleanup;
+		}
+
+		rc = ndctl_cmd_submit(cmd);
+		if (rc < 0)
+			goto cleanup;
+
+		status = ndctl_cmd_fw_xlat_firmware_status(cmd);
+		if (status != FW_SUCCESS) {
+			error("SEND FIRMWARE failed: %#x\n", status);
+			rc = -ENXIO;
+			goto cleanup;
+		}
+
+		copied += read;
+		remain -= read;
+
+		ndctl_cmd_unref(cmd);
+		cmd = NULL;
+	}
+
+cleanup:
+	ndctl_cmd_unref(cmd);
+	free(buf);
+	return rc;
+}
+
+static int submit_finish_firmware(struct ndctl_dimm *dimm,
+		struct action_context *actx)
+{
+	struct update_context *uctx = &actx->update;
+	struct ndctl_cmd *cmd;
+	int rc;
+	enum ND_FW_STATUS status;
+
+	cmd = ndctl_dimm_cmd_new_fw_finish(uctx->start);
+	if (!cmd)
+		return -ENXIO;
+
+	rc = ndctl_cmd_submit(cmd);
+	if (rc < 0)
+		goto out;
+
+	status = ndctl_cmd_fw_xlat_firmware_status(cmd);
+	if (status != FW_SUCCESS) {
+		fprintf(stderr,
+			"FINISH FIRMWARE UPDATE on DIMM %s failed: %#x\n",
+			ndctl_dimm_get_devname(dimm), status);
+		rc = -ENXIO;
+		goto out;
+	}
+
+out:
+	ndctl_cmd_unref(cmd);
+	return rc;
+}
+
+static int submit_abort_firmware(struct ndctl_dimm *dimm,
+		struct action_context *actx)
+{
+	struct update_context *uctx = &actx->update;
+	struct ndctl_cmd *cmd;
+	int rc;
+	enum ND_FW_STATUS status;
+
+	cmd = ndctl_dimm_cmd_new_fw_abort(uctx->start);
+	if (!cmd)
+		return -ENXIO;
+
+	rc = ndctl_cmd_submit(cmd);
+	if (rc < 0)
+		goto out;
+
+	status = ndctl_cmd_fw_xlat_firmware_status(cmd);
+	if (!(status & ND_CMD_STATUS_FIN_ABORTED)) {
+		fprintf(stderr,
+			"Firmware update abort on DIMM %s failed: %#x\n",
+			ndctl_dimm_get_devname(dimm), status);
+		rc = -ENXIO;
+		goto out;
+	}
+
+out:
+	ndctl_cmd_unref(cmd);
+	return rc;
+}
+
+static int query_fw_finish_status(struct ndctl_dimm *dimm,
+		struct action_context *actx)
+{
+	struct update_context *uctx = &actx->update;
+	struct fw_info *fw = &uctx->dimm_fw;
+	struct ndctl_cmd *cmd;
+	int rc;
+	enum ND_FW_STATUS status;
+	bool done = false;
+	struct timespec now, before, after;
+	uint64_t ver;
+
+	cmd = ndctl_dimm_cmd_new_fw_finish_query(uctx->start);
+	if (!cmd)
+		return -ENXIO;
+
+	rc = clock_gettime(CLOCK_MONOTONIC, &before);
+	if (rc < 0)
+		goto out;
+
+	now.tv_nsec = fw->query_interval / 1000;
+	now.tv_sec = 0;
+
+	do {
+		rc = ndctl_cmd_submit(cmd);
+		if (rc < 0)
+			break;
+
+		status = ndctl_cmd_fw_xlat_firmware_status(cmd);
+		switch (status) {
+		case FW_SUCCESS:
+			ver = ndctl_cmd_fw_fquery_get_fw_rev(cmd);
+			if (ver == 0) {
+				fprintf(stderr, "No firmware updated.\n");
+				rc = -ENXIO;
+				goto out;
+			}
+
+			printf("Image updated successfully to DIMM %s.\n",
+					ndctl_dimm_get_devname(dimm));
+			printf("Firmware version %#lx.\n", ver);
+			printf("Cold reboot to activate.\n");
+			done = true;
+			rc = 0;
+			break;
+		case FW_EBUSY:
+			/* Still on going, continue */
+			rc = clock_gettime(CLOCK_MONOTONIC, &after);
+			if (rc < 0) {
+				rc = -errno;
+				goto out;
+			}
+
+			/*
+			 * If we expire max query time,
+			 * we timed out
+			 */
+			if (after.tv_sec - before.tv_sec >
+					fw->max_query / 1000000) {
+				rc = -ETIMEDOUT;
+				goto out;
+			}
+
+			/*
+			 * Sleep the interval dictated by firmware
+			 * before query again.
+			 */
+			rc = nanosleep(&now, NULL);
+			if (rc < 0) {
+				rc = -errno;
+				goto out;
+			}
+			break;
+		case FW_EBADFW:
+			fprintf(stderr,
+				"Firmware failed to verify by DIMM %s.\n",
+				ndctl_dimm_get_devname(dimm));
+		case FW_EINVAL_CTX:
+		case FW_ESEQUENCE:
+			done = true;
+			rc = -ENXIO;
+			goto out;
+		case FW_ENORES:
+			fprintf(stderr,
+				"Firmware update sequence timed out: %s\n",
+				ndctl_dimm_get_devname(dimm));
+			rc = -ETIMEDOUT;
+			done = true;
+			goto out;
+		default:
+			fprintf(stderr,
+				"Unknown update status: %#x on DIMM %s\n",
+				status, ndctl_dimm_get_devname(dimm));
+			rc = -EINVAL;
+			done = true;
+			goto out;
+		}
+	} while (!done);
+
+out:
+	ndctl_cmd_unref(cmd);
+	return rc;
+}
+
+static int update_firmware(struct ndctl_dimm *dimm,
+		struct action_context *actx)
+{
+	int rc;
+
+	rc = submit_get_firmware_info(dimm, actx);
+	if (rc < 0)
+		return rc;
+
+	rc = submit_start_firmware_upload(dimm, actx);
+	if (rc < 0)
+		return rc;
+
+	printf("Uploading firmware to DIMM %s.\n",
+			ndctl_dimm_get_devname(dimm));
+
+	rc = send_firmware(dimm, actx);
+	if (rc < 0) {
+		fprintf(stderr, "Firmware send failed. Aborting!\n");
+		rc = submit_abort_firmware(dimm, actx);
+		if (rc < 0)
+			fprintf(stderr, "Aborting update sequence failed.\n");
+		return rc;
+	}
+
+	/*
+	 * Done reading file, reset firmware file back to beginning for
+	 * next update.
+	 */
+	rewind(actx->f_in);
+
+	rc = submit_finish_firmware(dimm, actx);
+	if (rc < 0) {
+		fprintf(stderr, "Unable to end update sequence.\n");
+		rc = submit_abort_firmware(dimm, actx);
+		if (rc < 0)
+			fprintf(stderr, "Aborting update sequence failed.\n");
+		return rc;
+	}
+
+	rc = query_fw_finish_status(dimm, actx);
+	if (rc < 0)
+		return rc;
+
+	return 0;
+}
+
+static int action_update(struct ndctl_dimm *dimm, struct action_context *actx)
+{
+	int rc;
+
+	rc = ndctl_dimm_fw_update_supported(dimm);
+	switch (rc) {
+	case -ENOTTY:
+		error("%s: firmware update not supported by ndctl.",
+			ndctl_dimm_get_devname(dimm));
+		return rc;
+	case -EOPNOTSUPP:
+		error("%s: firmware update not supported by the kernel",
+			ndctl_dimm_get_devname(dimm));
+		return rc;
+	case -EIO:
+		error("%s: firmware update not supported by either platform firmware or the kernel.",
+			ndctl_dimm_get_devname(dimm));
+		return rc;
+	}
+
+	rc = update_verify_input(actx);
+	if (rc < 0)
+		return rc;
+
+	rc = update_firmware(dimm, actx);
+	if (rc < 0)
+		return rc;
+
+	ndctl_cmd_unref(actx->update.start);
+
+	return rc;
+}
+
 static struct parameters {
 	const char *bus;
 	const char *outfile;
@@ -462,6 +912,10 @@ OPT_BOOLEAN('j', "json", &param.json, "parse label data into json")
 OPT_STRING('i', "input", &param.infile, "input-file", \
 	"filename to read label area data")
 
+#define UPDATE_OPTIONS() \
+OPT_STRING('f', "firmware", &param.infile, "firmware-file", \
+	"firmware filename for update")
+
 #define INIT_OPTIONS() \
 OPT_BOOLEAN('f', "force", &param.force, \
 		"force initialization even if existing index-block present"), \
@@ -477,6 +931,12 @@ static const struct option read_options[] = {
 static const struct option write_options[] = {
 	BASE_OPTIONS(),
 	WRITE_OPTIONS(),
+	OPT_END(),
+};
+
+static const struct option update_options[] = {
+	BASE_OPTIONS(),
+	UPDATE_OPTIONS(),
 	OPT_END(),
 };
 
@@ -545,9 +1005,13 @@ static int dimm_action(int argc, const char **argv, void *ctx,
 		}
 	}
 
-	if (!param.infile)
+	if (!param.infile) {
+		if (action == action_update) {
+			usage_with_options(u, options);
+			return -EINVAL;
+		}
 		actx.f_in = stdin;
-	else {
+	} else {
 		actx.f_in = fopen(param.infile, "r");
 		if (!actx.f_in) {
 			fprintf(stderr, "failed to open: %s: (%s)\n",
@@ -704,6 +1168,16 @@ int cmd_enable_dimm(int argc, const char **argv, void *ctx)
 			"ndctl enable-dimm <nmem0> [<nmem1>..<nmemN>] [<options>]");
 
 	fprintf(stderr, "enabled %d nmem%s\n", count >= 0 ? count : 0,
+			count > 1 ? "s" : "");
+	return count >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_update_firmware(int argc, const char **argv, void *ctx)
+{
+	int count = dimm_action(argc, argv, ctx, action_update, update_options,
+			"ndctl update-firmware <nmem0> [<nmem1>..<nmemN>] [<options>]");
+
+	fprintf(stderr, "updated %d nmem%s.\n", count >= 0 ? count : 0,
 			count > 1 ? "s" : "");
 	return count >= 0 ? 0 : EXIT_FAILURE;
 }

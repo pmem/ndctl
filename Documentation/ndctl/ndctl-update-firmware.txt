@@ -3,16 +3,36 @@ ndctl-update-firmware(1)
 
 NAME
 ----
-ndctl-update-firmware - provides updating of NVDIMM firmware
+ndctl-update-firmware - provides for updating the firmware on an NVDIMM
 
 SYNOPSIS
 --------
 [verse]
-'ndctl update-firmware' -f <firmware_file> -d <dimm name>
+'ndctl update-firmware' <dimm> [<options>]
+
+DESCRIPTION
+-----------
+Provide a generic interface for updating NVDIMM firmware. The use of this
+depends on support from the underlying libndctl, kernel, as well as the
+platform itself.
+
+
+OPTIONS
+-------
+<dimm>::
+include::xable-dimm-options.txt[]
+
+-f::
+--firmware::
+	firmware file used to perform the update
+
+-v::
+--verbose::
+        Emit debug messages for the namespace check process.
 
 COPYRIGHT
 ---------
-Copyright (c) 2016 - 2017, Intel Corporation. License GPLv2: GNU GPL
+Copyright (c) 2017 - 2018, Intel Corporation. License GPLv2: GNU GPL
 version 2 <http://gnu.org/licenses/gpl.html>.  This is free software:
 you are free to change and redistribute it.  There is NO WARRANTY, to
 the extent permitted by law.

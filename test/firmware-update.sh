@@ -58,7 +58,7 @@ detect()
 do_tests()
 {
 	truncate -s 196608 $image
-	$ndctl update-firmware -d $dev -f $image
+	$ndctl update-firmware -f $image $dev
 }
 
 check_min_kver "4.16" || { echo "kernel $KVER may lack firmware update test handling"; exit $rc; }

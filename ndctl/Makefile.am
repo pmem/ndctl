@@ -15,7 +15,6 @@ ndctl_SOURCES = ndctl.c \
 		util/json-smart.c \
 		util/json-firmware.c \
 		inject-error.c \
-		update.c \
 		inject-smart.c
 
 if ENABLE_DESTRUCTIVE
