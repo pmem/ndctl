@@ -107,3 +107,14 @@ ndctl_cmd_fw_xlat_firmware_status(struct ndctl_cmd *cmd)
 	else
 		return FW_EUNKNOWN;
 }
+
+NDCTL_EXPORT int
+ndctl_dimm_fw_update_supported(struct ndctl_dimm *dimm)
+{
+	struct ndctl_dimm_ops *ops = dimm->ops;
+
+	if (ops && ops->fw_update_supported)
+		return ops->fw_update_supported(dimm);
+	else
+		return -ENOTTY;
+}

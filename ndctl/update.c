@@ -449,11 +449,24 @@ static int get_ndctl_dimm(struct update_context *uctx, void *ctx)
 {
 	struct ndctl_dimm *dimm;
 	struct ndctl_bus *bus;
+	int rc;
 
 	ndctl_bus_foreach(ctx, bus)
 		ndctl_dimm_foreach(bus, dimm) {
 			if (!util_dimm_filter(dimm, uctx->dimm_id))
 				continue;
+			rc = ndctl_dimm_fw_update_supported(dimm);
+			switch (rc) {
+			case -ENOTTY:
+				error("DIMM firmware update not supported by ndctl.");
+				return rc;
+			case -EOPNOTSUPP:
+				error("DIMM firmware update not supported by the kernel");
+				return rc;
+			case -EIO:
+				error("DIMM firmware update not supported by platform firmware.");
+				return rc;
+			}
 			uctx->dimm = dimm;
 			return 0;
 		}

@@ -650,6 +650,33 @@ intel_dimm_cmd_new_lss(struct ndctl_dimm *dimm)
 	return cmd;
 }
 
+static int intel_dimm_fw_update_supported(struct ndctl_dimm *dimm)
+{
+	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
+
+	if (!ndctl_dimm_is_cmd_supported(dimm, ND_CMD_CALL)) {
+		dbg(ctx, "unsupported cmd: %d\n", ND_CMD_CALL);
+		return -EOPNOTSUPP;
+	}
+
+	if (test_dimm_dsm(dimm, ND_INTEL_FW_GET_INFO) ==
+			DIMM_DSM_UNSUPPORTED ||
+			test_dimm_dsm(dimm, ND_INTEL_FW_START_UPDATE) ==
+			DIMM_DSM_UNSUPPORTED ||
+			test_dimm_dsm(dimm, ND_INTEL_FW_SEND_DATA) ==
+			DIMM_DSM_UNSUPPORTED ||
+			test_dimm_dsm(dimm, ND_INTEL_FW_FINISH_UPDATE) ==
+			DIMM_DSM_UNSUPPORTED ||
+			test_dimm_dsm(dimm, ND_INTEL_FW_FINISH_STATUS_QUERY) ==
+			DIMM_DSM_UNSUPPORTED) {
+		dbg(ctx, "unsupported function: %d\n",
+				ND_INTEL_FW_GET_INFO);
+		return -EIO;
+	}
+
+	return 0;
+}
+
 struct ndctl_dimm_ops * const intel_dimm_ops = &(struct ndctl_dimm_ops) {
 	.cmd_desc = intel_cmd_desc,
 	.new_smart = intel_dimm_cmd_new_smart,
@@ -703,4 +730,5 @@ struct ndctl_dimm_ops * const intel_dimm_ops = &(struct ndctl_dimm_ops) {
 	.fw_fquery_get_fw_rev = intel_cmd_fw_fquery_get_fw_rev,
 	.fw_xlat_firmware_status = intel_cmd_fw_xlat_firmware_status,
 	.new_ack_shutdown_count = intel_dimm_cmd_new_lss,
+	.fw_update_supported = intel_dimm_fw_update_supported,
 };

@@ -345,4 +345,5 @@ global:
 	ndctl_cmd_fw_xlat_firmware_status;
 	ndctl_dimm_cmd_new_ack_shutdown_count;
 	ndctl_region_get_numa_node;
+	ndctl_dimm_fw_update_supported;
 } LIBNDCTL_13;
