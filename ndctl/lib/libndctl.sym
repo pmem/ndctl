@@ -339,11 +339,15 @@ global:
 	ndctl_cmd_fw_info_get_query_interval;
 	ndctl_cmd_fw_info_get_max_query_time;
 	ndctl_cmd_fw_info_get_run_version;
-	ndctl_cmd_fw_info_get_next_version;
 	ndctl_cmd_fw_start_get_context;
 	ndctl_cmd_fw_fquery_get_fw_rev;
 	ndctl_cmd_fw_xlat_firmware_status;
+} LIBNDCTL_13;
+
+LIBNDCTL_15 {
+global:
+	ndctl_cmd_fw_info_get_next_version;
 	ndctl_dimm_cmd_new_ack_shutdown_count;
 	ndctl_region_get_numa_node;
 	ndctl_dimm_fw_update_supported;
-} LIBNDCTL_13;
+} LIBNDCTL_14;
