@@ -245,6 +245,13 @@ static bool filter_region(struct ndctl_region *region,
 	lfa->jregion = jregion;
 
 	/*
+	 * We've started a new region, any previous jnamespaces will
+	 * have been parented to the last region. Clear out jnamespaces
+	 * so we start a new array per region.
+	 */
+	lfa->jnamespaces = NULL;
+
+	/*
 	 * Without a bus we are collecting regions anonymously across
 	 * the platform.
 	 */
@@ -366,7 +373,7 @@ static int list_display(struct list_filter_arg *lfa)
 			json_object_object_add(jplatform, "dimms", jdimms);
 		if (jregions)
 			json_object_object_add(jplatform, "regions", jregions);
-		if (jnamespaces)
+		if (jnamespaces && !jregions)
 			json_object_object_add(jplatform, "namespaces",
 					jnamespaces);
 		printf("%s\n", json_object_to_json_string_ext(jplatform,
