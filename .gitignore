@@ -32,3 +32,6 @@ version.m4
 cscope.files
 cscope*.out
 tags
+_site
+Gemfile.lock
+build
