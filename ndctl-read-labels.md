@@ -21,19 +21,19 @@ The namespace label area is a small persistent partition of capacity available o
 OPTIONS
 =======
 
-&lt;memory device(s)&gt;…  
+`<memory device(s)&gt;…  
 One or more *nmemX* device names. The keyword *all* can be specified to operate on every dimm in the system, optionally filtered by bus id (see --bus= option).
 
--b; --bus=  
+`-b; --bus=`  
 Limit operation to memory devices (dimms) that are on the given bus. Where *bus* can be a provider name or a bus id number.
 
--v  
+`-v`  
 Turn on verbose debug messages in the library (if ndctl was built with logging and debug enabled).
 
--o; --output  
+`-o; --output`  
 output file
 
--j; --json  
+`-j; --json`  
 parse the label data into json assuming the *NVDIMM Namespace Specification* format.
 
 COPYRIGHT

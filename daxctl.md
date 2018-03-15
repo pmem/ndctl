@@ -16,10 +16,10 @@ SYNOPSIS
 OPTIONS
 =======
 
--v; --version  
+`-v; --version`  
 Display daxctl version.
 
--h; --help  
+`-h; --help`  
 Run daxctl help command.
 
 DESCRIPTION

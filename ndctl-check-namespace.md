@@ -36,26 +36,26 @@ Check a namespace, and perform repairs if possible
 OPTIONS
 =======
 
--R; --repair  
+`-R; --repair`  
 Perform metadata repairs if possible. Without this option, the raw namespace contents will not be touched.
 
--L; --rewrite-log  
+`-L; --rewrite-log`  
 Regenerate the BTT log and write it to media. This can be used to convert from the old (pre 4.15) padding format that was incompatible with other BTT implementations to the updated format. This requires the --repair option to be provided.
 
     WARNING: Do not interrupt this operation as it can potentially cause
     unrecoverable metadata corruption. It is highly recommended to create
     a backup of the raw namespace before attempting this.
 
--f; --force  
+`-f; --force`  
 Unless this option is specified, a check-namespace operation will fail if the namespace is presently active. Specifying --force causes the namespace to be disabled before checking.
 
--v; --verbose  
+`-v; --verbose`  
 Emit debug messages for the namespace check process.
 
--r; --region=  
+`-r; --region=`  
 A *regionX* device name, or a region id number. The keyword *all* can be specified to carry out the operation on every region in the system, optionally filtered by bus id (see --bus= option).
 
--b; --bus=  
+`-b; --bus=`  
 Enforce that the operation only be carried on devices that are attached to the given bus. Where *bus* can be a provider name or a bus id number.
 
 COPYRIGHT

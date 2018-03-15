@@ -69,16 +69,16 @@ Create a namespace in that region:
 OPTIONS
 =======
 
-&lt;memory device(s)&gt;…  
+`<memory device(s)&gt;…  
 One or more *nmemX* device names. The keyword *all* can be specified to operate on every dimm in the system, optionally filtered by bus id (see --bus= option).
 
--b; --bus=  
+`-b; --bus=`  
 Limit operation to memory devices (dimms) that are on the given bus. Where *bus* can be a provider name or a bus id number.
 
--v  
+`-v`  
 Turn on verbose debug messages in the library (if ndctl was built with logging and debug enabled).
 
--f; --force  
+`-f; --force`  
 Force initialization of the label space even if there appears to be an existing / valid namespace index. Warning, this will destroy all defined namespaces on the dimm.
 
 COPYRIGHT

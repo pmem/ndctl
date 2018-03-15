@@ -37,10 +37,10 @@ EXAMPLE
 OPTIONS
 =======
 
--r; --region=  
+`-r; --region=`  
 A device-dax region is a contiguous range of memory that hosts one or more /dev/daxX.Y devices, where X is the region id and Y is the device instance id. The keyword *all* can be specified to carry out the operation on every region in the system.
 
--d; --dev=  
+`-d; --dev=`  
 Specify a dax device name, &lt;region id&gt;.&lt;instance id&gt; tuple, or keyword *all* to filter the listing. For example to list the first device instance in region1:
 
 >     # daxctl list --dev=1.0
@@ -50,16 +50,16 @@ Specify a dax device name, &lt;region id&gt;.&lt;instance id&gt; tuple, or keywo
       "size":3233808384
     }
 
--D; --devices  
+`-D; --devices`  
 Include device-dax instance info in the listing (default)
 
--R; --regions  
+`-R; --regions`  
 Include region info in the listing
 
--i; --idle  
+`-i; --idle`  
 Include idle (not enabled / zero-sized) devices in the listing
 
--u; --human  
+`-u; --human`  
 By default *daxctl list* will output machine-friendly raw-integer data. Instead, with this flag, numbers representing storage size will be formatted as human readable strings with units, other fields are converted to hexadecimal strings. Example:
 
 >     # daxctl list

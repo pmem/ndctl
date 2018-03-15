@@ -34,46 +34,46 @@ Inject a media temperature value of 52 and fatal health status flag for DIMM-0
 OPTIONS
 =======
 
--b; --bus=  
+`-b; --bus=`  
 Enforce that the operation only be carried on devices that are attached to the given bus. Where *bus* can be a provider name or a bus id number.
 
--m; --media-temperature=  
+`-m; --media-temperature=`  
 Inject &lt;value&gt; for the media temperature smart attribute.
 
--M; --media-temperature-threshold=  
+`-M; --media-temperature-threshold=`  
 Set &lt;value&gt; for the smart media temperature threshold.
 
---media-temperature-alarm=  
+`--media-temperature-alarm=`  
 Enable or disable the smart media temperature alarm. Options are *on* or *off*.
 
--c; --ctrl-temperature=  
+`-c; --ctrl-temperature=`  
 Inject &lt;value&gt; for the controller temperature smart attribute.
 
--C; --ctrl-temperature-threshold=  
+`-C; --ctrl-temperature-threshold=`  
 Set &lt;value&gt; for the smart controller temperature threshold.
 
---ctrl-temperature-alarm=  
+`--ctrl-temperature-alarm=`  
 Enable or disable the smart controller temperature alarm. Options are *on* or *off*.
 
--s; --spares=  
+`-s; --spares=`  
 Inject &lt;value&gt; for the spares smart attribute.
 
--S; --spares-threshold=  
+`-S; --spares-threshold=`  
 Set &lt;value&gt; for the smart spares threshold.
 
---spares-alarm=  
+`--spares-alarm=`  
 Enable or disable the smart spares alarm. Options are *on* or *off*.
 
--H; --health=  
+`-H; --health=`  
 Smart attribute for health status. Provide either *fatal* or *nominal* to set the state of the attribute.
 
--U; --unsafe-shutdown=  
+`-U; --unsafe-shutdown=`  
 Set the flag to spoof an unsafe shutdown on the next power down.
 
--v; --verbose  
+`-v; --verbose`  
 Emit debug messages for the error injection process
 
--u; --human  
+`-u; --human`  
 Format numbers representing storage sizes, or offsets as human readable strings with units instead of the default machine-friendly raw-integer data. Convert other numeric fields into hexadecimal strings.
 
 COPYRIGHT

@@ -56,33 +56,33 @@ EXAMPLE
 OPTIONS
 =======
 
--r; --region=  
+`-r; --region=`  
 A *regionX* device name, or a region id number. The keyword *all* can be specified to carry out the operation on every region in the system, optionally filtered by bus id (see --bus= option).
 
--b; --bus=  
+`-b; --bus=`  
 Enforce that the operation only be carried on devices that are attached to the given bus. Where *bus* can be a provider name or a bus id number.
 
--d; --dimm=  
+`-d; --dimm=`  
 An *nmemX* device name, or dimm id number. Filter listing by devices that reference the given dimm. For example to see all namespaces comprised of storage capacity on nmem0:
 
 >     # ndctl list --dimm=nmem0 --namespaces
 
--n; --namespace=  
+`-n; --namespace=`  
 An *namespaceX.Y* device name, or namespace region plus id tuple *X.Y*. Limit the namespace list to the single identified device if present.
 
--t; --type=  
+`-t; --type=`  
 Filter listing by region type (*pmem* or *blk*)
 
--m; --mode=  
+`-m; --mode=`  
 Filter listing by the mode (*raw*, *fsdax*, *sector* or *devdax*) of the namespace(s).
 
--B; --buses  
+`-B; --buses`  
 Include bus info in the listing
 
--D; --dimms  
+`-D; --dimms`  
 Include dimm info in the listing
 
--H; --health  
+`-H; --health`  
 Include dimm health info in the listing. For example:
 
 >     {
@@ -100,7 +100,7 @@ Include dimm health info in the listing. For example:
 >       }
 >     }
 
--X; --device-dax  
+`-X; --device-dax`  
 Include device-dax ("daxregion") details when a namespace is in "dax" mode.
 
 >     {
@@ -121,16 +121,16 @@ Include device-dax ("daxregion") details when a namespace is in "dax" mode.
 >       }
 >     }
 
--R; --regions  
+`-R; --regions`  
 Include region info in the listing
 
--N; --namespaces  
+`-N; --namespaces`  
 Include namespace info in the listing. Namespace info is listed by default if no other options are specified to the command.
 
--i; --idle  
+`-i; --idle`  
 Include idle (not enabled) devices in the listing
 
--M; --media-errors  
+`-M; --media-errors`  
 Include media errors (badblocks) in the listing. Note that the *badblock\_count* property is included in the listing by default when the count is non-zero, otherwise it is hidden. Also, if the namespace is in *sector* mode the *badblocks* listing is not included and *badblock\_count* property may include blocks that are located in metadata, or unused capacity in the namespace. Convert a *sector* namespace into *raw* mode to list precise *badblocks* offsets.
 
 >     {
@@ -155,7 +155,7 @@ Include media errors (badblocks) in the listing. Note that the *badblock\_count*
 >       ]
 >     }
 
--u; --human  
+`-u; --human`  
 Format numbers representing storage sizes, or offsets as human readable strings with units instead of the default machine-friendly raw-integer data. Convert other numeric fields into hexadecimal strings.
 
 >     # ndctl list --region=7

@@ -16,10 +16,10 @@ SYNOPSIS
 OPTIONS
 =======
 
--v; --version  
+`-v; --version`  
 Display ndctl version.
 
--h; --help  
+`-h; --help`  
 Run ndctl help command.
 
 DESCRIPTION

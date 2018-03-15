@@ -32,10 +32,10 @@ Convert namespace0.0 to *sector* mode
 OPTIONS
 =======
 
--t; --type=  
+`-t; --type=`  
 Create a *pmem* or *blk* namespace (subject to available capacity). A pmem namespace supports the dax (direct access) capability to mmap2 persistent memory directly into a process address space. A blk namespace access persistent memory through a block-window-aperture. Compared to pmem it supports a traditional storage error model (EIO on error rather than a cpu exception on a bad memory access), but it does not support dax.
 
--m; --mode=  
+`-m; --mode=`  
 -   "raw": expose the namespace capacity directly with limitations. Neither a raw pmem namepace nor raw blk namespace support sector atomicity by default (see "sector" mode below). A raw pmem namespace may have limited to no dax support depending the kernel. In other words operations like direct-I/O targeting a dax buffer may fail for a pmem namespace in raw mode or indirect through a page-cache buffer. See "fsdax" and "devdax" mode for dax operation.
 
 -   "sector": persistent memory, given that it is byte addressable, does not support sector atomicity. The problematic aspect of sector tearing is that most applications do not know they have a atomic sector update dependency. At least a disk rarely ever tears sectors and if it does it almost certainly returns a checksum error on access. Persistent memory devices will always tear and always silently. Until an application is audited to be robust in the presence of sector-tearing "safe" mode is recommended. This imposes some performance overhead and disables the dax capability. (also known as "safe" or "btt" mode)
@@ -48,29 +48,29 @@ Create a *pmem* or *blk* namespace (subject to available capacity). A pmem names
 
     -   Enforces deterministic behavior by being strict about what fault scenarios are supported. I.e. if a device is configured with a 2M alignment an attempt to fault a 4K aligned offset will result in SIGBUS.
 
--s; --size=  
+`-s; --size=`  
 For NVDIMM devices that support namespace labels, set the namespace size in bytes. Otherwise it defaults to the maximum size specified by platform firmware. This option supports the suffixes "k" or "K" for KiB, "m" or "M" for MiB, "g" or "G" for GiB and "t" or "T" for TiB.
 
     For pmem namepsaces the size must be a multiple of the
     interleave-width and the namespace alignment (see
     below).
 
--a; --align  
+`-a; --align`  
 Applications that want to establish dax memory mappings with page table entries greater than system base page size (4K on x86) need a persistent memory namespace that is sufficiently aligned. For "fsdax" and "devdax" mode this defaults to 2M. Note that "devdax" mode enforces all mappings to be aligned to this value, i.e. it fails unaligned mapping attempts. The "fsdax" alignment setting determines the starting alignment of filesystem extents and may limit the possible granularities, if a large mapping is not possible it will silently fall back to a smaller page size.
 
--e; --reconfig=  
+`-e; --reconfig=`  
 Reconfigure an existing namespace (change the mode, sector size, etc…). All namespace parameters, save uuid, default to the current attributes of the specified namespace. The namespace is then re-created with the specified modifications. The uuid is refreshed to a new value by default whenever the data layout of a namespace is changed, see --uuid= to set a specific uuid.
 
--u; --uuid=  
+`-u; --uuid=`  
 This option is not recommended as a new uuid should be generated every time a namespace is (re-)created. For recovery scenarios however the uuid may be specified.
 
--n; --name=  
+`-n; --name=`  
 For NVDIMM devices that support namespace labels, specify a human friendly name for a namespace. This name is available as a device attribute for use in udev rules.
 
--l; --sector-size  
+`-l; --sector-size`  
 Specify the logical sector size (LBA size) of the Linux block device associated with an namespace.
 
--M; --map=  
+`-M; --map=`  
 A pmem namespace in "fsdax" or "devdax" mode requires allocation of per-page metadata. The allocation can be drawn from either:
 
 -   "mem": typical system memory
@@ -82,10 +82,10 @@ A pmem namespace in "fsdax" or "devdax" mode requires allocation of per-page met
         namespace directly ("--map=dev"). The overhead is 64-bytes per
         4K (16GB per 1TB) on x86.
 
--f; --force  
+`-f; --force`  
 Unless this option is specified the *reconfigure namespace* operation will fail if the namespace is presently active. Specifying --force causes the namespace to be disabled before the operation is attempted. However, if the namespace is mounted then the *disable namespace* and *reconfigure namespace* operations will be aborted. The namespace must be unmounted before being reconfigured.
 
--L; --autolabel; --no-autolabel  
+`-L; --autolabel; --no-autolabel`  
 Legacy NVDIMM devices do not support namespace labels. In that case the kernel creates region-sized namespaces that can not be deleted. Their mode can be changed, but they can not be resized smaller than their parent region. This is termed a "label-less namespace". In contrast, NVDIMMs and hypervisors that support the ACPI 6.2 label area definition (ACPI 6.2 Section 6.5.10 NVDIMM Label Methods) support "labelled namespace" operation.
 
     There are two cases where the kernel will default to
@@ -116,13 +116,13 @@ Legacy NVDIMM devices do not support namespace labels. In that case the kernel c
         ndctl init-labels all
         ndctl enable-region all
 
--v; --verbose  
+`-v; --verbose`  
 Emit debug messages for the namespace creation process
 
--r; --region=  
+`-r; --region=`  
 A *regionX* device name, or a region id number. The keyword *all* can be specified to carry out the operation on every region in the system, optionally filtered by bus id (see --bus= option).
 
--b; --bus=  
+`-b; --bus=`  
 Enforce that the operation only be carried on devices that are attached to the given bus. Where *bus* can be a provider name or a bus id number.
 
 COPYRIGHT

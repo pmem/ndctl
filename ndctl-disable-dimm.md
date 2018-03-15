@@ -23,10 +23,10 @@ The kernel performs runtime modifications of that data when namespace provisioni
 OPTIONS
 =======
 
-&lt;dimm&gt;  
+`<dimm>`  
 A *nmemX* device name, or a dimm id number. The keyword *all* can be specified to carry out the operation on every dimm in the system, optionally filtered by bus id (see --bus= option).
 
--b; --bus=  
+`-b; --bus=`  
 Enforce that the operation only be carried on devices that are attached to the given bus. Where *bus* can be a provider name or a bus id number.
 
 COPYRIGHT

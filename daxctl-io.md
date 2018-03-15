@@ -35,22 +35,22 @@ EXAMPLE
 OPTIONS
 =======
 
--i; --input=  
+`-i; --input=`  
 Input device or file to read from.
 
--o; --output=  
+`-o; --output=`  
 Output device or file to write to.
 
--z; --zero  
+`-z; --zero`  
 Zero the output device for *len* size. Or the entire device if no length was provided. The output device must be a Device DAX device.
 
--l; --len  
+`-l; --len`  
 The length in bytes to perform the I/O. The following suffixes are supported to make passing in size easier for kibi, mebi, gibi, and tebi bytes: k/K,m/M,g/G,t/T. i.e. 20m - 20 Mebibytes
 
--s; --seek  
+`-s; --seek`  
 The number of bytes to skip over on the output before performing a write.
 
--k; --skip  
+`-k; --skip`  
 The number of bytes to skip over on the input before performing a read.
 
 COPYRIGHT

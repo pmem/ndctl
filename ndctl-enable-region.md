@@ -21,10 +21,10 @@ A generic REGION device is registered for each PMEM range or BLK-aperture set. L
 OPTIONS
 =======
 
-&lt;region&gt;  
+`<region>`  
 A *regionX* device name, or a region id number. The keyword *all* can be specified to carry out the operation on every region in the system, optionally filtered by bus id (see --bus= option).
 
--b; --bus=  
+`-b; --bus=`  
 Enforce that the operation only be carried on devices that are attached to the given bus. Where *bus* can be a provider name or a bus id number.
 
 COPYRIGHT
