@@ -115,7 +115,7 @@ p img {
 
 pre, code {
 	color: #222;
-	background-color: #f8f8c0;
+	background-color: #f0f3f3;
 	font-family: Monaco, "Bitstream Vera Sans Mono", "Lucida Console",
 		Terminal, monospace;
 	font-size: 14px;
@@ -126,7 +126,7 @@ pre, code {
 
 /* overwrite .highlight style for inline code elements */
 code.highlight {
-        background-color: #f8f8c0;
+        background-color: #f0f3f3;
 }
 
 code[data-gist-id] {

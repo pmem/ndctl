@@ -1,3 +1,5 @@
+highlighter: rouge
+
 plugins:
   - jekyll-mentions
 
