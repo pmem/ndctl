@@ -1,4 +1,7 @@
-### Documentation for ndctl and daxctl
+---
+title: ndctl
+layout: pmdk
+---
 [View the Project on GitHub](https://github.com/pmem/ndctl)  
 **Generated from ndctl-v59.2**  
 

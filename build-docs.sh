@@ -65,9 +65,16 @@ man_to_md()
 	[[ "$fname" == ndctl*.txt ]] || [[ "$fname" == daxctl*.txt ]] || return 0
 	cfg=$(dirname $file)/asciidoc.conf
 	out="md/${fname/%.txt/.md}"
+	cat <<- EOF > $out
+		---
+		title: ndctl
+		layout: pmdk
+		---
+
+	EOF
 	asciidoc -b docbook -f $cfg --unsafe -o- $file | \
 		pandoc -f docbook -t markdown_github | \
-		sed -e "s/\(ndctl-[^1]*\)1/[\1](\1.md)/g" > $out
+		sed -e "s/\(ndctl-[^1]*\)1/[\1](\1.md)/g" >> $out
 }
 
 mkdir -p md
@@ -85,7 +92,10 @@ cp $wdir/md/*.md .
 rm -f index.md
 
 cat <<- EOF > index.md
-	### Documentation for ndctl and daxctl
+	---
+	title: ndctl
+	layout: pmdk
+	---
 	[View the Project on GitHub](https://github.com/pmem/ndctl)  
 	**Generated from $build_tag**  
 
