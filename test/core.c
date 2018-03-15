@@ -195,7 +195,7 @@ retry:
 				break;
 			}
 
-			if (strcmp(attr, "O") != 0) {
+			if (!strchr(attr, 'O')) {
 				log_err(&log_ctx, "%s.ko: expected taint: O got: %s\n",
 						name, attr);
 				break;
