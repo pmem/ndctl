@@ -39,6 +39,7 @@ int __sysfs_read_attr(struct log_ctx *ctx, const char *path, char *buf)
 	n = read(fd, buf, SYSFS_ATTR_SIZE);
 	close(fd);
 	if (n < 0 || n >= SYSFS_ATTR_SIZE) {
+		buf[0] = 0;
 		log_dbg(ctx, "failed to read %s: %s\n", path, strerror(errno));
 		return -errno;
 	}
