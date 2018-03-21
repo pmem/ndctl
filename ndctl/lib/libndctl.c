@@ -180,6 +180,7 @@ struct ndctl_region {
 	} iset;
 	FILE *badblocks;
 	struct badblock bb;
+	enum ndctl_persistence_domain persistence_domain;
 };
 
 /**
@@ -914,6 +915,22 @@ NDCTL_EXPORT struct ndctl_bus *ndctl_bus_get_by_provider(struct ndctl_ctx *ctx,
 			return bus;
 
 	return NULL;
+}
+
+NDCTL_EXPORT enum ndctl_persistence_domain
+ndctl_bus_get_persistence_domain(struct ndctl_bus *bus)
+{
+	struct ndctl_region *region;
+	enum ndctl_persistence_domain pd = -1;
+
+	/* iterate through region to get the region persistence domain */
+	ndctl_region_foreach(bus, region) {
+		/* we are looking for the least persistence domain */
+		if (pd < region->persistence_domain)
+			pd = region->persistence_domain;
+	}
+
+	return pd < 0 ? PERSISTENCE_UNKNOWN : pd;
 }
 
 NDCTL_EXPORT struct ndctl_btt *ndctl_region_get_btt_seed(struct ndctl_region *region)
@@ -1755,6 +1772,18 @@ static int region_set_type(struct ndctl_region *region, char *path)
 	return 0;
 }
 
+static enum ndctl_persistence_domain region_get_pd_type(char *name)
+{
+	if (strncmp("cpu_cache", name, 9) == 0)
+		return PERSISTENCE_CPU_CACHE;
+	else if (strncmp("memory_controller", name, 17) == 0)
+		return PERSISTENCE_MEM_CTRL;
+	else if (strncmp("none", name, 4) == 0)
+		return PERSISTENCE_NONE;
+	else
+		return PERSISTENCE_UNKNOWN;
+}
+
 static void *add_region(void *parent, int id, const char *region_base)
 {
 	char buf[SYSFS_ATTR_SIZE];
@@ -1829,6 +1858,13 @@ static void *add_region(void *parent, int id, const char *region_base)
 		goto err_read;
 
 	list_add(&bus->regions, &region->list);
+
+	/* get the persistence domain attrib */
+	sprintf(path, "%s/persistence_domain", region_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		region->persistence_domain = PERSISTENCE_UNKNOWN;
+	else
+		region->persistence_domain = region_get_pd_type(buf);
 
 	free(path);
 	return region;
@@ -2091,6 +2127,12 @@ NDCTL_EXPORT struct badblock *ndctl_region_get_first_badblock(struct ndctl_regio
 		return NULL;
 
 	return ndctl_region_get_next_badblock(region);
+}
+
+NDCTL_EXPORT enum ndctl_persistence_domain
+ndctl_region_get_persistence_domain(struct ndctl_region *region)
+{
+	return region->persistence_domain;
 }
 
 static struct nd_cmd_vendor_tail *to_vendor_tail(struct ndctl_cmd *cmd)

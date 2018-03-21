@@ -18,6 +18,7 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <errno.h>
+#include <limits.h>
 
 #ifdef HAVE_LIBUUID
 #include <uuid/uuid.h>
@@ -115,6 +116,8 @@ int ndctl_bus_is_cmd_supported(struct ndctl_bus *bus, int cmd);
 unsigned int ndctl_bus_get_revision(struct ndctl_bus *bus);
 unsigned int ndctl_bus_get_id(struct ndctl_bus *bus);
 const char *ndctl_bus_get_provider(struct ndctl_bus *bus);
+enum ndctl_persistence_domain ndctl_bus_get_persistence_domain(
+		struct ndctl_bus *bus);
 int ndctl_bus_wait_probe(struct ndctl_bus *bus);
 int ndctl_bus_wait_for_scrub_completion(struct ndctl_bus *bus);
 unsigned int ndctl_bus_get_scrub_count(struct ndctl_bus *bus);
@@ -305,6 +308,14 @@ struct badblock {
 	unsigned long long offset;
 	unsigned int len;
 };
+
+enum ndctl_persistence_domain {
+	PERSISTENCE_NONE = 0,
+	PERSISTENCE_MEM_CTRL = 10,
+	PERSISTENCE_CPU_CACHE = 20,
+	PERSISTENCE_UNKNOWN = INT_MAX,
+};
+
 struct ndctl_region;
 struct ndctl_region *ndctl_region_get_first(struct ndctl_bus *bus);
 struct ndctl_region *ndctl_region_get_next(struct ndctl_region *region);
@@ -347,6 +358,8 @@ struct ndctl_region *ndctl_bus_get_region_by_physical_address(struct ndctl_bus *
         for (dimm = ndctl_region_get_first_dimm(region); \
              dimm != NULL; \
              dimm = ndctl_region_get_next_dimm(region, dimm))
+enum ndctl_persistence_domain ndctl_region_get_persistence_domain(
+		struct ndctl_region *region);
 int ndctl_region_is_enabled(struct ndctl_region *region);
 int ndctl_region_enable(struct ndctl_region *region);
 int ndctl_region_disable_invalidate(struct ndctl_region *region);

@@ -73,6 +73,7 @@ static struct json_object *region_to_json(struct ndctl_region *region,
 	struct ndctl_interleave_set *iset;
 	struct ndctl_mapping *mapping;
 	unsigned int bb_count = 0;
+	enum ndctl_persistence_domain pd;
 	int numa;
 
 	if (!jregion)
@@ -173,6 +174,25 @@ static struct json_object *region_to_json(struct ndctl_region *region,
 	}
 	if ((flags & UTIL_JSON_MEDIA_ERRORS) && jbbs)
 		json_object_object_add(jregion, "badblocks", jbbs);
+
+	pd = ndctl_region_get_persistence_domain(region);
+	switch (pd) {
+	case PERSISTENCE_CPU_CACHE:
+		jobj = json_object_new_string("cpu_cache");
+		break;
+	case PERSISTENCE_MEM_CTRL:
+		jobj = json_object_new_string("memory_controller");
+		break;
+	case PERSISTENCE_NONE:
+		jobj = json_object_new_string("none");
+		break;
+	default:
+		jobj = json_object_new_string("unknown");
+		break;
+	}
+
+	if (jobj)
+		json_object_object_add(jregion, "persistence_domain", jobj);
 
 	return jregion;
  err:
