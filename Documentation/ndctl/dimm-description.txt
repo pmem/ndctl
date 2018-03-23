@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0
+
 DESCRIPTION
 -----------
 A generic DIMM device object, named /dev/nmemX, is registered for each

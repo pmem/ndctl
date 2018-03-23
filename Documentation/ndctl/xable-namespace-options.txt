@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0
+
 <namespace>::
 A 'namespaceX.Y' device name. The keyword 'all' can be specified to carry out
 the operation on every namespace in the system, optionally filtered by region

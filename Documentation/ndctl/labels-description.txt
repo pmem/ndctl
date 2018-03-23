@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0
+
 DESCRIPTION
 -----------
 The namespace label area is a small persistent partition of capacity

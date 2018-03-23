@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0
+
 ndctl(1)
 =======
 
@@ -30,12 +32,7 @@ supported by the tool include, provisioning capacity (namespaces), as
 well as enumerating/enabling/disabling the devices (dimms, regions,
 namspaces) associated with an NVDIMM bus.
 
-COPYRIGHT
----------
-Copyright (c) 2016 - 2017, Intel Corporation. License GPLv2: GNU GPL
-version 2 <http://gnu.org/licenses/gpl.html>.  This is free software:
-you are free to change and redistribute it.  There is NO WARRANTY, to
-the extent permitted by law.
+include::../copyright.txt[]
 
 SEE ALSO
 --------

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0
+
 ndctl-inject-smart(1)
 =====================
 
@@ -90,12 +92,7 @@ OPTIONS
 
 include::human-option.txt[]
 
-COPYRIGHT
----------
-Copyright (c) 2018, Intel Corporation. License GPLv2: GNU GPL
-version 2 <http://gnu.org/licenses/gpl.html>.  This is free software:
-you are free to change and redistribute it.  There is NO WARRANTY, to
-the extent permitted by law.
+include::../copyright.txt[]
 
 SEE ALSO
 --------

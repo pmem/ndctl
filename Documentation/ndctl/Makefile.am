@@ -40,6 +40,7 @@ XML_DEPS = \
 	../../version.m4 \
 	Makefile \
 	asciidoc.conf \
+	../copyright.txt \
 	region-description.txt \
 	xable-region-options.txt \
 	dimm-description.txt \
@@ -56,6 +57,6 @@ RM ?= rm -f
 		--unsafe -andctl_version=$(VERSION) -o $@+ $< && \
 		mv $@+ $@
 
-%.1: %.xml
+%.1: %.xml $(XML_DEPS)
 	$(AM_V_GEN)$(RM) $@ && \
 		$(XMLTO) -o . -m ../manpage-normal.xsl man $<

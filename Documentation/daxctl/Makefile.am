@@ -22,6 +22,7 @@ CLEANFILES = $(man1_MANS)
 
 XML_DEPS = \
 	../../version.m4 \
+	../copyright.txt \
 	Makefile \
 	asciidoc.conf
 
@@ -33,6 +34,6 @@ RM ?= rm -f
 		--unsafe -adaxctl_version=$(VERSION) -o $@+ $< && \
 		mv $@+ $@
 
-%.1: %.xml
+%.1: %.xml $(XML_DEPS)
 	$(AM_V_GEN)$(RM) $@ && \
 		$(XMLTO) -o . -m ../manpage-normal.xsl man $<

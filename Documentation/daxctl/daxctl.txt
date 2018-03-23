@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0
+
 daxctl(1)
 =========
 
@@ -26,6 +28,8 @@ The daxctl utility provides enumeration and provisioning commands for
 the Linux kernel Device-DAX facility. This facility enables DAX mappings
 of performance / feature differentiated memory without need of a
 filesystem.
+
+include::../copyright.txt[]
 
 SEE ALSO
 --------
