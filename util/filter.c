@@ -14,7 +14,10 @@
 #include <string.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <unistd.h>
+#include <sys/stat.h>
 #include <util/util.h>
+#include <sys/types.h>
 #include <ndctl/ndctl.h>
 #include <util/filter.h>
 #include <ndctl/libndctl.h>
@@ -328,6 +331,13 @@ int util_filter_walk(struct ndctl_ctx *ctx, struct util_filter_ctx *fctx,
 	}
 
 	if (param->numa_node && strcmp(param->numa_node, "all") != 0) {
+		struct stat st;
+
+		if (stat("/sys/devices/system/node", &st) != 0) {
+			error("This system does not support NUMA");
+			return -EINVAL;
+		}
+
 		numa_node = strtol(param->numa_node, &end, 0);
 		if (end == param->numa_node || end[0]) {
 			error("invalid numa_node: '%s'\n", param->numa_node);
