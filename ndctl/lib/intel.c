@@ -441,8 +441,8 @@ static struct ndctl_cmd *intel_dimm_cmd_new_fw_start(struct ndctl_dimm *dimm)
 
 	BUILD_ASSERT(sizeof(struct nd_intel_fw_start) == 8);
 
-	cmd = alloc_intel_cmd(dimm, ND_INTEL_FW_START_UPDATE,
-			sizeof(cmd->intel->start) - 4, 4);
+	cmd = alloc_intel_cmd(dimm, ND_INTEL_FW_START_UPDATE, 0,
+			sizeof(cmd->intel->start));
 	if (!cmd)
 		return NULL;
 
