@@ -462,7 +462,7 @@ static int validate_namespace_options(struct ndctl_region *region,
 		struct ndctl_namespace *ndns, struct parsed_parameters *p)
 {
 	const char *region_name = ndctl_region_get_devname(region);
-	unsigned long long size_align = SZ_4K, units = 1;
+	unsigned long long size_align = SZ_4K, units = 1, resource;
 	unsigned int ways;
 	int rc = 0;
 
@@ -563,8 +563,9 @@ static int validate_namespace_options(struct ndctl_region *region,
 		 * the nfit_test use case where it is backed by vmalloc
 		 * memory.
 		 */
-		if (param.align_default && (ndctl_region_get_resource(region)
-					& (SZ_2M - 1))) {
+		resource = ndctl_region_get_resource(region);
+		if (param.align_default && resource < ULLONG_MAX
+				&& (resource & (SZ_2M - 1))) {
 			debug("%s: falling back to a 4K alignment\n",
 					region_name);
 			p->align = SZ_4K;
