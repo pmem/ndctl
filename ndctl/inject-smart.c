@@ -232,8 +232,8 @@ static int smart_set_thresh(struct ndctl_dimm *dimm)
 
 	rc = ndctl_cmd_submit(st_cmd);
 	if (rc) {
-		error("%s: smart threshold command failed: %s\n",
-			name, strerror(errno));
+		error("%s: smart threshold command failed: %s (%d)\n",
+			name, strerror(abs(rc)), rc);
 		goto out;
 	}
 
@@ -272,8 +272,8 @@ static int smart_set_thresh(struct ndctl_dimm *dimm)
 
 	rc = ndctl_cmd_submit(sst_cmd);
 	if (rc)
-		error("%s: smart set threshold command failed: %s\n",
-			name, strerror(errno));
+		error("%s: smart set threshold command failed: %s (%d)\n",
+			name, strerror(abs(rc)), rc);
 
 out:
 	ndctl_cmd_unref(sst_cmd);
@@ -291,14 +291,14 @@ out:
 		} \
 		rc = ndctl_cmd_smart_inject_##arg(si_cmd, true, sctx.arg); \
 		if (rc) { \
-			error("%s: smart inject %s cmd invalid: %s\n", \
-				name, #arg, strerror(errno)); \
+			error("%s: smart inject %s cmd invalid: %s (%d)\n", \
+				name, #arg, strerror(abs(rc)), rc); \
 			goto out; \
 		} \
 		rc = ndctl_cmd_submit(si_cmd); \
 		if (rc) { \
-			error("%s: smart inject %s command failed: %s\n", \
-				name, #arg, strerror(errno)); \
+			error("%s: smart inject %s command failed: %s (%d)\n", \
+				name, #arg, strerror(abs(rc)), rc); \
 			goto out; \
 		} \
 		ndctl_cmd_unref(si_cmd); \
@@ -315,14 +315,14 @@ out:
 		} \
 		rc = ndctl_cmd_smart_inject_##arg(si_cmd, true); \
 		if (rc) { \
-			error("%s: smart inject %s cmd invalid: %s\n", \
-				name, #arg, strerror(errno)); \
+			error("%s: smart inject %s cmd invalid: %s (%d)\n", \
+				name, #arg, strerror(abs(rc)), rc); \
 			goto out; \
 		} \
 		rc = ndctl_cmd_submit(si_cmd); \
 		if (rc) { \
-			error("%s: smart inject %s command failed: %s\n", \
-				name, #arg, strerror(errno)); \
+			error("%s: smart inject %s command failed: %s (%d)\n", \
+				name, #arg, strerror(abs(rc)), rc); \
 			goto out; \
 		} \
 		ndctl_cmd_unref(si_cmd); \
