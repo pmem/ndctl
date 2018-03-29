@@ -199,7 +199,8 @@ static int inject_error(struct ndctl_namespace *ndns, u64 offset, u64 length,
 
 	rc = ndctl_namespace_inject_error(ndns, offset, length, notify);
 	if (rc) {
-		fprintf(stderr, "Unable to inject error: %d\n", rc);
+		fprintf(stderr, "Unable to inject error: %s (%d)\n",
+			strerror(abs(rc)), rc);
 		return rc;
 	}
 
@@ -212,7 +213,8 @@ static int uninject_error(struct ndctl_namespace *ndns, u64 offset, u64 length)
 
 	rc = ndctl_namespace_uninject_error(ndns, offset, length);
 	if (rc) {
-		fprintf(stderr, "Unable to uninject error: %d\n", rc);
+		fprintf(stderr, "Unable to uninject error: %s (%d)\n",
+			strerror(abs(rc)), rc);
 		return rc;
 	}
 
@@ -232,7 +234,8 @@ static int injection_status(struct ndctl_namespace *ndns)
 
 	rc = ndctl_namespace_injection_status(ndns);
 	if (rc) {
-		fprintf(stderr, "Unable to get injection status: %d\n", rc);
+		fprintf(stderr, "Unable to get injection status: %s (%d)\n",
+			strerror(abs(rc)), rc);
 		return rc;
 	}
 

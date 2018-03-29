@@ -872,8 +872,8 @@ static int btt_discover_arenas(struct btt_chk *bttc)
 			}
 			ret = btt_write_info(bttc, btt_sb, cur_off);
 			if (ret) {
-				err(bttc, "Restoration of the info block failed: %d\n",
-					ret);
+				err(bttc, "Restoration of the info block failed: %s (%d)\n",
+					strerror(abs(ret)), ret);
 				goto out;
 			}
 		}
@@ -924,8 +924,8 @@ static int btt_create_mappings(struct btt_chk *bttc)
 		a->map.info = mmap(NULL, a->map.info_len, mmap_flags,
 			MAP_SHARED, bttc->fd, a->infooff);
 		if (a->map.info == MAP_FAILED) {
-			err(bttc, "mmap arena[%d].info [sz = %#lx, off = %#lx] failed: %d\n",
-				i, a->map.info_len, a->infooff, errno);
+			err(bttc, "mmap arena[%d].info [sz = %#lx, off = %#lx] failed: %s\n",
+				i, a->map.info_len, a->infooff, strerror(errno));
 			return -errno;
 		}
 
@@ -933,8 +933,8 @@ static int btt_create_mappings(struct btt_chk *bttc)
 		a->map.data = mmap(NULL, a->map.data_len, mmap_flags,
 			MAP_SHARED, bttc->fd, a->dataoff);
 		if (a->map.data == MAP_FAILED) {
-			err(bttc, "mmap arena[%d].data [sz = %#lx, off = %#lx] failed: %d\n",
-				i, a->map.data_len, a->dataoff, errno);
+			err(bttc, "mmap arena[%d].data [sz = %#lx, off = %#lx] failed: %s\n",
+				i, a->map.data_len, a->dataoff, strerror(errno));
 			return -errno;
 		}
 
@@ -942,8 +942,8 @@ static int btt_create_mappings(struct btt_chk *bttc)
 		a->map.map = mmap(NULL, a->map.map_len, mmap_flags,
 			MAP_SHARED, bttc->fd, a->mapoff);
 		if (a->map.map == MAP_FAILED) {
-			err(bttc, "mmap arena[%d].map [sz = %#lx, off = %#lx] failed: %d\n",
-				i, a->map.map_len, a->mapoff, errno);
+			err(bttc, "mmap arena[%d].map [sz = %#lx, off = %#lx] failed: %s\n",
+				i, a->map.map_len, a->mapoff, strerror(errno));
 			return -errno;
 		}
 
@@ -951,8 +951,8 @@ static int btt_create_mappings(struct btt_chk *bttc)
 		a->map.log = mmap(NULL, a->map.log_len, mmap_flags,
 			MAP_SHARED, bttc->fd, a->logoff);
 		if (a->map.log == MAP_FAILED) {
-			err(bttc, "mmap arena[%d].log [sz = %#lx, off = %#lx] failed: %d\n",
-				i, a->map.log_len, a->logoff, errno);
+			err(bttc, "mmap arena[%d].log [sz = %#lx, off = %#lx] failed: %s\n",
+				i, a->map.log_len, a->logoff, strerror(errno));
 			return -errno;
 		}
 
@@ -960,8 +960,8 @@ static int btt_create_mappings(struct btt_chk *bttc)
 		a->map.info2 = mmap(NULL, a->map.info2_len, mmap_flags,
 			MAP_SHARED, bttc->fd, a->info2off);
 		if (a->map.info2 == MAP_FAILED) {
-			err(bttc, "mmap arena[%d].info2 [sz = %#lx, off = %#lx] failed: %d\n",
-				i, a->map.info2_len, a->info2off, errno);
+			err(bttc, "mmap arena[%d].info2 [sz = %#lx, off = %#lx] failed: %s\n",
+				i, a->map.info2_len, a->info2off, strerror(errno));
 			return -errno;
 		}
 	}
@@ -1219,8 +1219,8 @@ int namespace_check(struct ndctl_namespace *ndns, bool verbose, bool force,
 	 */
 	rc = ndctl_namespace_set_raw_mode(ndns, 1);
 	if (rc < 0) {
-		err(bttc, "%s: failed to set the raw mode flag: %d\n",
-			devname, rc);
+		err(bttc, "%s: failed to set the raw mode flag: %s (%d)\n",
+			devname, strerror(abs(rc)), rc);
 		goto out_ns;
 	}
 	/*
@@ -1229,8 +1229,8 @@ int namespace_check(struct ndctl_namespace *ndns, bool verbose, bool force,
 	 */
 	rc = ndctl_namespace_enable(ndns);
 	if (rc != 0) {
-		err(bttc, "%s: failed to enable in raw mode: %d\n",
-			devname, rc);
+		err(bttc, "%s: failed to enable in raw mode: %s (%d)\n",
+			devname, strerror(abs(rc)), rc);
 		goto out_ns;
 	}
 

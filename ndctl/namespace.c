@@ -312,8 +312,9 @@ static const char *parse_namespace_options(int argc, const char **argv,
 do { \
 	int __rc = prefix##_##op(dev, p); \
 	if (__rc) { \
-		debug("%s: " #op " failed: %d\n", \
-				prefix##_get_devname(dev), __rc); \
+		debug("%s: " #op " failed: %s\n", \
+				prefix##_get_devname(dev), \
+				strerror(abs(__rc))); \
 		return __rc; \
 	} \
 } while (0)
