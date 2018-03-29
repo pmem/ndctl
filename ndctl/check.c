@@ -139,7 +139,7 @@ static int btt_write_info(struct btt_chk *bttc, struct btt_sb *btt_sb, u64 off)
 		err(bttc, "BTT info block at offset %#lx needs to be restored\n",
 			off);
 		repair_msg(bttc);
-		return -1;
+		return -EIO;
 	}
 	info(bttc, "Restoring BTT info block at offset %#lx\n", off);
 
@@ -184,7 +184,7 @@ static int btt_copy_to_info2(struct arena_info *a)
 	ms_align = (void *)rounddown((u64)a->map.info2, a->bttc->sys_page_size);
 	ms_size = max(BTT_INFO_SIZE, a->bttc->sys_page_size);
 	if (msync(ms_align, ms_size, MS_SYNC) < 0)
-		return errno;
+		return -errno;
 
 	return 0;
 }
@@ -231,7 +231,7 @@ static int btt_map_write(struct arena_info *a, u32 lba, u32 mapping)
 	ms_align = (void *)rounddown((u64)&a->map.map[lba],
 		a->bttc->sys_page_size);
 	if (msync(ms_align, a->bttc->sys_page_size, MS_SYNC) < 0)
-		return errno;
+		return -errno;
 
 	return 0;
 }
