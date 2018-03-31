@@ -16,6 +16,8 @@ asciidoc.conf: ../asciidoc.conf.in
 
 man1_MANS = \
 	ndctl.1 \
+	ndctl-wait-scrub.1 \
+	ndctl-start-scrub.1 \
 	ndctl-zero-labels.1 \
 	ndctl-read-labels.1 \
 	ndctl-write-labels.1 \
@@ -46,6 +48,7 @@ XML_DEPS = \
 	dimm-description.txt \
 	xable-dimm-options.txt \
 	xable-namespace-options.txt \
+	ars-description.txt \
 	labels-description.txt \
 	labels-options.txt
 

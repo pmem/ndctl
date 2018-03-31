@@ -1,0 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0
+
+DESCRIPTION
+-----------
+NVDIMM Address Range Scrub is a capability provided by platform firmware
+that allows for the discovery of memory errors by system software. It
+enables system software to pre-emptively avoid accesses that could lead
+to uncorrectable memory error handling events, and it otherwise allows
+memory errors to be enumerated.

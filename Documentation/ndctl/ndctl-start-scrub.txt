@@ -1,0 +1,61 @@
+// SPDX-License-Identifier: GPL-2.0
+
+ndctl-start-scrub(1)
+====================
+
+NAME
+----
+ndctl-start-scrub - start an Address Range Scrub (ARS) operation
+
+SYNOPSIS
+--------
+[verse]
+'ndctl start-scrub' [<bus-id> <bus-id2> ... <bus-idN>] [<options>]
+
+include::ars-description.txt[]
+
+The kernel provides a sysfs file ('scrub') that when written with the
+string "1\n" initiates an ARS operation. The 'ndctl start-scrub'
+operation starts an ARS, across all specified buses, and the kernel in
+turn proceeds to scrub every persistent memory address region on the
+specified buses.
+
+EXAMPLE
+-------
+Start a scrub on all nvdimm buses in the system. The json listing report
+only includes the buses that support ARS operations.
+[verse]
+
+# ndctl start-scrub
+[
+  {
+    "provider":"nfit_test.1",
+    "dev":"ndbus3",
+    "scrub_state":"active"
+  },
+  {
+    "provider":"nfit_test.0",
+    "dev":"ndbus2",
+    "scrub_state":"active"
+  }
+]
+
+When specifying an individual bus, or if there is only one bus in the
+system, the command reports whether ARS support is available.
+[verse]
+# ndctl start-scrub e820
+error starting scrub: Operation not supported
+
+OPTIONS
+-------
+-v::
+--verbose::
+	Emit debug messages for the ARS start process
+
+include::../copyright.txt[]
+
+SEE ALSO
+--------
+linkndctl:ndctl-wait-scrub[1],
+http://www.uefi.org/sites/default/files/resources/ACPI%206_2_A_Sept29.pdf[ACPI
+6.2 Specification Section 9.20.7.2 Address Range Scrubbing (ARS) Overview]

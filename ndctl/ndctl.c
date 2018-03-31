@@ -86,6 +86,8 @@ static struct cmd_struct commands[] = {
 	{ "inject-error", cmd_inject_error },
 	{ "update-firmware", cmd_update_firmware },
 	{ "inject-smart", cmd_inject_smart },
+	{ "wait-scrub", cmd_wait_scrub },
+	{ "start-scrub", cmd_start_scrub },
 	{ "list", cmd_list },
 	{ "help", cmd_help },
 	#ifdef ENABLE_TEST

@@ -3,6 +3,7 @@ include $(top_srcdir)/Makefile.am.in
 bin_PROGRAMS = ndctl
 
 ndctl_SOURCES = ndctl.c \
+		bus.c \
 		create-nfit.c \
 		namespace.c \
 		check.c \
