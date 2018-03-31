@@ -124,6 +124,7 @@ struct json_object *util_bus_to_json(struct ndctl_bus *bus)
 {
 	struct json_object *jbus = json_object_new_object();
 	struct json_object *jobj;
+	int scrub;
 
 	if (!jbus)
 		return NULL;
@@ -137,6 +138,15 @@ struct json_object *util_bus_to_json(struct ndctl_bus *bus)
 	if (!jobj)
 		goto err;
 	json_object_object_add(jbus, "dev", jobj);
+
+	scrub = ndctl_bus_get_scrub_state(bus);
+	if (scrub < 0)
+		return jbus;
+
+	jobj = json_object_new_string(scrub ? "active" : "idle");
+	if (!jobj)
+		goto err;
+	json_object_object_add(jbus, "scrub_state", jobj);
 
 	return jbus;
  err:

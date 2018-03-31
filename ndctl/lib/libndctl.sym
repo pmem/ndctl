@@ -355,4 +355,5 @@ global:
 	ndctl_namespace_write_cache_is_enabled;
 	ndctl_namespace_enable_write_cache;
 	ndctl_namespace_disable_write_cache;
+	ndctl_bus_get_scrub_state;
 } LIBNDCTL_14;

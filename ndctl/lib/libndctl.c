@@ -1114,29 +1114,58 @@ NDCTL_EXPORT int ndctl_bus_wait_probe(struct ndctl_bus *bus)
 	return rc < 0 ? -ENXIO : 0;
 }
 
-NDCTL_EXPORT unsigned int ndctl_bus_get_scrub_count(struct ndctl_bus *bus)
+static int __ndctl_bus_get_scrub_state(struct ndctl_bus *bus,
+		unsigned int *scrub_count, bool *active)
 {
 	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
 	char buf[SYSFS_ATTR_SIZE];
-	unsigned int scrub_count;
 	char in_progress = '\0';
 	int rc;
 
 	rc = sysfs_read_attr(ctx, bus->scrub_path, buf);
 	if (rc < 0)
-		return UINT_MAX;
+		return -EOPNOTSUPP;
 
-	rc = sscanf(buf, "%u%c", &scrub_count, &in_progress);
+	rc = sscanf(buf, "%u%c", scrub_count, &in_progress);
 	if (rc < 0)
-		return UINT_MAX;
-	if (rc == 0) {
-		/* unable to read scrub count */
-		return UINT_MAX;
-	}
-	if (rc >= 1)
-		return scrub_count;
+		return -ENXIO;
 
-	return UINT_MAX;
+	switch (rc) {
+	case 1:
+		*active = false;
+		return 0;
+	case 2:
+		if (in_progress == '+') {
+			*active = true;
+			return 0;
+		}
+		/* fall through */
+	default:
+		/* unable to read scrub count */
+		return -ENXIO;
+	}
+}
+
+NDCTL_EXPORT int ndctl_bus_get_scrub_state(struct ndctl_bus *bus)
+{
+	unsigned int scrub_count = 0;
+	bool active = false;
+	int rc;
+
+	rc = __ndctl_bus_get_scrub_state(bus, &scrub_count, &active);
+	if (rc < 0)
+		return rc;
+	return active;
+}
+
+NDCTL_EXPORT unsigned int ndctl_bus_get_scrub_count(struct ndctl_bus *bus)
+{
+	unsigned int scrub_count = 0;
+	bool active = false;
+
+	if (__ndctl_bus_get_scrub_state(bus, &scrub_count, &active))
+		return UINT_MAX;
+	return scrub_count;
 }
 
 /**
