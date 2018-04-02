@@ -1154,55 +1154,50 @@ NDCTL_EXPORT unsigned int ndctl_bus_get_scrub_count(struct ndctl_bus *bus)
 NDCTL_EXPORT int ndctl_bus_wait_for_scrub_completion(struct ndctl_bus *bus)
 {
 	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
-	unsigned int tmo = 120, scrub_count;
+	unsigned int scrub_count;
 	char buf[SYSFS_ATTR_SIZE];
-	char in_progress = '\0';
 	struct pollfd fds;
+	char in_progress;
 	int fd = 0, rc;
 
 	fd = open(bus->scrub_path, O_RDONLY|O_CLOEXEC);
+	memset(&fds, 0, sizeof(fds));
 	fds.fd = fd;
-	fds.events =  POLLPRI | POLLIN;
-	do {
+	for (;;) {
 		rc = sysfs_read_attr(ctx, bus->scrub_path, buf);
-		if (rc < 0)
+		if (rc < 0) {
+			rc = -EOPNOTSUPP;
 			break;
+		}
 
 		rc = sscanf(buf, "%u%c", &scrub_count, &in_progress);
-		if (rc < 0)
+		if (rc < 0) {
+			rc = -EOPNOTSUPP;
 			break;
-		else if (rc <= 1) {
+		}
+
+		if (rc == 1) {
 			/* scrub complete, break successfully */
 			rc = 0;
 			break;
 		} else if (rc == 2 && in_progress == '+') {
 			/* scrub in progress, wait */
-			rc = poll(&fds, 1, tmo);
+			rc = poll(&fds, 1, -1);
 			if (rc < 0) {
-				dbg(ctx, "poll error: %d\n", errno);
-				break;
-			} else if (rc == 0) {
-				dbg(ctx, "poll timeout after: %d seconds", tmo);
-				rc = -ENXIO;
+				rc = -errno;
+				dbg(ctx, "poll error: %s\n", strerror(errno));
 				break;
 			}
-			if (fds.revents & (POLLERR | POLLHUP | POLLNVAL)) {
-				dbg(ctx, "poll error, revents: %d\n",
-					fds.revents);
-				rc = -ENXIO;
-				break;
-			}
-		} else {
-			/* unknown condition */
-			rc = -ENXIO;
-			break;
+			dbg(ctx, "poll wake: revents: %d\n", fds.revents);
+			pread(fd, buf, 1, 0);
+			fds.revents = 0;
 		}
-	} while (in_progress);
+	}
 
 	dbg(ctx, "bus%d: scrub complete\n", ndctl_bus_get_id(bus));
 	if (fd)
 		close (fd);
-	return rc < 0 ? -ENXIO : 0;
+	return rc;
 }
 
 static int ndctl_bind(struct ndctl_ctx *ctx, struct kmod_module *module,
