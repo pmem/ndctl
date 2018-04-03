@@ -1055,6 +1055,9 @@ static int do_xaction_namespace(const char *namespace,
 					if (rc < 0)
 						return rc;
 					return 1;
+				default:
+					rc = -EINVAL;
+					break;
 				}
 				if (rc >= 0)
 					success++;

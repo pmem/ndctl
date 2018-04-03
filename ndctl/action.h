@@ -11,5 +11,7 @@ enum device_action {
 	ACTION_CREATE,
 	ACTION_DESTROY,
 	ACTION_CHECK,
+	ACTION_WAIT,
+	ACTION_START,
 };
 #endif /* __NDCTL_ACTION_H__ */
