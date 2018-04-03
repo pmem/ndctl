@@ -54,7 +54,6 @@ check_prereq "blockdev"
 
 reset()
 {
-	modprobe nfit_test
 	$ndctl disable-region -b "$bus" all
 	$ndctl zero-labels -b "$bus" all
 	$ndctl enable-region -b "$bus" all
@@ -97,6 +96,7 @@ test_mode()
 	$ndctl destroy-namespace $dev
 }
 
+modprobe nfit_test
 rc=1
 reset
 test_mode "raw"
