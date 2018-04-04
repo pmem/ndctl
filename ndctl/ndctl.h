@@ -13,7 +13,9 @@
 #ifndef __NDCTL_H__
 #define __NDCTL_H__
 
+#ifndef ARRAY_SIZE
 #include <ccan/array_size/array_size.h>
+#endif
 #include <linux/types.h>
 #include <sys/user.h>
 #include <unistd.h>

@@ -3,7 +3,7 @@ include $(top_srcdir)/Makefile.am.in
 %.pc: %.pc.in Makefile
 	$(SED_PROCESS)
 
-pkginclude_HEADERS = ../libndctl.h
+pkginclude_HEADERS = ../libndctl.h ../ndctl.h
 lib_LTLIBRARIES = libndctl.la
 
 libndctl_la_SOURCES =\

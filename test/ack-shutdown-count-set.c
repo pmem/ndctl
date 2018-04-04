@@ -15,11 +15,7 @@
 
 #include <ccan/array_size/array_size.h>
 #include <ndctl/libndctl.h>
-#ifdef HAVE_NDCTL_H
-#include <linux/ndctl.h>
-#else
 #include <ndctl.h>
-#endif
 #include <test.h>
 
 static int test_dimm(struct ndctl_dimm *dimm)
