@@ -1614,6 +1614,56 @@ static int validate_bdev(const char *devname, struct ndctl_btt *btt,
 	return rc;
 }
 
+static int validate_write_cache(struct ndctl_namespace *ndns)
+{
+	const char *devname = ndctl_namespace_get_devname(ndns);
+	int wc, mode, type, rc;
+
+	type = ndctl_namespace_get_type(ndns);
+	mode = ndctl_namespace_get_mode(ndns);
+	wc = ndctl_namespace_write_cache_is_enabled(ndns);
+
+	if ((type == ND_DEVICE_NAMESPACE_PMEM || type == ND_DEVICE_NAMESPACE_IO) &&
+			(mode == NDCTL_NS_MODE_FSDAX ||	mode == NDCTL_NS_MODE_RAW)) {
+		if (wc != 1) {
+			fprintf(stderr, "%s: expected write_cache enabled\n",
+				devname);
+			return -ENXIO;
+		}
+		rc = ndctl_namespace_disable_write_cache(ndns);
+		if (rc) {
+			fprintf(stderr, "%s: failed to disable write_cache\n",
+				devname);
+			return rc;
+		}
+		rc = ndctl_namespace_write_cache_is_enabled(ndns);
+		if (rc != 0) {
+			fprintf(stderr, "%s: write_cache could not be disabled\n",
+				devname);
+			return rc;
+		}
+		rc = ndctl_namespace_enable_write_cache(ndns);
+		if (rc) {
+			fprintf(stderr, "%s: failed to re-enable write_cache\n",
+				devname);
+			return rc;
+		}
+		rc = ndctl_namespace_write_cache_is_enabled(ndns);
+		if (rc != 1) {
+			fprintf(stderr, "%s: write_cache could not be re-enabled\n",
+				devname);
+			return rc;
+		}
+	} else {
+		if (wc == 0 || wc == 1) {
+			fprintf(stderr, "%s: expected write_cache to be absent\n",
+				devname);
+			return -ENXIO;
+		}
+	}
+	return 0;
+}
+
 static int check_namespaces(struct ndctl_region *region,
 		struct namespace **namespaces, enum ns_mode mode)
 {
@@ -1784,6 +1834,13 @@ static int check_namespaces(struct ndctl_region *region,
 			if (rc) {
 				fprintf(stderr, "%s: %s validate_%s failed\n",
 						__func__, devname, dax ? "dax" : "bdev");
+				break;
+			}
+
+			rc = validate_write_cache(ndns);
+			if (rc) {
+				fprintf(stderr, "%s: %s validate_write_cache failed\n",
+						__func__, devname);
 				break;
 			}
 
