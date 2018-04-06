@@ -97,6 +97,13 @@ void ndctl_set_log_priority(struct ndctl_ctx *ctx, int priority);
 void ndctl_set_userdata(struct ndctl_ctx *ctx, void *userdata);
 void *ndctl_get_userdata(struct ndctl_ctx *ctx);
 
+enum ndctl_persistence_domain {
+	PERSISTENCE_NONE = 0,
+	PERSISTENCE_MEM_CTRL = 10,
+	PERSISTENCE_CPU_CACHE = 20,
+	PERSISTENCE_UNKNOWN = INT_MAX,
+};
+
 struct ndctl_bus;
 struct ndctl_bus *ndctl_bus_get_first(struct ndctl_ctx *ctx);
 struct ndctl_bus *ndctl_bus_get_next(struct ndctl_bus *bus);
@@ -307,13 +314,6 @@ int ndctl_cmd_submit(struct ndctl_cmd *cmd);
 struct badblock {
 	unsigned long long offset;
 	unsigned int len;
-};
-
-enum ndctl_persistence_domain {
-	PERSISTENCE_NONE = 0,
-	PERSISTENCE_MEM_CTRL = 10,
-	PERSISTENCE_CPU_CACHE = 20,
-	PERSISTENCE_UNKNOWN = INT_MAX,
 };
 
 struct ndctl_region;
