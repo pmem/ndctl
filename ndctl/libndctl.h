@@ -490,6 +490,9 @@ struct ndctl_bb *ndctl_namespace_injection_get_next_bb(
         for (bb = ndctl_namespace_injection_get_first_bb(ndns); \
              bb != NULL; \
              bb = ndctl_namespace_injection_get_next_bb(ndns, bb))
+int ndctl_namespace_write_cache_is_enabled(struct ndctl_namespace *ndns);
+int ndctl_namespace_enable_write_cache(struct ndctl_namespace *ndns);
+int ndctl_namespace_disable_write_cache(struct ndctl_namespace *ndns);
 
 struct ndctl_btt;
 struct ndctl_btt *ndctl_btt_get_first(struct ndctl_region *region);

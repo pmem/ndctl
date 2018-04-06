@@ -3918,6 +3918,82 @@ NDCTL_EXPORT int ndctl_namespace_get_numa_node(struct ndctl_namespace *ndns)
     return ndns->numa_node;
 }
 
+static int __ndctl_namespace_set_write_cache(struct ndctl_namespace *ndns,
+		int state)
+{
+	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
+	struct ndctl_pfn *pfn = ndctl_namespace_get_pfn(ndns);
+	char buf[SYSFS_ATTR_SIZE];
+	int len = ndns->buf_len;
+	const char *bdev;
+	char path[50];
+
+	if (state != 1 && state != 0)
+		return -ENXIO;
+	if (pfn)
+		bdev = ndctl_pfn_get_block_device(pfn);
+	else
+		bdev = ndctl_namespace_get_block_device(ndns);
+
+	if (!bdev)
+		return -ENXIO;
+
+	if (snprintf(path, len, "/sys/block/%s/dax/write_cache", bdev) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_namespace_get_devname(ndns));
+		return -ENXIO;
+	}
+
+	sprintf(buf, "%d\n", state);
+	return sysfs_write_attr(ctx, path, buf);
+}
+
+NDCTL_EXPORT int ndctl_namespace_enable_write_cache(
+		struct ndctl_namespace *ndns)
+{
+	return __ndctl_namespace_set_write_cache(ndns, 1);
+}
+
+NDCTL_EXPORT int ndctl_namespace_disable_write_cache(
+		struct ndctl_namespace *ndns)
+{
+	return __ndctl_namespace_set_write_cache(ndns, 0);
+}
+
+NDCTL_EXPORT int ndctl_namespace_write_cache_is_enabled(
+		struct ndctl_namespace *ndns)
+{
+	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
+	struct ndctl_pfn *pfn = ndctl_namespace_get_pfn(ndns);
+	int len = ndns->buf_len, wc;
+	char buf[SYSFS_ATTR_SIZE];
+	const char *bdev;
+	char path[50];
+
+	if (pfn)
+		bdev = ndctl_pfn_get_block_device(pfn);
+	else
+		bdev = ndctl_namespace_get_block_device(ndns);
+
+	if (!bdev)
+		return -ENXIO;
+
+	if (snprintf(path, len, "/sys/block/%s/dax/write_cache", bdev) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_namespace_get_devname(ndns));
+		return -ENXIO;
+	}
+
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		return -ENXIO;
+
+	if (sscanf(buf, "%d", &wc) == 1)
+		if (wc)
+			return 1;
+
+	return 0;
+}
+
 NDCTL_EXPORT int ndctl_namespace_delete(struct ndctl_namespace *ndns)
 {
 	struct ndctl_region *region = ndctl_namespace_get_region(ndns);
