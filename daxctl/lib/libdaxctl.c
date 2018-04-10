@@ -29,6 +29,8 @@
 
 static const char *attrs = "dax_region";
 
+static void free_region(struct daxctl_region *region, struct list_head *head);
+
 /**
  * struct daxctl_ctx - library user context to find "nd" instances
  *
@@ -119,11 +121,17 @@ DAXCTL_EXPORT struct daxctl_ctx *daxctl_ref(struct daxctl_ctx *ctx)
  */
 DAXCTL_EXPORT void daxctl_unref(struct daxctl_ctx *ctx)
 {
+	struct daxctl_region *region, *_r;
+
 	if (ctx == NULL)
 		return;
 	ctx->refcount--;
 	if (ctx->refcount > 0)
 		return;
+
+	list_for_each_safe(&ctx->regions, region, _r, list)
+		free_region(region, &ctx->regions);
+
 	info(ctx, "context %p released\n", ctx);
 	free(ctx);
 }
