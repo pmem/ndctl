@@ -1080,11 +1080,9 @@ static int dimm_action(int argc, const char **argv, void *ctx,
 			rc = action(single, &actx);
 	}
 
-	if (actx.jdimms) {
+	if (actx.jdimms)
 		util_display_json_array(actx.f_out, actx.jdimms,
 				JSON_C_TO_STRING_PRETTY);
-		json_object_put(actx.jdimms);
-	}
 
 	if (actx.f_out != stdout)
 		fclose(actx.f_out);
