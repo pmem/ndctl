@@ -181,6 +181,8 @@ struct ndctl_region {
 	FILE *badblocks;
 	struct badblock bb;
 	enum ndctl_persistence_domain persistence_domain;
+	/* file descriptor for deep flush sysfs entry */
+	int flush_fd;
 };
 
 /**
@@ -511,6 +513,8 @@ static void free_region(struct ndctl_region *region)
 	free(region->region_path);
 	if (region->badblocks)
 		fclose(region->badblocks);
+	if (region->flush_fd > 0)
+		close(region->flush_fd);
 	free(region);
 }
 
@@ -1048,6 +1052,14 @@ NDCTL_EXPORT unsigned long long ndctl_region_get_resource(struct ndctl_region *r
 
 	return strtoull(buf, NULL, 0);
 }
+
+NDCTL_EXPORT int ndctl_region_deep_flush(struct ndctl_region *region)
+{
+	int rc = pwrite(region->flush_fd, "1\n", 1, 0);
+
+	return (rc == -1) ? -errno : 0;
+}
+
 
 NDCTL_EXPORT const char *ndctl_bus_get_cmd_name(struct ndctl_bus *bus, int cmd)
 {
@@ -1828,6 +1840,7 @@ static void *add_region(void *parent, int id, const char *region_base)
 	struct ndctl_bus *bus = parent;
 	struct ndctl_ctx *ctx = bus->ctx;
 	char *path = calloc(1, strlen(region_base) + 100);
+	int perm;
 
 	if (!path)
 		return NULL;
@@ -1903,6 +1916,24 @@ static void *add_region(void *parent, int id, const char *region_base)
 	else
 		region->persistence_domain = region_get_pd_type(buf);
 
+	sprintf(path, "%s/deep_flush", region_base);
+	region->flush_fd = open(path, O_RDWR | O_CLOEXEC);
+	if (region->flush_fd == -1)
+		goto out;
+
+	if (pread(region->flush_fd, buf, 1, 0) == -1) {
+		close(region->flush_fd);
+		region->flush_fd = -1;
+		goto out;
+	}
+
+	perm = strtol(buf, NULL, 0);
+	if (perm == 0) {
+		region->flush_fd = -1;
+		close(region->flush_fd);
+	}
+
+ out:
 	free(path);
 	return region;
 

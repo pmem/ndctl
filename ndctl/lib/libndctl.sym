@@ -357,4 +357,5 @@ global:
 	ndctl_namespace_disable_write_cache;
 	ndctl_bus_get_scrub_state;
 	ndctl_bus_start_scrub;
+	ndctl_region_deep_flush;
 } LIBNDCTL_14;
