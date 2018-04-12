@@ -54,10 +54,10 @@ eval $(echo $json | sed -e "$json2var")
 [ $dev = "x" ] && echo "fail: $LINENO" && exit 1
 [ $mode != "raw" ] && echo "fail: $LINENO" &&  exit 1
 
-# convert pmem to memory mode
-json=$($NDCTL create-namespace -m memory -f -e $dev)
+# convert pmem to fsdax mode
+json=$($NDCTL create-namespace -m fsdax -f -e $dev)
 eval $(echo $json | sed -e "$json2var")
-[ $mode != "memory" ] && echo "fail: $LINENO" &&  exit 1
+[ $mode != "fsdax" ] && echo "fail: $LINENO" &&  exit 1
 
 # convert pmem to sector mode
 json=$($NDCTL create-namespace -m sector -l $SECTOR_SIZE -f -e $dev)

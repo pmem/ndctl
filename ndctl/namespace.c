@@ -103,7 +103,7 @@ OPT_STRING('n', "name", &param.name, "name", \
 OPT_STRING('s', "size", &param.size, "size", \
 	"specify the namespace size in bytes (default: available capacity)"), \
 OPT_STRING('m', "mode", &param.mode, "operation-mode", \
-	"specify a mode for the namespace, 'sector', 'memory', or 'raw'"), \
+	"specify a mode for the namespace, 'sector', 'fsdax', 'devdax' or 'raw'"), \
 OPT_STRING('M', "map", &param.map, "memmap-location", \
 	"specify 'mem' or 'dev' for the location of the memmap"), \
 OPT_STRING('l', "sector-size", &param.sector_size, "lba-size", \
@@ -533,7 +533,7 @@ static int validate_namespace_options(struct ndctl_region *region,
 			 * supported a 2M default alignment when
 			 * ndctl_pfn_has_align() returns false.
 			 */
-			debug("%s not support 'align' for memory mode\n",
+			debug("%s not support 'align' for fsdax mode\n",
 					region_name);
 			return -EAGAIN;
 		} else if (p->mode == NDCTL_NS_MODE_DAX
@@ -542,7 +542,7 @@ static int validate_namespace_options(struct ndctl_region *region,
 			 * Unlike the pfn case, we require the kernel to
 			 * have 'align' support for device-dax.
 			 */
-			debug("%s not support 'align' for dax mode\n",
+			debug("%s not support 'align' for devdax mode\n",
 					region_name);
 			return -EAGAIN;
 		} else if (!param.align_default
@@ -696,7 +696,7 @@ static int validate_namespace_options(struct ndctl_region *region,
 
 		if (ndns && p->mode != NDCTL_NS_MODE_MEMORY
 			&& p->mode != NDCTL_NS_MODE_DAX) {
-			debug("%s: --map= only valid for memory mode namespace\n",
+			debug("%s: --map= only valid for fsdax mode namespace\n",
 				ndctl_namespace_get_devname(ndns));
 			return -EINVAL;
 		}
@@ -709,10 +709,10 @@ static int validate_namespace_options(struct ndctl_region *region,
 		struct ndctl_pfn *pfn = ndctl_region_get_pfn_seed(region);
 
 		if (!pfn && param.mode_default) {
-			debug("%s memory mode not available\n", region_name);
+			debug("%s fsdax mode not available\n", region_name);
 			p->mode = NDCTL_NS_MODE_RAW;
 		} else if (!pfn) {
-			error("operation failed, %s memory mode not available\n",
+			error("operation failed, %s fsdax mode not available\n",
 					region_name);
 			return -EINVAL;
 		}
@@ -723,7 +723,7 @@ static int validate_namespace_options(struct ndctl_region *region,
 		struct ndctl_dax *dax = ndctl_region_get_dax_seed(region);
 
 		if (!dax) {
-			error("operation failed, %s dax mode not available\n",
+			error("operation failed, %s devdax mode not available\n",
 					region_name);
 			return -EINVAL;
 		}
@@ -759,7 +759,7 @@ static int namespace_create(struct ndctl_region *region)
 		return rc;
 
 	if (ndctl_region_get_ro(region)) {
-		debug("%s: read-only, inelligible for namespace creation\n",
+		debug("%s: read-only, ineligible for namespace creation\n",
 			devname);
 		return -EAGAIN;
 	}

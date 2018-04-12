@@ -69,10 +69,10 @@ fi
 size_raw=$size
 sector_raw=$sector
 
-# convert pmem to memory mode
-json=$($NDCTL create-namespace -m memory -f -e $dev)
+# convert pmem to fsdax mode
+json=$($NDCTL create-namespace -m fsdax -f -e $dev)
 eval $(echo $json | sed -e "$json2var")
-[ $mode != "memory" ] && echo "fail: $LINENO" && exit 1
+[ $mode != "fsdax" ] && echo "fail: $LINENO" && exit 1
 
 # check for errors relative to the offset injected by the pfn device
 read sector len < /sys/block/$blockdev/badblocks

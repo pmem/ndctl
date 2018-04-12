@@ -28,7 +28,7 @@ trap 'err $LINENO' ERR
 # sample json:
 #{
 #  "dev":"namespace7.0",
-#  "mode":"memory",
+#  "mode":"fsdax",
 #  "size":"60.00 MiB (62.92 MB)",
 #  "uuid":"f1baa71a-d165-4da4-bb6a-083a2b0e6469",
 #  "blockdev":"pmem7",

@@ -45,7 +45,7 @@ OPTIONS
 
 	NOTE: The offset is interpreted in different ways based on the "mode"
 	of the namespace. For "raw" mode, the offset is the base namespace
-	offset. For "memory" mode (i.e. a "pfn" namespace), the offset is
+	offset. For "fsdax" mode (i.e. a "pfn" namespace), the offset is
 	relative to the user-visible part of the namespace, and the offset
 	introduced by the kernel's metadata will be accounted for. For a
 	"sector" mode namespace (i.e. a "BTT" namespace), the offset is

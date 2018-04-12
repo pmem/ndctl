@@ -43,8 +43,8 @@ fi
 dev=$(./dax-dev)
 for align in 4k 2m 1g
 do
-	json=$($NDCTL create-namespace -m dax -a $align -f -e $dev)
-	chardev=$(echo $json | jq -r ". | select(.mode == \"dax\") | .daxregion.devices[0].chardev")
+	json=$($NDCTL create-namespace -m devdax -a $align -f -e $dev)
+	chardev=$(echo $json | jq -r ". | select(.mode == \"devdax\") | .daxregion.devices[0].chardev")
 	if [ align = "1g" ]; then
 		bs="1g"
 	else
@@ -80,7 +80,7 @@ do
 	# revert namespace to raw mode
 	json=$($NDCTL create-namespace -m raw -f -e $dev)
 	mode=$(echo $json | jq -r ".mode")
-	[ $mode != "memory" ] && echo "fail: $LINENO" && exit 1
+	[ $mode != "fsdax" ] && echo "fail: $LINENO" && exit 1
 done
 
 exit 0

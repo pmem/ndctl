@@ -878,7 +878,7 @@ static int __check_pfn_create(struct ndctl_region *region,
 
 	mode = ndctl_namespace_get_mode(ndns);
 	if (mode >= 0 && mode != NDCTL_NS_MODE_MEMORY)
-		fprintf(stderr, "%s: expected memory mode got: %d\n",
+		fprintf(stderr, "%s: expected fsdax mode got: %d\n",
 				devname, mode);
 
 	if (namespace->ro == (rc == 0)) {

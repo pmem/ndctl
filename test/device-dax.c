@@ -58,7 +58,7 @@ static int setup_device_dax(struct ndctl_namespace *ndns, unsigned long __align)
 	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
 	char align[32];
 	const char *argv[] = {
-		"__func__", "-v", "-m", "dax", "-M", "dev", "-f", "-a", align,
+		"__func__", "-v", "-m", "devdax", "-M", "dev", "-f", "-a", align,
 		"-e", "",
 	};
 	int argc = ARRAY_SIZE(argv);
@@ -68,13 +68,13 @@ static int setup_device_dax(struct ndctl_namespace *ndns, unsigned long __align)
 	return create_namespace(argc, argv, ctx);
 }
 
-static int setup_pmem_memory_mode(struct ndctl_namespace *ndns,
+static int setup_pmem_fsdax_mode(struct ndctl_namespace *ndns,
 		unsigned long __align)
 {
 	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
 	char align[32];
 	const char *argv[] = {
-		"__func__", "-v", "-m", "memory", "-M", "dev", "-f", "-a",
+		"__func__", "-v", "-m", "fsdax", "-M", "dev", "-f", "-a",
 		align, "-e", "",
 	};
 	int argc = ARRAY_SIZE(argv);
@@ -175,8 +175,8 @@ static int __test_device_dax(unsigned long align, int loglevel,
 	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 7, 0)))
 		return 77;
 
-	/* setup up memory mode pmem device and seed with verification data */
-	rc = setup_pmem_memory_mode(ndns, align);
+	/* setup up fsdax mode pmem device and seed with verification data */
+	rc = setup_pmem_fsdax_mode(ndns, align);
 	if (rc < 0 || !(pfn = ndctl_namespace_get_pfn(ndns))) {
 		fprintf(stderr, "%s: failed device-dax setup\n",
 				ndctl_namespace_get_devname(ndns));

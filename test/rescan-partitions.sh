@@ -100,7 +100,7 @@ modprobe nfit_test
 rc=1
 reset
 test_mode "raw"
-test_mode "memory"
+test_mode "fsdax"
 test_mode "sector"
 
 exit 0

@@ -48,10 +48,10 @@ rc=1
 query=". | sort_by(.available_size) | reverse | .[0].dev"
 region=$($NDCTL list $BUS -t pmem -Ri | jq -r "$query")
 
-json=$($NDCTL create-namespace $BUS -r $region -t pmem -m dax -a 4096 -s 16M)
-chardev1=$(echo $json | jq ". | select(.mode == \"dax\") | .daxregion.devices[0].chardev")
-json=$($NDCTL create-namespace $BUS -r $region -t pmem -m dax -a 4096 -s 16M)
-chardev2=$(echo $json | jq ". | select(.mode == \"dax\") | .daxregion.devices[0].chardev")
+json=$($NDCTL create-namespace $BUS -r $region -t pmem -m devdax -a 4096 -s 16M)
+chardev1=$(echo $json | jq ". | select(.mode == \"devdax\") | .daxregion.devices[0].chardev")
+json=$($NDCTL create-namespace $BUS -r $region -t pmem -m devdax -a 4096 -s 16M)
+chardev2=$(echo $json | jq ". | select(.mode == \"devdax\") | .daxregion.devices[0].chardev")
 
 # cleanup
 $NDCTL disable-region $BUS all

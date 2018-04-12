@@ -44,9 +44,9 @@ fallocate -l 1GiB $MNT/$FILE
 umount $MNT
 
 # convert pmem to put the memmap on the device
-json=$($NDCTL create-namespace -m memory -M dev -f -e $dev)
+json=$($NDCTL create-namespace -m fsdax -M dev -f -e $dev)
 eval $(echo $json | sed -e "$json2var")
-[ $mode != "memory" ] && echo "fail: $LINENO" &&  exit 1
+[ $mode != "fsdax" ] && echo "fail: $LINENO" &&  exit 1
 
 #note the blockdev returned from ndctl create-namespace lacks the /dev prefix
 mkfs.ext4 /dev/$blockdev
@@ -57,7 +57,7 @@ umount $MNT
 
 json=$($NDCTL create-namespace -m raw -f -e $dev)
 eval $(echo $json | sed -e "$json2var")
-[ $mode != "memory" ] && echo "fail: $LINENO" &&  exit 1
+[ $mode != "fsdax" ] && echo "fail: $LINENO" &&  exit 1
 
 mkfs.xfs -f /dev/$blockdev
 mount /dev/$blockdev $MNT -o dax
@@ -66,9 +66,9 @@ fallocate -l 1GiB $MNT/$FILE
 umount $MNT
 
 # convert pmem to put the memmap on the device
-json=$($NDCTL create-namespace -m memory -M dev -f -e $dev)
+json=$($NDCTL create-namespace -m fsdax -M dev -f -e $dev)
 eval $(echo $json | sed -e "$json2var")
-[ $mode != "memory" ] && echo "fail: $LINENO" &&  exit 1
+[ $mode != "fsdax" ] && echo "fail: $LINENO" &&  exit 1
 
 mkfs.xfs -f /dev/$blockdev
 mount /dev/$blockdev $MNT -o dax
@@ -79,6 +79,6 @@ umount $MNT
 # revert namespace to raw mode
 json=$($NDCTL create-namespace -m raw -f -e $dev)
 eval $(echo $json | sed -e "$json2var")
-[ $mode != "memory" ] && echo "fail: $LINENO" &&  exit 1
+[ $mode != "fsdax" ] && echo "fail: $LINENO" &&  exit 1
 
 exit 0

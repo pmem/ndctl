@@ -49,12 +49,12 @@ rc=1
 query=". | sort_by(.available_size) | reverse | .[0].dev"
 region=$($NDCTL list $BUS -t pmem -Ri | jq -r "$query")
 
-json=$($NDCTL create-namespace $BUS -r $region -t pmem -m dax -a 4096)
-chardev=$(echo $json | jq ". | select(.mode == \"dax\") | .daxregion.devices[0].chardev")
+json=$($NDCTL create-namespace $BUS -r $region -t pmem -m devdax -a 4096)
+chardev=$(echo $json | jq ". | select(.mode == \"devdax\") | .daxregion.devices[0].chardev")
 
 #{
 #  "dev":"namespace6.0",
-#  "mode":"dax",
+#  "mode":"devdax",
 #  "size":64004096,
 #  "uuid":"83a925dd-42b5-4ac6-8588-6a50bfc0c001",
 #  "daxregion":{
@@ -70,7 +70,7 @@ chardev=$(echo $json | jq ". | select(.mode == \"dax\") | .daxregion.devices[0].
 #  }
 #}
 
-json1=$($NDCTL list $BUS --mode=dax --namespaces)
+json1=$($NDCTL list $BUS --mode=devdax --namespaces)
 eval $(echo $json1 | sed -e "$json2var")
 nsdev=$dev
 

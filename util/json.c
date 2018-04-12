@@ -675,19 +675,13 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 			size = ndctl_pfn_get_size(pfn);
 		else /* native/static memory mode */
 			size = ndctl_namespace_get_size(ndns);
-		if (flags & UTIL_JSON_HUMAN)
-			jobj = json_object_new_string("fsdax");
-		else
-			jobj = json_object_new_string("memory");
+		jobj = json_object_new_string("fsdax");
 		break;
 	case NDCTL_NS_MODE_DAX:
 		if (!dax)
 			goto err;
 		size = ndctl_dax_get_size(dax);
-		if (flags & UTIL_JSON_HUMAN)
-			jobj = json_object_new_string("devdax");
-		else
-			jobj = json_object_new_string("dax");
+		jobj = json_object_new_string("devdax");
 		break;
 	case NDCTL_NS_MODE_SAFE:
 		if (!btt)

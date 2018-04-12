@@ -49,7 +49,7 @@ EXAMPLE
   "namespaces":[
     {
       "dev":"namespace0.0",
-      "mode":"memory",
+      "mode":"fsdax",
       "size":8589934592,
       "blockdev":"pmem0"
     }
@@ -132,11 +132,11 @@ include::xable-region-options.txt[]
 -X::
 --device-dax::
 	Include device-dax ("daxregion") details when a namespace is in
-	"dax" mode.
+	"devdax" mode.
 [verse]
 {
   "dev":"namespace0.0",
-  "mode":"dax",
+  "mode":"devdax",
   "size":4225761280,
   "uuid":"18ae1bbb-bb62-4efc-86df-4a5caacb5dcc",
   "daxregion":{
