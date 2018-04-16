@@ -1929,8 +1929,8 @@ static void *add_region(void *parent, int id, const char *region_base)
 
 	perm = strtol(buf, NULL, 0);
 	if (perm == 0) {
-		region->flush_fd = -1;
 		close(region->flush_fd);
+		region->flush_fd = -1;
 	}
 
  out:
