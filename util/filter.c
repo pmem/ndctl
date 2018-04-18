@@ -25,101 +25,144 @@
 
 #define NUMA_NO_NODE    (-1)
 
-struct ndctl_bus *util_bus_filter(struct ndctl_bus *bus, const char *ident)
+struct ndctl_bus *util_bus_filter(struct ndctl_bus *bus, const char *__ident)
 {
-	char *end = NULL;
+	char *end = NULL, *ident, *save;
 	unsigned long bus_id, id;
-	const char *provider, *devname;
+	const char *provider, *devname, *name;
 
-	if (!ident || strcmp(ident, "all") == 0)
+	if (!__ident || strcmp(__ident, "all") == 0)
 		return bus;
 
-	bus_id = strtoul(ident, &end, 0);
-	if (end == ident || end[0])
-		bus_id = ULONG_MAX;
+	ident = strdup(__ident);
+	if (!ident)
+		return NULL;
 
-	provider = ndctl_bus_get_provider(bus);
-	devname = ndctl_bus_get_devname(bus);
-	id = ndctl_bus_get_id(bus);
+	for (name = strtok_r(ident, " ", &save); name;
+			name = strtok_r(NULL, " ", &save)) {
+		bus_id = strtoul(ident, &end, 0);
+		if (end == ident || end[0])
+			bus_id = ULONG_MAX;
 
-	if (bus_id < ULONG_MAX && bus_id == id)
+		provider = ndctl_bus_get_provider(bus);
+		devname = ndctl_bus_get_devname(bus);
+		id = ndctl_bus_get_id(bus);
+
+		if (bus_id < ULONG_MAX && bus_id == id)
+			break;
+
+		if (bus_id == ULONG_MAX && (strcmp(provider, name) == 0
+				|| strcmp(devname, name) == 0))
+			break;
+	}
+	free(ident);
+
+	if (name)
 		return bus;
-
-	if (bus_id == ULONG_MAX && (strcmp(ident, provider) == 0
-				|| strcmp(ident, devname) == 0))
-		return bus;
-
 	return NULL;
 }
 
 struct ndctl_region *util_region_filter(struct ndctl_region *region,
-		const char *ident)
+		const char *__ident)
 {
-	char *end = NULL;
-	const char *name;
+	char *end = NULL, *ident, *save;
+	const char *name, *region_name;
 	unsigned long region_id, id;
 
-	if (!ident || strcmp(ident, "all") == 0)
+	if (!__ident || strcmp(__ident, "all") == 0)
 		return region;
 
-	region_id = strtoul(ident, &end, 0);
-	if (end == ident || end[0])
-		region_id = ULONG_MAX;
+	ident = strdup(__ident);
+	if (!ident)
+		return NULL;
 
-	name = ndctl_region_get_devname(region);
-	id = ndctl_region_get_id(region);
+	for (name = strtok_r(ident, " ", &save); name;
+			name = strtok_r(NULL, " ", &save)) {
+		region_id = strtoul(ident, &end, 0);
+		if (end == ident || end[0])
+			region_id = ULONG_MAX;
 
-	if (region_id < ULONG_MAX && region_id == id)
+		region_name = ndctl_region_get_devname(region);
+		id = ndctl_region_get_id(region);
+
+		if (region_id < ULONG_MAX && region_id == id)
+			break;
+
+		if (region_id == ULONG_MAX && strcmp(region_name, name) == 0)
+			break;
+	}
+	free(ident);
+
+	if (name)
 		return region;
-
-	if (region_id == ULONG_MAX && strcmp(ident, name) == 0)
-		return region;
-
 	return NULL;
 }
 
 struct ndctl_namespace *util_namespace_filter(struct ndctl_namespace *ndns,
-		const char *ident)
+		const char *__ident)
 {
 	struct ndctl_region *region = ndctl_namespace_get_region(ndns);
 	unsigned long region_id, ndns_id;
+	const char *name;
+	char *ident, *save;
 
-	if (!ident || strcmp(ident, "all") == 0)
+	if (!__ident || strcmp(__ident, "all") == 0)
 		return ndns;
 
-	if (strcmp(ident, ndctl_namespace_get_devname(ndns)) == 0)
-		return ndns;
+	ident = strdup(__ident);
+	if (!ident)
+		return NULL;
 
-	if (sscanf(ident, "%ld.%ld", &region_id, &ndns_id) == 2
-			&& ndctl_region_get_id(region) == region_id
-			&& ndctl_namespace_get_id(ndns) == ndns_id)
-		return ndns;
+	for (name = strtok_r(ident, " ", &save); name;
+			name = strtok_r(NULL, " ", &save)) {
+		if (strcmp(name, ndctl_namespace_get_devname(ndns)) == 0)
+			break;
 
+		if (sscanf(name, "%ld.%ld", &region_id, &ndns_id) == 2
+				&& ndctl_region_get_id(region) == region_id
+				&& ndctl_namespace_get_id(ndns) == ndns_id)
+			break;
+	}
+	free(ident);
+
+	if (name)
+		return ndns;
 	return NULL;
 }
 
-struct ndctl_dimm *util_dimm_filter(struct ndctl_dimm *dimm, const char *ident)
+struct ndctl_dimm *util_dimm_filter(struct ndctl_dimm *dimm,
+		const char *__ident)
 {
-	char *end = NULL;
-	const char *name;
+	char *end = NULL, *ident, *save;
+	const char *name, *dimm_name;
 	unsigned long dimm_id, id;
 
-	if (!ident || strcmp(ident, "all") == 0)
+	if (!__ident || strcmp(__ident, "all") == 0)
 		return dimm;
 
-	dimm_id = strtoul(ident, &end, 0);
-	if (end == ident || end[0])
-		dimm_id = ULONG_MAX;
+	ident = strdup(__ident);
+	if (!ident)
+		return NULL;
 
-	name = ndctl_dimm_get_devname(dimm);
-	id = ndctl_dimm_get_id(dimm);
+	for (name = strtok_r(ident, " ", &save); name;
+			name = strtok_r(NULL, " ", &save)) {
+		dimm_id = strtoul(ident, &end, 0);
+		if (end == ident || end[0])
+			dimm_id = ULONG_MAX;
 
-	if (dimm_id < ULONG_MAX && dimm_id == id)
+		dimm_name = ndctl_dimm_get_devname(dimm);
+		id = ndctl_dimm_get_id(dimm);
+
+		if (dimm_id < ULONG_MAX && dimm_id == id)
+			break;
+
+		if (dimm_id == ULONG_MAX && strcmp(dimm_name, name) == 0)
+			break;
+	}
+	free(ident);
+
+	if (name)
 		return dimm;
-
-	if (dimm_id == ULONG_MAX && strcmp(ident, name) == 0)
-		return dimm;
-
 	return NULL;
 }
 
