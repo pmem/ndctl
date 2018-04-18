@@ -33,6 +33,7 @@ man1_MANS = \
 	ndctl-destroy-namespace.1 \
 	ndctl-check-namespace.1 \
 	ndctl-inject-error.1 \
+	ndctl-inject-smart.1 \
 	ndctl-update-firmware.1 \
 	ndctl-list.1
 
