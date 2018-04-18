@@ -33,5 +33,4 @@ layout: pmdk
 ---
 #### daxctl man pages
 * [daxctl](daxctl.md)
-* [daxctl-io](daxctl-io.md)
 * [daxctl-list](daxctl-list.md)
