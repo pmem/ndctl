@@ -47,7 +47,7 @@ Namespace block offset in 512 byte sized blocks where the error is to be injecte
 
     NOTE: The offset is interpreted in different ways based on the "mode"
     of the namespace. For "raw" mode, the offset is the base namespace
-    offset. For "memory" mode (i.e. a "pfn" namespace), the offset is
+    offset. For "fsdax" mode (i.e. a "pfn" namespace), the offset is
     relative to the user-visible part of the namespace, and the offset
     introduced by the kernel's metadata will be accounted for. For a
     "sector" mode namespace (i.e. a "BTT" namespace), the offset is
@@ -79,11 +79,15 @@ This option is only valid when injecting errors. By default, the error inject co
 `-v; --verbose`  
 Emit debug messages for the error injection process
 
+<!-- -->
+
 `-u; --human`  
 Format numbers representing storage sizes, or offsets as human readable strings with units instead of the default machine-friendly raw-integer data. Convert other numeric fields into hexadecimal strings.
 
 `-r; --region=`  
-A *regionX* device name, or a region id number. The keyword *all* can be specified to carry out the operation on every region in the system, optionally filtered by bus id (see --bus= option).
+    A 'regionX' device name, or a region id number. The keyword 'all' can
+    be specified to carry out the operation on every region in the system,
+    optionally filtered by bus id (see --bus= option).
 
 `-b; --bus=`  
 Enforce that the operation only be carried on devices that are attached to the given bus. Where *bus* can be a provider name or a bus id number.
@@ -91,7 +95,7 @@ Enforce that the operation only be carried on devices that are attached to the g
 COPYRIGHT
 =========
 
-Copyright (c) 2016 - 2017, Intel Corporation. License GPLv2: GNU GPL version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.
+Copyright (c) 2016 - 2018, Intel Corporation. License GPLv2: GNU GPL version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.
 
 SEE ALSO
 ========

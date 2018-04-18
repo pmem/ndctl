@@ -3,7 +3,7 @@ title: ndctl
 layout: pmdk
 ---
 [View the Project on GitHub](https://github.com/pmem/ndctl)  
-**Generated from ndctl-v59.2**  
+**Generated from ndctl-v60**  
 
 ---
 
@@ -24,7 +24,9 @@ layout: pmdk
 * [ndctl-inject-smart](ndctl-inject-smart.md)
 * [ndctl-list](ndctl-list.md)
 * [ndctl-read-labels](ndctl-read-labels.md)
+* [ndctl-start-scrub](ndctl-start-scrub.md)
 * [ndctl-update-firmware](ndctl-update-firmware.md)
+* [ndctl-wait-scrub](ndctl-wait-scrub.md)
 * [ndctl-write-labels](ndctl-write-labels.md)
 * [ndctl-zero-labels](ndctl-zero-labels.md)
 

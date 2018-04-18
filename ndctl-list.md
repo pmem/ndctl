@@ -46,7 +46,7 @@ EXAMPLE
       "namespaces":[
         {
           "dev":"namespace0.0",
-          "mode":"memory",
+          "mode":"fsdax",
           "size":8589934592,
           "blockdev":"pmem0"
         }
@@ -57,7 +57,9 @@ OPTIONS
 =======
 
 `-r; --region=`  
-A *regionX* device name, or a region id number. The keyword *all* can be specified to carry out the operation on every region in the system, optionally filtered by bus id (see --bus= option).
+    A 'regionX' device name, or a region id number. The keyword 'all' can
+    be specified to carry out the operation on every region in the system,
+    optionally filtered by bus id (see --bus= option).
 
 `-b; --bus=`  
 Enforce that the operation only be carried on devices that are attached to the given bus. Where *bus* can be a provider name or a bus id number.
@@ -75,6 +77,9 @@ Filter listing by region type (*pmem* or *blk*)
 
 `-m; --mode=`  
 Filter listing by the mode (*raw*, *fsdax*, *sector* or *devdax*) of the namespace(s).
+
+`-U; --numa-node=`  
+Filter listing by numa node
 
 `-B; --buses`  
 Include bus info in the listing
@@ -100,12 +105,24 @@ Include dimm health info in the listing. For example:
 >       }
 >     }
 
+`-F; --firmware`  
+Include dimm firmware info in the listing. For example:
+
+>     {
+>       "dev":"nmem0",
+>       "firmware":{
+>           "current_version":0,
+>           "next_version":1,
+>           "need_powercycle":true
+>       }
+>     }
+
 `-X; --device-dax`  
-Include device-dax ("daxregion") details when a namespace is in "dax" mode.
+Include device-dax ("daxregion") details when a namespace is in "devdax" mode.
 
 >     {
 >       "dev":"namespace0.0",
->       "mode":"dax",
+>       "mode":"devdax",
 >       "size":4225761280,
 >       "uuid":"18ae1bbb-bb62-4efc-86df-4a5caacb5dcc",
 >       "daxregion":{
@@ -181,7 +198,7 @@ Format numbers representing storage sizes, or offsets as human readable strings 
 COPYRIGHT
 =========
 
-Copyright (c) 2016 - 2017, Intel Corporation. License GPLv2: GNU GPL version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.
+Copyright (c) 2016 - 2018, Intel Corporation. License GPLv2: GNU GPL version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.
 
 SEE ALSO
 ========

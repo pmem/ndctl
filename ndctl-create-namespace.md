@@ -88,30 +88,14 @@ Unless this option is specified the *reconfigure namespace* operation will fail 
 `-L; --autolabel; --no-autolabel`  
 Legacy NVDIMM devices do not support namespace labels. In that case the kernel creates region-sized namespaces that can not be deleted. Their mode can be changed, but they can not be resized smaller than their parent region. This is termed a "label-less namespace". In contrast, NVDIMMs and hypervisors that support the ACPI 6.2 label area definition (ACPI 6.2 Section 6.5.10 NVDIMM Label Methods) support "labelled namespace" operation.
 
-    There are two cases where the kernel will default to
-    label-less operation:
+-   There are two cases where the kernel will default to label-less operation:
 
--   NVDIMM does not support labels
+    -   NVDIMM does not support labels
 
--   The NVDIMM supports labels, but the Label Index Block (see UEFI 2.7) is not present and there is no capacity aliasing between *blk* and *pmem* regions.
+    -   The NVDIMM supports labels, but the Label Index Block (see UEFI 2.7) is not present and there is no capacity aliasing between *blk* and *pmem* regions.
 
-        In the latter case the configuration can be upgraded to
-        labelled operation by writing an index block on all DIMMs in a
-        region and re-enabling that region. The 'autolabel' capability
-        of 'ndctl create-namespace --reconfig' tries to do this by
-        default if it can determine that all DIMM capacity is
-        referenced by the namespace being reconfigured. It will
-        otherwise fail to autolabel and remain in label-less mode if
-        it finds a DIMM contributes capacity to more than one region.
-        This check prevents inadvertent data loss of that other region
-        is in active use. The --autolabel option is implied by
-        default, the --no-autolabel option can be used to disable this
-        behavior. When automatic labeling fails and labelled operation
-        is still desired the safety policy can be bypassed by the
-        following commands, note that all data on all regions is
-        forfeited by running these commands:
+-   In the latter case the configuration can be upgraded to labelled operation by writing an index block on all DIMMs in a region and re-enabling that region. The *autolabel* capability of *ndctl create-namespace --reconfig* tries to do this by default if it can determine that all DIMM capacity is referenced by the namespace being reconfigured. It will otherwise fail to autolabel and remain in label-less mode if it finds a DIMM contributes capacity to more than one region. This check prevents inadvertent data loss of that other region is in active use. The --autolabel option is implied by default, the --no-autolabel option can be used to disable this behavior. When automatic labeling fails and labelled operation is still desired the safety policy can be bypassed by the following commands, note that all data on all regions is forfeited by running these commands:
 
-        [verse]
         ndctl disable-region all
         ndctl init-labels all
         ndctl enable-region all
@@ -120,7 +104,9 @@ Legacy NVDIMM devices do not support namespace labels. In that case the kernel c
 Emit debug messages for the namespace creation process
 
 `-r; --region=`  
-A *regionX* device name, or a region id number. The keyword *all* can be specified to carry out the operation on every region in the system, optionally filtered by bus id (see --bus= option).
+    A 'regionX' device name, or a region id number. The keyword 'all' can
+    be specified to carry out the operation on every region in the system,
+    optionally filtered by bus id (see --bus= option).
 
 `-b; --bus=`  
 Enforce that the operation only be carried on devices that are attached to the given bus. Where *bus* can be a provider name or a bus id number.
@@ -128,7 +114,7 @@ Enforce that the operation only be carried on devices that are attached to the g
 COPYRIGHT
 =========
 
-Copyright (c) 2016 - 2017, Intel Corporation. License GPLv2: GNU GPL version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.
+Copyright (c) 2016 - 2018, Intel Corporation. License GPLv2: GNU GPL version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.
 
 SEE ALSO
 ========

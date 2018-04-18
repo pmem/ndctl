@@ -21,7 +21,7 @@ The namespace label area is a small persistent partition of capacity available o
 OPTIONS
 =======
 
-`<memory device(s)&gt;…  
+`<memory device(s)>`  
 One or more *nmemX* device names. The keyword *all* can be specified to operate on every dimm in the system, optionally filtered by bus id (see --bus= option).
 
 `-b; --bus=`  
