@@ -104,7 +104,7 @@ cat <<- EOF > index.md
 	layout: pmdk
 	---
 	[View the Project on GitHub](https://github.com/pmem/ndctl)  
-	**Generated from $build_tag**  
+	**Generated from [$build_tag](https://github.com/pmem/ndctl/releases/tag/$build_ver) [[tree]](https://github.com/pmem/ndctl/tree/$build_ver)**  
 
 	---
 
