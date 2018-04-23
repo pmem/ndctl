@@ -434,7 +434,7 @@ intel_fw_info_get_field32(cmd, query_interval)
 intel_fw_info_get_field32(cmd, max_query_time);
 intel_fw_info_get_field64(cmd, run_version);
 
-static unsigned long long intel_cmd_fw_info_get_next_version(
+static unsigned long long intel_cmd_fw_info_get_updated_version(
 		struct ndctl_cmd *cmd)
 {
 	if (intel_fw_get_info_valid(cmd) < 0)
@@ -720,7 +720,7 @@ struct ndctl_dimm_ops * const intel_dimm_ops = &(struct ndctl_dimm_ops) {
 	.fw_info_get_query_interval = intel_cmd_fw_info_get_query_interval,
 	.fw_info_get_max_query_time = intel_cmd_fw_info_get_max_query_time,
 	.fw_info_get_run_version = intel_cmd_fw_info_get_run_version,
-	.fw_info_get_next_version = intel_cmd_fw_info_get_next_version,
+	.fw_info_get_updated_version = intel_cmd_fw_info_get_updated_version,
 	.new_fw_start_update = intel_dimm_cmd_new_fw_start,
 	.fw_start_get_context = intel_cmd_fw_start_get_context,
 	.new_fw_send = intel_dimm_cmd_new_fw_send,

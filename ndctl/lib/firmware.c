@@ -93,7 +93,7 @@ firmware_cmd_op(fw_info_get_max_send_len, unsigned int, 0)
 firmware_cmd_op(fw_info_get_query_interval, unsigned int, 0)
 firmware_cmd_op(fw_info_get_max_query_time, unsigned int, 0)
 firmware_cmd_op(fw_info_get_run_version, unsigned long long, 0)
-firmware_cmd_op(fw_info_get_next_version, unsigned long long, 0)
+firmware_cmd_op(fw_info_get_updated_version, unsigned long long, 0)
 firmware_cmd_op(fw_start_get_context, unsigned int, 0)
 firmware_cmd_op(fw_fquery_get_fw_rev, unsigned long long, 0)
 
