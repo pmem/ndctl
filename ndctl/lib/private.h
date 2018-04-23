@@ -314,7 +314,7 @@ struct ndctl_dimm_ops {
 	unsigned int (*fw_info_get_query_interval)(struct ndctl_cmd *);
 	unsigned int (*fw_info_get_max_query_time)(struct ndctl_cmd *);
 	unsigned long long (*fw_info_get_run_version)(struct ndctl_cmd *);
-	unsigned long long (*fw_info_get_next_version)(struct ndctl_cmd *);
+	unsigned long long (*fw_info_get_updated_version)(struct ndctl_cmd *);
 	struct ndctl_cmd *(*new_fw_start_update)(struct ndctl_dimm *);
 	unsigned int (*fw_start_get_context)(struct ndctl_cmd *);
 	struct ndctl_cmd *(*new_fw_send)(struct ndctl_cmd *,

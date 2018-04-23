@@ -640,7 +640,7 @@ unsigned int ndctl_cmd_fw_info_get_max_send_len(struct ndctl_cmd *cmd);
 unsigned int ndctl_cmd_fw_info_get_query_interval(struct ndctl_cmd *cmd);
 unsigned int ndctl_cmd_fw_info_get_max_query_time(struct ndctl_cmd *cmd);
 unsigned long long ndctl_cmd_fw_info_get_run_version(struct ndctl_cmd *cmd);
-unsigned long long ndctl_cmd_fw_info_get_next_version(struct ndctl_cmd *cmd);
+unsigned long long ndctl_cmd_fw_info_get_updated_version(struct ndctl_cmd *cmd);
 unsigned int ndctl_cmd_fw_start_get_context(struct ndctl_cmd *cmd);
 unsigned long long ndctl_cmd_fw_fquery_get_fw_rev(struct ndctl_cmd *cmd);
 enum ND_FW_STATUS ndctl_cmd_fw_xlat_firmware_status(struct ndctl_cmd *cmd);
