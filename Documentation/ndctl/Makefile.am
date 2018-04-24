@@ -9,10 +9,21 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-do_subst = sed -e 's,UTILITY,ndctl,g'
+if USE_ASCIIDOCTOR
 
+do_subst = sed -e 's,@Utility@,Ndctl,g' -e's,@utility@,ndctl,g'
+CONFFILE = asciidoctor-extensions.rb
+asciidoctor-extensions.rb: ../asciidoctor-extensions.rb.in
+	$(AM_V_GEN) $(do_subst) < $< > $@
+
+else
+
+do_subst = sed -e 's,UTILITY,ndctl,g'
+CONFFILE = asciidoc.conf
 asciidoc.conf: ../asciidoc.conf.in
 	$(AM_V_GEN) $(do_subst) < $< > $@
+
+endif
 
 man1_MANS = \
 	ndctl.1 \
@@ -42,7 +53,7 @@ CLEANFILES = $(man1_MANS)
 XML_DEPS = \
 	../../version.m4 \
 	Makefile \
-	asciidoc.conf \
+	$(CONFFILE) \
 	../copyright.txt \
 	region-description.txt \
 	xable-region-options.txt \
@@ -55,6 +66,18 @@ XML_DEPS = \
 
 RM ?= rm -f
 
+if USE_ASCIIDOCTOR
+
+%.1: %.txt $(XML_DEPS)
+	$(AM_V_GEN)$(RM) $@+ $@ && \
+		$(ASCIIDOC) -b manpage -d manpage -acompat-mode \
+		-I. -rasciidoctor-extensions \
+		-amansource=ndctl -amanmanual="ndctl Manual" \
+		-andctl_version=$(VERSION) -o $@+ $< && \
+		mv $@+ $@
+
+else
+
 %.xml: %.txt $(XML_DEPS)
 	$(AM_V_GEN)$(RM) $@+ $@ && \
 		$(ASCIIDOC) -b docbook -d manpage -f asciidoc.conf \
@@ -64,3 +87,5 @@ RM ?= rm -f
 %.1: %.xml $(XML_DEPS)
 	$(AM_V_GEN)$(RM) $@ && \
 		$(XMLTO) -o . -m ../manpage-normal.xsl man $<
+
+endif

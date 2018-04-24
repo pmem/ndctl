@@ -42,16 +42,29 @@ AS_IF([test "x$enable_docs" = "xyes"], [
 ])
 AM_CONDITIONAL([ENABLE_DOCS], [test "x$enable_docs" = "xyes"])
 
-AC_CHECK_PROG(ASCIIDOC, [asciidoc], [$(which asciidoc)], [missing])
+AC_ARG_ENABLE([asciidoctor],
+	AS_HELP_STRING([--enable-asciidoctor],
+	[use asciidoctor for documentation build]),
+	[], enable_asciidoctor=no)
+AM_CONDITIONAL([USE_ASCIIDOCTOR], [test "x$enable_asciidoctor" = "xyes"])
+if test "x$enable_asciidoctor" = "xyes"; then
+	asciidoc="asciidoctor"
+else
+	asciidoc="asciidoc"
+fi
+AC_CHECK_PROG(ASCIIDOC, [$asciidoc], [$(which $asciidoc)], [missing])
 if test "x$ASCIIDOC" = xmissing -a "x$enable_docs" = "xyes"; then
-       AC_MSG_ERROR([asciidoc needed to build documentation])
+	AC_MSG_ERROR([$asciidoc needed to build documentation])
 fi
 AC_SUBST([ASCIIDOC])
+
+if test x"$asciidoc" = x"asciidoc"; then
 AC_CHECK_PROG(XMLTO, [xmlto], [$(which xmlto)], [missing])
 if test "x$XMLTO" = xmissing -a "x$enable_docs" = "xyes"; then
        AC_MSG_ERROR([xmlto needed to build documentation])
 fi
 AC_SUBST([XMLTO])
+fi
 
 AC_C_TYPEOF
 AC_DEFINE([HAVE_STATEMENT_EXPR], 1, [Define to 1 if you have statement expressions.])
