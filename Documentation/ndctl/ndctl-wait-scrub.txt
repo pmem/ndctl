@@ -25,7 +25,7 @@ EXAMPLE
 -------
 Wait for scrub on all nvdimm buses in the system. The json listing
 report at the end only includes the buses that support ARS operations.
-[verse]
+----
 # ndctl wait-scrub
 [
   {
@@ -39,12 +39,14 @@ report at the end only includes the buses that support ARS operations.
     "scrub_state":"idle"
   }
 ]
+----
 
 When specifying an individual bus, or if there is only one bus in the
 system, the command reports whether ARS support is available.
-[verse]
+----
 # ndctl wait-scrub e820
 error waiting for scrub completion: Operation not supported
+----
 
 OPTIONS
 -------

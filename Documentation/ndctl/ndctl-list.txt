@@ -23,10 +23,9 @@ ndctl list --namespaces --bus=all --region=all
 
 EXAMPLE
 -------
-[verse]
+----
 # ndctl list --buses --namespaces
 
-["literal"]
 {
   "provider":"nfit_test.1",
   "dev":"ndbus2",
@@ -55,6 +54,7 @@ EXAMPLE
     }
   ]
 }
+----
 
 OPTIONS
 -------
@@ -67,8 +67,9 @@ include::xable-region-options.txt[]
 	An 'nmemX' device name, or dimm id number. Filter listing by
 	devices that reference the given dimm. For example to see all
 	namespaces comprised of storage capacity on nmem0:
-[verse]
+----
 # ndctl list --dimm=nmem0 --namespaces
+----
 
 -n::
 --namespace=::
@@ -201,7 +202,7 @@ include::xable-region-options.txt[]
 
 include::human-option.txt[]
 
-[verse]
+----
 # ndctl list --region=7
 {
   "dev":"region7",
@@ -211,8 +212,9 @@ include::human-option.txt[]
   "iset_id":-6382611090938810793,
   "badblock_count":8
 }
+----
 
-[verse]
+----
 # ndctl list --human --region=7
 {
   "dev":"region7",
@@ -222,6 +224,7 @@ include::human-option.txt[]
   "iset_id":"0xa76c6907811fae57",
   "badblock_count":8
 }
+----
 
 include::../copyright.txt[]
 

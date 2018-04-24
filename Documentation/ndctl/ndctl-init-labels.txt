@@ -26,7 +26,7 @@ the DIMM.
 EXAMPLE
 -------
 Find the DIMMs that comprise a given region:
-[verse]
+----
 # ndctl list -RD --region=region1
 {
   "dimms":[
@@ -51,23 +51,28 @@ Find the DIMMs that comprise a given region:
     }
   ]
 }
+----
 
 Disable that region so the DIMM label area can be written from
 userspace:
-[verse]
+----
 # ndctl disable-region region1
+----
 
 Initialize labels:
-[verse]
+----
 # ndctl init-labels nmem0
+----
 
 Re-enable the region:
-[verse]
+----
 # ndctl enable-region region1
+----
 
 Create a namespace in that region:
-[verse]
+----
 # ndctl create-namespace --region=region1
+----
 
 OPTIONS
 -------

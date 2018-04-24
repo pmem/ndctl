@@ -24,7 +24,7 @@ EXAMPLE
 -------
 Start a scrub on all nvdimm buses in the system. The json listing report
 only includes the buses that support ARS operations.
-[verse]
+----
 
 # ndctl start-scrub
 [
@@ -39,12 +39,14 @@ only includes the buses that support ARS operations.
     "scrub_state":"active"
   }
 ]
+----
 
 When specifying an individual bus, or if there is only one bus in the
 system, the command reports whether ARS support is available.
-[verse]
+----
 # ndctl start-scrub e820
 error starting scrub: Operation not supported
+----
 
 OPTIONS
 -------
