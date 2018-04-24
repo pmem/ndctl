@@ -15,6 +15,8 @@ Makefile.in
 *.1
 Documentation/daxctl/asciidoc.conf
 Documentation/ndctl/asciidoc.conf
+Documentation/daxctl/asciidoctor-extensions.rb
+Documentation/ndctl/asciidoctor-extensions.rb
 .dirstamp
 daxctl/daxctl
 daxctl/lib/libdaxctl.la
