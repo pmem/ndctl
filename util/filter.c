@@ -31,7 +31,7 @@ struct ndctl_bus *util_bus_filter(struct ndctl_bus *bus, const char *__ident)
 	unsigned long bus_id, id;
 	const char *provider, *devname, *name;
 
-	if (!__ident || strcmp(__ident, "all") == 0)
+	if (!__ident)
 		return bus;
 
 	ident = strdup(__ident);
@@ -40,6 +40,9 @@ struct ndctl_bus *util_bus_filter(struct ndctl_bus *bus, const char *__ident)
 
 	for (name = strtok_r(ident, " ", &save); name;
 			name = strtok_r(NULL, " ", &save)) {
+		if (strcmp(name, "all") == 0)
+			break;
+
 		bus_id = strtoul(ident, &end, 0);
 		if (end == ident || end[0])
 			bus_id = ULONG_MAX;
@@ -69,7 +72,7 @@ struct ndctl_region *util_region_filter(struct ndctl_region *region,
 	const char *name, *region_name;
 	unsigned long region_id, id;
 
-	if (!__ident || strcmp(__ident, "all") == 0)
+	if (!__ident)
 		return region;
 
 	ident = strdup(__ident);
@@ -78,6 +81,9 @@ struct ndctl_region *util_region_filter(struct ndctl_region *region,
 
 	for (name = strtok_r(ident, " ", &save); name;
 			name = strtok_r(NULL, " ", &save)) {
+		if (strcmp(name, "all") == 0)
+			break;
+
 		region_id = strtoul(ident, &end, 0);
 		if (end == ident || end[0])
 			region_id = ULONG_MAX;
@@ -106,7 +112,7 @@ struct ndctl_namespace *util_namespace_filter(struct ndctl_namespace *ndns,
 	const char *name;
 	char *ident, *save;
 
-	if (!__ident || strcmp(__ident, "all") == 0)
+	if (!__ident)
 		return ndns;
 
 	ident = strdup(__ident);
@@ -115,6 +121,9 @@ struct ndctl_namespace *util_namespace_filter(struct ndctl_namespace *ndns,
 
 	for (name = strtok_r(ident, " ", &save); name;
 			name = strtok_r(NULL, " ", &save)) {
+		if (strcmp(name, "all") == 0)
+			break;
+
 		if (strcmp(name, ndctl_namespace_get_devname(ndns)) == 0)
 			break;
 
@@ -137,7 +146,7 @@ struct ndctl_dimm *util_dimm_filter(struct ndctl_dimm *dimm,
 	const char *name, *dimm_name;
 	unsigned long dimm_id, id;
 
-	if (!__ident || strcmp(__ident, "all") == 0)
+	if (!__ident)
 		return dimm;
 
 	ident = strdup(__ident);
@@ -146,6 +155,9 @@ struct ndctl_dimm *util_dimm_filter(struct ndctl_dimm *dimm,
 
 	for (name = strtok_r(ident, " ", &save); name;
 			name = strtok_r(NULL, " ", &save)) {
+		if (strcmp(name, "all") == 0)
+			break;
+
 		dimm_id = strtoul(ident, &end, 0);
 		if (end == ident || end[0])
 			dimm_id = ULONG_MAX;
