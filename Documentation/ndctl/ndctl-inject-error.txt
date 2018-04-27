@@ -18,6 +18,13 @@ ndctl-inject-error can be used to ask the platform to simulate media errors
 in the NVDIMM address space to aid debugging and development of features
 related to error handling.
 
+By default, injecting an error actually only injects an error to the first 'n'
+bytes of the block, where 'n' is the output of ndctl_cmd_ars_cap_get_size().
+In other words, we only inject one 'ars_unit' per sector. This is sufficient
+for Linux to mark the whole sector as bad, and will show up as such in the
+various 'badblocks' lists in the kernel. If multiple blocks are being injected,
+only the first 'n' bytes of each block specified will be injected as errors.
+
 WARNING: These commands are DANGEROUS and can cause data loss. They are
 only provided for testing and debugging purposes.
 
