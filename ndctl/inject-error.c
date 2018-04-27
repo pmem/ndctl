@@ -54,8 +54,8 @@ static struct inject_ctx {
 	u64 block;
 	u64 count;
 	unsigned int op_mask;
-	unsigned long flags;
-	bool notify;
+	unsigned long json_flags;
+	unsigned int inject_flags;
 } ictx;
 
 #define BASE_OPTIONS() \
@@ -92,9 +92,9 @@ static int inject_init(void)
 {
 	if (!param.clear && !param.status) {
 		ictx.op_mask |= 1 << OP_INJECT;
-		ictx.notify = true;
+		ictx.inject_flags |= (1 << NDCTL_NS_INJECT_NOTIFY);
 		if (param.no_notify)
-			ictx.notify = false;
+			ictx.inject_flags &= ~(1 << NDCTL_NS_INJECT_NOTIFY);
 	}
 	if (param.clear) {
 		if (param.status) {
@@ -144,7 +144,7 @@ static int inject_init(void)
 	}
 
 	if (param.human)
-		ictx.flags |= UTIL_JSON_HUMAN;
+		ictx.json_flags |= UTIL_JSON_HUMAN;
 
 	return 0;
 }
@@ -152,14 +152,15 @@ static int inject_init(void)
 static int ns_errors_to_json(struct ndctl_namespace *ndns,
 		unsigned int start_count)
 {
-	unsigned long flags = ictx.flags | UTIL_JSON_MEDIA_ERRORS;
+	unsigned long json_flags = ictx.json_flags | UTIL_JSON_MEDIA_ERRORS;
 	struct ndctl_bus *bus = ndctl_namespace_get_bus(ndns);
 	struct json_object *jndns;
 	unsigned int count;
 	int rc, tmo = 30;
 
 	/* only wait for scrubs for the inject and notify case */
-	if ((ictx.op_mask & (1 << OP_INJECT)) && ictx.notify) {
+	if ((ictx.op_mask & (1 << OP_INJECT)) &&
+			(ictx.inject_flags & (1 << NDCTL_NS_INJECT_NOTIFY))) {
 		do {
 			/* wait for a scrub to start */
 			count = ndctl_bus_get_scrub_count(bus);
@@ -177,7 +178,7 @@ static int ns_errors_to_json(struct ndctl_namespace *ndns,
 		}
 	}
 
-	jndns = util_namespace_to_json(ndns, flags);
+	jndns = util_namespace_to_json(ndns, json_flags);
 	if (jndns)
 		printf("%s\n", json_object_to_json_string_ext(jndns,
 				JSON_C_TO_STRING_PRETTY));
@@ -185,7 +186,7 @@ static int ns_errors_to_json(struct ndctl_namespace *ndns,
 }
 
 static int inject_error(struct ndctl_namespace *ndns, u64 offset, u64 length,
-		bool notify)
+		unsigned int flags)
 {
 	struct ndctl_bus *bus = ndctl_namespace_get_bus(ndns);
 	unsigned int scrub_count;
@@ -197,7 +198,7 @@ static int inject_error(struct ndctl_namespace *ndns, u64 offset, u64 length,
 		return -ENXIO;
 	}
 
-	rc = ndctl_namespace_inject_error(ndns, offset, length, notify);
+	rc = ndctl_namespace_inject_error2(ndns, offset, length, flags);
 	if (rc) {
 		fprintf(stderr, "Unable to inject error: %s (%d)\n",
 			strerror(abs(rc)), rc);
@@ -207,11 +208,12 @@ static int inject_error(struct ndctl_namespace *ndns, u64 offset, u64 length,
 	return ns_errors_to_json(ndns, scrub_count);
 }
 
-static int uninject_error(struct ndctl_namespace *ndns, u64 offset, u64 length)
+static int uninject_error(struct ndctl_namespace *ndns, u64 offset, u64 length,
+		unsigned int flags)
 {
 	int rc;
 
-	rc = ndctl_namespace_uninject_error(ndns, offset, length);
+	rc = ndctl_namespace_uninject_error2(ndns, offset, length, flags);
 	if (rc) {
 		fprintf(stderr, "Unable to uninject error: %s (%d)\n",
 			strerror(abs(rc)), rc);
@@ -254,7 +256,7 @@ static int injection_status(struct ndctl_namespace *ndns)
 
 		block = ndctl_bb_get_block(bb);
 		count = ndctl_bb_get_count(bb);
-		jbb = util_badblock_rec_to_json(block, count, ictx.flags);
+		jbb = util_badblock_rec_to_json(block, count, ictx.json_flags);
 		if (!jbb)
 			break;
 		json_object_array_add(jbbs, jbb);
@@ -280,13 +282,14 @@ static int err_inject_ns(struct ndctl_namespace *ndns)
 	while (op_mask) {
 		if (op_mask & (1 << OP_INJECT)) {
 			rc = inject_error(ndns, ictx.block, ictx.count,
-				ictx.notify);
+				ictx.inject_flags);
 			if (rc)
 				return rc;
 			op_mask &= ~(1 << OP_INJECT);
 		}
 		if (op_mask & (1 << OP_CLEAR)) {
-			rc = uninject_error(ndns, ictx.block, ictx.count);
+			rc = uninject_error(ndns, ictx.block, ictx.count,
+				ictx.inject_flags);
 			if (rc)
 				return rc;
 			op_mask &= ~(1 << OP_CLEAR);

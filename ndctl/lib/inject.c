@@ -117,7 +117,7 @@ static int ndctl_namespace_get_clear_unit(struct ndctl_namespace *ndns)
 }
 
 static int ndctl_namespace_inject_one_error(struct ndctl_namespace *ndns,
-		unsigned long long block, bool notify)
+		unsigned long long block, unsigned int flags)
 {
 	struct ndctl_bus *bus = ndctl_namespace_get_bus(ndns);
 	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
@@ -147,7 +147,7 @@ static int ndctl_namespace_inject_one_error(struct ndctl_namespace *ndns,
 	err_inj = (struct nd_cmd_ars_err_inj *)&pkg->nd_payload[0];
 	err_inj->err_inj_spa_range_base = offset;
 	err_inj->err_inj_spa_range_length = length;
-	if (notify)
+	if (flags & (1 << NDCTL_NS_INJECT_NOTIFY))
 		err_inj->err_inj_options |=
 			(1 << ND_ARS_ERR_INJ_OPT_NOTIFY);
 
@@ -162,8 +162,9 @@ static int ndctl_namespace_inject_one_error(struct ndctl_namespace *ndns,
 	return rc;
 }
 
-NDCTL_EXPORT int ndctl_namespace_inject_error(struct ndctl_namespace *ndns,
-		unsigned long long block, unsigned long long count, bool notify)
+NDCTL_EXPORT int ndctl_namespace_inject_error2(struct ndctl_namespace *ndns,
+		unsigned long long block, unsigned long long count,
+		unsigned int flags)
 {
 	struct ndctl_bus *bus = ndctl_namespace_get_bus(ndns);
 	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
@@ -176,7 +177,7 @@ NDCTL_EXPORT int ndctl_namespace_inject_error(struct ndctl_namespace *ndns,
 		return -EOPNOTSUPP;
 
 	for (i = 0; i < count; i++) {
-		rc = ndctl_namespace_inject_one_error(ndns, block + i, notify);
+		rc = ndctl_namespace_inject_one_error(ndns, block + i, flags);
 		if (rc) {
 			err(ctx, "Injection failed at block %llx\n",
 				block + i);
@@ -186,8 +187,15 @@ NDCTL_EXPORT int ndctl_namespace_inject_error(struct ndctl_namespace *ndns,
 	return rc;
 }
 
+NDCTL_EXPORT int ndctl_namespace_inject_error(struct ndctl_namespace *ndns,
+		unsigned long long block, unsigned long long count, bool notify)
+{
+	return ndctl_namespace_inject_error2(ndns, block, count,
+		notify ? (1 << NDCTL_NS_INJECT_NOTIFY) : 0);
+}
+
 static int ndctl_namespace_uninject_one_error(struct ndctl_namespace *ndns,
-		unsigned long long block)
+		unsigned long long block, unsigned int flags)
 {
 	struct ndctl_bus *bus = ndctl_namespace_get_bus(ndns);
 	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
@@ -230,8 +238,9 @@ static int ndctl_namespace_uninject_one_error(struct ndctl_namespace *ndns,
 	return rc;
 }
 
-NDCTL_EXPORT int ndctl_namespace_uninject_error(struct ndctl_namespace *ndns,
-		unsigned long long block, unsigned long long count)
+NDCTL_EXPORT int ndctl_namespace_uninject_error2(struct ndctl_namespace *ndns,
+		unsigned long long block, unsigned long long count,
+		unsigned int flags)
 {
 	struct ndctl_bus *bus = ndctl_namespace_get_bus(ndns);
 	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
@@ -244,7 +253,8 @@ NDCTL_EXPORT int ndctl_namespace_uninject_error(struct ndctl_namespace *ndns,
 		return -EOPNOTSUPP;
 
 	for (i = 0; i < count; i++) {
-		rc = ndctl_namespace_uninject_one_error(ndns, block + i);
+		rc = ndctl_namespace_uninject_one_error(ndns, block + i,
+			flags);
 		if (rc) {
 			err(ctx, "Un-injection failed at block %llx\n",
 				block + i);
@@ -252,6 +262,12 @@ NDCTL_EXPORT int ndctl_namespace_uninject_error(struct ndctl_namespace *ndns,
 		}
 	}
 	return rc;
+}
+
+NDCTL_EXPORT int ndctl_namespace_uninject_error(struct ndctl_namespace *ndns,
+		unsigned long long block, unsigned long long count)
+{
+	return ndctl_namespace_inject_error2(ndns, block, count, 0);
 }
 
 static int bb_add_record(struct list_head *h, u64 block, u64 count)

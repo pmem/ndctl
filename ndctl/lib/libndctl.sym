@@ -363,4 +363,6 @@ global:
 LIBNDCTL_16 {
 global:
 	ndctl_cmd_ars_cap_get_clear_unit;
+	ndctl_namespace_inject_error2;
+	ndctl_namespace_uninject_error2;
 } LIBNDCTL_15;

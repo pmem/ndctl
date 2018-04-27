@@ -479,9 +479,18 @@ int ndctl_namespace_get_numa_node(struct ndctl_namespace *ndns);
 int ndctl_namespace_inject_error(struct ndctl_namespace *ndns,
 		unsigned long long block, unsigned long long count,
 		bool notify);
+int ndctl_namespace_inject_error2(struct ndctl_namespace *ndns,
+		unsigned long long block, unsigned long long count,
+		unsigned int flags);
 int ndctl_namespace_uninject_error(struct ndctl_namespace *ndns,
 		unsigned long long block, unsigned long long count);
+int ndctl_namespace_uninject_error2(struct ndctl_namespace *ndns,
+		unsigned long long block, unsigned long long count,
+		unsigned int flags);
 int ndctl_namespace_injection_status(struct ndctl_namespace *ndns);
+enum ndctl_namespace_inject_flags {
+	NDCTL_NS_INJECT_NOTIFY = 0,
+};
 
 struct ndctl_bb;
 unsigned long long ndctl_bb_get_block(struct ndctl_bb *bb);
