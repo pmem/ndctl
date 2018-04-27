@@ -490,6 +490,7 @@ int ndctl_namespace_uninject_error2(struct ndctl_namespace *ndns,
 int ndctl_namespace_injection_status(struct ndctl_namespace *ndns);
 enum ndctl_namespace_inject_flags {
 	NDCTL_NS_INJECT_NOTIFY = 0,
+	NDCTL_NS_INJECT_SATURATE,
 };
 
 struct ndctl_bb;

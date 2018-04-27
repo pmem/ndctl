@@ -47,6 +47,7 @@ static struct parameters {
 	bool clear;
 	bool status;
 	bool no_notify;
+	bool saturate;
 	bool human;
 } param;
 
@@ -74,6 +75,8 @@ OPT_BOOLEAN('d', "uninject", &param.clear, \
 	"un-inject a previously injected error"), \
 OPT_BOOLEAN('t', "status", &param.status, "get error injection status"), \
 OPT_BOOLEAN('N', "no-notify", &param.no_notify, "firmware should not notify OS"), \
+OPT_BOOLEAN('S', "saturate", &param.saturate, \
+	"inject full sector, not just 'ars_unit' bytes"), \
 OPT_BOOLEAN('u', "human", &param.human, "use human friendly number formats ")
 
 static const struct option inject_options[] = {
@@ -104,7 +107,7 @@ static int inject_init(void)
 		ictx.op_mask |= 1 << OP_CLEAR;
 	}
 	if (param.status) {
-		if (param.block || param.count) {
+		if (param.block || param.count || param.saturate) {
 			error("status is invalid with inject or uninject\n");
 			return -EINVAL;
 		}
@@ -145,6 +148,8 @@ static int inject_init(void)
 
 	if (param.human)
 		ictx.json_flags |= UTIL_JSON_HUMAN;
+	if (param.saturate)
+		ictx.inject_flags |= 1 << NDCTL_NS_INJECT_SATURATE;
 
 	return 0;
 }

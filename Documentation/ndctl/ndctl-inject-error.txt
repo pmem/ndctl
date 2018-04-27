@@ -24,6 +24,8 @@ In other words, we only inject one 'ars_unit' per sector. This is sufficient
 for Linux to mark the whole sector as bad, and will show up as such in the
 various 'badblocks' lists in the kernel. If multiple blocks are being injected,
 only the first 'n' bytes of each block specified will be injected as errors.
+This can be overridden by the --saturate option, which will force the entire
+block to be injected as an error.
 
 WARNING: These commands are DANGEROUS and can cause data loss. They are
 only provided for testing and debugging purposes.
@@ -94,6 +96,11 @@ OPTIONS
 	get a notification, and the error will appear as a latent media error
 	when the location is accessed. If the platform firmware does not
 	support this feature, this will have no effect.
+
+-S::
+--saturate::
+	This option forces error injection or un-injection to cover the entire
+	address range covered by the specified block(s).
 
 -v::
 --verbose::

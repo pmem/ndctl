@@ -135,9 +135,11 @@ static int ndctl_namespace_inject_one_error(struct ndctl_namespace *ndns,
 	if (clear_unit < 0)
 		return clear_unit;
 
-	/* clamp injection length per block to the clear_unit */
-	if (length > (unsigned int)clear_unit)
-		length = clear_unit;
+	if (!(flags & (1 << NDCTL_NS_INJECT_SATURATE))) {
+		/* clamp injection length per block to the clear_unit */
+		if (length > (unsigned int)clear_unit)
+			length = clear_unit;
+	}
 
 	cmd = ndctl_bus_cmd_new_err_inj(bus);
 	if (!cmd)
@@ -213,9 +215,11 @@ static int ndctl_namespace_uninject_one_error(struct ndctl_namespace *ndns,
 	if (clear_unit < 0)
 		return clear_unit;
 
-	/* clamp injection length per block to the clear_unit */
-	if (length > (unsigned int)clear_unit)
-		length = clear_unit;
+	if (!(flags & (1 << NDCTL_NS_INJECT_SATURATE))) {
+		/* clamp injection length per block to the clear_unit */
+		if (length > (unsigned int)clear_unit)
+			length = clear_unit;
+	}
 
 	cmd = ndctl_bus_cmd_new_err_inj_clr(bus);
 	if (!cmd)
