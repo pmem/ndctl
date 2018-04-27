@@ -89,46 +89,144 @@ static int translate_status(u32 status)
 	return 0;
 }
 
-NDCTL_EXPORT int ndctl_namespace_inject_error(struct ndctl_namespace *ndns,
-		unsigned long long block, unsigned long long count, bool notify)
+static int ndctl_namespace_get_clear_unit(struct ndctl_namespace *ndns)
+{
+	struct ndctl_bus *bus = ndctl_namespace_get_bus(ndns);
+	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
+	unsigned long long ns_offset, ns_size;
+	unsigned int clear_unit;
+	struct ndctl_cmd *cmd;
+	int rc;
+
+	ndctl_namespace_get_injection_bounds(ndns, &ns_offset,
+		&ns_size);
+	cmd = ndctl_bus_cmd_new_ars_cap(bus, ns_offset, ns_size);
+	rc = ndctl_cmd_submit(cmd);
+	if (rc) {
+		dbg(ctx, "Error submitting ars_cap: %d\n", rc);
+		return rc;
+	}
+	clear_unit = ndctl_cmd_ars_cap_get_clear_unit(cmd);
+	if (clear_unit == 0) {
+		dbg(ctx, "Got an invalid clear_err_unit from ars_cap\n");
+		return -EINVAL;
+	}
+
+	ndctl_cmd_unref(cmd);
+	return clear_unit;
+}
+
+static int ndctl_namespace_inject_one_error(struct ndctl_namespace *ndns,
+		unsigned long long block, bool notify)
 {
 	struct ndctl_bus *bus = ndctl_namespace_get_bus(ndns);
 	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
 	struct nd_cmd_ars_err_inj *err_inj;
 	struct nd_cmd_pkg *pkg;
 	struct ndctl_cmd *cmd;
-	int rc = -EOPNOTSUPP;
+	u64 offset, length;
+	int rc, clear_unit;
+
+	rc = block_to_spa_offset(ndns, block, 1, &offset, &length);
+	if (rc)
+		return rc;
+
+	clear_unit = ndctl_namespace_get_clear_unit(ndns);
+	if (clear_unit < 0)
+		return clear_unit;
+
+	/* clamp injection length per block to the clear_unit */
+	if (length > (unsigned int)clear_unit)
+		length = clear_unit;
+
+	cmd = ndctl_bus_cmd_new_err_inj(bus);
+	if (!cmd)
+		return -ENOMEM;
+
+	pkg = (struct nd_cmd_pkg *)&cmd->cmd_buf[0];
+	err_inj = (struct nd_cmd_ars_err_inj *)&pkg->nd_payload[0];
+	err_inj->err_inj_spa_range_base = offset;
+	err_inj->err_inj_spa_range_length = length;
+	if (notify)
+		err_inj->err_inj_options |=
+			(1 << ND_ARS_ERR_INJ_OPT_NOTIFY);
+
+	rc = ndctl_cmd_submit(cmd);
+	if (rc) {
+		dbg(ctx, "Error submitting command: %d\n", rc);
+		goto out;
+	}
+	rc = translate_status(err_inj->status);
+ out:
+	ndctl_cmd_unref(cmd);
+	return rc;
+}
+
+NDCTL_EXPORT int ndctl_namespace_inject_error(struct ndctl_namespace *ndns,
+		unsigned long long block, unsigned long long count, bool notify)
+{
+	struct ndctl_bus *bus = ndctl_namespace_get_bus(ndns);
+	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
+	unsigned long long i;
+	int rc = -EINVAL;
 
 	if (!ndctl_bus_has_error_injection(bus))
 		return -EOPNOTSUPP;
+	if (!ndctl_bus_has_nfit(bus))
+		return -EOPNOTSUPP;
 
-	if (ndctl_bus_has_nfit(bus)) {
-		u64 offset, length;
-
-		rc = block_to_spa_offset(ndns, block, count, &offset, &length);
-		if (rc)
-			return rc;
-		cmd = ndctl_bus_cmd_new_err_inj(bus);
-		if (!cmd)
-			return -ENOMEM;
-
-		pkg = (struct nd_cmd_pkg *)&cmd->cmd_buf[0];
-		err_inj = (struct nd_cmd_ars_err_inj *)&pkg->nd_payload[0];
-		err_inj->err_inj_spa_range_base = offset;
-		err_inj->err_inj_spa_range_length = length;
-		if (notify)
-			err_inj->err_inj_options |=
-				(1 << ND_ARS_ERR_INJ_OPT_NOTIFY);
-
-		rc = ndctl_cmd_submit(cmd);
+	for (i = 0; i < count; i++) {
+		rc = ndctl_namespace_inject_one_error(ndns, block + i, notify);
 		if (rc) {
-			dbg(ctx, "Error submitting command: %d\n", rc);
-			goto out;
+			err(ctx, "Injection failed at block %llx\n",
+				block + i);
+			return rc;
 		}
-		rc = translate_status(err_inj->status);
- out:
-		ndctl_cmd_unref(cmd);
 	}
+	return rc;
+}
+
+static int ndctl_namespace_uninject_one_error(struct ndctl_namespace *ndns,
+		unsigned long long block)
+{
+	struct ndctl_bus *bus = ndctl_namespace_get_bus(ndns);
+	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
+	struct nd_cmd_ars_err_inj_clr *err_inj_clr;
+	struct nd_cmd_pkg *pkg;
+	struct ndctl_cmd *cmd;
+	u64 offset, length;
+	int rc, clear_unit;
+
+	rc = block_to_spa_offset(ndns, block, 1, &offset, &length);
+	if (rc)
+		return rc;
+
+	clear_unit = ndctl_namespace_get_clear_unit(ndns);
+	if (clear_unit < 0)
+		return clear_unit;
+
+	/* clamp injection length per block to the clear_unit */
+	if (length > (unsigned int)clear_unit)
+		length = clear_unit;
+
+	cmd = ndctl_bus_cmd_new_err_inj_clr(bus);
+	if (!cmd)
+		return -ENOMEM;
+
+	pkg = (struct nd_cmd_pkg *)&cmd->cmd_buf[0];
+	err_inj_clr =
+		(struct nd_cmd_ars_err_inj_clr *)&pkg->nd_payload[0];
+	err_inj_clr->err_inj_clr_spa_range_base = offset;
+	err_inj_clr->err_inj_clr_spa_range_length = length;
+
+	rc = ndctl_cmd_submit(cmd);
+	if (rc) {
+		dbg(ctx, "Error submitting command: %d\n", rc);
+		goto out;
+	}
+	rc = translate_status(err_inj_clr->status);
+ out:
+	ndctl_cmd_unref(cmd);
 	return rc;
 }
 
@@ -137,38 +235,21 @@ NDCTL_EXPORT int ndctl_namespace_uninject_error(struct ndctl_namespace *ndns,
 {
 	struct ndctl_bus *bus = ndctl_namespace_get_bus(ndns);
 	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
-	struct nd_cmd_ars_err_inj_clr *err_inj_clr;
-	struct nd_cmd_pkg *pkg;
-	struct ndctl_cmd *cmd;
-	int rc = -EOPNOTSUPP;
+	unsigned long long i;
+	int rc = -EINVAL;
 
 	if (!ndctl_bus_has_error_injection(bus))
 		return -EOPNOTSUPP;
+	if (!ndctl_bus_has_nfit(bus))
+		return -EOPNOTSUPP;
 
-	if (ndctl_bus_has_nfit(bus)) {
-		u64 offset, length;
-
-		rc = block_to_spa_offset(ndns, block, count, &offset, &length);
-		if (rc)
-			return rc;
-		cmd = ndctl_bus_cmd_new_err_inj_clr(bus);
-		if (!cmd)
-			return -ENOMEM;
-
-		pkg = (struct nd_cmd_pkg *)&cmd->cmd_buf[0];
-		err_inj_clr =
-			(struct nd_cmd_ars_err_inj_clr *)&pkg->nd_payload[0];
-		err_inj_clr->err_inj_clr_spa_range_base = offset;
-		err_inj_clr->err_inj_clr_spa_range_length = length;
-
-		rc = ndctl_cmd_submit(cmd);
+	for (i = 0; i < count; i++) {
+		rc = ndctl_namespace_uninject_one_error(ndns, block + i);
 		if (rc) {
-			dbg(ctx, "Error submitting command: %d\n", rc);
-			goto out;
+			err(ctx, "Un-injection failed at block %llx\n",
+				block + i);
+			return rc;
 		}
-		rc = translate_status(err_inj_clr->status);
- out:
-		ndctl_cmd_unref(cmd);
 	}
 	return rc;
 }
