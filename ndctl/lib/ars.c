@@ -180,6 +180,21 @@ NDCTL_EXPORT int ndctl_cmd_ars_cap_get_range(struct ndctl_cmd *ars_cap,
 	return -EINVAL;
 }
 
+NDCTL_EXPORT unsigned int ndctl_cmd_ars_cap_get_clear_unit(
+		struct ndctl_cmd *ars_cap)
+{
+	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(cmd_to_bus(ars_cap));
+
+	if (ars_cap->type == ND_CMD_ARS_CAP && ars_cap->status == 0) {
+		dbg(ctx, "clear_err_unit: %d\n",
+			ars_cap->ars_cap->clear_err_unit);
+		return ars_cap->ars_cap->clear_err_unit;
+	}
+
+	dbg(ctx, "invalid ars_cap\n");
+	return 0;
+}
+
 NDCTL_EXPORT int ndctl_cmd_ars_in_progress(struct ndctl_cmd *cmd)
 {
 	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(cmd_to_bus(cmd));
