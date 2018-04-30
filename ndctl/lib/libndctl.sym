@@ -359,3 +359,8 @@ global:
 	ndctl_bus_start_scrub;
 	ndctl_region_deep_flush;
 } LIBNDCTL_14;
+
+LIBNDCTL_16 {
+global:
+	ndctl_cmd_ars_cap_get_clear_unit;
+} LIBNDCTL_15;

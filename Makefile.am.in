@@ -35,7 +35,7 @@ SED_PROCESS = \
 	-e 's,@includedir\@,$(includedir),g' \
 	< $< > $@ || rm $@
 
-LIBNDCTL_CURRENT=15
+LIBNDCTL_CURRENT=16
 LIBNDCTL_REVISION=0
 LIBNDCTL_AGE=9
 

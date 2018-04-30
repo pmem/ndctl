@@ -209,6 +209,7 @@ struct ndctl_cmd *ndctl_bus_cmd_new_clear_error(unsigned long long address,
 		unsigned long long len, struct ndctl_cmd *ars_cap);
 unsigned long long ndctl_cmd_clear_error_get_cleared(
 		struct ndctl_cmd *clear_err);
+unsigned int ndctl_cmd_ars_cap_get_clear_unit(struct ndctl_cmd *ars_cap);
 
 /*
  * Note: ndctl_cmd_smart_get_temperature is an alias for
