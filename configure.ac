@@ -147,7 +147,9 @@ my_CFLAGS="\
 -Wsign-compare \
 -Wstrict-prototypes \
 -Wtype-limits \
--Wmaybe-uninitialized
+-Wmaybe-uninitialized \
+-Wunused-result \
+-D_FORTIFY_SOURCE=2
 "
 AC_SUBST([my_CFLAGS])
 
