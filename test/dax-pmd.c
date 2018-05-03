@@ -125,7 +125,10 @@ int test_dax_directio(int dax_fd, unsigned long align, void *dax_addr, off_t off
 				rc = -ENXIO;
 			}
 			((char *) buf)[0] = 0;
-			pread(fd2, buf, 4096, 0);
+			if (pread(fd2, buf, 4096, 0) != 4096) {
+				faili(i);
+				rc = -ENXIO;
+			}
 			if (strcmp(buf, "odirect data") != 0) {
 				faili(i);
 				rc = -ENXIO;

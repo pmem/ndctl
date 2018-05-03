@@ -1243,7 +1243,10 @@ NDCTL_EXPORT int ndctl_bus_wait_for_scrub_completion(struct ndctl_bus *bus)
 				break;
 			}
 			dbg(ctx, "poll wake: revents: %d\n", fds.revents);
-			pread(fd, buf, 1, 0);
+			if (pread(fd, buf, 1, 0) == -1) {
+				rc = -errno;
+				break;
+			}
 			fds.revents = 0;
 		}
 	}
