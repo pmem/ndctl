@@ -3991,10 +3991,10 @@ static int __ndctl_namespace_set_write_cache(struct ndctl_namespace *ndns,
 {
 	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
 	struct ndctl_pfn *pfn = ndctl_namespace_get_pfn(ndns);
+	char *path = ndns->ndns_buf;
 	char buf[SYSFS_ATTR_SIZE];
 	int len = ndns->buf_len;
 	const char *bdev;
-	char path[50];
 
 	if (state != 1 && state != 0)
 		return -ENXIO;
@@ -4034,9 +4034,9 @@ NDCTL_EXPORT int ndctl_namespace_write_cache_is_enabled(
 	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
 	struct ndctl_pfn *pfn = ndctl_namespace_get_pfn(ndns);
 	int len = ndns->buf_len, wc;
+	char *path = ndns->ndns_buf;
 	char buf[SYSFS_ATTR_SIZE];
 	const char *bdev;
-	char path[50];
 
 	if (pfn)
 		bdev = ndctl_pfn_get_block_device(pfn);
