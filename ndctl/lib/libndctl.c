@@ -1248,7 +1248,11 @@ NDCTL_EXPORT int ndctl_bus_wait_for_scrub_completion(struct ndctl_bus *bus)
 		}
 	}
 
-	dbg(ctx, "bus%d: scrub complete\n", ndctl_bus_get_id(bus));
+	if (rc == 0)
+		dbg(ctx, "bus%d: scrub complete\n", ndctl_bus_get_id(bus));
+	else
+		dbg(ctx, "bus%d: error waiting for scrub completion: %s\n",
+			ndctl_bus_get_id(bus), strerror(-rc));
 	if (fd)
 		close (fd);
 	return rc;
