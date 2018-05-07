@@ -69,6 +69,7 @@ libutil_a_SOURCES = \
 	util/strbuf.c \
 	util/wrapper.c \
 	util/filter.c \
-	util/bitmap.c
+	util/bitmap.c \
+	util/abspath.c
 
 nobase_include_HEADERS = daxctl/libdaxctl.h

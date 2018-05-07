@@ -38,6 +38,7 @@ enum parse_opt_type {
 	OPTION_CALLBACK,
 	OPTION_U64,
 	OPTION_UINTEGER,
+	OPTION_FILENAME,
 };
 
 enum parse_opt_flags {
@@ -135,6 +136,7 @@ struct option {
 #define OPT_LONG(s, l, v, h)        { .type = OPTION_LONG, .short_name = (s), .long_name = (l), .value = check_vtype(v, long *), .help = (h) }
 #define OPT_U64(s, l, v, h)         { .type = OPTION_U64, .short_name = (s), .long_name = (l), .value = check_vtype(v, u64 *), .help = (h) }
 #define OPT_STRING(s, l, v, a, h)   { .type = OPTION_STRING,  .short_name = (s), .long_name = (l), .value = check_vtype(v, const char **), (a), .help = (h) }
+#define OPT_FILENAME(s, l, v, a, h) { .type = OPTION_FILENAME, .short_name = (s), .long_name = (l), .value = check_vtype(v, const char **), (a), .help = (h) }
 #define OPT_DATE(s, l, v, h) \
 	{ .type = OPTION_CALLBACK, .short_name = (s), .long_name = (l), .value = (v), .argh = "time", .help = (h), .callback = parse_opt_approxidate_cb }
 #define OPT_CALLBACK(s, l, v, a, h, f) \
@@ -155,6 +157,10 @@ struct option {
 extern int parse_options(int argc, const char **argv,
                          const struct option *options,
                          const char * const usagestr[], int flags);
+
+extern int parse_options_prefix(int argc, const char **argv,
+			const char *prefix, const struct option *options,
+			const char * const usagestr[], int flags);
 
 extern int parse_options_subcommand(int argc, const char **argv,
 				const struct option *options,
@@ -185,6 +191,7 @@ struct parse_opt_ctx_t {
 	int argc, cpidx;
 	const char *opt;
 	int flags;
+	const char *prefix;
 };
 
 extern int parse_options_usage(const char * const *usagestr,
@@ -192,8 +199,8 @@ extern int parse_options_usage(const char * const *usagestr,
 			       const char *optstr,
 			       bool short_opt);
 
-extern void parse_options_start(struct parse_opt_ctx_t *ctx,
-				int argc, const char **argv, int flags);
+extern void parse_options_start(struct parse_opt_ctx_t *ctx, int argc,
+			const char **argv, const char *prefix, int flags);
 
 extern int parse_options_step(struct parse_opt_ctx_t *ctx,
 			      const struct option *options,

@@ -55,6 +55,7 @@ static int get_value(struct parse_opt_ctx_t *p,
 {
 	const char *s, *arg = NULL;
 	const int unset = flags & OPT_UNSET;
+	int err;
 
 	if (unset && p->opt)
 		return opterror(opt, "takes no value", flags);
@@ -77,6 +78,7 @@ static int get_value(struct parse_opt_ctx_t *p,
 		case OPTION_ARGUMENT:
 		case OPTION_GROUP:
 		case OPTION_STRING:
+		case OPTION_FILENAME:
 		case OPTION_INTEGER:
 		case OPTION_UINTEGER:
 		case OPTION_LONG:
@@ -120,6 +122,19 @@ static int get_value(struct parse_opt_ctx_t *p,
 		else
 			return get_arg(p, opt, flags, (const char **)opt->value);
 		return 0;
+
+	case OPTION_FILENAME:
+		err = 0;
+		if (unset)
+			*(const char **)opt->value = NULL;
+		else if (opt->flags & PARSE_OPT_OPTARG && !p->opt)
+			*(const char **)opt->value = (const char *)opt->defval;
+		else
+			err = get_arg(p, opt, flags, (const char **)opt->value);
+
+		if (!err)
+			fix_filename(p->prefix, (const char **)opt->value);
+		return err;
 
 	case OPTION_CALLBACK:
 		if (unset)
@@ -339,13 +354,14 @@ static void check_typos(const char *arg, const struct option *options)
 	}
 }
 
-void parse_options_start(struct parse_opt_ctx_t *ctx,
-			 int argc, const char **argv, int flags)
+void parse_options_start(struct parse_opt_ctx_t *ctx, int argc,
+			const char **argv, const char *prefix, int flags)
 {
 	memset(ctx, 0, sizeof(*ctx));
 	ctx->argc = argc - 1;
 	ctx->argv = argv + 1;
 	ctx->out  = argv;
+	ctx->prefix = prefix;
 	ctx->cpidx = ((flags & PARSE_OPT_KEEP_ARGV0) != 0);
 	ctx->flags = flags;
 	if ((flags & PARSE_OPT_KEEP_UNKNOWN) &&
@@ -453,8 +469,10 @@ int parse_options_end(struct parse_opt_ctx_t *ctx)
 	return ctx->cpidx + ctx->argc;
 }
 
-int parse_options_subcommand(int argc, const char **argv, const struct option *options,
-			const char *const subcommands[], const char *usagestr[], int flags)
+static int parse_options_subcommand_prefix(int argc, const char **argv,
+			const char *prefix, const struct option *options,
+			const char *const subcommands[],
+			const char *usagestr[], int flags)
 {
 	struct parse_opt_ctx_t ctx;
 
@@ -474,7 +492,7 @@ int parse_options_subcommand(int argc, const char **argv, const struct option *o
 		strbuf_release(&buf);
 	}
 
-	parse_options_start(&ctx, argc, argv, flags);
+	parse_options_start(&ctx, argc, argv, prefix, flags);
 	switch (parse_options_step(&ctx, options, usagestr)) {
 	case PARSE_OPT_HELP:
 		exit(129);
@@ -503,10 +521,26 @@ int parse_options_subcommand(int argc, const char **argv, const struct option *o
 	return parse_options_end(&ctx);
 }
 
+int parse_options_subcommand(int argc, const char **argv,
+		const struct option *options, const char *const subcommands[],
+		const char *usagestr[], int flags)
+{
+	return parse_options_subcommand_prefix(argc, argv, NULL, options,
+					subcommands, usagestr, flags);
+}
+
+int parse_options_prefix(int argc, const char **argv, const char *prefix,
+			const struct option *options,
+			const char * const usagestr[], int flags)
+{
+	return parse_options_subcommand_prefix(argc, argv, prefix, options,
+				NULL, (const char **) usagestr, flags);
+}
+
 int parse_options(int argc, const char **argv, const struct option *options,
 		  const char * const usagestr[], int flags)
 {
-	return parse_options_subcommand(argc, argv, options, NULL,
+	return parse_options_subcommand_prefix(argc, argv, NULL, options, NULL,
 					(const char **) usagestr, flags);
 }
 
@@ -557,6 +591,7 @@ static void print_option_help(const struct option *opts, int full)
 		if (opts->flags & PARSE_OPT_NOARG)
 			break;
 		/* FALLTHROUGH */
+	case OPTION_FILENAME:
 	case OPTION_STRING:
 		if (opts->argh) {
 			if (opts->flags & PARSE_OPT_OPTARG)

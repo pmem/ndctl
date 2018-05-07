@@ -89,11 +89,6 @@ static char *cmd_to_page(const char *cmd, char **page, const char *util_name)
 	return *page;
 }
 
-static int is_absolute_path(const char *path)
-{
-	return path[0] == '/';
-}
-
 static const char *system_path(const char *path)
 {
         static const char *prefix = PREFIX;

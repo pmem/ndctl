@@ -79,6 +79,11 @@ static inline const char *skip_prefix(const char *str, const char *prefix)
         return strncmp(str, prefix, len) ? NULL : str + len;
 }
 
+static inline int is_absolute_path(const char *path)
+{
+	return path[0] == '/';
+}
+
 void usage(const char *err) NORETURN;
 void die(const char *err, ...) NORETURN __attribute__((format (printf, 1, 2)));
 int error(const char *err, ...) __attribute__((format (printf, 1, 2)));
@@ -87,5 +92,7 @@ void set_die_routine(void (*routine)(const char *err, va_list params) NORETURN);
 char *xstrdup(const char *str);
 void *xrealloc(void *ptr, size_t size);
 int prefixcmp(const char *str, const char *prefix);
+char *prefix_filename(const char *pfx, const char *arg);
+void fix_filename(const char *prefix, const char **file);
 
 #endif /* __UTIL_H__ */
