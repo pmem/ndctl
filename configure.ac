@@ -149,7 +149,8 @@ my_CFLAGS="\
 -Wtype-limits \
 -Wmaybe-uninitialized \
 -Wunused-result \
--D_FORTIFY_SOURCE=2
+-D_FORTIFY_SOURCE=2 \
+-O2
 "
 AC_SUBST([my_CFLAGS])
 
