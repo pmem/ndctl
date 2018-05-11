@@ -148,6 +148,7 @@ my_CFLAGS="\
 -Wstrict-prototypes \
 -Wtype-limits \
 -Wmaybe-uninitialized \
+-Wdeclaration-after-statement \
 -Wunused-result \
 -D_FORTIFY_SOURCE=2 \
 -O2
