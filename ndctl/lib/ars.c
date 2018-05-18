@@ -195,24 +195,44 @@ NDCTL_EXPORT unsigned int ndctl_cmd_ars_cap_get_clear_unit(
 	return 0;
 }
 
+static bool __validate_ars_stat(struct ndctl_cmd *ars_stat)
+{
+	/*
+	 * A positive status indicates an underrun, but that is fine since
+	 * the firmware is not expected to completely fill the max_ars_out
+	 * sized buffer.
+	 */
+	if (ars_stat->type != ND_CMD_ARS_STATUS || ars_stat->status < 0)
+		return false;
+	if ((ndctl_cmd_get_firmware_status(ars_stat) & ARS_STATUS_MASK) != 0)
+		return false;
+	return true;
+}
+
+#define validate_ars_stat(ctx, ars_stat) \
+({ \
+	bool __valid = __validate_ars_stat(ars_stat); \
+	if (!__valid) \
+		dbg(ctx, "expected sucessfully completed ars_stat command\n"); \
+	__valid; \
+})
+
 NDCTL_EXPORT int ndctl_cmd_ars_in_progress(struct ndctl_cmd *cmd)
 {
 	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(cmd_to_bus(cmd));
 
-	if (cmd->type == ND_CMD_ARS_STATUS && cmd->status == 0) {
-		if (cmd->ars_status->status == 1 << 16) {
-			/*
-			 * If in-progress, invalidate the ndctl_cmd, so
-			 * that if we're called again without a fresh
-			 * ars_status command, we fail.
-			 */
-			cmd->status = 1;
-			return 1;
-		}
+	if (!validate_ars_stat(ctx, cmd))
 		return 0;
-	}
 
-	dbg(ctx, "invalid ars_status\n");
+	if (ndctl_cmd_get_firmware_status(cmd) == 1 << 16) {
+		/*
+		 * If in-progress, invalidate the ndctl_cmd, so
+		 * that if we're called again without a fresh
+		 * ars_status command, we fail.
+		 */
+		cmd->status = 1;
+		return 1;
+	}
 	return 0;
 }
 
@@ -220,11 +240,10 @@ NDCTL_EXPORT unsigned int ndctl_cmd_ars_num_records(struct ndctl_cmd *ars_stat)
 {
 	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(cmd_to_bus(ars_stat));
 
-	if (ars_stat->type == ND_CMD_ARS_STATUS && ars_stat->status == 0)
-		return ars_stat->ars_status->num_records;
+	if (!validate_ars_stat(ctx, ars_stat))
+		return 0;
 
-	dbg(ctx, "invalid ars_status\n");
-	return 0;
+	return ars_stat->ars_status->num_records;
 }
 
 NDCTL_EXPORT unsigned long long ndctl_cmd_ars_get_record_addr(
@@ -232,16 +251,15 @@ NDCTL_EXPORT unsigned long long ndctl_cmd_ars_get_record_addr(
 {
 	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(cmd_to_bus(ars_stat));
 
+	if (!validate_ars_stat(ctx, ars_stat))
+		return 0;
+
 	if (rec_index >= ars_stat->ars_status->num_records) {
 		dbg(ctx, "invalid record index\n");
 		return 0;
 	}
 
-	if (ars_stat->type == ND_CMD_ARS_STATUS && ars_stat->status == 0)
-		return ars_stat->ars_status->records[rec_index].err_address;
-
-	dbg(ctx, "invalid ars_status\n");
-	return 0;
+	return ars_stat->ars_status->records[rec_index].err_address;
 }
 
 NDCTL_EXPORT unsigned long long ndctl_cmd_ars_get_record_len(
@@ -249,16 +267,15 @@ NDCTL_EXPORT unsigned long long ndctl_cmd_ars_get_record_len(
 {
 	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(cmd_to_bus(ars_stat));
 
+	if (!validate_ars_stat(ctx, ars_stat))
+		return 0;
+
 	if (rec_index >= ars_stat->ars_status->num_records) {
 		dbg(ctx, "invalid record index\n");
 		return 0;
 	}
 
-	if (ars_stat->type == ND_CMD_ARS_STATUS && ars_stat->status == 0)
-		return ars_stat->ars_status->records[rec_index].length;
-
-	dbg(ctx, "invalid ars_status\n");
-	return 0;
+	return ars_stat->ars_status->records[rec_index].length;
 }
 
 NDCTL_EXPORT struct ndctl_cmd *ndctl_bus_cmd_new_clear_error(
