@@ -652,10 +652,12 @@ static struct json_object *util_dax_badblocks_to_json(struct ndctl_dax *dax,
 
 static struct json_object *util_raw_uuid(struct ndctl_namespace *ndns)
 {
-	uuid_t raw_uuid;
 	char buf[40];
+	uuid_t raw_uuid;
 
 	ndctl_namespace_get_uuid(ndns, raw_uuid);
+	if (uuid_is_null(raw_uuid))
+		return NULL;
 	uuid_unparse(raw_uuid, buf);
 	return json_object_new_string(buf);
 }
@@ -734,9 +736,8 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 		json_object_object_add(jndns, "uuid", jobj);
 
 		jobj = util_raw_uuid(ndns);
-		if (!jobj)
-			goto err;
-		json_object_object_add(jndns, "raw_uuid", jobj);
+		if (jobj)
+			json_object_object_add(jndns, "raw_uuid", jobj);
 		bdev = ndctl_btt_get_block_device(btt);
 	} else if (pfn) {
 		ndctl_pfn_get_uuid(pfn, uuid);
@@ -746,9 +747,8 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 			goto err;
 		json_object_object_add(jndns, "uuid", jobj);
 		jobj = util_raw_uuid(ndns);
-		if (!jobj)
-			goto err;
-		json_object_object_add(jndns, "raw_uuid", jobj);
+		if (jobj)
+			json_object_object_add(jndns, "raw_uuid", jobj);
 		bdev = ndctl_pfn_get_block_device(pfn);
 	} else if (dax) {
 		struct daxctl_region *dax_region;
@@ -761,9 +761,8 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 			goto err;
 		json_object_object_add(jndns, "uuid", jobj);
 		jobj = util_raw_uuid(ndns);
-		if (!jobj)
-			goto err;
-		json_object_object_add(jndns, "raw_uuid", jobj);
+		if (jobj)
+			json_object_object_add(jndns, "raw_uuid", jobj);
 		if ((flags & UTIL_JSON_DAX) && dax_region) {
 			jobj = util_daxctl_region_to_json(dax_region, NULL,
 					flags);
