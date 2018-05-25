@@ -666,7 +666,13 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 		unsigned long flags)
 {
 	struct json_object *jndns = json_object_new_object();
+	enum ndctl_pfn_loc loc = NDCTL_PFN_LOC_NONE;
 	struct json_object *jobj, *jbbs = NULL;
+	const char *locations[] = {
+		[NDCTL_PFN_LOC_NONE] = "none",
+		[NDCTL_PFN_LOC_RAM] = "mem",
+		[NDCTL_PFN_LOC_PMEM] = "dev",
+	};
 	unsigned long long size = ULLONG_MAX;
 	unsigned int sector_size = UINT_MAX;
 	enum ndctl_namespace_mode mode;
@@ -693,10 +699,13 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 	mode = ndctl_namespace_get_mode(ndns);
 	switch (mode) {
 	case NDCTL_NS_MODE_MEMORY:
-		if (pfn) /* dynamic memory mode */
+		if (pfn) { /* dynamic memory mode */
 			size = ndctl_pfn_get_size(pfn);
-		else /* native/static memory mode */
+			loc = ndctl_pfn_get_location(pfn);
+		} else { /* native/static memory mode */
 			size = ndctl_namespace_get_size(ndns);
+			loc = NDCTL_PFN_LOC_RAM;
+		}
 		jobj = json_object_new_string("fsdax");
 		break;
 	case NDCTL_NS_MODE_DAX:
@@ -704,6 +713,7 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 			goto err;
 		size = ndctl_dax_get_size(dax);
 		jobj = json_object_new_string("devdax");
+		loc = ndctl_dax_get_location(dax);
 		break;
 	case NDCTL_NS_MODE_SAFE:
 		if (!btt)
@@ -720,6 +730,12 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 	}
 	if (jobj)
 		json_object_object_add(jndns, "mode", jobj);
+
+	if ((mode != NDCTL_NS_MODE_SAFE) && (mode != NDCTL_NS_MODE_RAW)) {
+		jobj = json_object_new_string(locations[loc]);
+		if (jobj)
+			json_object_object_add(jndns, "map", jobj);
+	}
 
 	if (size < ULLONG_MAX) {
 		jobj = util_json_object_size(size, flags);
