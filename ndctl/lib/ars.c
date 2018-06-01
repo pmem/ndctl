@@ -224,16 +224,7 @@ NDCTL_EXPORT int ndctl_cmd_ars_in_progress(struct ndctl_cmd *cmd)
 	if (!validate_ars_stat(ctx, cmd))
 		return 0;
 
-	if (ndctl_cmd_get_firmware_status(cmd) == 1 << 16) {
-		/*
-		 * If in-progress, invalidate the ndctl_cmd, so
-		 * that if we're called again without a fresh
-		 * ars_status command, we fail.
-		 */
-		cmd->status = 1;
-		return 1;
-	}
-	return 0;
+	return (ndctl_cmd_get_firmware_status(cmd) == 1 << 16);
 }
 
 NDCTL_EXPORT unsigned int ndctl_cmd_ars_num_records(struct ndctl_cmd *ars_stat)
