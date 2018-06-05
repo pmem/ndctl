@@ -269,6 +269,17 @@ NDCTL_EXPORT unsigned long long ndctl_cmd_ars_get_record_len(
 	return ars_stat->ars_status->records[rec_index].length;
 }
 
+NDCTL_EXPORT int ndctl_cmd_ars_stat_get_flag_overflow(
+		struct ndctl_cmd *ars_stat)
+{
+	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(cmd_to_bus(ars_stat));
+
+	if (!validate_ars_stat(ctx, ars_stat))
+		return -EINVAL;
+
+	return !!(ars_stat->ars_status->flags & ND_ARS_STAT_FLAG_OVERFLOW);
+}
+
 NDCTL_EXPORT struct ndctl_cmd *ndctl_bus_cmd_new_clear_error(
 		unsigned long long address, unsigned long long len,
 		struct ndctl_cmd *ars_cap)

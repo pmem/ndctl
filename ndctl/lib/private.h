@@ -278,6 +278,9 @@ struct ndctl_bb {
 	struct list_node list;
 };
 
+/* ars_status flags */
+#define ND_ARS_STAT_FLAG_OVERFLOW (1 << 0)
+
 struct ndctl_dimm_ops {
 	const char *(*cmd_desc)(int);
 	struct ndctl_cmd *(*new_smart)(struct ndctl_dimm *);
