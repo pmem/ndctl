@@ -27,6 +27,7 @@
 #include <test.h>
 #include <util/size.h>
 #include <linux/fiemap.h>
+#include <stdbool.h>
 
 #define NUM_EXTENTS 5
 #define fail() fprintf(stderr, "%s: failed at: %d (%s)\n", \
@@ -217,14 +218,21 @@ static void sigbus_hdl(int sig, siginfo_t *si, void *ptr)
 	siglongjmp(sj_env, 1);
 }
 
-static int test_dax_poison(int dax_fd, unsigned long align, void *dax_addr,
-		off_t offset)
+int test_dax_poison(int dax_fd, unsigned long align, void *dax_addr,
+		off_t offset, bool fsdax)
 {
 	unsigned char *addr = MAP_FAILED;
 	struct sigaction act;
 	unsigned x = x;
 	void *buf;
 	int rc;
+
+	/*
+	 * MADV_HWPOISON must be page aligned, and this routine assumes
+	 * align is >= 8K
+	 */
+	if (align < SZ_2M)
+		return 0;
 
 	if (posix_memalign(&buf, 4096, 4096) != 0)
 		return -ENOMEM;
@@ -240,13 +248,15 @@ static int test_dax_poison(int dax_fd, unsigned long align, void *dax_addr,
 	}
 
 	/* dirty the block on disk to bypass the default zero page */
-	rc = pwrite(dax_fd, buf, 4096, offset + align / 2);
-	if (rc < 4096) {
-		fail();
-		rc = -ENXIO;
-		goto out;
+	if (fsdax) {
+		rc = pwrite(dax_fd, buf, 4096, offset + align / 2);
+		if (rc < 4096) {
+			fail();
+			rc = -ENXIO;
+			goto out;
+		}
+		fsync(dax_fd);
 	}
-	fsync(dax_fd);
 
 	addr = mmap(dax_addr, 2*align, PROT_READ|PROT_WRITE,
 			MAP_SHARED_VALIDATE|MAP_POPULATE|MAP_SYNC, dax_fd, offset);
@@ -281,6 +291,11 @@ clear_error:
 		goto out;
 	}
 
+	if (!fsdax) {
+		rc = 0;
+		goto out;
+	}
+
 	rc = fallocate(dax_fd, FALLOC_FL_PUNCH_HOLE|FALLOC_FL_KEEP_SIZE,
 			offset + align / 2, 4096);
 	if (rc) {
@@ -312,6 +327,7 @@ out:
 static int test_pmd(int fd)
 {
 	unsigned long long m_align, p_align, pmd_off;
+	static const bool fsdax = true;
 	struct fiemap_extent *ext;
 	void *base, *pmd_addr;
 	struct fiemap *map;
@@ -371,7 +387,7 @@ static int test_pmd(int fd)
 	if (rc)
 		goto err_directio;
 
-	rc = test_dax_poison(fd, HPAGE_SIZE, pmd_addr, pmd_off);
+	rc = test_dax_poison(fd, HPAGE_SIZE, pmd_addr, pmd_off, fsdax);
 
  err_directio:
  err_extent:

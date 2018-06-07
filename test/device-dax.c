@@ -151,15 +151,6 @@ static int __test_device_dax(unsigned long align, int loglevel,
 	struct daxctl_region *dax_region;
 	char *buf, path[100], data[VERIFY_BUF_SIZE];
 
-	memset (&act, 0, sizeof(act));
-	act.sa_sigaction = sigbus;
-	act.sa_flags = SA_SIGINFO;
-
-	if (sigaction(SIGBUS, &act, 0)) {
-		perror("sigaction");
-		return 1;
-	}
-
 	ndctl_set_log_priority(ctx, loglevel);
 
 	ndns = ndctl_get_test_dev(ctx);
@@ -276,11 +267,21 @@ static int __test_device_dax(unsigned long align, int loglevel,
 	 * otherwise not supported.
 	 */
 	if (ndctl_test_attempt(test, KERNEL_VERSION(4, 9, 0))) {
+		static const bool devdax = false;
 		int fd2;
 
 		rc = test_dax_directio(fd, align, NULL, 0);
 		if (rc) {
 			fprintf(stderr, "%s: failed dax direct-i/o\n",
+					ndctl_namespace_get_devname(ndns));
+			goto out;
+		}
+
+		fprintf(stderr, "%s: test dax poison\n",
+				ndctl_namespace_get_devname(ndns));
+		rc = test_dax_poison(fd, align, NULL, 0, devdax);
+		if (rc) {
+			fprintf(stderr, "%s: failed dax poison\n",
 					ndctl_namespace_get_devname(ndns));
 			goto out;
 		}
@@ -309,6 +310,15 @@ static int __test_device_dax(unsigned long align, int loglevel,
 	if (rc < 0) {
 		fprintf(stderr, "%s: failed to reset device-dax instance\n",
 				ndctl_namespace_get_devname(ndns));
+		goto out;
+	}
+
+	memset(&act, 0, sizeof(act));
+	act.sa_sigaction = sigbus;
+	act.sa_flags = SA_SIGINFO;
+	if (sigaction(SIGBUS, &act, 0)) {
+		perror("sigaction");
+		rc = EXIT_FAILURE;
 		goto out;
 	}
 
