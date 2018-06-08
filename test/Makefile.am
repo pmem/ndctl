@@ -97,6 +97,7 @@ dax_dev_LDADD = $(LIBNDCTL_LIB) $(KMOD_LIBS)
 dax_pmd_SOURCES = dax-pmd.c
 hugetlb_SOURCES = hugetlb.c \
 		  dax-pmd.c
+
 mmap_SOURCES = mmap.c
 dax_errors_SOURCES = dax-errors.c
 daxdev_errors_SOURCES = daxdev-errors.c \
@@ -111,6 +112,13 @@ device_dax_SOURCES = \
 		../ndctl/namespace.c \
 		../ndctl/check.c \
 		../util/json.c
+
+if ENABLE_POISON
+dax_pmd_SOURCES += dax-poison.c
+hugetlb_SOURCES += dax-poison.c
+device_dax_SOURCES += dax-poison.c
+endif
+
 device_dax_LDADD = \
 		$(LIBNDCTL_LIB) \
 		$(KMOD_LIBS) \
