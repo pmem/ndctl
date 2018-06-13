@@ -1,0 +1,60 @@
+
+# SPDX-License-Identifier: GPL-2.0
+# Copyright(c) 2018, FUJITSU LIMITED. All rights reserved.
+
+# Global variables
+
+# ndctl
+#
+if [ -f "../ndctl/ndctl" ] && [ -x "../ndctl/ndctl" ]; then
+	export ndctl=../ndctl/ndctl
+elif [ -f "./ndctl/ndctl" ] && [ -x "./ndctl/ndctl" ]; then
+	export ndctl=./ndctl/ndctl
+else
+	echo "Couldn't find an ndctl binary"
+	exit 1
+fi
+
+# Functions
+
+# err
+# $1: line number which error detected
+# $2: cleanup function (optional)
+#
+err()
+{
+	echo test/$(basename $0): failed at line $1
+	[ -n "$2" ] && "$2"
+	exit $rc
+}
+
+# check_min_kver
+# $1: Supported kernel version. format: X.Y
+#
+check_min_kver()
+{
+	local ver="$1"
+	: "${KVER:=$(uname -r)}"
+
+	[ -n "$ver" ] || return 1
+	[[ "$ver" == "$(echo -e "$ver\n$KVER" | sort -V | head -1)" ]]
+}
+
+# do_skip
+# $1: Skip message
+#
+do_skip()
+{
+	echo kernel $(uname -r): $1
+	exit 77
+}
+
+# check_prereq
+# $1: command to check
+#
+check_prereq()
+{
+	if ! command -v "$1" >/dev/null; then
+		do_skip "missing $1, skipping..."
+	fi
+}
