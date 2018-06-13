@@ -109,6 +109,16 @@ struct json_object *util_dimm_health_to_json(struct ndctl_dimm *dimm)
 			json_object_object_add(jhealth, "temperature_celsius", jobj);
 	}
 
+	if (flags & ND_SMART_CTEMP_VALID) {
+		unsigned int temp = ndctl_cmd_smart_get_ctrl_temperature(cmd);
+		double t = ndctl_decode_smart_temperature(temp);
+
+		jobj = json_object_new_double(t);
+		if (jobj)
+			json_object_object_add(jhealth,
+					"controller_temperature_celsius", jobj);
+	}
+
 	if (flags & ND_SMART_SPARES_VALID) {
 		unsigned int spares = ndctl_cmd_smart_get_spares(cmd);
 
