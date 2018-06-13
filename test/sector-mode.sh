@@ -17,10 +17,7 @@ BUS1="-b nfit_test.1"
 TEST=$0
 rc=77
 
-err() {
-	echo "$TEST: failed at line $1"
-	exit $rc
-}
+. ./common
 
 set -e
 trap 'err $LINENO' ERR

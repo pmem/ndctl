@@ -11,8 +11,10 @@ FILE=image
 json2var="s/[{}\",]//g; s/:/=/g"
 rc=77
 
-err() {
-	echo "test/dax-errors: failed at line $1"
+. ./common
+
+cleanup()
+{
 	rm -f $FILE
 	rm -f $MNT/$FILE
 	if [ -n "$blockdev" ]; then
@@ -21,23 +23,13 @@ err() {
 		rc=77
 	fi
 	rmdir $MNT
-	exit $rc
 }
 
-check_min_kver()
-{
-	local ver="$1"
-	: "${KVER:=$(uname -r)}"
-
-	[ -n "$ver" ] || return 1
-	[[ "$ver" == "$(echo -e "$ver\n$KVER" | sort -V | head -1)" ]]
-}
-
-check_min_kver "4.7" || { echo "kernel $KVER may lack dax error handling"; exit $rc; }
+check_min_kver "4.7" || do_skip "may lack dax error handling"
 
 set -e
 mkdir -p $MNT
-trap 'err $LINENO' ERR
+trap 'err $LINENO cleanup' ERR
 
 # setup (reset nfit_test dimms)
 modprobe nfit_test

@@ -21,6 +21,8 @@ size=""
 blockdev=""
 rc=77
 
+. ./common
+
 trap 'err $LINENO' ERR
 
 # sample json:
@@ -32,36 +34,19 @@ trap 'err $LINENO' ERR
 #  "blockdev":"pmem7",
 #}
 
-# $1: Line number
-# $2: exit code
-err()
-{
-	[ -n "$2" ] && rc="$2"
-	echo "test/btt-pad-compat.sh: failed at line $1"
-	exit "$rc"
-}
-
-check_prereq()
-{
-	if ! command -v "$1" >/dev/null; then
-		echo "missing '$1', skipping.."
-		exit "$rc"
-	fi
-}
-
 create()
 {
 	json=$($ndctl create-namespace -b "$bus" -t pmem -m sector)
+	rc=2
 	eval "$(echo "$json" | sed -e "$json2var")"
-	[ -n "$dev" ] || err "$LINENO" 2
-	[ -n "$size" ] || err "$LINENO" 2
-	[ -n "$blockdev" ] || err "$LINENO" 2
-	[ $size -gt 0 ] || err "$LINENO" 2
+	[ -n "$dev" ] || err "$LINENO"
+	[ -n "$size" ] || err "$LINENO"
+	[ -n "$blockdev" ] || err "$LINENO"
+	[ $size -gt 0 ] || err "$LINENO"
 	bttdev=$(cat /sys/bus/nd/devices/$dev/holder)
-	[ -n "$bttdev" ] || err "$LINENO" 2
+	[ -n "$bttdev" ] || err "$LINENO"
 	if [ ! -e /sys/kernel/debug/btt/$bttdev/arena0/log_index_0 ]; then
-		echo "kernel $(uname -r) seems to be missing the BTT compatibility fixes, skipping"
-		exit 77
+		do_skip "seems to be missing the BTT compatibility fixes, skipping."
 	fi
 }
 
@@ -141,22 +126,23 @@ create_oldfmt_ns()
 	# v4.13 raw namespaces are limited to 512-byte sector size.
 	rc=77
 	json=$($ndctl create-namespace -b "$bus" -s 64M -t pmem -m raw -l 4096 -u 00000000-0000-0000-0000-000000000000)
-	rc=1
+	rc=2
 	eval "$(echo "$json" | sed -e "$json2var")"
-	[ -n "$dev" ] || err "$LINENO" 2
-	[ -n "$size" ] || err "$LINENO" 2
-	[ $size -gt 0 ] || err "$LINENO" 2
+	[ -n "$dev" ] || err "$LINENO"
+	[ -n "$size" ] || err "$LINENO"
+	[ $size -gt 0 ] || err "$LINENO"
 
 	# reconfig it to sector mode
 	json=$($ndctl create-namespace -b "$bus" -e $dev -m sector --force)
 	eval "$(echo "$json" | sed -e "$json2var")"
-	[ -n "$dev" ] || err "$LINENO" 2
-	[ -n "$size" ] || err "$LINENO" 2
-	[ -n "$blockdev" ] || err "$LINENO" 2
-	[ $size -gt 0 ] || err "$LINENO" 2
+	[ -n "$dev" ] || err "$LINENO"
+	[ -n "$size" ] || err "$LINENO"
+	[ -n "$blockdev" ] || err "$LINENO"
+	[ $size -gt 0 ] || err "$LINENO"
 	bttdev=$(cat /sys/bus/nd/devices/$dev/holder)
-	[ -n "$bttdev" ] || err "$LINENO" 2
+	[ -n "$bttdev" ] || err "$LINENO"
 
+	rc=1
 	# copy old-padding-format btt image, and try to re-enable the resulting btt
 	force_raw 1
 	copy_xxd_img "/dev/$raw_bdev"

@@ -11,6 +11,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
+set -e
+
 DEV=""
 NDCTL="../ndctl/ndctl"
 DAXCTL="../daxctl/daxctl"
@@ -19,23 +21,10 @@ BUS1="-b nfit_test.1"
 json2var="s/[{}\",]//g; s/:/=/g"
 rc=77
 
-err() {
-	echo "test/multi-dax: failed at line $1"
-	exit $rc
-}
+. ./common
 
-check_min_kver()
-{
-	local ver="$1"
-	: "${KVER:=$(uname -r)}"
+check_min_kver "4.13" || do_skip "may lack multi-dax support"
 
-	[ -n "$ver" ] || return 1
-	[[ "$ver" == "$(echo -e "$ver\n$KVER" | sort -V | head -1)" ]]
-}
-
-check_min_kver "4.13" || { echo "kernel $KVER may lack multi-dax support"; exit $rc; }
-
-set -e
 trap 'err $LINENO' ERR
 
 # setup (reset nfit_test dimms)

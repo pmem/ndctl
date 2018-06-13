@@ -24,6 +24,8 @@ blockdev=""
 bs=4096
 rc=77
 
+. ./common
+
 trap 'err $LINENO' ERR
 
 # sample json:
@@ -36,36 +38,19 @@ trap 'err $LINENO' ERR
 #   "blockdev":"pmem5s"
 # }
 
-# $1: Line number
-# $2: exit code
-err()
-{
-	[ -n "$2" ] && rc="$2"
-	echo "test/btt-check: failed at line $1"
-	exit "$rc"
-}
-
-check_min_kver()
-{
-	local ver="$1"
-	: "${KVER:=$(uname -r)}"
-
-	[ -n "$ver" ] || return 1
-	[[ "$ver" == "$(echo -e "$ver\n$KVER" | sort -V | head -1)" ]]
-}
-
-check_min_kver "4.14" || { echo "kernel $KVER may not support badblocks clearing on pmem via btt"; exit $rc; }
+check_min_kver "4.14" || do_skip "may not support badblocks clearing on pmem via btt"
 
 create()
 {
 	json=$($ndctl create-namespace -b "$bus" -t pmem -m sector)
+	rc=2
 	eval "$(echo "$json" | sed -e "$json2var")"
-	[ -n "$dev" ] || err "$LINENO" 2
-	[ "$mode" = "sector" ] || err "$LINENO" 2
-	[ -n "$size" ] || err "$LINENO" 2
-	[ -n "$sector_size" ] || err "$LINENO" 2
-	[ -n "$blockdev" ] || err "$LINENO" 2
-	[ $size -gt 0 ] || err "$LINENO" 2
+	[ -n "$dev" ] || err "$LINENO"
+	[ "$mode" = "sector" ] || err "$LINENO"
+	[ -n "$size" ] || err "$LINENO"
+	[ -n "$sector_size" ] || err "$LINENO"
+	[ -n "$blockdev" ] || err "$LINENO"
+	[ $size -gt 0 ] || err "$LINENO"
 }
 
 reset()

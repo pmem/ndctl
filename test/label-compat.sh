@@ -11,30 +11,17 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
+set -e
+
 NDCTL="../ndctl/ndctl"
 BUS="-b nfit_test.0"
 BUS1="-b nfit_test.1"
 rc=77
 
-set -e
+. ./common
 
-err() {
-	echo "test/label-compat.sh: failed at line $1"
-	exit $rc
-}
+check_min_kver "4.11" || do_skip "may not provide reliable isetcookie values"
 
-check_min_kver()
-{
-	local ver="$1"
-	: "${KVER:=$(uname -r)}"
-
-	[ -n "$ver" ] || return 1
-	[[ "$ver" == "$(echo -e "$ver\n$KVER" | sort -V | head -1)" ]]
-}
-
-check_min_kver "4.11" || { echo "kernel $KVER may not provide reliable isetcookie values"; exit $rc; }
-
-set -e
 trap 'err $LINENO' ERR
 
 # setup (reset nfit_test dimms)

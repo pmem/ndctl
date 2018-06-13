@@ -11,6 +11,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
+set -e
+
 DEV=""
 NDCTL="../ndctl/ndctl"
 BUS="-b nfit_test.0"
@@ -18,25 +20,10 @@ json2var="s/[{}\",]//g; s/:/=/g"
 SECTOR_SIZE="4096"
 rc=77
 
-set -e
+. ./common
 
-err() {
-	echo "test/create: failed at line $1"
-	exit $rc
-}
+check_min_kver "4.5" || do_skip "may lack namespace mode attribute"
 
-check_min_kver()
-{
-	local ver="$1"
-	: "${KVER:=$(uname -r)}"
-
-	[ -n "$ver" ] || return 1
-	[[ "$ver" == "$(echo -e "$ver\n$KVER" | sort -V | head -1)" ]]
-}
-
-check_min_kver "4.5" || { echo "kernel $KVER may lack namespace mode attribute"; exit $rc; }
-
-set -e
 trap 'err $LINENO' ERR
 
 # setup (reset nfit_test dimms)

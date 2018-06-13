@@ -12,25 +12,9 @@ rc=77
 dev=""
 image="update-fw.img"
 
+. ./common
+
 trap 'err $LINENO' ERR
-
-# $1: Line number
-# $2: exit code
-err()
-{
-	[ -n "$2" ] && rc="$2"
-	echo "test/firmware-update.sh: failed at line $1"
-	exit "$rc"
-}
-
-check_min_kver()
-{
-	local ver="$1"
-	: "${KVER:=$(uname -r)}"
-
-	[ -n "$ver" ] || return 1
-	[[ "$ver" == "$(echo -e "$ver\n$KVER" | sort -V | head -1)" ]]
-}
 
 reset()
 {
@@ -52,7 +36,7 @@ cleanup()
 detect()
 {
 	dev=$($ndctl list -b "$bus" -D | jq .[0].dev | tr -d '"')
-	[ -n "$dev" ] || err "$LINENO" 2
+	[ -n "$dev" ] || err "$LINENO"
 }
 
 do_tests()
@@ -61,10 +45,12 @@ do_tests()
 	$ndctl update-firmware -f $image $dev
 }
 
-check_min_kver "4.16" || { echo "kernel $KVER may lack firmware update test handling"; exit $rc; }
+check_min_kver "4.16" || do_skip "may lack firmware update test handling"
+
 modprobe nfit_test
 rc=1
 reset
+rc=2
 detect
 do_tests
 cleanup

@@ -19,10 +19,10 @@ json2var="s/[{}\",]//g; s/:/=/g"
 blockdev=""
 rc=77
 
-err() {
-	rc=1
-	echo "test/btt-errors: failed at line $1"
+. ./common
 
+cleanup()
+{
 	rm -f $FILE
 	rm -f $MNT/$FILE
 	if [ -n "$blockdev" ]; then
@@ -31,16 +31,6 @@ err() {
 		rc=77
 	fi
 	rmdir $MNT
-	exit $rc
-}
-
-check_min_kver()
-{
-	local ver="$1"
-	: "${KVER:=$(uname -r)}"
-
-	[ -n "$ver" ] || return 1
-	[[ "$ver" == "$(echo -e "$ver\n$KVER" | sort -V | head -1)" ]]
 }
 
 force_raw()
@@ -59,11 +49,11 @@ force_raw()
 	fi
 }
 
-check_min_kver "4.15" || { echo "kernel $KVER may lack BTT error handling"; exit $rc; }
+check_min_kver "4.15" || do_skip "may lack BTT error handling"
 
 set -e
 mkdir -p $MNT
-trap 'err $LINENO' ERR
+trap 'err $LINENO cleanup' ERR
 
 # setup (reset nfit_test dimms)
 modprobe nfit_test

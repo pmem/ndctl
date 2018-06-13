@@ -2,15 +2,14 @@
 # SPDX-License-Identifier: GPL-2.0
 # Copyright(c) 2018 Intel Corporation. All rights reserved.
 
-[ -f "../ndctl/ndctl" ] && [ -x "../ndctl/ndctl" ] && ndctl="../ndctl/ndctl"
-[ -f "./ndctl/ndctl" ] && [ -x "./ndctl/ndctl" ] && ndctl="./ndctl/ndctl"
-[ -z "$ndctl" ] && echo "Couldn't find an ndctl binary" && exit 1
 bus="nfit_test.0"
 json2var="s/[{}\",]//g; s/:/=/g"
 dev=""
 size=""
 blockdev=""
 rc=77
+
+. ./common
 
 trap 'err $LINENO' ERR
 
@@ -23,32 +22,8 @@ trap 'err $LINENO' ERR
 #  "blockdev":"pmem5s",
 #}
 
-# $1: Line number
-# $2: exit code
-err()
-{
-	[ -n "$2" ] && rc="$2"
-	echo "test/rescan-partitions.sh: failed at line $1"
-	exit "$rc"
-}
+check_min_kver "4.16" || do_skip "may not contain fixes for partition rescanning"
 
-check_min_kver()
-{
-	local ver="$1"
-	: "${KVER:=$(uname -r)}"
-
-	[ -n "$ver" ] || return 1
-	[[ "$ver" == "$(echo -e "$ver\n$KVER" | sort -V | head -1)" ]]
-}
-check_min_kver "4.16" || { echo "kernel $KVER may not contain fixes for partition rescanning"; exit "$rc"; }
-
-check_prereq()
-{
-	if ! command -v "$1" >/dev/null; then
-		echo "missing '$1', skipping.."
-		exit "$rc"
-	fi
-}
 check_prereq "parted"
 check_prereq "blockdev"
 
@@ -65,12 +40,14 @@ test_mode()
 
 	# create namespace
 	json=$($ndctl create-namespace -b "$bus" -t pmem -m "$mode")
+	rc=2
 	eval "$(echo "$json" | sed -e "$json2var")"
-	[ -n "$dev" ] || err "$LINENO" 2
-	[ -n "$size" ] || err "$LINENO" 2
-	[ -n "$blockdev" ] || err "$LINENO" 2
-	[ $size -gt 0 ] || err "$LINENO" 2
+	[ -n "$dev" ] || err "$LINENO"
+	[ -n "$size" ] || err "$LINENO"
+	[ -n "$blockdev" ] || err "$LINENO"
+	[ $size -gt 0 ] || err "$LINENO"
 
+	rc=1
 	# create partition
 	parted --script /dev/$blockdev mklabel gpt mkpart primary 1MiB 10MiB
 
@@ -89,7 +66,8 @@ test_mode()
 		echo "mode: $mode - partition read successful"
 	else
 		echo "mode: $mode - partition read failed"
-		err "$LINENO" 1
+		rc=1
+		err "$LINENO"
 	fi
 
 	$ndctl disable-namespace $dev

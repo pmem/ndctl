@@ -23,6 +23,8 @@ rc=77
 err_block=42
 err_count=8
 
+. ./common
+
 trap 'err $LINENO' ERR
 
 # sample json:
@@ -34,34 +36,17 @@ trap 'err $LINENO' ERR
 #  "blockdev":"pmem7",
 #}
 
-# $1: Line number
-# $2: exit code
-err()
-{
-	[ -n "$2" ] && rc="$2"
-	echo "test/inject-error.sh: failed at line $1"
-	exit "$rc"
-}
-
-check_min_kver()
-{
-	local ver="$1"
-	: "${KVER:=$(uname -r)}"
-
-	[ -n "$ver" ] || return 1
-	[[ "$ver" == "$(echo -e "$ver\n$KVER" | sort -V | head -1)" ]]
-}
-
-check_min_kver "4.15" || { echo "kernel $KVER may not support error injection"; exit "$rc"; }
+check_min_kver "4.15" || do_skip "kernel $KVER may not support error injection"
 
 create()
 {
 	json=$($ndctl create-namespace -b "$bus" -t pmem --align=4k)
+	rc=2
 	eval "$(echo "$json" | sed -e "$json2var")"
-	[ -n "$dev" ] || err "$LINENO" 2
-	[ -n "$size" ] || err "$LINENO" 2
-	[ -n "$blockdev" ] || err "$LINENO" 2
-	[ $size -gt 0 ] || err "$LINENO" 2
+	[ -n "$dev" ] || err "$LINENO"
+	[ -n "$size" ] || err "$LINENO"
+	[ -n "$blockdev" ] || err "$LINENO"
+	[ $size -gt 0 ] || err "$LINENO"
 }
 
 reset()

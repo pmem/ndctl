@@ -11,6 +11,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
+set -e
+
 DEV=""
 NDCTL="../ndctl/ndctl"
 BUS="-b nfit_test.0"
@@ -18,25 +20,10 @@ BUS1="-b nfit_test.1"
 json2var="s/[{}\",]//g; s/:/=/g"
 rc=77
 
-set -e
+. ./common
 
-err() {
-	echo "test/clear: failed at line $1"
-	exit $rc
-}
+check_min_kver "4.6" || do_skip "lacks clear poison support"
 
-check_min_kver()
-{
-	local ver="$1"
-	: "${KVER:=$(uname -r)}"
-
-	[ -n "$ver" ] || return 1
-	[[ "$ver" == "$(echo -e "$ver\n$KVER" | sort -V | head -1)" ]]
-}
-
-check_min_kver "4.6" || { echo "kernel $KVER lacks clear poison support"; exit $rc; }
-
-set -e
 trap 'err $LINENO' ERR
 
 # setup (reset nfit_test dimms)
@@ -88,7 +75,7 @@ if read sector len < /sys/block/$blockdev/badblocks; then
 	echo "fail: $LINENO" && exit 1
 fi
 
-if check_min_kver "4.9.0"; then
+if check_min_kver "4.9"; then
 	# check for re-appearance of stale badblocks from poison_list
 	$NDCTL disable-region $BUS all
 	$NDCTL enable-region $BUS all
