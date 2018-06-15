@@ -69,9 +69,16 @@ libndctl_LDADD = $(LIBNDCTL_LIB) $(UUID_LIBS) $(KMOD_LIBS)
 
 dsm_fail_SOURCES =\
 	dsm-fail.c \
-	$(testcore)
+	$(testcore) \
+	../ndctl/namespace.c \
+	../ndctl/check.c \
+	../util/json.c
 
-dsm_fail_LDADD = $(LIBNDCTL_LIB) $(KMOD_LIBS)
+dsm_fail_LDADD = $(LIBNDCTL_LIB) \
+		$(KMOD_LIBS) \
+		$(JSON_LIBS) \
+		$(UUID_LIBS) \
+		../libutil.a
 
 ack_shutdown_count_set_SOURCES =\
 	ack-shutdown-count-set.c \
