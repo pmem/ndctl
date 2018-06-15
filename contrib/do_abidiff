@@ -1,0 +1,73 @@
+#!/bin/bash -e
+
+range="$*"
+old="${range%%..*}"
+new="${range##*..}"
+
+err()
+{
+	echo "$1"
+	exit 1
+}
+
+build_rpm()
+{
+	local cur=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+	local ref="$1"
+	local version=""
+
+	# prepare ndctl tree
+	rm -rf results_ndctl
+	git checkout -b rel_${ref} $ref
+	./autogen.sh
+	./configure CFLAGS='-g -O2' --prefix=/usr --sysconfdir=/etc --libdir=/usr/lib64
+	make clean
+	make rhel/ndctl.spec
+	cp rhel/ndctl.spec .
+
+	# build and copy RPMs
+	version="$(./git-version)"
+	git archive  --format=tar --prefix="ndctl-${version}/" HEAD | gzip > ndctl-${version}.tar.gz
+	fedpkg --release master --module-name ndctl mockbuild
+	mkdir -p release/rel_${ref}/
+	cp results_ndctl/*/*/*.x86_64.rpm release/rel_${ref}/
+
+	# restore ndctl branch and cleanup
+	git checkout $cur
+	git branch -D rel_${ref}
+	rm ndctl-${version}.tar.gz
+	rm ndctl-${version}*.src.rpm
+	rm -rf results_ndctl
+	rm -f ndctl.spec
+}
+
+do_diff()
+{
+	local pkg="$1"
+	local old_base="$(find . -regex "./release/rel_${old}/${pkg}-[0-9]+.*" | head -1)"
+	local new_base="$(find . -regex "./release/rel_${new}/${pkg}-[0-9]+.*" | head -1)"
+	local old_dev="$(find . -regex "./release/rel_${old}/${pkg}-devel-[0-9]+.*" | head -1)"
+	local new_dev="$(find . -regex "./release/rel_${new}/${pkg}-devel-[0-9]+.*" | head -1)"
+	local old_lib="$(find . -regex "./release/rel_${old}/${pkg}-libs-[0-9]+.*" | head -1)"
+	local new_lib="$(find . -regex "./release/rel_${new}/${pkg}-libs-[0-9]+.*" | head -1)"
+
+	[ -n "$pkg" ] || err "specify a package for diff (ndctl, daxctl)"
+
+	abipkgdiff --dso-only --no-added-syms --harmless --drop-private-types \
+		--devel1 "$old_dev" --devel2 "$new_dev" \
+		"$old_base" "$new_base"
+	abipkgdiff  --no-added-syms --harmless --drop-private-types \
+		--devel1 "$old_dev" --devel2 "$new_dev" \
+		"$old_lib" "$new_lib"
+}
+
+[ -e "COPYING" ] || err "Run from the top level of an ndctl tree"
+if ! command -v "abipkgdiff" >/dev/null; then
+	err "missing abipkgdiff. Please install libabigail"
+fi
+rm -rf release/rel*
+
+build_rpm $old > release/buildlog_$old 2>&1
+build_rpm $new > release/buildlog_$new 2>&1
+do_diff ndctl
+do_diff daxctl
