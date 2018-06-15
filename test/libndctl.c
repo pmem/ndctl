@@ -2177,8 +2177,8 @@ static int check_set_config_data(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 	return 0;
 }
 
-#define __check_smart(dimm, cmd, field) ({ \
-	if (ndctl_cmd_smart_get_##field(cmd) != smart_data.field) { \
+#define __check_smart(dimm, cmd, field, mask) ({ \
+	if ((ndctl_cmd_smart_get_##field(cmd) & mask) != smart_data.field) { \
 		fprintf(stderr, "%s dimm: %#x expected \'" #field \
 				"\' %#x got: %#x\n", __func__, \
 				ndctl_dimm_get_handle(dimm), \
@@ -2230,14 +2230,14 @@ static int check_smart(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 		return rc;
 	}
 
-	__check_smart(dimm, cmd, flags);
-	__check_smart(dimm, cmd, health);
-	__check_smart(dimm, cmd, temperature);
-	__check_smart(dimm, cmd, spares);
-	__check_smart(dimm, cmd, alarm_flags);
-	__check_smart(dimm, cmd, life_used);
-	__check_smart(dimm, cmd, shutdown_state);
-	__check_smart(dimm, cmd, vendor_size);
+	__check_smart(dimm, cmd, flags, ~ND_SMART_CTEMP_VALID);
+	__check_smart(dimm, cmd, health, -1);
+	__check_smart(dimm, cmd, temperature, -1);
+	__check_smart(dimm, cmd, spares, -1);
+	__check_smart(dimm, cmd, alarm_flags, -1);
+	__check_smart(dimm, cmd, life_used, -1);
+	__check_smart(dimm, cmd, shutdown_state, -1);
+	__check_smart(dimm, cmd, vendor_size, -1);
 
 	check->cmd = cmd;
 	return 0;
