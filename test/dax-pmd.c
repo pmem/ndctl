@@ -194,7 +194,7 @@ int test_dax_directio(int dax_fd, unsigned long align, void *dax_addr, off_t off
 }
 
 /* test_pmd assumes that fd references a pre-allocated + dax-capable file */
-static int test_pmd(int fd)
+static int test_pmd(struct ndctl_test *test, int fd)
 {
 	unsigned long long m_align, p_align, pmd_off;
 	static const bool fsdax = true;
@@ -257,7 +257,7 @@ static int test_pmd(int fd)
 	if (rc)
 		goto err_directio;
 
-	rc = test_dax_poison(fd, HPAGE_SIZE, pmd_addr, pmd_off, fsdax);
+	rc = test_dax_poison(test, fd, HPAGE_SIZE, pmd_addr, pmd_off, fsdax);
 
  err_directio:
  err_extent:
@@ -268,14 +268,20 @@ static int test_pmd(int fd)
 
 int __attribute__((weak)) main(int argc, char *argv[])
 {
+	struct ndctl_test *test = ndctl_test_new(0);
 	int fd, rc;
+
+	if (!test) {
+		fprintf(stderr, "failed to initialize test\n");
+		return EXIT_FAILURE;
+	}
 
 	if (argc < 1)
 		return -EINVAL;
 
 	fd = open(argv[1], O_RDWR);
-	rc = test_pmd(fd);
+	rc = test_pmd(test, fd);
 	if (fd >= 0)
 		close(fd);
-	return rc;
+	return ndctl_test_result(test, rc);
 }

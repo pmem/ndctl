@@ -94,7 +94,9 @@ parent_uuid_LDADD = $(LIBNDCTL_LIB) $(UUID_LIBS) $(KMOD_LIBS)
 dax_dev_SOURCES = dax-dev.c $(testcore)
 dax_dev_LDADD = $(LIBNDCTL_LIB) $(KMOD_LIBS)
 
-dax_pmd_SOURCES = dax-pmd.c
+dax_pmd_SOURCES = dax-pmd.c \
+		$(testcore)
+
 hugetlb_SOURCES = hugetlb.c \
 		  dax-pmd.c
 

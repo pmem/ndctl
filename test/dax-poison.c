@@ -15,6 +15,7 @@
 #include <test.h>
 #include <util/size.h>
 #include <stdbool.h>
+#include <linux/version.h>
 
 #define fail() fprintf(stderr, "%s: failed at: %d (%s)\n", \
 	__func__, __LINE__, strerror(errno))
@@ -43,14 +44,17 @@ static void sigbus_hdl(int sig, siginfo_t *si, void *ptr)
 	siglongjmp(sj_env, 1);
 }
 
-int test_dax_poison(int dax_fd, unsigned long align, void *dax_addr,
-		off_t offset, bool fsdax)
+int test_dax_poison(struct ndctl_test *test, int dax_fd, unsigned long align,
+		void *dax_addr, off_t offset, bool fsdax)
 {
 	unsigned char *addr = MAP_FAILED;
 	struct sigaction act;
 	unsigned x = x;
 	void *buf;
 	int rc;
+
+	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 19, 0)))
+		return 77;
 
 	/*
 	 * MADV_HWPOISON must be page aligned, and this routine assumes

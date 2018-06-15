@@ -39,11 +39,11 @@ int test_parent_uuid(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ct
 int test_multi_pmem(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx);
 int test_dax_directio(int dax_fd, unsigned long align, void *dax_addr, off_t offset);
 #ifdef ENABLE_POISON
-int test_dax_poison(int dax_fd, unsigned long align, void *dax_addr,
-		off_t offset, bool fsdax);
+int test_dax_poison(struct ndctl_test *test, int dax_fd, unsigned long align,
+		void *dax_addr, off_t offset, bool fsdax);
 #else
-static inline int test_dax_poison(int dax_fd, unsigned long align,
-		void *dax_addr, off_t offset, bool fsdax)
+static inline int test_dax_poison(struct ndctl_test *test, int dax_fd,
+		unsigned long align, void *dax_addr, off_t offset, bool fsdax)
 {
 	return 0;
 }

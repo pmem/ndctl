@@ -279,7 +279,7 @@ static int __test_device_dax(unsigned long align, int loglevel,
 
 		fprintf(stderr, "%s: test dax poison\n",
 				ndctl_namespace_get_devname(ndns));
-		rc = test_dax_poison(fd, align, NULL, 0, devdax);
+		rc = test_dax_poison(test, fd, align, NULL, 0, devdax);
 		if (rc) {
 			fprintf(stderr, "%s: failed dax poison\n",
 					ndctl_namespace_get_devname(ndns));

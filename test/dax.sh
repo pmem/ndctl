@@ -28,6 +28,15 @@ err() {
 	exit $rc
 }
 
+run_test() {
+	if ! ./dax-pmd $MNT/$FILE; then
+		rc=$?
+		if [ $rc -ne 77 -a $rc -ne 0 ]; then
+			err
+		fi
+	fi
+}
+
 set -e
 mkdir -p $MNT
 trap 'err $LINENO' ERR
@@ -40,7 +49,7 @@ rc=1
 mkfs.ext4 /dev/$blockdev
 mount /dev/$blockdev $MNT -o dax
 fallocate -l 1GiB $MNT/$FILE
-./dax-pmd $MNT/$FILE
+run_test
 umount $MNT
 
 # convert pmem to put the memmap on the device
@@ -52,7 +61,7 @@ eval $(echo $json | sed -e "$json2var")
 mkfs.ext4 /dev/$blockdev
 mount /dev/$blockdev $MNT -o dax
 fallocate -l 1GiB $MNT/$FILE
-./dax-pmd $MNT/$FILE
+run_test
 umount $MNT
 
 json=$($NDCTL create-namespace -m raw -f -e $dev)
@@ -62,7 +71,7 @@ eval $(echo $json | sed -e "$json2var")
 mkfs.xfs -f /dev/$blockdev
 mount /dev/$blockdev $MNT -o dax
 fallocate -l 1GiB $MNT/$FILE
-./dax-pmd $MNT/$FILE
+run_test
 umount $MNT
 
 # convert pmem to put the memmap on the device
@@ -73,7 +82,7 @@ eval $(echo $json | sed -e "$json2var")
 mkfs.xfs -f /dev/$blockdev
 mount /dev/$blockdev $MNT -o dax
 fallocate -l 1GiB $MNT/$FILE
-./dax-pmd $MNT/$FILE
+run_test
 umount $MNT
 
 # revert namespace to raw mode
@@ -81,4 +90,4 @@ json=$($NDCTL create-namespace -m raw -f -e $dev)
 eval $(echo $json | sed -e "$json2var")
 [ $mode != "fsdax" ] && echo "fail: $LINENO" &&  exit 1
 
-exit 0
+exit $rc
