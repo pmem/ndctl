@@ -4,16 +4,22 @@
 
 # Global variables
 
-# ndctl
+# NDCTL
 #
 if [ -f "../ndctl/ndctl" ] && [ -x "../ndctl/ndctl" ]; then
-	export ndctl=../ndctl/ndctl
+	export NDCTL=../ndctl/ndctl
 elif [ -f "./ndctl/ndctl" ] && [ -x "./ndctl/ndctl" ]; then
-	export ndctl=./ndctl/ndctl
+	export NDCTL=./ndctl/ndctl
 else
 	echo "Couldn't find an ndctl binary"
 	exit 1
 fi
+
+# NFIT_TEST_BUS[01]
+#
+NFIT_TEST_BUS0=nfit_test.0
+NFIT_TEST_BUS1=nfit_test.1
+
 
 # Functions
 
@@ -57,4 +63,21 @@ check_prereq()
 	if ! command -v "$1" >/dev/null; then
 		do_skip "missing $1, skipping..."
 	fi
+}
+
+# _cleanup
+#
+_cleanup()
+{
+	$NDCTL disable-region -b $NFIT_TEST_BUS0 all
+	$NDCTL disable-region -b $NFIT_TEST_BUS1 all
+	modprobe -r nfit_test
+}
+
+# json2var
+# stdin: json
+#
+json2var()
+{
+	sed -e "s/[{}\",]//g; s/:/=/g"
 }
