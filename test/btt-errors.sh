@@ -11,11 +11,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-NDCTL="../ndctl/ndctl"
-BUS="nfit_test.0"
 MNT=test_btt_mnt
 FILE=image
-json2var="s/[{}\",]//g; s/:/=/g"
 blockdev=""
 rc=77
 
@@ -57,16 +54,16 @@ trap 'err $LINENO cleanup' ERR
 
 # setup (reset nfit_test dimms)
 modprobe nfit_test
-$NDCTL disable-region -b "$BUS" all
-$NDCTL zero-labels -b "$BUS" all
-$NDCTL enable-region -b "$BUS" all
+$NDCTL disable-region -b $NFIT_TEST_BUS0 all
+$NDCTL zero-labels -b $NFIT_TEST_BUS0 all
+$NDCTL enable-region -b $NFIT_TEST_BUS0 all
 
 rc=1
 
 # create a btt namespace and clear errors (if any)
 dev="x"
-json=$($NDCTL create-namespace -b "$BUS" -t pmem -m sector)
-eval "$(echo "$json" | sed -e "$json2var")"
+json=$($NDCTL create-namespace -b $NFIT_TEST_BUS0 -t pmem -m sector)
+eval "$(echo "$json" | json2var)"
 [ $dev = "x" ] && echo "fail: $LINENO" && exit 1
 
 force_raw 1
@@ -137,12 +134,12 @@ dd if=$MNT/$FILE of=/dev/null iflag=direct bs=4096 count=1
 
 # reset everything to get a clean log
 if grep -q "$MNT" /proc/mounts; then umount $MNT; fi
-$NDCTL disable-region -b "$BUS" all
-$NDCTL zero-labels -b "$BUS" all
-$NDCTL enable-region -b "$BUS" all
+$NDCTL disable-region -b $NFIT_TEST_BUS0 all
+$NDCTL zero-labels -b $NFIT_TEST_BUS0 all
+$NDCTL enable-region -b $NFIT_TEST_BUS0 all
 dev="x"
-json=$($NDCTL create-namespace -b "$BUS" -t pmem -m sector)
-eval "$(echo "$json" | sed -e "$json2var")"
+json=$($NDCTL create-namespace -b $NFIT_TEST_BUS0 -t pmem -m sector)
+eval "$(echo "$json" | json2var)"
 [ $dev = "x" ] && echo "fail: $LINENO" && exit 1
 
 # insert error at an arbitrary offset in the map (sector 0)
@@ -158,7 +155,8 @@ force_raw 0
 dd if=/dev/$blockdev of=/dev/null iflag=direct bs=4096 count=1 && err $LINENO || true
 
 # done, exit
-$NDCTL disable-region -b "$BUS" all
-$NDCTL zero-labels -b "$BUS" all
-$NDCTL enable-region -b "$BUS" all
+$NDCTL disable-region -b $NFIT_TEST_BUS0 all
+$NDCTL zero-labels -b $NFIT_TEST_BUS0 all
+$NDCTL enable-region -b $NFIT_TEST_BUS0 all
+_cleanup
 exit 0

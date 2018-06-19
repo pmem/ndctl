@@ -2,8 +2,6 @@
 # SPDX-License-Identifier: GPL-2.0
 # Copyright(c) 2018 Intel Corporation. All rights reserved.
 
-bus="nfit_test.0"
-json2var="s/[{}\",]//g; s/:/=/g"
 dev=""
 size=""
 blockdev=""
@@ -29,9 +27,9 @@ check_prereq "blockdev"
 
 reset()
 {
-	$ndctl disable-region -b "$bus" all
-	$ndctl zero-labels -b "$bus" all
-	$ndctl enable-region -b "$bus" all
+	$NDCTL disable-region -b $NFIT_TEST_BUS0 all
+	$NDCTL zero-labels -b $NFIT_TEST_BUS0 all
+	$NDCTL enable-region -b $NFIT_TEST_BUS0 all
 }
 
 test_mode()
@@ -39,9 +37,9 @@ test_mode()
 	local mode="$1"
 
 	# create namespace
-	json=$($ndctl create-namespace -b "$bus" -t pmem -m "$mode")
+	json=$($NDCTL create-namespace -b $NFIT_TEST_BUS0 -t pmem -m "$mode")
 	rc=2
-	eval "$(echo "$json" | sed -e "$json2var")"
+	eval "$(echo "$json" | json2var)"
 	[ -n "$dev" ] || err "$LINENO"
 	[ -n "$size" ] || err "$LINENO"
 	[ -n "$blockdev" ] || err "$LINENO"
@@ -60,8 +58,8 @@ test_mode()
 
 	# cycle the namespace, and verify the partition is read
 	# without needing to do a blockdev --rereadpt
-	$ndctl disable-namespace $dev
-	$ndctl enable-namespace $dev
+	$NDCTL disable-namespace $dev
+	$NDCTL enable-namespace $dev
 	if [ -b /dev/$partdev ]; then
 		echo "mode: $mode - partition read successful"
 	else
@@ -70,8 +68,8 @@ test_mode()
 		err "$LINENO"
 	fi
 
-	$ndctl disable-namespace $dev
-	$ndctl destroy-namespace $dev
+	$NDCTL disable-namespace $dev
+	$NDCTL destroy-namespace $dev
 }
 
 modprobe nfit_test
@@ -80,5 +78,5 @@ reset
 test_mode "raw"
 test_mode "fsdax"
 test_mode "sector"
-
+_cleanup
 exit 0

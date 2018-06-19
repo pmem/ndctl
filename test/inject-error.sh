@@ -11,11 +11,6 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-[ -f "../ndctl/ndctl" ] && [ -x "../ndctl/ndctl" ] && ndctl="../ndctl/ndctl"
-[ -f "./ndctl/ndctl" ] && [ -x "./ndctl/ndctl" ] && ndctl="./ndctl/ndctl"
-[ -z "$ndctl" ] && echo "Couldn't find an ndctl binary" && exit 1
-bus="nfit_test.0"
-json2var="s/[{}\",]//g; s/:/=/g"
 dev=""
 size=""
 blockdev=""
@@ -40,9 +35,9 @@ check_min_kver "4.15" || do_skip "kernel $KVER may not support error injection"
 
 create()
 {
-	json=$($ndctl create-namespace -b "$bus" -t pmem --align=4k)
+	json=$($NDCTL create-namespace -b $NFIT_TEST_BUS0 -t pmem --align=4k)
 	rc=2
-	eval "$(echo "$json" | sed -e "$json2var")"
+	eval "$(echo "$json" | json2var)"
 	[ -n "$dev" ] || err "$LINENO"
 	[ -n "$size" ] || err "$LINENO"
 	[ -n "$blockdev" ] || err "$LINENO"
@@ -51,9 +46,9 @@ create()
 
 reset()
 {
-	$ndctl disable-region -b "$bus" all
-	$ndctl zero-labels -b "$bus" all
-	$ndctl enable-region -b "$bus" all
+	$NDCTL disable-region -b $NFIT_TEST_BUS0 all
+	$NDCTL zero-labels -b $NFIT_TEST_BUS0 all
+	$NDCTL enable-region -b $NFIT_TEST_BUS0 all
 }
 
 check_status()
@@ -61,7 +56,7 @@ check_status()
 	local sector="$1"
 	local count="$2"
 
-	json="$($ndctl inject-error --status $dev)"
+	json="$($NDCTL inject-error --status $dev)"
 	[[ "$sector" == "$(jq ".badblocks[0].block" <<< "$json")" ]]
 	[[ "$count" == "$(jq ".badblocks[0].count" <<< "$json")" ]]
 }
@@ -69,7 +64,7 @@ check_status()
 do_tests()
 {
 	# inject without notification
-	$ndctl inject-error --block=$err_block --count=$err_count --no-notify $dev
+	$NDCTL inject-error --block=$err_block --count=$err_count --no-notify $dev
 	check_status "$err_block" "$err_count"
 	if read -r sector len < /sys/block/$blockdev/badblocks; then
 		# fail if reading badblocks returns data
@@ -77,11 +72,11 @@ do_tests()
 	fi
 
 	# clear via err-inj-clear
-	$ndctl inject-error --block=$err_block --count=$err_count --uninject $dev
+	$NDCTL inject-error --block=$err_block --count=$err_count --uninject $dev
 	check_status
 
 	# inject normally
-	$ndctl inject-error --block=$err_block --count=$err_count $dev
+	$NDCTL inject-error --block=$err_block --count=$err_count $dev
 	check_status "$err_block" "$err_count"
 	if read -r sector len < /sys/block/$blockdev/badblocks; then
 		test "$sector" -eq "$err_block"
@@ -102,4 +97,5 @@ rc=1
 reset && create
 do_tests
 reset
+_cleanup
 exit 0

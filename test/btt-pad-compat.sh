@@ -11,11 +11,6 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-[ -f "../ndctl/ndctl" ] && [ -x "../ndctl/ndctl" ] && ndctl="../ndctl/ndctl"
-[ -f "./ndctl/ndctl" ] && [ -x "./ndctl/ndctl" ] && ndctl="./ndctl/ndctl"
-[ -z "$ndctl" ] && echo "Couldn't find an ndctl binary" && exit 1
-bus="nfit_test.0"
-json2var="s/[{}\",]//g; s/:/=/g"
 dev=""
 size=""
 blockdev=""
@@ -36,9 +31,9 @@ trap 'err $LINENO' ERR
 
 create()
 {
-	json=$($ndctl create-namespace -b "$bus" -t pmem -m sector)
+	json=$($NDCTL create-namespace -b $NFIT_TEST_BUS0 -t pmem -m sector)
 	rc=2
-	eval "$(echo "$json" | sed -e "$json2var")"
+	eval "$(echo "$json" | json2var)"
 	[ -n "$dev" ] || err "$LINENO"
 	[ -n "$size" ] || err "$LINENO"
 	[ -n "$blockdev" ] || err "$LINENO"
@@ -52,9 +47,9 @@ create()
 
 reset()
 {
-	$ndctl disable-region -b "$bus" all
-	$ndctl zero-labels -b "$bus" all
-	$ndctl enable-region -b "$bus" all
+	$NDCTL disable-region -b $NFIT_TEST_BUS0 all
+	$NDCTL zero-labels -b $NFIT_TEST_BUS0 all
+	$NDCTL enable-region -b $NFIT_TEST_BUS0 all
 }
 
 verify_idx()
@@ -90,16 +85,16 @@ cycle_ns()
 {
 	local ns="$1"
 
-	$ndctl disable-namespace $ns
-	$ndctl enable-namespace $ns
+	$NDCTL disable-namespace $ns
+	$NDCTL enable-namespace $ns
 }
 
 force_raw()
 {
 	raw="$1"
-	$ndctl disable-namespace "$dev"
+	$NDCTL disable-namespace "$dev"
 	echo "$raw" > "/sys/bus/nd/devices/$dev/force_raw"
-	$ndctl enable-namespace "$dev"
+	$NDCTL enable-namespace "$dev"
 	echo "Set $dev to raw mode: $raw"
 	if [[ "$raw" == "1" ]]; then
 		raw_bdev=${blockdev%s}
@@ -125,16 +120,16 @@ create_oldfmt_ns()
 	# that supports a raw namespace with a 4K sector size, prior to
 	# v4.13 raw namespaces are limited to 512-byte sector size.
 	rc=77
-	json=$($ndctl create-namespace -b "$bus" -s 64M -t pmem -m raw -l 4096 -u 00000000-0000-0000-0000-000000000000)
+	json=$($NDCTL create-namespace -b $NFIT_TEST_BUS0 -s 64M -t pmem -m raw -l 4096 -u 00000000-0000-0000-0000-000000000000)
 	rc=2
-	eval "$(echo "$json" | sed -e "$json2var")"
+	eval "$(echo "$json" | json2var)"
 	[ -n "$dev" ] || err "$LINENO"
 	[ -n "$size" ] || err "$LINENO"
 	[ $size -gt 0 ] || err "$LINENO"
 
 	# reconfig it to sector mode
-	json=$($ndctl create-namespace -b "$bus" -e $dev -m sector --force)
-	eval "$(echo "$json" | sed -e "$json2var")"
+	json=$($NDCTL create-namespace -b $NFIT_TEST_BUS0 -e $dev -m sector --force)
+	eval "$(echo "$json" | json2var)"
 	[ -n "$dev" ] || err "$LINENO"
 	[ -n "$size" ] || err "$LINENO"
 	[ -n "$blockdev" ] || err "$LINENO"
@@ -178,13 +173,13 @@ do_tests()
 	verify_idx 0 2
 
 	# rewrite log using ndctl, verify conversion to new format
-	$ndctl check-namespace --rewrite-log --repair --force --verbose $dev
+	$NDCTL check-namespace --rewrite-log --repair --force --verbose $dev
 	do_random_io "/dev/$blockdev"
 	cycle_ns "$dev"
 	verify_idx 0 1
 
 	# check-namespace again to make sure everything is ok
-	$ndctl check-namespace --force --verbose $dev
+	$NDCTL check-namespace --force --verbose $dev
 
 	# the old format btt metadata was created with a null parent uuid,
 	# making it 'stickier' than a normally created btt. Be sure to clean
@@ -198,4 +193,5 @@ rc=1
 reset
 do_tests
 reset
+_cleanup
 exit 0

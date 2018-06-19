@@ -13,11 +13,6 @@
 
 set -e
 
-DEV=""
-NDCTL="../ndctl/ndctl"
-BUS="-b nfit_test.0"
-BUS1="-b nfit_test.1"
-json2var="s/[{}\",]//g; s/:/=/g"
 rc=77
 
 . ./common
@@ -28,16 +23,16 @@ trap 'err $LINENO' ERR
 
 # setup (reset nfit_test dimms)
 modprobe nfit_test
-$NDCTL disable-region $BUS all
-$NDCTL zero-labels $BUS all
-$NDCTL enable-region $BUS all
+$NDCTL disable-region -b $NFIT_TEST_BUS0 all
+$NDCTL zero-labels -b $NFIT_TEST_BUS0 all
+$NDCTL enable-region -b $NFIT_TEST_BUS0 all
 
 rc=1
 
 # create pmem
 dev="x"
-json=$($NDCTL create-namespace $BUS -t pmem -m raw)
-eval $(echo $json | sed -e "$json2var")
+json=$($NDCTL create-namespace -b $NFIT_TEST_BUS0 -t pmem -m raw)
+eval $(echo $json | json2var)
 [ $dev = "x" ] && echo "fail: $LINENO" && exit 1
 [ $mode != "raw" ] && echo "fail: $LINENO" && exit 1
 
@@ -58,7 +53,7 @@ sector_raw=$sector
 
 # convert pmem to fsdax mode
 json=$($NDCTL create-namespace -m fsdax -f -e $dev)
-eval $(echo $json | sed -e "$json2var")
+eval $(echo $json | json2var)
 [ $mode != "fsdax" ] && echo "fail: $LINENO" && exit 1
 
 # check for errors relative to the offset injected by the pfn device
@@ -77,8 +72,8 @@ fi
 
 if check_min_kver "4.9"; then
 	# check for re-appearance of stale badblocks from poison_list
-	$NDCTL disable-region $BUS all
-	$NDCTL enable-region $BUS all
+	$NDCTL disable-region -b $NFIT_TEST_BUS0 all
+	$NDCTL enable-region -b $NFIT_TEST_BUS0 all
 
 	# since we have cleared the errors, a disable/reenable shouldn't bring them back
 	if read sector len < /sys/block/$blockdev/badblocks; then
@@ -87,8 +82,6 @@ if check_min_kver "4.9"; then
 	fi
 fi
 
-$NDCTL disable-region $BUS all
-$NDCTL disable-region $BUS1 all
-modprobe -r nfit_test
+_cleanup
 
 exit 0
