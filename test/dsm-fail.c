@@ -339,11 +339,9 @@ static int do_test(struct ndctl_ctx *ctx, struct ndctl_test *test)
 	sprintf(path, "%s/fail_cmd", DIMM_PATH);
 	sprintf(buf, "0\n");
 	rc = __sysfs_write_attr(&log_ctx, path, buf);
-	if (rc) {
+	if (rc)
 		fprintf(stderr, "%s: failed to clear fail_cmd mask\n",
 				ndctl_dimm_get_devname(victim));
-		rc = -ENXIO;
-	}
 	rc = ndctl_dimm_enable(victim);
 	if (rc) {
 		fprintf(stderr, "failed to enable victim: %s after clearing error\n",
