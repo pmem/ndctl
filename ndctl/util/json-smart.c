@@ -47,6 +47,18 @@ static void smart_threshold_to_json(struct ndctl_dimm *dimm,
 					"temperature_threshold", jobj);
 	}
 
+	if (alarm_control & ND_SMART_CTEMP_TRIP) {
+		unsigned int temp;
+		double t;
+
+		temp = ndctl_cmd_smart_threshold_get_ctrl_temperature(cmd);
+		t = ndctl_decode_smart_temperature(temp);
+		jobj = json_object_new_double(t);
+		if (jobj)
+			json_object_object_add(jhealth,
+				"controller_temperature_threshold", jobj);
+	}
+
 	if (alarm_control & ND_SMART_SPARE_TRIP) {
 		unsigned int spares;
 
@@ -130,11 +142,16 @@ struct json_object *util_dimm_health_to_json(struct ndctl_dimm *dimm)
 	if (flags & ND_SMART_ALARM_VALID) {
 		unsigned int alarm_flags = ndctl_cmd_smart_get_alarm_flags(cmd);
 		bool temp_flag = !!(alarm_flags & ND_SMART_TEMP_TRIP);
+		bool ctrl_temp_flag = !!(alarm_flags & ND_SMART_CTEMP_TRIP);
 		bool spares_flag = !!(alarm_flags & ND_SMART_SPARE_TRIP);
 
 		jobj = json_object_new_boolean(temp_flag);
 		if (jobj)
 			json_object_object_add(jhealth, "alarm_temperature", jobj);
+
+		jobj = json_object_new_boolean(ctrl_temp_flag);
+		if (jobj)
+			json_object_object_add(jhealth, "alarm_controller_temperature", jobj);
 
 		jobj = json_object_new_boolean(spares_flag);
 		if (jobj)
