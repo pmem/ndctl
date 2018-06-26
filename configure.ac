@@ -102,10 +102,13 @@ AS_IF([test "x$enable_test" = "xyes"],
 	[AC_DEFINE([ENABLE_TEST], [1], [ndctl test support])])
 AM_CONDITIONAL([ENABLE_TEST], [test "x$enable_test" = "xyes"])
 
-AC_CHECK_DECLS([BUS_MCEERR_AR], [enable_poison=yes], [], [[#include <signal.h>]])
-AS_IF([test "x$enable_poison" = "xyes"],
+AC_CHECK_DECLS([BUS_MCEERR_AR], [enable_bus_mc_err=yes], [], [[#include <signal.h>]])
+AC_CHECK_DECLS([MAP_SYNC], [enable_map_sync=yes], [], [[#include <linux/mman.h>]])
+
+AS_IF([test "x$enable_bus_mc_err" = "xyes" -a "x$enable_map_sync" = "xyes"],
 	[AC_DEFINE([ENABLE_POISON], [1], [ndctl test poison support])])
-AM_CONDITIONAL([ENABLE_POISON], [test "x$enable_poison" = "xyes"])
+AM_CONDITIONAL([ENABLE_POISON],
+	[test "x$enable_bus_mc_err" = "xyes" -a "x$enable_map_sync" = "xyes"])
 
 PKG_CHECK_MODULES([KMOD], [libkmod])
 PKG_CHECK_MODULES([UDEV], [libudev])
