@@ -21,6 +21,7 @@ area.
 A namespace can be provisioned to operate in one of 4 modes, 'fsdax',
 'devdax', 'sector', and 'raw'. Here are the expected usage models for
 these modes:
+
 	- fsdax: Filesystem-DAX mode is the default mode of a namespace
 	  when specifying 'ndctl create-namespace' with no options. It creates
 	  a block device (/dev/pmemX[.Y]) that supports the DAX capabilities
