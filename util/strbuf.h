@@ -17,6 +17,7 @@
 #define __NDCTL_STRBUF_H
 #include <string.h>
 #include <assert.h>
+#include <sys/types.h> /* for ssize_t */
 
 /*
  * Strbuf's can be use in many ways: as a byte array, or to store arbitrary
