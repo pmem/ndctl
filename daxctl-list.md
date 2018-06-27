@@ -22,7 +22,7 @@ Options can be specified to limit the output to objects of a certain class. Wher
 EXAMPLE
 =======
 
->     # daxctl list --regions --devices
+    # daxctl list --regions --devices
 
     {
       "id":1,
@@ -43,7 +43,9 @@ A device-dax region is a contiguous range of memory that hosts one or more /dev/
 `-d; --dev=`  
 Specify a dax device name, &lt;region id&gt;.&lt;instance id&gt; tuple, or keyword *all* to filter the listing. For example to list the first device instance in region1:
 
->     # daxctl list --dev=1.0
+<!-- -->
+
+    # daxctl list --dev=1.0
 
     {
       "chardev":"dax1.0",
@@ -62,13 +64,19 @@ Include idle (not enabled / zero-sized) devices in the listing
 `-u; --human`  
 By default *daxctl list* will output machine-friendly raw-integer data. Instead, with this flag, numbers representing storage size will be formatted as human readable strings with units, other fields are converted to hexadecimal strings. Example:
 
->     # daxctl list
->     {
->       "chardev":"dax1.0",
->       "size":32828817408
->     }
+<!-- -->
 
-\# daxctl list --human { "chardev":"dax1.0", "size":"30.57 GiB (32.83 GB)" }
+    # daxctl list
+    {
+      "chardev":"dax1.0",
+      "size":32828817408
+    }
+
+    # daxctl list --human
+    {
+      "chardev":"dax1.0",
+      "size":"30.57 GiB (32.83 GB)"
+    }
 
 COPYRIGHT
 =========

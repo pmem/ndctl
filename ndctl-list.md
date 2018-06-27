@@ -22,7 +22,7 @@ Options can be specified to limit the output to devices of a certain class. Wher
 EXAMPLE
 =======
 
->     # ndctl list --buses --namespaces
+    # ndctl list --buses --namespaces
 
     {
       "provider":"nfit_test.1",
@@ -67,7 +67,9 @@ Enforce that the operation only be carried on devices that are attached to the g
 `-d; --dimm=`  
 An *nmemX* device name, or dimm id number. Filter listing by devices that reference the given dimm. For example to see all namespaces comprised of storage capacity on nmem0:
 
->     # ndctl list --dimm=nmem0 --namespaces
+<!-- -->
+
+    # ndctl list --dimm=nmem0 --namespaces
 
 `-n; --namespace=`  
 An *namespaceX.Y* device name, or namespace region plus id tuple *X.Y*. Limit the namespace list to the single identified device if present.
@@ -175,25 +177,27 @@ Include media errors (badblocks) in the listing. Note that the *badblock\_count*
 `-u; --human`  
 Format numbers representing storage sizes, or offsets as human readable strings with units instead of the default machine-friendly raw-integer data. Convert other numeric fields into hexadecimal strings.
 
->     # ndctl list --region=7
->     {
->       "dev":"region7",
->       "size":67108864,
->       "available_size":67108864,
->       "type":"pmem",
->       "iset_id":-6382611090938810793,
->       "badblock_count":8
->     }
+<!-- -->
 
->     # ndctl list --human --region=7
->     {
->       "dev":"region7",
->       "size":"64.00 MiB (67.11 MB)",
->       "available_size":"64.00 MiB (67.11 MB)",
->       "type":"pmem",
->       "iset_id":"0xa76c6907811fae57",
->       "badblock_count":8
->     }
+    # ndctl list --region=7
+    {
+      "dev":"region7",
+      "size":67108864,
+      "available_size":67108864,
+      "type":"pmem",
+      "iset_id":-6382611090938810793,
+      "badblock_count":8
+    }
+
+    # ndctl list --human --region=7
+    {
+      "dev":"region7",
+      "size":"64.00 MiB (67.11 MB)",
+      "available_size":"64.00 MiB (67.11 MB)",
+      "type":"pmem",
+      "iset_id":"0xa76c6907811fae57",
+      "badblock_count":8
+    }
 
 COPYRIGHT
 =========

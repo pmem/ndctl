@@ -25,46 +25,46 @@ EXAMPLE
 
 Find the DIMMs that comprise a given region:
 
->     # ndctl list -RD --region=region1
->     {
->       "dimms":[
->         {
->           "dev":"nmem0",
->           "id":"8680-56341200"
->         }
->       ],
->       "regions":[
->         {
->           "dev":"region1",
->           "size":268435456,
->           "available_size":0,
->           "type":"pmem",
->           "mappings":[
->             {
->               "dimm":"nmem0",
->               "offset":13958643712,
->               "length":268435456
->             }
->           ]
->         }
->       ]
->     }
+    # ndctl list -RD --region=region1
+    {
+      "dimms":[
+        {
+          "dev":"nmem0",
+          "id":"8680-56341200"
+        }
+      ],
+      "regions":[
+        {
+          "dev":"region1",
+          "size":268435456,
+          "available_size":0,
+          "type":"pmem",
+          "mappings":[
+            {
+              "dimm":"nmem0",
+              "offset":13958643712,
+              "length":268435456
+            }
+          ]
+        }
+      ]
+    }
 
 Disable that region so the DIMM label area can be written from userspace:
 
->     # ndctl disable-region region1
+    # ndctl disable-region region1
 
 Initialize labels:
 
->     # ndctl init-labels nmem0
+    # ndctl init-labels nmem0
 
 Re-enable the region:
 
->     # ndctl enable-region region1
+    # ndctl enable-region region1
 
 Create a namespace in that region:
 
->     # ndctl create-namespace --region=region1
+    # ndctl create-namespace --region=region1
 
 OPTIONS
 =======
