@@ -115,6 +115,7 @@ bb_inj=$((dataoff/512))
 
 # inject badblocks for one page at the start of the file
 $NDCTL inject-error --block="$bb_inj" --count=8 $dev
+$NDCTL start-scrub && $NDCTL wait-scrub
 
 force_raw 0
 mount -o nodelalloc "/dev/$blockdev" $MNT
@@ -148,6 +149,7 @@ map=$(hexdump -s 96 -n 4 "/dev/$raw_bdev" | head -1 | cut -d' ' -f2-)
 map=$(tr -d ' ' <<< "0x${map#* }${map%% *}")
 bb_inj=$((map/512))
 $NDCTL inject-error --block="$bb_inj" --count=1 $dev
+$NDCTL start-scrub && $NDCTL wait-scrub
 force_raw 0
 
 # make sure reading the first block of the namespace fails
