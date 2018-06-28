@@ -311,6 +311,7 @@ struct ndctl_dimm_ops {
 	int (*smart_inject_spares)(struct ndctl_cmd *, bool, unsigned int);
 	int (*smart_inject_fatal)(struct ndctl_cmd *, bool);
 	int (*smart_inject_unsafe_shutdown)(struct ndctl_cmd *, bool);
+	int (*smart_inject_supported)(struct ndctl_dimm *);
 	struct ndctl_cmd *(*new_fw_get_info)(struct ndctl_dimm *);
 	unsigned int (*fw_info_get_storage_size)(struct ndctl_cmd *);
 	unsigned int (*fw_info_get_max_send_len)(struct ndctl_cmd *);

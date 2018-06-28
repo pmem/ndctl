@@ -367,3 +367,8 @@ global:
 	ndctl_namespace_uninject_error2;
 	ndctl_cmd_ars_stat_get_flag_overflow;
 } LIBNDCTL_15;
+
+LIBNDCTL_17 {
+global:
+	ndctl_dimm_smart_inject_supported;
+} LIBNDCTL_16;

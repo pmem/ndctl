@@ -362,6 +362,23 @@ static int intel_cmd_smart_inject_unsafe_shutdown(struct ndctl_cmd *cmd,
 	return 0;
 }
 
+static int intel_dimm_smart_inject_supported(struct ndctl_dimm *dimm)
+{
+	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
+
+	if (!ndctl_dimm_is_cmd_supported(dimm, ND_CMD_CALL)) {
+		dbg(ctx, "unsupported cmd: %d\n", ND_CMD_CALL);
+		return -EOPNOTSUPP;
+	}
+
+	if (!test_dimm_dsm(dimm, ND_INTEL_SMART_INJECT)) {
+		dbg(ctx, "smart injection functions unsupported\n");
+		return -EIO;
+	}
+
+	return 0;
+}
+
 static const char *intel_cmd_desc(int fn)
 {
 	static const char *descs[] = {
@@ -714,6 +731,7 @@ struct ndctl_dimm_ops * const intel_dimm_ops = &(struct ndctl_dimm_ops) {
 	.smart_inject_spares = intel_cmd_smart_inject_spares,
 	.smart_inject_fatal = intel_cmd_smart_inject_fatal,
 	.smart_inject_unsafe_shutdown = intel_cmd_smart_inject_unsafe_shutdown,
+	.smart_inject_supported = intel_dimm_smart_inject_supported,
 	.new_fw_get_info = intel_dimm_cmd_new_fw_get_info,
 	.fw_info_get_storage_size = intel_cmd_fw_info_get_storage_size,
 	.fw_info_get_max_send_len = intel_cmd_fw_info_get_max_send_len,

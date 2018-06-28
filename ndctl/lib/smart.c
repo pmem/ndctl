@@ -172,3 +172,13 @@ ndctl_dimm_cmd_new_ack_shutdown_count(struct ndctl_dimm *dimm)
 	else
 		return NULL;
 }
+
+NDCTL_EXPORT int ndctl_dimm_smart_inject_supported(struct ndctl_dimm *dimm)
+{
+	struct ndctl_dimm_ops *ops = dimm->ops;
+
+	if (ops && ops->smart_inject_supported)
+		return ops->smart_inject_supported(dimm);
+	else
+		return -ENOTTY;
+}

@@ -352,6 +352,22 @@ static int dimm_inject_smart(struct ndctl_dimm *dimm)
 	struct json_object *jdimm;
 	int rc;
 
+	rc = ndctl_dimm_smart_inject_supported(dimm);
+	switch (rc) {
+	case -ENOTTY:
+		error("%s: smart injection not supported by ndctl.",
+			ndctl_dimm_get_devname(dimm));
+		return rc;
+	case -EOPNOTSUPP:
+		error("%s: smart injection not supported by the kernel",
+			ndctl_dimm_get_devname(dimm));
+		return rc;
+	case -EIO:
+		error("%s: smart injection not supported by either platform firmware or the kernel.",
+			ndctl_dimm_get_devname(dimm));
+		return rc;
+	}
+
 	if (sctx.op_mask & (1 << OP_SET)) {
 		rc = smart_set_thresh(dimm);
 		if (rc)
