@@ -77,13 +77,12 @@ OPTIONS
 --spares-alarm=::
 	Enable or disable the smart spares alarm. Options are 'on' or 'off'.
 
--H::
---health=::
-	Smart attribute for health status. Provide either 'fatal' or 'nominal'
-	to set the state of the attribute.
+-f::
+--fatal::
+	Set the flag to spoof fatal health status.
 
 -U::
---unsafe-shutdown=::
+--unsafe-shutdown::
 	Set the flag to spoof an unsafe shutdown on the next power down.
 
 -v::
