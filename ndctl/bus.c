@@ -88,7 +88,7 @@ static int bus_action(int argc, const char **argv, const char *usage,
 	}
 
 	if (success)
-		util_display_json_array(stdout, jbuses);
+		util_display_json_array(stdout, jbuses, 0);
 	else
 		json_object_put(jbuses);
 

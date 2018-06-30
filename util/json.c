@@ -105,12 +105,13 @@ struct json_object *util_json_object_hex(unsigned long long val,
 	return jobj;
 }
 
-void util_display_json_array(FILE *f_out, struct json_object *jarray)
+void util_display_json_array(FILE *f_out, struct json_object *jarray,
+		unsigned long flags)
 {
 	int len = json_object_array_length(jarray);
 	int jflag = JSON_C_TO_STRING_PRETTY;
 
-	if (json_object_array_length(jarray) > 1)
+	if (json_object_array_length(jarray) > 1 || !(flags & UTIL_JSON_HUMAN))
 		fprintf(f_out, "%s\n", json_object_to_json_string_ext(jarray, jflag));
 	else if (len) {
 		struct json_object *jobj;

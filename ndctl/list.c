@@ -379,7 +379,7 @@ static int list_display(struct list_filter_arg *lfa)
 	struct json_object *jbuses = lfa->jbuses;
 
 	if (jbuses)
-		util_display_json_array(stdout, jbuses);
+		util_display_json_array(stdout, jbuses, lfa->flags);
 	else if ((!!jdimms + !!jregions + !!jnamespaces) > 1) {
 		struct json_object *jplatform = json_object_new_object();
 
@@ -399,11 +399,11 @@ static int list_display(struct list_filter_arg *lfa)
 					JSON_C_TO_STRING_PRETTY));
 		json_object_put(jplatform);
 	} else if (jdimms)
-		util_display_json_array(stdout, jdimms);
+		util_display_json_array(stdout, jdimms, lfa->flags);
 	else if (jregions)
-		util_display_json_array(stdout, jregions);
+		util_display_json_array(stdout, jregions, lfa->flags);
 	else if (jnamespaces)
-		util_display_json_array(stdout, jnamespaces);
+		util_display_json_array(stdout, jnamespaces, lfa->flags);
 	return 0;
 }
 

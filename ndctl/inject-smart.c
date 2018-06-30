@@ -391,7 +391,7 @@ static int dimm_inject_smart(struct ndctl_dimm *dimm)
 		jhealth = util_dimm_health_to_json(dimm);
 		if (jhealth) {
 			json_object_object_add(jdimm, "health", jhealth);
-			util_display_json_array(stdout, jdimms);
+			util_display_json_array(stdout, jdimms, sctx.flags);
 		}
 	}
 out:

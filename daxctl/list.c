@@ -83,6 +83,7 @@ int cmd_list(int argc, const char **argv, void *ctx)
 	struct json_object *jregions = NULL;
 	struct json_object *jdevs = NULL;
 	struct daxctl_region *region;
+	unsigned long list_flags;
 	int i;
 
         argc = parse_options(argc, argv, options, u, 0);
@@ -99,6 +100,8 @@ int cmd_list(int argc, const char **argv, void *ctx)
 
 	if (num_list_flags() == 0)
 		list.devs = true;
+
+	list_flags = listopts_to_flags();
 
 	daxctl_region_foreach(ctx, region) {
 		struct json_object *jregion = NULL;
@@ -117,7 +120,7 @@ int cmd_list(int argc, const char **argv, void *ctx)
 			}
 
 			jregion = util_daxctl_region_to_json(region,
-					param.dev, listopts_to_flags());
+					param.dev, list_flags);
 			if (!jregion) {
 				fail("\n");
 				continue;
@@ -125,13 +128,13 @@ int cmd_list(int argc, const char **argv, void *ctx)
 			json_object_array_add(jregions, jregion);
 		} else if (list.devs)
 			jdevs = util_daxctl_devs_to_list(region, jdevs,
-					param.dev, listopts_to_flags());
+					param.dev, list_flags);
 	}
 
 	if (jregions)
-		util_display_json_array(stdout, jregions);
+		util_display_json_array(stdout, jregions, list_flags);
 	else if (jdevs)
-		util_display_json_array(stdout, jdevs);
+		util_display_json_array(stdout, jdevs, list_flags);
 
 	if (did_fail)
 		return -ENOMEM;
