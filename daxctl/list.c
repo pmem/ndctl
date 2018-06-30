@@ -50,7 +50,6 @@ static struct {
 };
 
 static int did_fail;
-static int jflag = JSON_C_TO_STRING_PRETTY;
 
 #define fail(fmt, ...) \
 do { \
@@ -130,9 +129,9 @@ int cmd_list(int argc, const char **argv, void *ctx)
 	}
 
 	if (jregions)
-		util_display_json_array(stdout, jregions, jflag);
+		util_display_json_array(stdout, jregions);
 	else if (jdevs)
-		util_display_json_array(stdout, jdevs, jflag);
+		util_display_json_array(stdout, jdevs);
 
 	if (did_fail)
 		return -ENOMEM;

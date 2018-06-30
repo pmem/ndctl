@@ -26,7 +26,7 @@ enum util_json_flags {
 };
 
 struct json_object;
-void util_display_json_array(FILE *f_out, struct json_object *jarray, int jflag);
+void util_display_json_array(FILE *f_out, struct json_object *jarray);
 struct json_object *util_bus_to_json(struct ndctl_bus *bus);
 struct json_object *util_dimm_to_json(struct ndctl_dimm *dimm,
 		unsigned long flags);

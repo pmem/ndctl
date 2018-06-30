@@ -56,7 +56,6 @@ static unsigned long listopts_to_flags(void)
 struct util_filter_params param;
 
 static int did_fail;
-static int jflag = JSON_C_TO_STRING_PRETTY;
 
 #define fail(fmt, ...) \
 do { \
@@ -380,7 +379,7 @@ static int list_display(struct list_filter_arg *lfa)
 	struct json_object *jbuses = lfa->jbuses;
 
 	if (jbuses)
-		util_display_json_array(stdout, jbuses, jflag);
+		util_display_json_array(stdout, jbuses);
 	else if ((!!jdimms + !!jregions + !!jnamespaces) > 1) {
 		struct json_object *jplatform = json_object_new_object();
 
@@ -397,14 +396,14 @@ static int list_display(struct list_filter_arg *lfa)
 			json_object_object_add(jplatform, "namespaces",
 					jnamespaces);
 		printf("%s\n", json_object_to_json_string_ext(jplatform,
-					jflag));
+					JSON_C_TO_STRING_PRETTY));
 		json_object_put(jplatform);
 	} else if (jdimms)
-		util_display_json_array(stdout, jdimms, jflag);
+		util_display_json_array(stdout, jdimms);
 	else if (jregions)
-		util_display_json_array(stdout, jregions, jflag);
+		util_display_json_array(stdout, jregions);
 	else if (jnamespaces)
-		util_display_json_array(stdout, jnamespaces, jflag);
+		util_display_json_array(stdout, jnamespaces);
 	return 0;
 }
 
