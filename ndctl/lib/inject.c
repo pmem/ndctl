@@ -271,7 +271,7 @@ NDCTL_EXPORT int ndctl_namespace_uninject_error2(struct ndctl_namespace *ndns,
 NDCTL_EXPORT int ndctl_namespace_uninject_error(struct ndctl_namespace *ndns,
 		unsigned long long block, unsigned long long count)
 {
-	return ndctl_namespace_inject_error2(ndns, block, count, 0);
+	return ndctl_namespace_uninject_error2(ndns, block, count, 0);
 }
 
 static int bb_add_record(struct list_head *h, u64 block, u64 count)
