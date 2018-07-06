@@ -27,8 +27,10 @@ build_rpm()
 
 	# build and copy RPMs
 	version="$(./git-version)"
+	release="f$(basename $(readlink -f /etc/mock/default.cfg) | cut -d- -f2)"
 	git archive  --format=tar --prefix="ndctl-${version}/" HEAD | gzip > ndctl-${version}.tar.gz
-	fedpkg --release master --module-name ndctl mockbuild
+	fedpkg --release $release --module-name ndctl mockbuild
+	[ "$?" -eq 0 ] || err "error building $ref"
 	mkdir -p release/rel_${ref}/
 	cp results_ndctl/*/*/*.x86_64.rpm release/rel_${ref}/
 
@@ -52,6 +54,8 @@ do_diff()
 	local new_lib="$(find . -regex "./release/rel_${new}/${pkg}-libs-[0-9]+.*" | head -1)"
 
 	[ -n "$pkg" ] || err "specify a package for diff (ndctl, daxctl)"
+	[ -n "$old_base" ] || err "$pkg: old_base empty, possible build failure"
+	[ -n "$new_base" ] || err "$pkg: new_base empty, possible build failure"
 
 	abipkgdiff --dso-only --no-added-syms --harmless --drop-private-types \
 		--devel1 "$old_dev" --devel2 "$new_dev" \
