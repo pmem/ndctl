@@ -29,6 +29,7 @@ err() {
 }
 
 run_test() {
+	rc=0
 	if ! ./dax-pmd $MNT/$FILE; then
 		rc=$?
 		if [ $rc -ne 77 -a $rc -ne 0 ]; then
