@@ -40,5 +40,6 @@ reset
 rc=2
 detect
 do_tests
+rm -f $image
 _cleanup
 exit 0
