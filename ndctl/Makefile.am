@@ -11,7 +11,6 @@ ndctl_SOURCES = ndctl.c \
 		dimm.c \
 		 ../util/log.c \
 		list.c \
-		test.c \
 		../util/json.c \
 		util/json-smart.c \
 		util/json-firmware.c \
@@ -39,5 +38,6 @@ ndctl_SOURCES += ../test/libndctl.c \
 		 ../test/dpa-alloc.c \
 		 ../test/parent-uuid.c \
 		 ../test/multi-pmem.c \
-		 ../test/core.c
+		 ../test/core.c \
+		 test.c
 endif
