@@ -31,7 +31,7 @@ $NDCTL enable-region -b $NFIT_TEST_BUS1 all
 rc=1
 query=". | sort_by(.size) | reverse | .[0].dev"
 NAMESPACE=$($NDCTL list -b $NFIT_TEST_BUS1 -N | jq -r "$query")
-REGION=$($NDCTL list -R --namespace=$NAMESPACE | jq -r ".dev")
+REGION=$($NDCTL list -R --namespace=$NAMESPACE | jq -r "(.[]) | .dev")
 echo 0 > /sys/bus/nd/devices/$REGION/read_only
 $NDCTL create-namespace --no-autolabel -e $NAMESPACE -m sector -f -l 4K
 $NDCTL create-namespace --no-autolabel -e $NAMESPACE -m dax -f -a 4K

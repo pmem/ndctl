@@ -79,5 +79,5 @@ _cleanup()
 #
 json2var()
 {
-	sed -e "s/[{}\",]//g; s/:/=/g"
+	sed -e "s/[{}\",]//g; s/\[//g; s/\]//g; s/:/=/g"
 }
