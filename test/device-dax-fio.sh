@@ -11,30 +11,17 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
-NDCTL="../ndctl/ndctl"
+. ./common
+
 rc=77
 
 set -e
 
-err() {
-	echo "test/device-dax-fio.sh: failed at line $1"
-	exit $rc
-}
+check_min_kver "4.11" || do_skip "kernel may lack device-dax fixes"
 
-check_min_kver()
-{
-	local ver="$1"
-	: "${KVER:=$(uname -r)}"
-
-	[ -n "$ver" ] || return 1
-	[[ "$ver" == "$(echo -e "$ver\n$KVER" | sort -V | head -1)" ]]
-}
-
-check_min_kver "4.11" || { echo "kernel $KVER may lack latest device-dax fixes"; exit $rc; }
-
-set -e
 trap 'err $LINENO' ERR
 
+check_prereq "fio"
 if ! fio --enghelp | grep -q "dev-dax"; then
 	echo "fio lacks dev-dax engine"
 	exit 77
@@ -79,7 +66,7 @@ do
 
 	# revert namespace to raw mode
 	json=$($NDCTL create-namespace -m raw -f -e $dev)
-	mode=$(echo $json | jq -r ".mode")
+	eval $(json2var <<< "$json")
 	[ $mode != "fsdax" ] && echo "fail: $LINENO" && exit 1
 done
 

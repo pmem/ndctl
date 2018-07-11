@@ -11,15 +11,15 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 # General Public License for more details.
 
+. ./common
+
 MNT=test_mmap_mnt
 FILE=image
 DEV=""
 TEST=./mmap
-NDCTL="../ndctl/ndctl"
-json2var="s/[{}\",]//g; s/:/=/g"
 rc=77
 
-err() {
+cleanup() {
 	echo "test-mmap: failed at line $1"
 	if [ -n "$DEV" ]; then
 		umount $DEV
@@ -31,8 +31,6 @@ err() {
 }
 
 test_mmap() {
-	trap 'err $LINENO' ERR
-
 	# SHARED
 	$TEST -Mrwps $MNT/$FILE     # mlock, populate, shared (mlock fail)
 	$TEST -Arwps $MNT/$FILE     # mlockall, populate, shared
@@ -58,11 +56,11 @@ test_mmap() {
 
 set -e
 mkdir -p $MNT
-trap 'err $LINENO' ERR
+trap 'err $LINENO cleanup' ERR
 
 dev=$(./dax-dev)
 json=$($NDCTL list -N -n $dev)
-eval $(echo $json | sed -e "$json2var")
+eval $(json2var <<< "$json")
 DEV="/dev/${blockdev}"
 rc=1
 
