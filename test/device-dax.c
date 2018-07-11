@@ -97,7 +97,7 @@ static void sigbus(int sig, siginfo_t *siginfo, void *d)
  * 3.00GHz where the loop, for the align == 2M case, completes in 7500us
  * when cached and 200ms when uncached.
  */
-#define VERIFY_TIME(x) (suseconds_t) ((ALIGN(x, SZ_2M) / SZ_4K) * 30)
+#define VERIFY_TIME(x) (suseconds_t) ((ALIGN(x, SZ_2M) / SZ_4K) * 60)
 
 static int verify_data(struct daxctl_dev *dev, char *dax_buf,
 		unsigned long align, int salt, struct ndctl_test *test)
