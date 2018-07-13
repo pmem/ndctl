@@ -73,6 +73,12 @@ typedef unsigned char uuid_t[16];
 extern "C" {
 #endif
 
+#define ND_EVENT_SPARES_REMAINING	(1 << 0)
+#define ND_EVENT_MEDIA_TEMPERATURE	(1 << 1)
+#define ND_EVENT_CTRL_TEMPERATURE	(1 << 2)
+#define ND_EVENT_HEALTH_STATE		(1 << 3)
+#define ND_EVENT_UNCLEAN_SHUTDOWN	(1 << 4)
+
 size_t ndctl_min_namespace_size(void);
 size_t ndctl_sizeof_namespace_index(void);
 size_t ndctl_sizeof_namespace_label(void);
@@ -170,6 +176,10 @@ int ndctl_dimm_failed_map(struct ndctl_dimm *dimm);
 int ndctl_dimm_smart_pending(struct ndctl_dimm *dimm);
 int ndctl_dimm_failed_flush(struct ndctl_dimm *dimm);
 int ndctl_dimm_get_health_eventfd(struct ndctl_dimm *dimm);
+unsigned int ndctl_dimm_get_health(struct ndctl_dimm *dimm);
+unsigned int ndctl_dimm_get_flags(struct ndctl_dimm *dimm);
+unsigned int ndctl_dimm_get_event_flags(struct ndctl_dimm *dimm);
+int ndctl_dimm_is_flag_supported(struct ndctl_dimm *dimm, unsigned int flag);
 unsigned int ndctl_dimm_handle_get_node(struct ndctl_dimm *dimm);
 unsigned int ndctl_dimm_handle_get_socket(struct ndctl_dimm *dimm);
 unsigned int ndctl_dimm_handle_get_imc(struct ndctl_dimm *dimm);

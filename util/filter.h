@@ -13,6 +13,7 @@
 #ifndef _UTIL_FILTER_H_
 #define _UTIL_FILTER_H_
 #include <stdbool.h>
+#include <ccan/list/list.h>
 
 struct ndctl_bus *util_bus_filter(struct ndctl_bus *bus, const char *ident);
 struct ndctl_region *util_region_filter(struct ndctl_region *region,
@@ -50,6 +51,13 @@ struct list_filter_arg {
 	unsigned long flags;
 };
 
+struct monitor_filter_arg {
+	struct list_head dimms;
+	int maxfd_dimm;
+	int num_dimm;
+	unsigned long flags;
+};
+
 /*
  * struct util_filter_ctx - control and callbacks for util_filter_walk()
  * ->filter_bus() and ->filter_region() return bool because the
@@ -67,6 +75,7 @@ struct util_filter_ctx {
 	union {
 		void *arg;
 		struct list_filter_arg *list;
+		struct monitor_filter_arg *monitor;
 	};
 };
 

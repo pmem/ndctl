@@ -1635,6 +1635,88 @@ NDCTL_EXPORT int ndctl_dimm_get_health_eventfd(struct ndctl_dimm *dimm)
 	return dimm->health_eventfd;
 }
 
+NDCTL_EXPORT unsigned int ndctl_dimm_get_health(struct ndctl_dimm *dimm)
+{
+	struct ndctl_cmd *cmd = NULL;
+	unsigned int health;
+	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
+	const char *devname = ndctl_dimm_get_devname(dimm);
+
+	cmd = ndctl_dimm_cmd_new_smart(dimm);
+	if (!cmd) {
+		err(ctx, "%s: no smart command support\n", devname);
+		return UINT_MAX;
+	}
+	if (ndctl_cmd_submit(cmd)) {
+		err(ctx, "%s: smart command failed\n", devname);
+		return UINT_MAX;
+	}
+
+	health = ndctl_cmd_smart_get_health(cmd);
+	ndctl_cmd_unref(cmd);
+	return health;
+}
+
+NDCTL_EXPORT unsigned int ndctl_dimm_get_flags(struct ndctl_dimm *dimm)
+{
+	struct ndctl_cmd *cmd = NULL;
+	unsigned int flags;
+	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
+	const char *devname = ndctl_dimm_get_devname(dimm);
+
+	cmd = ndctl_dimm_cmd_new_smart(dimm);
+	if (!cmd) {
+		dbg(ctx, "%s: no smart command support\n", devname);
+		return UINT_MAX;
+	}
+	if (ndctl_cmd_submit(cmd)) {
+		dbg(ctx, "%s: smart command failed\n", devname);
+		return UINT_MAX;
+	}
+
+	flags = ndctl_cmd_smart_get_flags(cmd);
+	ndctl_cmd_unref(cmd);
+	return flags;
+}
+
+NDCTL_EXPORT int ndctl_dimm_is_flag_supported(struct ndctl_dimm *dimm,
+		unsigned int flag)
+{
+	unsigned int flags = ndctl_dimm_get_flags(dimm);
+	return (flags ==  UINT_MAX) ? 0 : !!(flags & flag);
+}
+
+NDCTL_EXPORT unsigned int ndctl_dimm_get_event_flags(struct ndctl_dimm *dimm)
+{
+	struct ndctl_cmd *cmd = NULL;
+	unsigned int alarm_flags, event_flags = 0;
+	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
+	const char *devname = ndctl_dimm_get_devname(dimm);
+
+	cmd = ndctl_dimm_cmd_new_smart(dimm);
+	if (!cmd) {
+		err(ctx, "%s: no smart command support\n", devname);
+		return UINT_MAX;
+	}
+	if (ndctl_cmd_submit(cmd)) {
+		err(ctx, "%s: smart command failed\n", devname);
+		return UINT_MAX;
+	}
+
+	alarm_flags = ndctl_cmd_smart_get_alarm_flags(cmd);
+	if (alarm_flags & ND_SMART_SPARE_TRIP)
+		event_flags |= ND_EVENT_SPARES_REMAINING;
+	if (alarm_flags & ND_SMART_MTEMP_TRIP)
+		event_flags |= ND_EVENT_MEDIA_TEMPERATURE;
+	if (alarm_flags & ND_SMART_CTEMP_TRIP)
+		event_flags |= ND_EVENT_CTRL_TEMPERATURE;
+	if (ndctl_cmd_smart_get_shutdown_state(cmd))
+		event_flags |= ND_EVENT_UNCLEAN_SHUTDOWN;
+
+	ndctl_cmd_unref(cmd);
+	return event_flags;
+}
+
 NDCTL_EXPORT unsigned int ndctl_dimm_handle_get_node(struct ndctl_dimm *dimm)
 {
 	return dimm->handle >> 16 & 0xfff;

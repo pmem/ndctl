@@ -371,4 +371,8 @@ global:
 LIBNDCTL_17 {
 global:
 	ndctl_dimm_smart_inject_supported;
+	ndctl_dimm_get_health;
+	ndctl_dimm_get_flags;
+	ndctl_dimm_get_event_flags;
+	ndctl_dimm_is_flag_supported;
 } LIBNDCTL_16;
