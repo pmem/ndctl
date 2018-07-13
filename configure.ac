@@ -143,6 +143,27 @@ AC_CHECK_FUNCS([ \
 	secure_getenv\
 ])
 
+PKG_PROG_PKG_CONFIG
+AC_ARG_WITH([systemd-unit-dir],
+	AS_HELP_STRING([--with-systemd-unit-dir[=DIR]],
+		[Directory for systemd service files]),
+	[],
+	[with_systemd_unit_dir=yes])
+
+if test "x$with_systemd_unit_dir" = "xyes"; then
+	def_systemd_unit_dir=$($PKG_CONFIG --variable=systemdsystemunitdir systemd)
+	if test "x$def_systemd_unit_dir" = "x"; then
+		AC_MSG_ERROR([systemd support requested but pkg-config unable to query systemd package])
+		with_systemd_unit_dir=no
+	else
+		with_systemd_unit_dir="$def_systemd_unit_dir"
+	fi
+fi
+
+AS_IF([test "x$with_systemd_unit_dir" != "xno"],
+	[AC_SUBST([systemd_unitdir], [$with_systemd_unit_dir])])
+AM_CONDITIONAL([ENABLE_SYSTEMD_UNIT_DIR], [test "x$with_systemd_unit_dir" != "xno"])
+
 my_CFLAGS="\
 -D DEF_CONF_FILE='\"${sysconfdir}/ndctl/monitor.conf\"' \
 -Wall \
@@ -185,6 +206,7 @@ AC_MSG_RESULT([
         sysconfdir:             ${sysconfdir}
         libdir:                 ${libdir}
         includedir:             ${includedir}
+	systemd-unit-dir:	${systemd_unitdir}
 
         compiler:               ${CC}
         cflags:                 ${CFLAGS}

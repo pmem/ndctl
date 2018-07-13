@@ -20,6 +20,7 @@ BuildRequires:	pkgconfig(libudev)
 BuildRequires:	pkgconfig(uuid)
 BuildRequires:	pkgconfig(json-c)
 BuildRequires:	pkgconfig(bash-completion)
+BuildRequires:	systemd
 
 %description
 Utility library for managing the "libnvdimm" subsystem.  The "libnvdimm"
@@ -117,6 +118,7 @@ make check
 %{_mandir}/man1/ndctl*
 %{bashcompdir}/
 %{_sysconfdir}/ndctl/monitor.conf
+%{_unitdir}/ndctl-monitor.service
 
 %files -n daxctl
 %defattr(-,root,root)
