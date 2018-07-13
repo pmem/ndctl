@@ -46,7 +46,8 @@ man1_MANS = \
 	ndctl-inject-error.1 \
 	ndctl-inject-smart.1 \
 	ndctl-update-firmware.1 \
-	ndctl-list.1
+	ndctl-list.1 \
+	ndctl-monitor.1
 
 CLEANFILES = $(man1_MANS)
 
