@@ -42,3 +42,8 @@ ndctl_SOURCES += ../test/libndctl.c \
 		 ../test/core.c \
 		 test.c
 endif
+
+monitor_config_file = monitor.conf
+monitor_configdir = $(sysconfdir)/ndctl/
+monitor_config_DATA = $(monitor_config_file)
+EXTRA_DIST += $(monitor_config_file)

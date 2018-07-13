@@ -16,9 +16,9 @@
 #include <sys/epoll.h>
 #define BUF_SIZE 2048
 
-
 static struct monitor {
 	const char *log;
+	const char *config_file;
 	const char *dimm_event;
 	bool daemon;
 	bool human;
@@ -454,6 +454,108 @@ dimm_event_all:
 	return 0;
 }
 
+static void parse_config(const char **arg, char *key, char *val, char *ident)
+{
+	struct strbuf value = STRBUF_INIT;
+	size_t arg_len = *arg ? strlen(*arg) : 0;
+
+	if (!ident || !key || (strcmp(ident, key) != 0))
+		return;
+
+	if (arg_len) {
+		strbuf_add(&value, *arg, arg_len);
+		strbuf_addstr(&value, " ");
+	}
+	strbuf_addstr(&value, val);
+	*arg = strbuf_detach(&value, NULL);
+}
+
+static int read_config_file(struct ndctl_ctx *ctx, struct monitor *_monitor,
+		struct util_filter_params *_param)
+{
+	FILE *f;
+	int line = 0;
+	size_t len = 0;
+	char *buf, *value, *config_file;
+
+	if (_monitor->config_file)
+		config_file = strdup(_monitor->config_file);
+	else
+		config_file = strdup(DEF_CONF_FILE);
+	if (!config_file) {
+		fail("strdup default config file failed\n");
+		goto out;
+	}
+
+	buf = malloc(BUF_SIZE);
+	if (!buf) {
+		fail("malloc read config-file buf error\n");
+		goto out;
+	}
+
+	f = fopen(config_file, "r");
+	if (!f) {
+		fail("config-file: %s cannot be opened\n", config_file);
+		goto out;
+	}
+
+	while (fgets(buf, BUF_SIZE, f)) {
+		value = NULL;
+		line++;
+
+		while (isspace(*buf))
+			buf++;
+
+		if (*buf == '#' || *buf == '\0')
+			continue;
+
+		value = strchr(buf, '=');
+		if (!value) {
+			fail("config-file syntax error, skip line[%i]\n", line);
+			continue;
+		}
+
+		value[0] = '\0';
+		value++;
+
+		while (isspace(value[0]))
+			value++;
+
+		len = strlen(buf);
+		if (len == 0)
+			continue;
+		while (isspace(buf[len-1]))
+			len--;
+		buf[len] = '\0';
+
+		len = strlen(value);
+		if (len == 0)
+			continue;
+		while (isspace(value[len-1]))
+			len--;
+		value[len] = '\0';
+
+		if (len == 0)
+			continue;
+
+		parse_config(&_param->bus, "bus", value, buf);
+		parse_config(&_param->dimm, "dimm", value, buf);
+		parse_config(&_param->region, "region", value, buf);
+		parse_config(&_param->namespace, "namespace", value, buf);
+		parse_config(&_monitor->dimm_event, "dimm-event", value, buf);
+
+		if (!_monitor->log)
+			parse_config(&_monitor->log, "log", value, buf);
+	}
+	fclose(f);
+	free(config_file);
+	return 0;
+out:
+	if (config_file)
+		free(config_file);
+	return 1;
+}
+
 int cmd_monitor(int argc, const char **argv, void *ctx)
 {
 	const struct option options[] = {
@@ -469,6 +571,8 @@ int cmd_monitor(int argc, const char **argv, void *ctx)
 		OPT_FILENAME('l', "log", &monitor.log,
 				"<file> | syslog | standard",
 				"where to output the monitor's notification"),
+		OPT_FILENAME('c', "config-file", &monitor.config_file,
+				"config-file", "override the default config"),
 		OPT_BOOLEAN('x', "daemon", &monitor.daemon,
 				"run ndctl monitor as a daemon"),
 		OPT_BOOLEAN('u', "human", &monitor.human,
@@ -495,7 +599,11 @@ int cmd_monitor(int argc, const char **argv, void *ctx)
 	ndctl_set_log_fn((struct ndctl_ctx *)ctx, log_standard);
 	ndctl_set_log_priority((struct ndctl_ctx *)ctx, LOG_NOTICE);
 
+	if (read_config_file((struct ndctl_ctx *)ctx, &monitor, &param))
+		goto out;
+
 	if (monitor.log) {
+		fix_filename(prefix, (const char **)&monitor.log);
 		if (strncmp(monitor.log, "./syslog", 8) == 0)
 			ndctl_set_log_fn((struct ndctl_ctx *)ctx, log_syslog);
 		else if (strncmp(monitor.log, "./standard", 10) == 0)

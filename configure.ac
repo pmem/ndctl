@@ -144,6 +144,7 @@ AC_CHECK_FUNCS([ \
 ])
 
 my_CFLAGS="\
+-D DEF_CONF_FILE='\"${sysconfdir}/ndctl/monitor.conf\"' \
 -Wall \
 -Wchar-subscripts \
 -Wformat-security \
