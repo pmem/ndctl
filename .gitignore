@@ -56,3 +56,4 @@ test/smart-notify
 test/fio.job
 test/local-write-0-verify.state
 test/ack-shutdown-count-set
+test/list-smart-dimm

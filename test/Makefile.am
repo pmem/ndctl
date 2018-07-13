@@ -21,7 +21,8 @@ TESTS =\
 	btt-pad-compat.sh \
 	firmware-update.sh \
 	ack-shutdown-count-set \
-	rescan-partitions.sh
+	rescan-partitions.sh \
+	monitor.sh
 
 check_PROGRAMS =\
 	libndctl \
@@ -34,7 +35,8 @@ check_PROGRAMS =\
 	smart-listen \
 	hugetlb \
 	daxdev-errors \
-	ack-shutdown-count-set
+	ack-shutdown-count-set \
+	list-smart-dimm
 
 if ENABLE_DESTRUCTIVE
 TESTS +=\
@@ -150,4 +152,12 @@ multi_pmem_LDADD = \
 		$(JSON_LIBS) \
 		$(UUID_LIBS) \
 		$(KMOD_LIBS) \
+		../libutil.a
+
+list_smart_dimm_SOURCES = \
+		list-smart-dimm.c \
+		../util/json.c
+list_smart_dimm_LDADD = \
+		$(LIBNDCTL_LIB) \
+		$(JSON_LIBS) \
 		../libutil.a
