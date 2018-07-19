@@ -478,9 +478,9 @@ static int read_config_file(struct ndctl_ctx *ctx, struct monitor *_monitor,
 		struct util_filter_params *_param)
 {
 	FILE *f;
-	int line = 0;
 	size_t len = 0;
-	char *buf, *value, *config_file;
+	int line = 0, rc = 0;
+	char *buf = NULL, *seek, *value, *config_file;
 
 	if (_monitor->config_file)
 		config_file = strdup(_monitor->config_file);
@@ -488,32 +488,36 @@ static int read_config_file(struct ndctl_ctx *ctx, struct monitor *_monitor,
 		config_file = strdup(DEF_CONF_FILE);
 	if (!config_file) {
 		fail("strdup default config file failed\n");
+		rc = -ENOMEM;
 		goto out;
 	}
 
 	buf = malloc(BUF_SIZE);
 	if (!buf) {
 		fail("malloc read config-file buf error\n");
+		rc = -ENOMEM;
 		goto out;
 	}
+	seek = buf;
 
 	f = fopen(config_file, "r");
 	if (!f) {
 		fail("config-file: %s cannot be opened\n", config_file);
+		rc = -errno;
 		goto out;
 	}
 
-	while (fgets(buf, BUF_SIZE, f)) {
+	while (fgets(seek, BUF_SIZE, f)) {
 		value = NULL;
 		line++;
 
-		while (isspace(*buf))
-			buf++;
+		while (isspace(*seek))
+			seek++;
 
-		if (*buf == '#' || *buf == '\0')
+		if (*seek == '#' || *seek == '\0')
 			continue;
 
-		value = strchr(buf, '=');
+		value = strchr(seek, '=');
 		if (!value) {
 			fail("config-file syntax error, skip line[%i]\n", line);
 			continue;
@@ -525,12 +529,12 @@ static int read_config_file(struct ndctl_ctx *ctx, struct monitor *_monitor,
 		while (isspace(value[0]))
 			value++;
 
-		len = strlen(buf);
+		len = strlen(seek);
 		if (len == 0)
 			continue;
-		while (isspace(buf[len-1]))
+		while (isspace(seek[len-1]))
 			len--;
-		buf[len] = '\0';
+		seek[len] = '\0';
 
 		len = strlen(value);
 		if (len == 0)
@@ -542,22 +546,20 @@ static int read_config_file(struct ndctl_ctx *ctx, struct monitor *_monitor,
 		if (len == 0)
 			continue;
 
-		parse_config(&_param->bus, "bus", value, buf);
-		parse_config(&_param->dimm, "dimm", value, buf);
-		parse_config(&_param->region, "region", value, buf);
-		parse_config(&_param->namespace, "namespace", value, buf);
-		parse_config(&_monitor->dimm_event, "dimm-event", value, buf);
+		parse_config(&_param->bus, "bus", value, seek);
+		parse_config(&_param->dimm, "dimm", value, seek);
+		parse_config(&_param->region, "region", value, seek);
+		parse_config(&_param->namespace, "namespace", value, seek);
+		parse_config(&_monitor->dimm_event, "dimm-event", value, seek);
 
 		if (!_monitor->log)
-			parse_config(&_monitor->log, "log", value, buf);
+			parse_config(&_monitor->log, "log", value, seek);
 	}
 	fclose(f);
-	free(config_file);
-	return 0;
 out:
-	if (config_file)
-		free(config_file);
-	return 1;
+	free(buf);
+	free(config_file);
+	return rc;
 }
 
 int cmd_monitor(int argc, const char **argv, void *ctx)
