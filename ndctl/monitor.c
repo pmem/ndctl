@@ -360,32 +360,35 @@ static int monitor_event(struct ndctl_ctx *ctx,
 		struct monitor_filter_arg *mfa)
 {
 	struct epoll_event ev, *events;
-	int nfds, epollfd, i, rc;
+	int nfds, epollfd, i, rc = 0;
 	struct monitor_dimm *mdimm;
 	char buf;
 
 	events = calloc(mfa->num_dimm, sizeof(struct epoll_event));
 	if (!events) {
 		err(ctx, "malloc for events error\n");
-		return 1;
+		return -ENOMEM;
 	}
 	epollfd = epoll_create1(0);
 	if (epollfd == -1) {
 		err(ctx, "epoll_create1 error\n");
-		return 1;
+		rc = -errno;
+		goto out;
 	}
 	list_for_each(&mfa->dimms, mdimm, list) {
 		memset(&ev, 0, sizeof(ev));
 		rc = pread(mdimm->health_eventfd, &buf, sizeof(buf), 0);
 		if (rc < 0) {
 			err(ctx, "pread error\n");
-			return 1;
+			rc = -errno;
+			goto out;
 		}
 		ev.data.ptr = mdimm;
 		if (epoll_ctl(epollfd, EPOLL_CTL_ADD,
 				mdimm->health_eventfd, &ev) != 0) {
 			err(ctx, "epoll_ctl error\n");
-			return 1;
+			rc = -errno;
+			goto out;
 		}
 	}
 
@@ -394,7 +397,8 @@ static int monitor_event(struct ndctl_ctx *ctx,
 		nfds = epoll_wait(epollfd, events, mfa->num_dimm, -1);
 		if (nfds <= 0) {
 			err(ctx, "epoll_wait error\n");
-			return 1;
+			rc = -errno;
+			goto out;
 		}
 		for (i = 0; i < nfds; i++) {
 			mdimm = events[i].data.ptr;
@@ -404,13 +408,18 @@ static int monitor_event(struct ndctl_ctx *ctx,
 						ndctl_dimm_get_devname(mdimm->dimm));
 			}
 			rc = pread(mdimm->health_eventfd, &buf, sizeof(buf), 0);
-			if (rc < 0)
-				fail("pread error\n");
+			if (rc < 0) {
+				err(ctx, "pread error\n");
+				rc = -errno;
+				goto out;
+			}
 		}
 		if (did_fail)
 			return 1;
 	}
-	return 0;
+ out:
+	free(events);
+	return rc;
 }
 
 static int parse_monitor_event(struct monitor *_monitor, struct ndctl_ctx *ctx)
