@@ -413,7 +413,7 @@ static int monitor_event(struct ndctl_ctx *ctx,
 	return 0;
 }
 
-static int parse_monitor_event(struct monitor *_monitor)
+static int parse_monitor_event(struct monitor *_monitor, struct ndctl_ctx *ctx)
 {
 	char *dimm_event, *save;
 	const char *event;
@@ -432,14 +432,18 @@ static int parse_monitor_event(struct monitor *_monitor)
 		}
 		if (strcmp(event, "dimm-spares-remaining") == 0)
 			_monitor->event_flags |= ND_EVENT_SPARES_REMAINING;
-		if (strcmp(event, "dimm-media-temperature") == 0)
+		else if (strcmp(event, "dimm-media-temperature") == 0)
 			_monitor->event_flags |= ND_EVENT_MEDIA_TEMPERATURE;
-		if (strcmp(event, "dimm-controller-temperature") == 0)
+		else if (strcmp(event, "dimm-controller-temperature") == 0)
 			_monitor->event_flags |= ND_EVENT_CTRL_TEMPERATURE;
-		if (strcmp(event, "dimm-health-state") == 0)
+		else if (strcmp(event, "dimm-health-state") == 0)
 			_monitor->event_flags |= ND_EVENT_HEALTH_STATE;
-		if (strcmp(event, "dimm-unclean-shutdown") == 0)
+		else if (strcmp(event, "dimm-unclean-shutdown") == 0)
 			_monitor->event_flags |= ND_EVENT_UNCLEAN_SHUTDOWN;
+		else {
+			err(ctx, "no dimm-event named %s\n", event);
+			return 1;
+		}
 	}
 
 	free(dimm_event);
@@ -620,7 +624,7 @@ int cmd_monitor(int argc, const char **argv, void *ctx)
 		notice((struct ndctl_ctx *)ctx, "ndctl monitor daemon started\n");
 	}
 
-	if (parse_monitor_event(&monitor))
+	if (parse_monitor_event(&monitor, (struct ndctl_ctx *)ctx))
 		goto out;
 
 	fctx.filter_bus = filter_bus;
