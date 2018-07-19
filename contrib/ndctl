@@ -91,7 +91,7 @@ __ndctlcomp()
 
 	COMPREPLY=( $( compgen -W "$1" -- "$2" ) )
 	for cword in "${COMPREPLY[@]}"; do
-		if [[ "$cword" == @(--bus|--region|--type|--mode|--size|--dimm|--reconfig|--uuid|--name|--sector-size|--map|--namespace|--input|--output|--label-version|--align|--block|--count|--firmware|--media-temperature|--ctrl-temperature|--spares|--media-temperature-threshold|--ctrl-temperature-threshold|--spares-threshold|--media-temperature-alarm|--ctrl-temperature-alarm|--spares-alarm|--numa-node) ]]; then
+		if [[ "$cword" == @(--bus|--region|--type|--mode|--size|--dimm|--reconfig|--uuid|--name|--sector-size|--map|--namespace|--input|--output|--label-version|--align|--block|--count|--firmware|--media-temperature|--ctrl-temperature|--spares|--media-temperature-threshold|--ctrl-temperature-threshold|--spares-threshold|--media-temperature-alarm|--ctrl-temperature-alarm|--spares-alarm|--numa-node|--log|--dimm-event|--config-file) ]]; then
 			COMPREPLY[$i]="${cword}="
 		else
 			COMPREPLY[$i]="${cword} "
@@ -167,10 +167,13 @@ __ndctl_get_nodes()
 	echo "$nlist"
 }
 
+saveopts=""
 __ndctl_file_comp()
 {
 	local cur="$1"
+
 	_filedir
+	saveopts="${COMPREPLY[*]}"
 }
 __ndctl_comp_options()
 {
@@ -179,6 +182,7 @@ __ndctl_comp_options()
 
 	if [[ "$cur" == *=* ]]; then
 		local cur_subopt=${cur%%=*}
+		local cur_arg=${cur##*=}
 		case $cur_subopt in
 		--bus)
 			opts=$(__ndctl_get_buses)
@@ -219,7 +223,7 @@ __ndctl_comp_options()
 		--input)
 			;&
 		--firmware)
-			__ndctl_file_comp "${cur##*=}"
+			__ndctl_file_comp "$cur_arg"
 			return
 			;;
 		--label-version)
@@ -235,11 +239,45 @@ __ndctl_comp_options()
 		--numa-node)
 			opts=$(__ndctl_get_nodes)
 			;;
+		--log)
+			local my_args=( "standard" "syslog" )
+
+			__ndctl_file_comp "$cur_arg"
+			if [ -n "$cur_arg" ]; then
+				# if $cur_arg is a substring of $my_args (as
+				# determined by compgen), then we continue to
+				# manually construct opts using $my_args, but
+				# if it is not a substring (compgen returns
+				# empty), then we defer to _ndctl_file_comp
+				# and return immediately. (NOTE: subscripting
+				# of the my_args array here is fragile).
+				# If this pattern repeats, where we need to
+				# complete with filenames and some custom
+				# options, find a better way to generalize this
+				if [ -z "$(compgen -W "${my_args[*]}" -- "$cur_arg")" ]; then
+					return
+				fi
+			fi
+			opts="${my_args[*]} $saveopts"
+			;;
+		--dimm-event)
+			opts="all \
+				dimm-spares-remaining \
+				dimm-media-temperature \
+				dimm-controller-temperature \
+				dimm-health-state \
+				dimm-unclean-shutdown \
+				"
+			;;
+		--config-file)
+			__ndctl_file_comp "$cur_arg"
+			return
+			;;
 		*)
 			return
 			;;
 		esac
-		__ndctlcomp "$opts" "${cur##*=}"
+		__ndctlcomp "$opts" "$cur_arg"
 	fi
 }
 
