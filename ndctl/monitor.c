@@ -174,45 +174,30 @@ static int notify_dimm_event(struct monitor_dimm *mdimm)
 	jmsg = json_object_new_object();
 	if (!jmsg) {
 		fail("\n");
-		return -1;
+		return -ENOMEM;
 	}
 
 	clock_gettime(CLOCK_REALTIME, &ts);
 	sprintf(timestamp, "%10ld.%09ld", ts.tv_sec, ts.tv_nsec);
 	jobj = json_object_new_string(timestamp);
-	if (!jobj) {
-		fail("\n");
-		return -1;
-	}
-	json_object_object_add(jmsg, "timestamp", jobj);
+	if (jobj)
+		json_object_object_add(jmsg, "timestamp", jobj);
 
 	jobj = json_object_new_int(getpid());
-	if (!jobj) {
-		fail("\n");
-		return -1;
-	}
-	json_object_object_add(jmsg, "pid", jobj);
+	if (jobj)
+		json_object_object_add(jmsg, "pid", jobj);
 
 	jobj = dimm_event_to_json(mdimm);
-	if (!jobj) {
-		fail("\n");
-		return -1;
-	}
-	json_object_object_add(jmsg, "event", jobj);
+	if (jobj)
+		json_object_object_add(jmsg, "event", jobj);
 
 	jdimm = util_dimm_to_json(mdimm->dimm, 0);
-	if (!jdimm) {
-		fail("\n");
-		return -1;
-	}
-	json_object_object_add(jmsg, "dimm", jdimm);
+	if (jdimm)
+		json_object_object_add(jmsg, "dimm", jdimm);
 
 	jobj = util_dimm_health_to_json(mdimm->dimm);
-	if (!jobj) {
-		fail("\n");
-		return -1;
-	}
-	json_object_object_add(jdimm, "health", jobj);
+	if (jobj)
+		json_object_object_add(jdimm, "health", jobj);
 
 	if (monitor.human)
 		notice(ctx, "%s\n", json_object_to_json_string_ext(jmsg,
@@ -403,9 +388,12 @@ static int monitor_event(struct ndctl_ctx *ctx,
 		for (i = 0; i < nfds; i++) {
 			mdimm = events[i].data.ptr;
 			if (util_dimm_event_filter(mdimm, monitor.event_flags)) {
-				if (notify_dimm_event(mdimm))
+				rc = notify_dimm_event(mdimm);
+				if (rc) {
 					fail("%s: notify dimm event failed\n",
 						ndctl_dimm_get_devname(mdimm->dimm));
+					goto out;
+				}
 			}
 			rc = pread(mdimm->health_eventfd, &buf, sizeof(buf), 0);
 			if (rc < 0) {
@@ -601,7 +589,7 @@ int cmd_monitor(int argc, const char **argv, void *ctx)
 	const char *prefix = "./";
 	struct util_filter_ctx fctx = { 0 };
 	struct monitor_filter_arg mfa = { 0 };
-	int i;
+	int i, rc;
 
 	argc = parse_options_prefix(argc, argv, prefix, options, u, 0);
 	for (i = 0; i < argc; i++) {
@@ -614,7 +602,8 @@ int cmd_monitor(int argc, const char **argv, void *ctx)
 	ndctl_set_log_fn((struct ndctl_ctx *)ctx, log_standard);
 	ndctl_set_log_priority((struct ndctl_ctx *)ctx, LOG_NOTICE);
 
-	if (read_config_file((struct ndctl_ctx *)ctx, &monitor, &param))
+	rc = read_config_file((struct ndctl_ctx *)ctx, &monitor, &param);
+	if (rc)
 		goto out;
 
 	if (monitor.log) {
@@ -648,18 +637,17 @@ int cmd_monitor(int argc, const char **argv, void *ctx)
 	mfa.maxfd_dimm = -1;
 	mfa.flags = 0;
 
-	if (util_filter_walk(ctx, &fctx, &param))
+	rc = util_filter_walk(ctx, &fctx, &param);
+	if (rc)
 		goto out;
 
 	if (!mfa.num_dimm) {
 		err((struct ndctl_ctx *)ctx, "no dimms to monitor\n");
+		rc = -ENXIO;
 		goto out;
 	}
 
-	if (monitor_event(ctx, &mfa))
-		goto out;
-
-	return 0;
+	rc = monitor_event(ctx, &mfa);
 out:
-	return 1;
+	return rc;
 }
