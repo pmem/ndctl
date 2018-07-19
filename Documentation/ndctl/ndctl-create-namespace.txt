@@ -68,10 +68,11 @@ OPTIONS
 	  comes at the cost of allocating per-page metadata. The
 	  capacity can be allocated from "System RAM", or from a
 	  reserved portion of "Persistent Memory" (see the --map=
-	  option).  Note that a filesystem is required for dax
-	  operation, the resulting raw block device (/dev/pmemX) will
-	  use the page cache. See "devdax" mode for raw device access
-	  that supports dax.
+	  option).  NOTE: A filesystem that supports DAX is required
+	  for dax operation. If the raw block device (/dev/pmemX) is
+	  used directly without a filesystem, it will use the page
+	  cache. See "devdax" mode for raw device access that supports
+	  dax.
 
 	- "devdax": The device-dax character device interface is a
 	  statically allocated / raw access analogue of filesystem-dax
