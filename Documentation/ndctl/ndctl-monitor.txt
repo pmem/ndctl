@@ -69,6 +69,11 @@ OPTIONS
 --log=<file | syslog | standard>::
 	Output notifications to <file>, syslog or standard output.
 
+-c::
+--config-file=::
+	Provide the config file to use. This overrides the default config
+	typically found in /etc/ndctl/
+
 --daemon::
 	Run a monitor as a daemon.
 
