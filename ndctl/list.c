@@ -72,6 +72,7 @@ static struct json_object *region_to_json(struct ndctl_region *region,
 	struct ndctl_interleave_set *iset;
 	struct ndctl_mapping *mapping;
 	unsigned int bb_count = 0;
+	unsigned long long extent;
 	enum ndctl_persistence_domain pd;
 	int numa;
 
@@ -93,6 +94,14 @@ static struct json_object *region_to_json(struct ndctl_region *region,
 	if (!jobj)
 		goto err;
 	json_object_object_add(jregion, "available_size", jobj);
+
+	extent = ndctl_region_get_max_available_extent(region);
+	if (extent != ULLONG_MAX) {
+		jobj = util_json_object_size(extent, flags);
+		if (!jobj)
+			goto err;
+		json_object_object_add(jregion, "max_available_extent", jobj);
+	}
 
 	switch (ndctl_region_get_type(region)) {
 	case ND_DEVICE_REGION_PMEM:

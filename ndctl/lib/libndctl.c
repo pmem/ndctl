@@ -2107,6 +2107,39 @@ NDCTL_EXPORT unsigned long long ndctl_region_get_available_size(
 	return strtoull(buf, NULL, 0);
 }
 
+NDCTL_EXPORT unsigned long long ndctl_region_get_max_available_extent(
+		struct ndctl_region *region)
+{
+	unsigned int nstype = ndctl_region_get_nstype(region);
+	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
+	char *path = region->region_buf;
+	int len = region->buf_len;
+	char buf[SYSFS_ATTR_SIZE];
+
+	switch (nstype) {
+	case ND_DEVICE_NAMESPACE_PMEM:
+	case ND_DEVICE_NAMESPACE_BLK:
+		break;
+	default:
+		return 0;
+	}
+
+	if (snprintf(path, len,
+		     "%s/max_available_extent", region->region_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_region_get_devname(region));
+		return ULLONG_MAX;
+	}
+
+	/* fall back to legacy behavior if max extents is not exported */
+	if (sysfs_read_attr(ctx, path, buf) < 0) {
+		dbg(ctx, "max extents attribute not exported on older kernels\n");
+		return ULLONG_MAX;
+	}
+
+	return strtoull(buf, NULL, 0);
+}
+
 NDCTL_EXPORT unsigned int ndctl_region_get_range_index(struct ndctl_region *region)
 {
 	return region->range_index;

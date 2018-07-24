@@ -375,4 +375,5 @@ global:
 	ndctl_dimm_get_flags;
 	ndctl_dimm_get_event_flags;
 	ndctl_dimm_is_flag_supported;
+	ndctl_region_get_max_available_extent;
 } LIBNDCTL_16;
