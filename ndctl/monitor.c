@@ -410,22 +410,35 @@ static int monitor_event(struct ndctl_ctx *ctx,
 	return rc;
 }
 
+static void monitor_enable_all_events(struct monitor *_monitor)
+{
+	_monitor->event_flags = ND_EVENT_SPARES_REMAINING
+			| ND_EVENT_MEDIA_TEMPERATURE
+			| ND_EVENT_CTRL_TEMPERATURE
+			| ND_EVENT_HEALTH_STATE
+			| ND_EVENT_UNCLEAN_SHUTDOWN;
+}
+
 static int parse_monitor_event(struct monitor *_monitor, struct ndctl_ctx *ctx)
 {
 	char *dimm_event, *save;
 	const char *event;
+	int rc = 0;
 
-	if (!_monitor->dimm_event)
-		goto dimm_event_all;
+	if (!_monitor->dimm_event) {
+		monitor_enable_all_events(_monitor);
+		return 0;;
+	}
+
 	dimm_event = strdup(_monitor->dimm_event);
 	if (!dimm_event)
-		return 1;
+		return -ENOMEM;
 
 	for (event = strtok_r(dimm_event, " ", &save); event;
 			event = strtok_r(NULL, " ", &save)) {
 		if (strcmp(event, "all") == 0) {
-			free(dimm_event);
-			goto dimm_event_all;
+			monitor_enable_all_events(_monitor);
+			goto out;
 		}
 		if (strcmp(event, "dimm-spares-remaining") == 0)
 			_monitor->event_flags |= ND_EVENT_SPARES_REMAINING;
@@ -439,20 +452,14 @@ static int parse_monitor_event(struct monitor *_monitor, struct ndctl_ctx *ctx)
 			_monitor->event_flags |= ND_EVENT_UNCLEAN_SHUTDOWN;
 		else {
 			err(ctx, "no dimm-event named %s\n", event);
-			return 1;
+			rc = -EINVAL;
+			goto out;
 		}
 	}
 
+out:
 	free(dimm_event);
-	return 0;
-
-dimm_event_all:
-	_monitor->event_flags = ND_EVENT_SPARES_REMAINING
-			| ND_EVENT_MEDIA_TEMPERATURE
-			| ND_EVENT_CTRL_TEMPERATURE
-			| ND_EVENT_HEALTH_STATE
-			| ND_EVENT_UNCLEAN_SHUTDOWN;
-	return 0;
+	return rc;
 }
 
 static void parse_config(const char **arg, char *key, char *val, char *ident)
