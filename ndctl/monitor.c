@@ -583,7 +583,7 @@ int cmd_monitor(int argc, const char **argv, void *ctx)
 				"where to output the monitor's notification"),
 		OPT_FILENAME('c', "config-file", &monitor.config_file,
 				"config-file", "override the default config"),
-		OPT_BOOLEAN('x', "daemon", &monitor.daemon,
+		OPT_BOOLEAN('\0', "daemon", &monitor.daemon,
 				"run ndctl monitor as a daemon"),
 		OPT_BOOLEAN('u', "human", &monitor.human,
 				"use human friendly output formats"),

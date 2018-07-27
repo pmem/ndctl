@@ -73,7 +73,7 @@ OPT_STRING('M', "media-temperature-threshold", \
 	&param.media_temperature_threshold, \
 	"set smart media temperature threshold", \
 	"set threshold value for smart media temperature"), \
-OPT_STRING('x', "media-temperature-alarm", &param.media_temperature_alarm, \
+OPT_STRING('\0', "media-temperature-alarm", &param.media_temperature_alarm, \
 	"smart media temperature alarm", \
 	"enable or disable the smart media temperature alarm"), \
 OPT_STRING('c', "ctrl-temperature", &param.ctrl_temperature, \
@@ -83,7 +83,7 @@ OPT_STRING('C', "ctrl-temperature-threshold", \
 	&param.ctrl_temperature_threshold, \
 	"set smart controller temperature threshold", \
 	"set threshold value for smart controller temperature"), \
-OPT_STRING('y', "ctrl-temperature-alarm", &param.ctrl_temperature_alarm, \
+OPT_STRING('\0', "ctrl-temperature-alarm", &param.ctrl_temperature_alarm, \
 	"smart controller temperature alarm", \
 	"enable or disable the smart controller temperature alarm"), \
 OPT_STRING('s', "spares", &param.spares, \
@@ -92,12 +92,13 @@ OPT_STRING('s', "spares", &param.spares, \
 OPT_STRING('S', "spares-threshold", &param.spares_threshold, \
 	"set smart spares threshold", \
 	"set a threshold value for smart spares"), \
-OPT_STRING('z', "spares-alarm", &param.spares_alarm, \
+OPT_STRING('\0', "spares-alarm", &param.spares_alarm, \
 	"smart spares alarm", \
 	"enable or disable the smart spares alarm"), \
 OPT_BOOLEAN('f', "fatal", &param.fatal, "inject fatal smart health status"), \
 OPT_BOOLEAN('U', "unsafe-shutdown", &param.unsafe_shutdown, \
 	"inject smart unsafe shutdown status")
+
 
 static const struct option smart_opts[] = {
 	SMART_OPTIONS(),
