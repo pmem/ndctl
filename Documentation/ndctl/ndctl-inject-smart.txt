@@ -54,6 +54,9 @@ OPTIONS
 	Enable or disable the smart media temperature alarm. Options are
 	'on' or 'off'.
 
+--media-temperature-uninject::
+	Uninject any media temperature previously injected.
+
 -c::
 --ctrl-temperature=::
 	Inject <value> for the controller temperature smart attribute.
@@ -66,6 +69,9 @@ OPTIONS
 	Enable or disable the smart controller temperature alarm. Options are
 	'on' or 'off'.
 
+--ctrl-temperature-uninject::
+	Uninject any controller temperature previously injected.
+
 -s::
 --spares=::
 	Inject <value> for the spares smart attribute.
@@ -77,13 +83,27 @@ OPTIONS
 --spares-alarm=::
 	Enable or disable the smart spares alarm. Options are 'on' or 'off'.
 
+--spares-uninject::
+	Uninject any spare percentage previously injected.
+
 -f::
 --fatal::
 	Set the flag to spoof fatal health status.
 
+--fatal-uninject::
+	Uninject the fatal health status flag.
+
 -U::
 --unsafe-shutdown::
 	Set the flag to spoof an unsafe shutdown on the next power down.
+
+--unsafe-shutdown-uninject::
+	Uninject the unsafe shutdown flag.
+
+-N::
+--uninject-all::
+	Uninject all possible smart fields/values irrespective of whether
+	they have been previously injected or not.
 
 -v::
 --verbose::

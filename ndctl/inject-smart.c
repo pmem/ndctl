@@ -44,6 +44,12 @@ static struct parameters {
 	const char *spares_alarm;
 	bool fatal;
 	bool unsafe_shutdown;
+	bool media_temperature_uninject;
+	bool ctrl_temperature_uninject;
+	bool spares_uninject;
+	bool fatal_uninject;
+	bool unsafe_shutdown_uninject;
+	bool uninject_all;
 } param;
 
 static struct smart_ctx {
@@ -76,6 +82,8 @@ OPT_STRING('M', "media-temperature-threshold", \
 OPT_STRING('\0', "media-temperature-alarm", &param.media_temperature_alarm, \
 	"smart media temperature alarm", \
 	"enable or disable the smart media temperature alarm"), \
+OPT_BOOLEAN('\0', "media-temperature-uninject", \
+	&param.media_temperature_uninject, "uninject media temperature"), \
 OPT_STRING('c', "ctrl-temperature", &param.ctrl_temperature, \
 	"smart controller temperature attribute", \
 	"inject a value for smart controller temperature"), \
@@ -86,6 +94,8 @@ OPT_STRING('C', "ctrl-temperature-threshold", \
 OPT_STRING('\0', "ctrl-temperature-alarm", &param.ctrl_temperature_alarm, \
 	"smart controller temperature alarm", \
 	"enable or disable the smart controller temperature alarm"), \
+OPT_BOOLEAN('\0', "ctrl-temperature-uninject", \
+	&param.ctrl_temperature_uninject, "uninject controller temperature"), \
 OPT_STRING('s', "spares", &param.spares, \
 	"smart spares attribute", \
 	"inject a value for smart spares"), \
@@ -95,9 +105,17 @@ OPT_STRING('S', "spares-threshold", &param.spares_threshold, \
 OPT_STRING('\0', "spares-alarm", &param.spares_alarm, \
 	"smart spares alarm", \
 	"enable or disable the smart spares alarm"), \
+OPT_BOOLEAN('\0', "spares-uninject", \
+	&param.spares_uninject, "uninject spare percentage"), \
 OPT_BOOLEAN('f', "fatal", &param.fatal, "inject fatal smart health status"), \
+OPT_BOOLEAN('F', "fatal-uninject", \
+	&param.fatal_uninject, "uninject fatal health condition"), \
 OPT_BOOLEAN('U', "unsafe-shutdown", &param.unsafe_shutdown, \
-	"inject smart unsafe shutdown status")
+	"inject smart unsafe shutdown status"), \
+OPT_BOOLEAN('\0', "unsafe-shutdown-uninject", \
+	&param.unsafe_shutdown_uninject, "uninject unsafe shutdown status"), \
+OPT_BOOLEAN('N', "uninject-all", \
+	&param.uninject_all, "uninject all possible fields")
 
 
 static const struct option smart_opts[] = {
@@ -183,6 +201,21 @@ static inline void enable_inject(void)
 	} \
 }
 
+#define smart_param_setup_uninj(arg) \
+{ \
+	if (param.arg##_uninject) { \
+		/* Ensure user didn't set inject and uninject together */ \
+		if (param.arg) { \
+			error("Cannot use %s inject and uninject together\n", \
+				#arg); \
+			return -EINVAL; \
+		} \
+		/* Then set the inject flag so this can be accounted for */ \
+		param.arg = "0"; \
+		enable_inject(); \
+	} \
+}
+
 static int smart_init(void)
 {
 	if (param.human)
@@ -203,6 +236,20 @@ static int smart_init(void)
 	/* setup remaining injection attributes */
 	if (param.fatal || param.unsafe_shutdown)
 		enable_inject();
+
+	/* setup uninjections */
+	if (param.uninject_all) {
+		param.media_temperature_uninject = true;
+		param.ctrl_temperature_uninject = true;
+		param.spares_uninject = true;
+		param.fatal_uninject = true;
+		param.unsafe_shutdown_uninject = true;
+	}
+	smart_param_setup_uninj(media_temperature)
+	smart_param_setup_uninj(ctrl_temperature)
+	smart_param_setup_uninj(spares)
+	smart_param_setup_uninj(fatal)
+	smart_param_setup_uninj(unsafe_shutdown)
 
 	if (sctx.op_mask == 0) {
 		error("No valid operation specified\n");
@@ -285,12 +332,16 @@ out:
 #define send_inject_val(arg) \
 { \
 	if (param.arg) { \
+		bool enable = true; \
+		\
 		si_cmd = ndctl_dimm_cmd_new_smart_inject(dimm); \
 		if (!si_cmd) { \
 			error("%s: no smart inject command support\n", name); \
 			goto out; \
 		} \
-		rc = ndctl_cmd_smart_inject_##arg(si_cmd, true, sctx.arg); \
+		if (param.arg##_uninject) \
+			enable = false; \
+		rc = ndctl_cmd_smart_inject_##arg(si_cmd, enable, sctx.arg); \
 		if (rc) { \
 			error("%s: smart inject %s cmd invalid: %s (%d)\n", \
 				name, #arg, strerror(abs(rc)), rc); \
@@ -309,12 +360,16 @@ out:
 #define send_inject_bool(arg) \
 { \
 	if (param.arg) { \
+		bool enable = true; \
+		\
 		si_cmd = ndctl_dimm_cmd_new_smart_inject(dimm); \
 		if (!si_cmd) { \
 			error("%s: no smart inject command support\n", name); \
 			goto out; \
 		} \
-		rc = ndctl_cmd_smart_inject_##arg(si_cmd, true); \
+		if (param.arg##_uninject) \
+			enable = false; \
+		rc = ndctl_cmd_smart_inject_##arg(si_cmd, enable); \
 		if (rc) { \
 			error("%s: smart inject %s cmd invalid: %s (%d)\n", \
 				name, #arg, strerror(abs(rc)), rc); \
