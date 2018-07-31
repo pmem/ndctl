@@ -614,7 +614,8 @@ int cmd_monitor(int argc, const char **argv, void *ctx)
 		goto out;
 
 	if (monitor.log) {
-		fix_filename(prefix, (const char **)&monitor.log);
+		if (strncmp(monitor.log, "./", 2) != 0)
+			fix_filename(prefix, (const char **)&monitor.log);
 		if (strncmp(monitor.log, "./syslog", 8) == 0)
 			ndctl_set_log_fn((struct ndctl_ctx *)ctx, log_syslog);
 		else if (strncmp(monitor.log, "./standard", 10) == 0)
