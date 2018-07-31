@@ -146,6 +146,7 @@ NDCTL_EXPORT int ndctl_cmd_##op(struct ndctl_cmd *cmd, bool enable, unsigned int
 }
 
 smart_cmd_inject_val(smart_inject_media_temperature)
+smart_cmd_inject_val(smart_inject_ctrl_temperature)
 smart_cmd_inject_val(smart_inject_spares)
 
 #define smart_cmd_inject(op) \

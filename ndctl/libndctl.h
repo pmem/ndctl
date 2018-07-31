@@ -285,6 +285,8 @@ int ndctl_cmd_smart_threshold_set_spares(struct ndctl_cmd *cmd,
 struct ndctl_cmd *ndctl_dimm_cmd_new_smart_inject(struct ndctl_dimm *dimm);
 int ndctl_cmd_smart_inject_media_temperature(struct ndctl_cmd *cmd, bool enable,
 		unsigned int mtemp);
+int ndctl_cmd_smart_inject_ctrl_temperature(struct ndctl_cmd *cmd, bool enable,
+		unsigned int ctemp);
 int ndctl_cmd_smart_inject_spares(struct ndctl_cmd *cmd, bool enable,
 		unsigned int spares);
 int ndctl_cmd_smart_inject_fatal(struct ndctl_cmd *cmd, bool enable);

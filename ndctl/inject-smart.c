@@ -392,6 +392,7 @@ static int smart_inject(struct ndctl_dimm *dimm)
 	int rc = -EOPNOTSUPP;
 
 	send_inject_val(media_temperature)
+	send_inject_val(ctrl_temperature)
 	send_inject_val(spares)
 	send_inject_bool(fatal)
 	send_inject_bool(unsafe_shutdown)
