@@ -22,6 +22,7 @@ TESTS =\
 	firmware-update.sh \
 	ack-shutdown-count-set \
 	rescan-partitions.sh \
+	inject-smart.sh \
 	monitor.sh
 
 check_PROGRAMS =\
