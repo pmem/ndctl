@@ -54,6 +54,7 @@ static struct parameters {
 
 static struct smart_ctx {
 	bool alarms_present;
+	bool err_continue;
 	unsigned long op_mask;
 	unsigned long flags;
 	unsigned int media_temperature;
@@ -220,6 +221,7 @@ static int smart_init(void)
 {
 	if (param.human)
 		sctx.flags |= UTIL_JSON_HUMAN;
+	sctx.err_continue = false;
 
 	/* setup attributes and thresholds except alarm_control */
 	smart_param_setup_temps(media_temperature)
@@ -244,6 +246,7 @@ static int smart_init(void)
 		param.spares_uninject = true;
 		param.fatal_uninject = true;
 		param.unsafe_shutdown_uninject = true;
+		sctx.err_continue = true;
 	}
 	smart_param_setup_uninj(media_temperature)
 	smart_param_setup_uninj(ctrl_temperature)
@@ -337,7 +340,8 @@ out:
 		si_cmd = ndctl_dimm_cmd_new_smart_inject(dimm); \
 		if (!si_cmd) { \
 			error("%s: no smart inject command support\n", name); \
-			goto out; \
+			if (sctx.err_continue == false) \
+				goto out; \
 		} \
 		if (param.arg##_uninject) \
 			enable = false; \
@@ -345,13 +349,15 @@ out:
 		if (rc) { \
 			error("%s: smart inject %s cmd invalid: %s (%d)\n", \
 				name, #arg, strerror(abs(rc)), rc); \
-			goto out; \
+			if (sctx.err_continue == false) \
+				goto out; \
 		} \
 		rc = ndctl_cmd_submit(si_cmd); \
 		if (rc) { \
 			error("%s: smart inject %s command failed: %s (%d)\n", \
 				name, #arg, strerror(abs(rc)), rc); \
-			goto out; \
+			if (sctx.err_continue == false) \
+				goto out; \
 		} \
 		ndctl_cmd_unref(si_cmd); \
 	} \
@@ -365,7 +371,8 @@ out:
 		si_cmd = ndctl_dimm_cmd_new_smart_inject(dimm); \
 		if (!si_cmd) { \
 			error("%s: no smart inject command support\n", name); \
-			goto out; \
+			if (sctx.err_continue == false) \
+				goto out; \
 		} \
 		if (param.arg##_uninject) \
 			enable = false; \
@@ -373,13 +380,15 @@ out:
 		if (rc) { \
 			error("%s: smart inject %s cmd invalid: %s (%d)\n", \
 				name, #arg, strerror(abs(rc)), rc); \
-			goto out; \
+			if (sctx.err_continue == false) \
+				goto out; \
 		} \
 		rc = ndctl_cmd_submit(si_cmd); \
 		if (rc) { \
 			error("%s: smart inject %s command failed: %s (%d)\n", \
 				name, #arg, strerror(abs(rc)), rc); \
-			goto out; \
+			if (sctx.err_continue == false) \
+				goto out; \
 		} \
 		ndctl_cmd_unref(si_cmd); \
 	} \
