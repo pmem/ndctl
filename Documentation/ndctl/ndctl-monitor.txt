@@ -98,6 +98,10 @@ specified events.
 	Output monitor notification as human friendly json format instead
 	of the default machine friendly json format.
 
+-v::
+--verbose::
+	Emit extra debug messages to log.
+
 COPYRIGHT
 ---------
 Copyright (c) 2018, FUJITSU LIMITED. License GPLv2: GNU GPL version 2

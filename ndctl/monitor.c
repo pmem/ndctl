@@ -22,6 +22,7 @@ static struct monitor {
 	const char *dimm_event;
 	bool daemon;
 	bool human;
+	bool verbose;
 	unsigned int event_flags;
 } monitor;
 
@@ -92,7 +93,9 @@ static void log_file(struct ndctl_ctx *ctx, int priority, const char *file,
 	f = fopen(monitor.log, "a+");
 	if (!f) {
 		ndctl_set_log_fn(ctx, log_syslog);
-		fail("open logfile %s failed\n%s", monitor.log, buf);
+		err(ctx, "open logfile %s failed\n", monitor.log);
+		did_fail = 1;
+		notice(ctx, "%s\n", buf);
 		goto end;
 	}
 	fprintf(f, "%s", buf);
@@ -390,8 +393,9 @@ static int monitor_event(struct ndctl_ctx *ctx,
 			if (util_dimm_event_filter(mdimm, monitor.event_flags)) {
 				rc = notify_dimm_event(mdimm);
 				if (rc) {
-					fail("%s: notify dimm event failed\n",
+					err(ctx, "%s: notify dimm event failed\n",
 						ndctl_dimm_get_devname(mdimm->dimm));
+					did_fail = 1;
 					goto out;
 				}
 			}
@@ -506,7 +510,7 @@ static int read_config_file(struct ndctl_ctx *ctx, struct monitor *_monitor,
 
 	f = fopen(config_file, "r");
 	if (!f) {
-		fail("config-file: %s cannot be opened\n", config_file);
+		err(ctx, "config-file: %s cannot be opened\n", config_file);
 		rc = -errno;
 		goto out;
 	}
@@ -587,6 +591,8 @@ int cmd_monitor(int argc, const char **argv, void *ctx)
 				"run ndctl monitor as a daemon"),
 		OPT_BOOLEAN('u', "human", &monitor.human,
 				"use human friendly output formats"),
+		OPT_BOOLEAN('v', "verbose", &monitor.verbose,
+				"emit extra debug messages to log"),
 		OPT_END(),
 	};
 	const char * const u[] = {
@@ -607,7 +613,11 @@ int cmd_monitor(int argc, const char **argv, void *ctx)
 
 	/* default to log_standard */
 	ndctl_set_log_fn((struct ndctl_ctx *)ctx, log_standard);
-	ndctl_set_log_priority((struct ndctl_ctx *)ctx, LOG_NOTICE);
+
+	if (monitor.verbose)
+		ndctl_set_log_priority((struct ndctl_ctx *)ctx, LOG_DEBUG);
+	else
+		ndctl_set_log_priority((struct ndctl_ctx *)ctx, LOG_NOTICE);
 
 	rc = read_config_file((struct ndctl_ctx *)ctx, &monitor, &param);
 	if (rc)
@@ -629,7 +639,7 @@ int cmd_monitor(int argc, const char **argv, void *ctx)
 			err((struct ndctl_ctx *)ctx, "daemon start failed\n");
 			goto out;
 		}
-		notice((struct ndctl_ctx *)ctx, "ndctl monitor daemon started\n");
+		err((struct ndctl_ctx *)ctx, "ndctl monitor daemon started\n");
 	}
 
 	if (parse_monitor_event(&monitor, (struct ndctl_ctx *)ctx))
