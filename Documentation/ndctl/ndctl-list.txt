@@ -64,9 +64,10 @@ include::xable-region-options.txt[]
 
 -d::
 --dimm=::
-	An 'nmemX' device name, or dimm id number. Filter listing by
-	devices that reference the given dimm. For example to see all
-	namespaces comprised of storage capacity on nmem0:
+	An 'nmemX' device name, or dimm id number. The dimm id number
+	here is X in 'nmemX'. Filter listing by devices that reference
+	the given dimm. For example to see all namespaces comprised
+	of storage capacity on nmem0:
 ----
 # ndctl list --dimm=nmem0 --namespaces
 ----
