@@ -603,6 +603,7 @@ int cmd_monitor(int argc, const char **argv, void *ctx)
 	struct util_filter_ctx fctx = { 0 };
 	struct monitor_filter_arg mfa = { 0 };
 	int i, rc;
+	FILE *f;
 
 	argc = parse_options_prefix(argc, argv, prefix, options, u, 0);
 	for (i = 0; i < argc; i++) {
@@ -630,8 +631,16 @@ int cmd_monitor(int argc, const char **argv, void *ctx)
 			ndctl_set_log_fn((struct ndctl_ctx *)ctx, log_syslog);
 		else if (strncmp(monitor.log, "./standard", 10) == 0)
 			; /*default, already set */
-		else
+		else {
+			f = fopen(monitor.log, "a+");
+			if (!f) {
+				error("open %s failed\n", monitor.log);
+				rc = -errno;
+				goto out;
+			}
+			fclose(f);
 			ndctl_set_log_fn((struct ndctl_ctx *)ctx, log_file);
+		}
 	}
 
 	if (monitor.daemon) {
