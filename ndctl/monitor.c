@@ -84,6 +84,8 @@ static void log_file(struct ndctl_ctx *ctx, int priority, const char *file,
 {
 	FILE *f;
 	char *buf;
+	struct timespec ts;
+	char timestamp[32];
 
 	if (vasprintf(&buf, format, args) < 0) {
 		fail("vasprintf error\n");
@@ -99,7 +101,14 @@ static void log_file(struct ndctl_ctx *ctx, int priority, const char *file,
 		notice(ctx, "%s\n", buf);
 		goto end;
 	}
-	fprintf(f, "%s", buf);
+
+	if (priority != LOG_NOTICE) {
+		clock_gettime(CLOCK_REALTIME, &ts);
+		sprintf(timestamp, "%10ld.%09ld", ts.tv_sec, ts.tv_nsec);
+		fprintf(f, "[%s] [%d] %s", timestamp, getpid(), buf);
+	} else
+		fprintf(f, "%s", buf);
+
 	fflush(f);
 	fclose(f);
 end:
