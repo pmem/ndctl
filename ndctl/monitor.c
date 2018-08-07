@@ -93,7 +93,8 @@ static void log_file(struct ndctl_ctx *ctx, int priority, const char *file,
 	f = fopen(monitor.log, "a+");
 	if (!f) {
 		ndctl_set_log_fn(ctx, log_syslog);
-		err(ctx, "open logfile %s failed\n", monitor.log);
+		err(ctx, "open logfile %s failed, forward messages to syslog\n",
+				monitor.log);
 		did_fail = 1;
 		notice(ctx, "%s\n", buf);
 		goto end;
@@ -644,6 +645,8 @@ int cmd_monitor(int argc, const char **argv, void *ctx)
 	}
 
 	if (monitor.daemon) {
+		if (!monitor.log || strncmp(monitor.log, "./", 2) == 0)
+			ndctl_set_log_fn((struct ndctl_ctx *)ctx, log_syslog);
 		if (daemon(0, 0) != 0) {
 			err((struct ndctl_ctx *)ctx, "daemon start failed\n");
 			goto out;

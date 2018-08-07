@@ -67,7 +67,21 @@ OPTIONS
 
 -l <file | syslog | standard>::
 --log=<file | syslog | standard>::
-	Output notifications to <file>, syslog or standard output.
+	Send log messages to the specified destination.
++
+--
+<file>::
+	Send log messages to specified <file>. When fopen() is not able
+	to open <file>, log messages will be forwarded to syslog.
+syslog::
+	Send messages to syslog.
+standard::
+	Send messages to standard output.
+--
++
+The default log destination is 'syslog' if "--daemon" is specified,
+otherwise 'standard'. Note that standard and relative path for <file>
+will not work if "--daemon" is specified.
 
 -c::
 --config-file=::
