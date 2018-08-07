@@ -5,3 +5,6 @@ Description=Ndctl Monitor Daemon
 Type=forking
 ExecStart=/usr/bin/ndctl monitor --daemon
 ExecStop=/bin/kill ${MAINPID}
+
+[Install]
+WantedBy=multi-user.target
