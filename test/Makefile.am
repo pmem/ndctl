@@ -23,7 +23,8 @@ TESTS =\
 	ack-shutdown-count-set \
 	rescan-partitions.sh \
 	inject-smart.sh \
-	monitor.sh
+	monitor.sh \
+	max_available_extent_ns.sh
 
 check_PROGRAMS =\
 	libndctl \
