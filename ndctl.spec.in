@@ -110,6 +110,7 @@ make check
 %postun -n DAX_LNAME -p /sbin/ldconfig
 
 %define bashcompdir %(pkg-config --variable=completionsdir bash-completion)
+%define udevdir  %(pkg-config --variable=udevdir udev)
 
 %files
 %defattr(-,root,root)
@@ -119,6 +120,8 @@ make check
 %{bashcompdir}/
 %{_sysconfdir}/ndctl/monitor.conf
 %{_unitdir}/ndctl-monitor.service
+%{_udevrulesdir}/80-ndctl.rules
+%{udevdir}/ndctl-udev
 
 %files -n daxctl
 %defattr(-,root,root)

@@ -51,3 +51,8 @@ EXTRA_DIST += $(monitor_config_file)
 if ENABLE_SYSTEMD_UNIT_DIR
 systemd_unit_DATA = ndctl-monitor.service
 endif
+
+ndctl_udevdir = $(UDEVDIR)
+ndctl_udev_PROGRAMS = ndctl-udev
+ndctl_udev_SOURCES = ndctl-udev.c
+ndctl_udev_LDADD = lib/libndctl.la

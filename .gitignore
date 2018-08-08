@@ -25,6 +25,7 @@ daxctl/lib/libdaxctl.pc
 *.a
 ndctl/lib/libndctl.pc
 ndctl/ndctl
+ndctl/ndctl-udev
 rhel/
 sles/ndctl.spec
 util/log.lo

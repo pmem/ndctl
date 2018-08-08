@@ -164,8 +164,17 @@ AS_IF([test "x$with_systemd_unit_dir" != "xno"],
 	[AC_SUBST([systemd_unitdir], [$with_systemd_unit_dir])])
 AM_CONDITIONAL([ENABLE_SYSTEMD_UNIT_DIR], [test "x$with_systemd_unit_dir" != "xno"])
 
+AC_ARG_WITH([tmpfilesdir],
+	[AS_HELP_STRING([--with-tmpfilesdir=DIR], [Directory for temporary runtime files])],
+	[tmpfilesdir=$withval],
+	[tmpfilesdir="/run"])
+
+UDEVDIR="$(pkg-config udev --variable=udevdir)"
+AC_SUBST([UDEVDIR])
+
 my_CFLAGS="\
 -D DEF_CONF_FILE='\"${sysconfdir}/ndctl/monitor.conf\"' \
+-D DEF_TMPFS_DIR='\"${tmpfilesdir}/ndctl\"' \
 -Wall \
 -Wchar-subscripts \
 -Wformat-security \
@@ -207,6 +216,7 @@ AC_MSG_RESULT([
         libdir:                 ${libdir}
         includedir:             ${includedir}
 	systemd-unit-dir:	${systemd_unitdir}
+        tmpfilesdir:            ${tmpfilesdir}
 
         compiler:               ${CC}
         cflags:                 ${CFLAGS}
