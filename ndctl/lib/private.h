@@ -227,6 +227,8 @@ struct ndctl_namespace {
  * @firmware_status: NFIT command output status code
  * @iter: iterator for multi-xfer commands
  * @source: source cmd of an inherited iter.total_buf
+ * @handle_error: function pointer to handle a cmd error and override it to
+ * 		  return alternative data (from a cache for example).
  *
  * For dynamically sized commands like 'get_config', 'set_config', or
  * 'vendor', @size encompasses the entire buffer for the command input
@@ -255,6 +257,7 @@ struct ndctl_cmd {
 		int dir;
 	} iter;
 	struct ndctl_cmd *source;
+	int (*handle_error)(struct ndctl_cmd *cmd);
 	union {
 		struct nd_cmd_ars_cap ars_cap[0];
 		struct nd_cmd_ars_start ars_start[0];

@@ -2766,6 +2766,8 @@ NDCTL_EXPORT int ndctl_cmd_submit(struct ndctl_cmd *cmd)
 	close(fd);
  out:
 	cmd->status = rc;
+	if (rc && cmd->handle_error)
+		rc = cmd->handle_error(cmd);
 	return rc;
 }
 
