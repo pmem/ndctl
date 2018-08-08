@@ -39,34 +39,61 @@ static void smart_threshold_to_json(struct ndctl_dimm *dimm,
 		unsigned int temp;
 		double t;
 
+		jobj = json_object_new_boolean(true);
+		if (jobj)
+			json_object_object_add(jhealth,
+				"alarm_enabled_media_temperature", jobj);
 		temp = ndctl_cmd_smart_threshold_get_temperature(cmd);
 		t = ndctl_decode_smart_temperature(temp);
 		jobj = json_object_new_double(t);
 		if (jobj)
 			json_object_object_add(jhealth,
-					"temperature_threshold", jobj);
+				"temperature_threshold", jobj);
+	} else {
+		jobj = json_object_new_boolean(false);
+		if (jobj)
+			json_object_object_add(jhealth,
+				"alarm_enabled_media_temperature", jobj);
 	}
 
 	if (alarm_control & ND_SMART_CTEMP_TRIP) {
 		unsigned int temp;
 		double t;
 
+		jobj = json_object_new_boolean(true);
+		if (jobj)
+			json_object_object_add(jhealth,
+				"alarm_enabled_ctrl_temperature", jobj);
 		temp = ndctl_cmd_smart_threshold_get_ctrl_temperature(cmd);
 		t = ndctl_decode_smart_temperature(temp);
 		jobj = json_object_new_double(t);
 		if (jobj)
 			json_object_object_add(jhealth,
 				"controller_temperature_threshold", jobj);
+	} else {
+		jobj = json_object_new_boolean(false);
+		if (jobj)
+			json_object_object_add(jhealth,
+				"alarm_enabled_ctrl_temperature", jobj);
 	}
 
 	if (alarm_control & ND_SMART_SPARE_TRIP) {
 		unsigned int spares;
 
+		jobj = json_object_new_boolean(true);
+		if (jobj)
+			json_object_object_add(jhealth,
+				"alarm_enabled_spares", jobj);
 		spares = ndctl_cmd_smart_threshold_get_spares(cmd);
 		jobj = json_object_new_int(spares);
 		if (jobj)
 			json_object_object_add(jhealth,
-					"spares_threshold", jobj);
+				"spares_threshold", jobj);
+	} else {
+		jobj = json_object_new_boolean(false);
+		if (jobj)
+			json_object_object_add(jhealth,
+				"alarm_enabled_spares", jobj);
 	}
 
  out:
