@@ -23,6 +23,7 @@ enum util_json_flags {
 	UTIL_JSON_DAX = (1 << 2),
 	UTIL_JSON_DAX_DEVS = (1 << 3),
 	UTIL_JSON_HUMAN = (1 << 4),
+	UTIL_JSON_VERBOSE = (1 << 5),
 };
 
 struct json_object;

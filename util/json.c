@@ -664,6 +664,21 @@ static struct json_object *util_raw_uuid(struct ndctl_namespace *ndns)
 	return json_object_new_string(buf);
 }
 
+static void util_raw_uuid_to_json(struct ndctl_namespace *ndns,
+				  unsigned long flags,
+				  struct json_object *jndns)
+{
+	struct json_object *jobj;
+
+	if (!(flags & UTIL_JSON_VERBOSE))
+		return;
+
+	jobj = util_raw_uuid(ndns);
+	if (!jobj)
+		return;
+	json_object_object_add(jndns, "raw_uuid", jobj);
+}
+
 struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 		unsigned long flags)
 {
@@ -752,10 +767,7 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 		if (!jobj)
 			goto err;
 		json_object_object_add(jndns, "uuid", jobj);
-
-		jobj = util_raw_uuid(ndns);
-		if (jobj)
-			json_object_object_add(jndns, "raw_uuid", jobj);
+		util_raw_uuid_to_json(ndns, flags, jndns);
 		bdev = ndctl_btt_get_block_device(btt);
 	} else if (pfn) {
 		ndctl_pfn_get_uuid(pfn, uuid);
@@ -764,9 +776,7 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 		if (!jobj)
 			goto err;
 		json_object_object_add(jndns, "uuid", jobj);
-		jobj = util_raw_uuid(ndns);
-		if (jobj)
-			json_object_object_add(jndns, "raw_uuid", jobj);
+		util_raw_uuid_to_json(ndns, flags, jndns);
 		bdev = ndctl_pfn_get_block_device(pfn);
 	} else if (dax) {
 		struct daxctl_region *dax_region;
@@ -778,9 +788,7 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 		if (!jobj)
 			goto err;
 		json_object_object_add(jndns, "uuid", jobj);
-		jobj = util_raw_uuid(ndns);
-		if (jobj)
-			json_object_object_add(jndns, "raw_uuid", jobj);
+		util_raw_uuid_to_json(ndns, flags, jndns);
 		if ((flags & UTIL_JSON_DAX) && dax_region) {
 			jobj = util_daxctl_region_to_json(dax_region, NULL,
 					flags);
@@ -827,7 +835,7 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 	 * happens because they use pre-v1.2 labels or because they
 	 * don't have a label space (devtype=nd_namespace_io).
 	 */
-	if (sector_size < UINT_MAX) {
+	if (sector_size < UINT_MAX && flags & UTIL_JSON_VERBOSE) {
 		jobj = json_object_new_int(sector_size);
 		if (!jobj)
 			goto err;
@@ -857,7 +865,7 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 	}
 
 	numa = ndctl_namespace_get_numa_node(ndns);
-	if (numa >= 0) {
+	if (numa >= 0 && flags & UTIL_JSON_VERBOSE) {
 		jobj = json_object_new_int(numa);
 		if (jobj)
 			json_object_object_add(jndns, "numa_node", jobj);

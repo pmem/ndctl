@@ -36,6 +36,7 @@ static struct {
 	bool media_errors;
 	bool human;
 	bool firmware;
+	int verbose;
 } list;
 
 static unsigned long listopts_to_flags(void)
@@ -50,6 +51,8 @@ static unsigned long listopts_to_flags(void)
 		flags |= UTIL_JSON_DAX | UTIL_JSON_DAX_DEVS;
 	if (list.human)
 		flags |= UTIL_JSON_HUMAN;
+	if (list.verbose)
+		flags |= UTIL_JSON_VERBOSE;
 	return flags;
 }
 
@@ -118,7 +121,7 @@ static struct json_object *region_to_json(struct ndctl_region *region,
 	json_object_object_add(jregion, "type", jobj);
 
 	numa = ndctl_region_get_numa_node(region);
-	if (numa >= 0) {
+	if (numa >= 0 && flags & UTIL_JSON_VERBOSE) {
 		jobj = json_object_new_int(numa);
 		if (jobj)
 			json_object_object_add(jregion, "numa_node", jobj);
@@ -452,6 +455,8 @@ int cmd_list(int argc, const char **argv, void *ctx)
 				"include media errors"),
 		OPT_BOOLEAN('u', "human", &list.human,
 				"use human friendly number formats "),
+		OPT_INCR('v', "verbose", &list.verbose,
+				"increase output detail"),
 		OPT_END(),
 	};
 	const char * const u[] = {
@@ -474,6 +479,24 @@ int cmd_list(int argc, const char **argv, void *ctx)
 		list.dimms = !!param.dimm;
 		if (list.dax && !param.mode)
 			param.mode = "dax";
+	}
+
+	switch (list.verbose) {
+	default:
+	case 3:
+		list.idle = true;
+		list.firmware = true;
+		list.health = true;
+	case 2:
+		list.dimms = true;
+		list.buses = true;
+		list.regions = true;
+	case 1:
+		list.media_errors = true;
+		list.namespaces = true;
+		list.dax = true;
+	case 0:
+		break;
 	}
 
 	if (num_list_flags() == 0)
