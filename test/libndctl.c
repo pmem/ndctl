@@ -2250,6 +2250,7 @@ static int check_smart(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 				ndctl_dimm_get_handle(dimm), \
 				smart_t_data.field, \
 				ndctl_cmd_smart_threshold_get_##field(cmd)); \
+		ndctl_cmd_unref(cmd_set); \
 		ndctl_cmd_unref(cmd); \
 		return -ENXIO; \
 	} \
