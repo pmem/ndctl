@@ -1649,6 +1649,7 @@ NDCTL_EXPORT unsigned int ndctl_dimm_get_health(struct ndctl_dimm *dimm)
 	}
 	if (ndctl_cmd_submit(cmd)) {
 		err(ctx, "%s: smart command failed\n", devname);
+		ndctl_cmd_unref(cmd);
 		return UINT_MAX;
 	}
 
@@ -1671,6 +1672,7 @@ NDCTL_EXPORT unsigned int ndctl_dimm_get_flags(struct ndctl_dimm *dimm)
 	}
 	if (ndctl_cmd_submit(cmd)) {
 		dbg(ctx, "%s: smart command failed\n", devname);
+		ndctl_cmd_unref(cmd);
 		return UINT_MAX;
 	}
 
@@ -1700,6 +1702,7 @@ NDCTL_EXPORT unsigned int ndctl_dimm_get_event_flags(struct ndctl_dimm *dimm)
 	}
 	if (ndctl_cmd_submit(cmd)) {
 		err(ctx, "%s: smart command failed\n", devname);
+		ndctl_cmd_unref(cmd);
 		return UINT_MAX;
 	}
 
