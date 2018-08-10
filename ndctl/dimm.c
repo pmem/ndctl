@@ -428,36 +428,39 @@ static int submit_get_firmware_info(struct ndctl_dimm *dimm,
 
 	rc = ndctl_cmd_submit(cmd);
 	if (rc < 0)
-		return rc;
+		goto out;
 
+	rc = -ENXIO;
 	status = ndctl_cmd_fw_xlat_firmware_status(cmd);
 	if (status != FW_SUCCESS) {
 		fprintf(stderr, "GET FIRMWARE INFO on DIMM %s failed: %#x\n",
 				ndctl_dimm_get_devname(dimm), status);
-		return -ENXIO;
+		goto out;
 	}
 
 	fw->store_size = ndctl_cmd_fw_info_get_storage_size(cmd);
 	if (fw->store_size == UINT_MAX)
-		return -ENXIO;
+		goto out;
 
 	fw->update_size = ndctl_cmd_fw_info_get_max_send_len(cmd);
 	if (fw->update_size == UINT_MAX)
-		return -ENXIO;
+		goto out;
 
 	fw->query_interval = ndctl_cmd_fw_info_get_query_interval(cmd);
 	if (fw->query_interval == UINT_MAX)
-		return -ENXIO;
+		goto out;
 
 	fw->max_query = ndctl_cmd_fw_info_get_max_query_time(cmd);
 	if (fw->max_query == UINT_MAX)
-		return -ENXIO;
+		goto out;
 
 	fw->run_version = ndctl_cmd_fw_info_get_run_version(cmd);
 	if (fw->run_version == ULLONG_MAX)
-		return -ENXIO;
+		goto out;
 
 	rc = verify_fw_size(uctx);
+
+out:
 	ndctl_cmd_unref(cmd);
 	return rc;
 }
