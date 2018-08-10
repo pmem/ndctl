@@ -102,18 +102,20 @@ static int ndctl_namespace_get_clear_unit(struct ndctl_namespace *ndns)
 		&ns_size);
 	cmd = ndctl_bus_cmd_new_ars_cap(bus, ns_offset, ns_size);
 	rc = ndctl_cmd_submit(cmd);
-	if (rc) {
+	if (rc < 0) {
 		dbg(ctx, "Error submitting ars_cap: %d\n", rc);
-		return rc;
+		goto out;
 	}
 	clear_unit = ndctl_cmd_ars_cap_get_clear_unit(cmd);
 	if (clear_unit == 0) {
 		dbg(ctx, "Got an invalid clear_err_unit from ars_cap\n");
-		return -EINVAL;
+		rc = -EINVAL;
+		goto out;
 	}
-
+	rc = clear_unit;
+out:
 	ndctl_cmd_unref(cmd);
-	return clear_unit;
+	return rc;
 }
 
 static int ndctl_namespace_inject_one_error(struct ndctl_namespace *ndns,
