@@ -55,6 +55,8 @@ int cmd_test(int argc, const char **argv, void *ctx)
 		test = ndctl_test_new(UINT_MAX);
 	else
 		test = ndctl_test_new(0);
+	if (!test)
+		return EXIT_FAILURE;
 
 	rc = test_libndctl(loglevel, test, ctx);
 	fprintf(stderr, "test-libndctl: %s\n", result(rc));
