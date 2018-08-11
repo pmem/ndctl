@@ -105,8 +105,8 @@ check_libtool_vers()
 {
 	local lib="$1"
 	local lib_u="${lib^^}"
-	local libdir="${lib##lib}"
-	local symfile="${libdir}/lib/${lib}.sym"
+	local libdir="${lib##lib}/lib/"
+	local symfile="${libdir}/${lib}.sym"
 	local last_cur=$(git show $last_ref:Makefile.am.in | grep -E "^${lib_u}_CURRENT" | cut -d'=' -f2)
 	local last_rev=$(git show $last_ref:Makefile.am.in | grep -E "^${lib_u}_REVISION" | cut -d'=' -f2)
 	local last_age=$(git show $last_ref:Makefile.am.in | grep -E "^${lib_u}_AGE" | cut -d'=' -f2)
