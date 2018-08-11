@@ -67,6 +67,9 @@ static int intel_smart_handle_error(struct ndctl_cmd *cmd)
 	char *path = NULL, shutdown_count[16] = {};
 	int fd, rc = cmd->status;
 
+	if (!dimm)
+		return 0;
+
 	if (asprintf(&path, DEF_TMPFS_DIR "/%s/usc",
 		     ndctl_dimm_get_devname(dimm)) < 0)
 		return rc;
