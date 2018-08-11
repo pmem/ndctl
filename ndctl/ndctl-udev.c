@@ -110,10 +110,13 @@ static void save_unsafe_shutdown_count(struct ndctl_dimm *dimm,
 		goto free_usc;
 
 	if (snprintf(count, sizeof(count), "%u\n", shutdown) < 0)
-		goto free_usc;
+		goto close_fd;
 
 	if (write(fd, count, strlen(count)) < 0)
-		goto free_usc;
+		goto close_fd;
+
+ close_fd:
+	close(fd);
  free_usc:
 	free(usc);
  free_path:
