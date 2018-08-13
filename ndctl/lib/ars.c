@@ -133,7 +133,16 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_bus_cmd_new_ars_status(struct ndctl_cmd *ar
 	}
 
 	size = sizeof(*cmd) + ars_cap_cmd->max_ars_out;
-	cmd = calloc(1, size);
+
+	/*
+	 * Older kernels have a bug that miscalculates the output length of the
+	 * ars status and will overrun the provided buffer by 4 bytes,
+	 * corrupting the memory. Add an additional 4 bytes in the allocation
+	 * size to prevent that corruption. See kernel patch for more details:
+	 *
+	 *   https://patchwork.kernel.org/patch/10563103/
+	 */
+	cmd = calloc(1, size + 4);
 	if (!cmd)
 		return NULL;
 
