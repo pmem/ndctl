@@ -45,7 +45,7 @@ build_tag=""
 build_tree()
 {
 	./autogen.sh
-	./configure
+	./configure --disable-asciidoctor
 	make -C Documentation/ndctl asciidoc.conf
 	make -C Documentation/daxctl asciidoc.conf
 	build_ver=$(git describe HEAD --tags)
