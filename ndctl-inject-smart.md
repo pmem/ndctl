@@ -46,6 +46,9 @@ Set &lt;value&gt; for the smart media temperature threshold.
 `--media-temperature-alarm=`  
 Enable or disable the smart media temperature alarm. Options are *on* or *off*.
 
+`--media-temperature-uninject`  
+Uninject any media temperature previously injected.
+
 `-c; --ctrl-temperature=`  
 Inject &lt;value&gt; for the controller temperature smart attribute.
 
@@ -54,6 +57,9 @@ Set &lt;value&gt; for the smart controller temperature threshold.
 
 `--ctrl-temperature-alarm=`  
 Enable or disable the smart controller temperature alarm. Options are *on* or *off*.
+
+`--ctrl-temperature-uninject`  
+Uninject any controller temperature previously injected.
 
 `-s; --spares=`  
 Inject &lt;value&gt; for the spares smart attribute.
@@ -64,11 +70,23 @@ Set &lt;value&gt; for the smart spares threshold.
 `--spares-alarm=`  
 Enable or disable the smart spares alarm. Options are *on* or *off*.
 
-`-H; --health=`  
-Smart attribute for health status. Provide either *fatal* or *nominal* to set the state of the attribute.
+`--spares-uninject`  
+Uninject any spare percentage previously injected.
 
-`-U; --unsafe-shutdown=`  
+`-f; --fatal`  
+Set the flag to spoof fatal health status.
+
+`--fatal-uninject`  
+Uninject the fatal health status flag.
+
+`-U; --unsafe-shutdown`  
 Set the flag to spoof an unsafe shutdown on the next power down.
+
+`--unsafe-shutdown-uninject`  
+Uninject the unsafe shutdown flag.
+
+`-N; --uninject-all`  
+Uninject all possible smart fields/values irrespective of whether they have been previously injected or not.
 
 `-v; --verbose`  
 Emit debug messages for the error injection process

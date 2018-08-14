@@ -3,7 +3,7 @@ title: ndctl
 layout: pmdk
 ---
 [View the Project on GitHub](https://github.com/pmem/ndctl)  
-**Generated from [ndctl-v61](https://github.com/pmem/ndctl/releases/tag/v61) [[tree]](https://github.com/pmem/ndctl/tree/v61)**  
+**Generated from [ndctl-v62](https://github.com/pmem/ndctl/releases/tag/v62) [[tree]](https://github.com/pmem/ndctl/tree/v62)**  
 
 ---
 
@@ -23,6 +23,7 @@ layout: pmdk
 * [ndctl-inject-error](ndctl-inject-error.md)
 * [ndctl-inject-smart](ndctl-inject-smart.md)
 * [ndctl-list](ndctl-list.md)
+* [ndctl-monitor](ndctl-monitor.md)
 * [ndctl-read-labels](ndctl-read-labels.md)
 * [ndctl-start-scrub](ndctl-start-scrub.md)
 * [ndctl-update-firmware](ndctl-update-firmware.md)

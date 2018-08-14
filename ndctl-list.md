@@ -65,7 +65,7 @@ OPTIONS
 Enforce that the operation only be carried on devices that are attached to the given bus. Where *bus* can be a provider name or a bus id number.
 
 `-d; --dimm=`  
-An *nmemX* device name, or dimm id number. Filter listing by devices that reference the given dimm. For example to see all namespaces comprised of storage capacity on nmem0:
+An *nmemX* device name, or dimm id number. The dimm id number here is X in *nmemX*. Filter listing by devices that reference the given dimm. For example to see all namespaces comprised of storage capacity on nmem0:
 
 <!-- -->
 
@@ -173,6 +173,14 @@ Include media errors (badblocks) in the listing. Note that the *badblock\_count*
 >         }
 >       ]
 >     }
+
+`-v; --verbose`  
+Increase verbosity of the output. This can be specified multiple times to be even more verbose on the informational and miscellaneous output, and can be used to override omitted flags for showing specific information.
+**-v** In addition to the enabled namespaces default output, show the numa\_node, raw\_uuid, and bad block media errors.
+**-vv** Everything *-v* provides, plus automatically enable --dimms, --buses, and --regions.
+**-vvv** Everything *-vv* provides, plus --health, --idle, and --firmware.
+
+<!-- -->
 
 `-u; --human`  
 Format numbers representing storage sizes, or offsets as human readable strings with units instead of the default machine-friendly raw-integer data. Convert other numeric fields into hexadecimal strings.

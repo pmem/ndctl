@@ -81,6 +81,9 @@ Turn on verbose debug messages in the library (if ndctl was built with logging a
 `-f; --force`  
 Force initialization of the label space even if there appears to be an existing / valid namespace index. Warning, this will destroy all defined namespaces on the dimm.
 
+`-V; --label-version`  
+Initialize with a specific version of labels from the namespace label specification. Defaults to 1.1
+
 COPYRIGHT
 =========
 
