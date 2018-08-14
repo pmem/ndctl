@@ -103,7 +103,7 @@ AS_IF([test "x$enable_test" = "xyes"],
 AM_CONDITIONAL([ENABLE_TEST], [test "x$enable_test" = "xyes"])
 
 AC_CHECK_DECLS([BUS_MCEERR_AR], [enable_bus_mc_err=yes], [], [[#include <signal.h>]])
-AC_CHECK_DECLS([MAP_SYNC], [enable_map_sync=yes], [], [[#include <linux/mman.h>]])
+AC_CHECK_DECLS([MAP_SYNC], [enable_map_sync=yes], [], [[#include <sys/mman.h>]])
 
 AS_IF([test "x$enable_bus_mc_err" = "xyes" -a "x$enable_map_sync" = "xyes"],
 	[AC_DEFINE([ENABLE_POISON], [1], [ndctl test poison support])])
