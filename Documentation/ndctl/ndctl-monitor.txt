@@ -65,20 +65,17 @@ OPTIONS
 	A 'namespaceX.Y' device name, or namespace region plus id tuple
 	'X.Y'.
 
--l <file | syslog | standard>::
---log=<file | syslog | standard>::
+-l::
+--log=::
 	Send log messages to the specified destination.
-+
---
-<file>::
-	Send log messages to specified <file>. When fopen() is not able
-	to open <file>, log messages will be forwarded to syslog.
-syslog::
-	Send messages to syslog.
-standard::
-	Send messages to standard output.
---
-+
+	- "<file>":
+	  Send log messages to specified <file>. When fopen() is not able
+	  to open <file>, log messages will be forwarded to syslog.
+	- "syslog":
+	  Send messages to syslog.
+	- "standard":
+	  Send messages to standard output.
+
 The default log destination is 'syslog' if "--daemon" is specified,
 otherwise 'standard'. Note that standard and relative path for <file>
 will not work if "--daemon" is specified.
