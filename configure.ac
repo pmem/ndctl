@@ -45,7 +45,7 @@ AM_CONDITIONAL([ENABLE_DOCS], [test "x$enable_docs" = "xyes"])
 AC_ARG_ENABLE([asciidoctor],
 	AS_HELP_STRING([--enable-asciidoctor],
 	[use asciidoctor for documentation build]),
-	[], enable_asciidoctor=no)
+	[], enable_asciidoctor=yes)
 AM_CONDITIONAL([USE_ASCIIDOCTOR], [test "x$enable_asciidoctor" = "xyes"])
 if test "x$enable_asciidoctor" = "xyes"; then
 	asciidoc="asciidoctor"

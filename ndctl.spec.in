@@ -10,7 +10,7 @@ Source0:	https://github.com/pmem/%{name}/archive/v%{version}.tar.gz#/%{name}-%{v
 Requires:	LNAME%{?_isa} = %{version}-%{release}
 Requires:	DAX_LNAME%{?_isa} = %{version}-%{release}
 BuildRequires:	autoconf
-BuildRequires:	asciidoc
+BuildRequires:	rubygem-asciidoctor
 BuildRequires:	xmlto
 BuildRequires:	automake
 BuildRequires:	libtool
