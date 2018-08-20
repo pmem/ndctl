@@ -162,4 +162,5 @@ list_smart_dimm_SOURCES = \
 list_smart_dimm_LDADD = \
 		$(LIBNDCTL_LIB) \
 		$(JSON_LIBS) \
+		$(UUID_LIBS) \
 		../libutil.a
