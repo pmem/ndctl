@@ -14,6 +14,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <limits.h>
 #include <syslog.h>
@@ -786,23 +787,35 @@ static int namespace_create(struct ndctl_region *region)
 	return setup_namespace(region, ndns, &p);
 }
 
+/*
+ * Return convention:
+ * rc < 0 : Error while zeroing, propagate forward
+ * rc == 0 : Successfully cleared the info block, report as destroyed
+ * rc > 0 : skipped, do not count
+ */
 static int zero_info_block(struct ndctl_namespace *ndns)
 {
 	const char *devname = ndctl_namespace_get_devname(ndns);
-	int fd, rc = -ENXIO;
-	void *buf = NULL;
+	int fd, rc = -ENXIO, info_size = 8192;
+	void *buf = NULL, *read_buf = NULL;
 	char path[50];
 
 	ndctl_namespace_set_raw_mode(ndns, 1);
 	rc = ndctl_namespace_enable(ndns);
 	if (rc < 0) {
 		debug("%s failed to enable for zeroing, continuing\n", devname);
-		rc = 0;
+		rc = 1;
 		goto out;
 	}
 
-	if (posix_memalign(&buf, 4096, 4096) != 0)
-		return -ENXIO;
+	if (posix_memalign(&buf, 4096, info_size) != 0) {
+		rc = -ENOMEM;
+		goto out;
+	}
+	if (posix_memalign(&read_buf, 4096, info_size) != 0) {
+		rc = -ENOMEM;
+		goto out;
+	}
 
 	sprintf(path, "/dev/%s", ndctl_namespace_get_block_device(ndns));
 	fd = open(path, O_RDWR|O_DIRECT|O_EXCL);
@@ -812,18 +825,30 @@ static int zero_info_block(struct ndctl_namespace *ndns)
 		goto out;
 	}
 
-	memset(buf, 0, 4096);
-	rc = pwrite(fd, buf, 4096, 4096);
-	if (rc < 4096) {
+	memset(buf, 0, info_size);
+	rc = pread(fd, read_buf, info_size, 0);
+	if (rc < info_size) {
+		debug("%s: failed to read info block, continuing\n",
+			devname);
+	}
+	if (memcmp(buf, read_buf, info_size) == 0) {
+		rc = 1;
+		goto out_close;
+	}
+
+	rc = pwrite(fd, buf, info_size, 0);
+	if (rc < info_size) {
 		debug("%s: failed to zero info block %s\n",
 				devname, path);
 		rc = -ENXIO;
 	} else
 		rc = 0;
+ out_close:
 	close(fd);
  out:
 	ndctl_namespace_set_raw_mode(ndns, 0);
 	ndctl_namespace_disable_invalidate(ndns);
+	free(read_buf);
 	free(buf);
 	return rc;
 }
@@ -857,7 +882,7 @@ static int namespace_destroy(struct ndctl_region *region,
 
 	if (pfn || btt || dax) {
 		rc = zero_info_block(ndns);
-		if (rc)
+		if (rc < 0)
 			return rc;
 	}
 
