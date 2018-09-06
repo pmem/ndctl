@@ -24,7 +24,8 @@ TESTS =\
 	rescan-partitions.sh \
 	inject-smart.sh \
 	monitor.sh \
-	max_available_extent_ns.sh
+	max_available_extent_ns.sh \
+	pfn-meta-errors.sh
 
 check_PROGRAMS =\
 	libndctl \
