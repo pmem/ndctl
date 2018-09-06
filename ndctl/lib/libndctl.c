@@ -2753,7 +2753,9 @@ NDCTL_EXPORT int ndctl_cmd_submit(struct ndctl_cmd *cmd)
 
 	fd = open(path, O_RDWR);
 	if (fd < 0) {
-		err(ctx, "failed to open %s: %s\n", path, strerror(errno));
+		if (!cmd->handle_error)
+			err(ctx, "failed to open %s: %s\n", path,
+				strerror(errno));
 		rc = -errno;
 		goto out;
 	}

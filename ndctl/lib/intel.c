@@ -64,15 +64,17 @@ static struct ndctl_cmd *alloc_intel_cmd(struct ndctl_dimm *dimm,
 static int intel_smart_handle_error(struct ndctl_cmd *cmd)
 {
 	struct ndctl_dimm *dimm = cmd->dimm;
+	struct ndctl_bus *bus = cmd_to_bus(cmd);
+	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
 	char *path = NULL, shutdown_count[16] = {};
 	int fd, rc = cmd->status;
 
 	if (!dimm)
-		return 0;
+		goto out;
 
 	if (asprintf(&path, DEF_TMPFS_DIR "/%s/usc",
 		     ndctl_dimm_get_devname(dimm)) < 0)
-		return rc;
+		goto out;
 
 	fd = open(path, O_RDONLY);
 	if (fd < 0)
@@ -88,6 +90,9 @@ static int intel_smart_handle_error(struct ndctl_cmd *cmd)
 	close (fd);
  free_path:
 	free(path);
+ out:
+	if (rc)
+		err(ctx, "failed: %s\n", strerror(errno));
 	return rc;
 }
 
