@@ -394,6 +394,8 @@ static int setup_namespace(struct ndctl_region *region,
 			try(ndctl_pfn, set_align, pfn, p->align);
 		try(ndctl_pfn, set_namespace, pfn, ndns);
 		rc = ndctl_pfn_enable(pfn);
+		if (rc)
+			ndctl_pfn_set_namespace(pfn, NULL);
 	} else if (p->mode == NDCTL_NS_MODE_DAX) {
 		struct ndctl_dax *dax = ndctl_region_get_dax_seed(region);
 
@@ -403,6 +405,8 @@ static int setup_namespace(struct ndctl_region *region,
 		try(ndctl_dax, set_align, dax, p->align);
 		try(ndctl_dax, set_namespace, dax, ndns);
 		rc = ndctl_dax_enable(dax);
+		if (rc)
+			ndctl_dax_set_namespace(dax, NULL);
 	} else if (p->mode == NDCTL_NS_MODE_SAFE) {
 		struct ndctl_btt *btt = ndctl_region_get_btt_seed(region);
 
@@ -784,7 +788,13 @@ static int namespace_create(struct ndctl_region *region)
 		return -ENODEV;
 	}
 
-	return setup_namespace(region, ndns, &p);
+	rc = setup_namespace(region, ndns, &p);
+	if (rc) {
+		ndctl_namespace_set_enforce_mode(ndns, NDCTL_NS_MODE_RAW);
+		ndctl_namespace_delete(ndns);
+	}
+
+	return rc;
 }
 
 /*
