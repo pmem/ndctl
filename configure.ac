@@ -115,22 +115,19 @@ PKG_CHECK_MODULES([UDEV], [libudev])
 PKG_CHECK_MODULES([UUID], [uuid])
 PKG_CHECK_MODULES([JSON], [json-c])
 
-AC_ARG_WITH([bash-completion-dir],
-	AS_HELP_STRING([--with-bash-completion-dir[=PATH]],
-		[Install the bash auto-completion script in this directory. @<:@default=yes@:>@]),
+AC_ARG_WITH([bash],
+	AS_HELP_STRING([--with-bash],
+		[Enable bash auto-completion. @<:@default=yes@:>@]),
 	[],
-	[with_bash_completion_dir=yes])
+	[with_bash=yes])
 
-if test "x$with_bash_completion_dir" = "xyes"; then
+if test "x$with_bash" = "xyes"; then
 	PKG_CHECK_MODULES([BASH_COMPLETION], [bash-completion >= 2.0],
-		[BASH_COMPLETION_DIR="`pkg-config --variable=completionsdir bash-completion`"],
-		[BASH_COMPLETION_DIR="$datadir/bash-completion/completions"])
-else
-	BASH_COMPLETION_DIR="$with_bash_completion_dir"
+		[BASH_COMPLETION_DIR=$($PKG_CONFIG --variable=completionsdir bash-completion)], [])
 fi
 
 AC_SUBST([BASH_COMPLETION_DIR])
-AM_CONDITIONAL([ENABLE_BASH_COMPLETION],[test "x$with_bash_completion_dir" != "xno"])
+AM_CONDITIONAL([ENABLE_BASH_COMPLETION], [test "x$with_bash" = "xyes"])
 
 AC_ARG_ENABLE([local],
         AS_HELP_STRING([--disable-local], [build against kernel ndctl.h @<:@default=system@:>@]),
@@ -143,26 +140,18 @@ AC_CHECK_FUNCS([ \
 	secure_getenv\
 ])
 
-PKG_PROG_PKG_CONFIG
-AC_ARG_WITH([systemd-unit-dir],
-	AS_HELP_STRING([--with-systemd-unit-dir[=DIR]],
-		[Directory for systemd service files]),
-	[],
-	[with_systemd_unit_dir=yes])
+AC_ARG_WITH([systemd],
+	AS_HELP_STRING([--with-systemd],
+		[Enable systemd functionality (monitor). @<:@default=yes@:>@]),
+	[], [with_systemd=yes])
 
-if test "x$with_systemd_unit_dir" = "xyes"; then
-	def_systemd_unit_dir=$($PKG_CONFIG --variable=systemdsystemunitdir systemd)
-	if test "x$def_systemd_unit_dir" = "x"; then
-		AC_MSG_ERROR([systemd support requested but pkg-config unable to query systemd package])
-		with_systemd_unit_dir=no
-	else
-		with_systemd_unit_dir="$def_systemd_unit_dir"
-	fi
+if test "x$with_systemd" = "xyes"; then
+	PKG_CHECK_MODULES([SYSTEMD], [systemd],
+	[systemd_unitdir=$($PKG_CONFIG --variable=systemdsystemunitdir systemd)], [])
 fi
 
-AS_IF([test "x$with_systemd_unit_dir" != "xno"],
-	[AC_SUBST([systemd_unitdir], [$with_systemd_unit_dir])])
-AM_CONDITIONAL([ENABLE_SYSTEMD_UNIT_DIR], [test "x$with_systemd_unit_dir" != "xno"])
+AC_SUBST([systemd_unitdir])
+AM_CONDITIONAL([ENABLE_SYSTEMD_UNITS], [test "x$with_systemd" = "xyes"])
 
 AC_ARG_WITH([tmpfilesdir],
 	[AS_HELP_STRING([--with-tmpfilesdir=DIR], [Directory for temporary runtime files])],
@@ -215,7 +204,6 @@ AC_MSG_RESULT([
         sysconfdir:             ${sysconfdir}
         libdir:                 ${libdir}
         includedir:             ${includedir}
-	systemd-unit-dir:	${systemd_unitdir}
         tmpfilesdir:            ${tmpfilesdir}
 
         compiler:               ${CC}

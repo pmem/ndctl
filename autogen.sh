@@ -17,8 +17,7 @@ libdir() {
 
 args="--prefix=/usr \
 --sysconfdir=/etc \
---libdir=$(libdir /usr/lib) \
---with-systemd-unit-dir"
+--libdir=$(libdir /usr/lib)"
 
 echo
 echo "----------------------------------------------------------------"

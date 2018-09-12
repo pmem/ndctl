@@ -48,7 +48,7 @@ monitor_configdir = $(sysconfdir)/ndctl/
 monitor_config_DATA = $(monitor_config_file)
 EXTRA_DIST += $(monitor_config_file)
 
-if ENABLE_SYSTEMD_UNIT_DIR
+if ENABLE_SYSTEMD_UNITS
 systemd_unit_DATA = ndctl-monitor.service
 endif
 
