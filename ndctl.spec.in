@@ -20,7 +20,7 @@ BuildRequires:	pkgconfig(libudev)
 BuildRequires:	pkgconfig(uuid)
 BuildRequires:	pkgconfig(json-c)
 BuildRequires:	pkgconfig(bash-completion)
-BuildRequires:	systemd
+BuildRequires:	pkgconfig(systemd)
 
 %description
 Utility library for managing the "libnvdimm" subsystem.  The "libnvdimm"
