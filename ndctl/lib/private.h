@@ -185,6 +185,11 @@ struct ndctl_lbasize {
 	int num;
 };
 
+struct badblocks_iter {
+	struct badblock bb;
+	FILE *file;
+};
+
 /**
  * struct ndctl_namespace - device claimed by the nd_blk or nd_pmem driver
  * @module: kernel module
@@ -209,6 +214,7 @@ struct ndctl_namespace {
 	int generation;
 	unsigned long long resource, size;
 	enum ndctl_namespace_mode enforce_mode;
+	struct badblocks_iter bb_iter;
 	char *alt_name;
 	uuid_t uuid;
 	struct ndctl_lbasize lbasize;

@@ -178,8 +178,7 @@ struct ndctl_region {
 		int state;
 		unsigned long long cookie;
 	} iset;
-	FILE *badblocks;
-	struct badblock bb;
+	struct badblocks_iter bb_iter;
 	enum ndctl_persistence_domain persistence_domain;
 	/* file descriptor for deep flush sysfs entry */
 	int flush_fd;
@@ -376,6 +375,77 @@ NDCTL_EXPORT struct ndctl_ctx *ndctl_ref(struct ndctl_ctx *ctx)
 	return ctx;
 }
 
+static void badblocks_iter_free(struct badblocks_iter *bb_iter)
+{
+	if (bb_iter->file)
+		fclose(bb_iter->file);
+}
+
+static int badblocks_iter_init(struct badblocks_iter *bb_iter, const char *path)
+{
+	char *bb_path;
+	int rc = 0;
+
+	/* if the file is already open */
+	if (bb_iter->file) {
+		fclose(bb_iter->file);
+		bb_iter->file = NULL;
+	}
+
+	if (asprintf(&bb_path, "%s/badblocks", path) < 0)
+		return -errno;
+
+	bb_iter->file = fopen(bb_path, "re");
+	if (!bb_iter->file) {
+		rc = -errno;
+		free(bb_path);
+		return rc;
+	}
+
+	free(bb_path);
+	return rc;
+}
+
+static struct badblock *badblocks_iter_next(struct badblocks_iter *bb_iter)
+{
+	int rc;
+	char *buf = NULL;
+	size_t rlen = 0;
+
+	if (!bb_iter->file)
+		return NULL;
+
+	rc = getline(&buf, &rlen, bb_iter->file);
+	if (rc == -1) {
+		free(buf);
+		return NULL;
+	}
+
+	rc = sscanf(buf, "%llu %u", &bb_iter->bb.offset, &bb_iter->bb.len);
+	free(buf);
+	if (rc != 2) {
+		fclose(bb_iter->file);
+		bb_iter->file = NULL;
+		bb_iter->bb.offset = 0;
+		bb_iter->bb.len = 0;
+		return NULL;
+	}
+
+	return &bb_iter->bb;
+}
+
+static struct badblock *badblocks_iter_first(struct badblocks_iter *bb_iter,
+		struct ndctl_ctx *ctx, const char *path)
+{
+	int rc;
+
+	rc = badblocks_iter_init(bb_iter, path);
+	if (rc < 0)
+		return NULL;
+
+	return badblocks_iter_next(bb_iter);
+}
+
 static void free_namespace(struct ndctl_namespace *ndns, struct list_head *head)
 {
 	struct ndctl_bb *bb, *next;
@@ -511,8 +581,7 @@ static void free_region(struct ndctl_region *region)
 	kmod_module_unref(region->module);
 	free(region->region_buf);
 	free(region->region_path);
-	if (region->badblocks)
-		fclose(region->badblocks);
+	badblocks_iter_free(&region->bb_iter);
 	if (region->flush_fd > 0)
 		close(region->flush_fd);
 	free(region);
@@ -2253,73 +2322,15 @@ NDCTL_EXPORT int ndctl_region_get_numa_node(struct ndctl_region *region)
 	return region->numa_node;
 }
 
-static int regions_badblocks_init(struct ndctl_region *region)
-{
-	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
-	char *bb_path;
-	int rc = 0;
-
-	/* if the file is already open */
-	if (region->badblocks) {
-		fclose(region->badblocks);
-		region->badblocks = NULL;
-	}
-
-	if (asprintf(&bb_path, "%s/badblocks",
-				region->region_path) < 0) {
-		rc = -errno;
-		err(ctx, "region badblocks path allocation failure\n");
-		return rc;
-	}
-
-	region->badblocks = fopen(bb_path, "re");
-	if (!region->badblocks) {
-		rc = -errno;
-		free(bb_path);
-		return rc;
-	}
-
-	free(bb_path);
-	return rc;
-}
-
 NDCTL_EXPORT struct badblock *ndctl_region_get_next_badblock(struct ndctl_region *region)
 {
-	int rc;
-	char *buf = NULL;
-	size_t rlen = 0;
-
-	if (!region->badblocks)
-		return NULL;
-
-	rc = getline(&buf, &rlen, region->badblocks);
-	if (rc == -1) {
-		free(buf);
-		return NULL;
-	}
-
-	rc = sscanf(buf, "%llu %u", &region->bb.offset, &region->bb.len);
-	free(buf);
-	if (rc != 2) {
-		fclose(region->badblocks);
-		region->badblocks = NULL;
-		region->bb.offset = 0;
-		region->bb.len = 0;
-		return NULL;
-	}
-
-	return &region->bb;
+	return badblocks_iter_next(&region->bb_iter);
 }
 
 NDCTL_EXPORT struct badblock *ndctl_region_get_first_badblock(struct ndctl_region *region)
 {
-	int rc;
-
-	rc = regions_badblocks_init(region);
-	if (rc < 0)
-		return NULL;
-
-	return ndctl_region_get_next_badblock(region);
+	return badblocks_iter_first(&region->bb_iter,
+			ndctl_region_get_ctx(region), region->region_path);
 }
 
 NDCTL_EXPORT enum ndctl_persistence_domain
