@@ -378,3 +378,9 @@ global:
 	ndctl_region_get_max_available_extent;
 	ndctl_cmd_smart_inject_ctrl_temperature;
 } LIBNDCTL_16;
+
+LIBNDCTL_18 {
+global:
+	ndctl_namespace_get_first_badblock;
+	ndctl_namespace_get_next_badblock;
+} LIBNDCTL_17;

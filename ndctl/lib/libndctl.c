@@ -3610,6 +3610,48 @@ NDCTL_EXPORT int ndctl_namespace_is_enabled(struct ndctl_namespace *ndns)
 	return is_enabled(ndctl_namespace_get_bus(ndns), path);
 }
 
+NDCTL_EXPORT struct badblock *ndctl_namespace_get_next_badblock(
+		struct ndctl_namespace *ndns)
+{
+	return badblocks_iter_next(&ndns->bb_iter);
+}
+
+NDCTL_EXPORT struct badblock *ndctl_namespace_get_first_badblock(
+		struct ndctl_namespace *ndns)
+{
+	struct ndctl_btt *btt = ndctl_namespace_get_btt(ndns);
+	struct ndctl_pfn *pfn = ndctl_namespace_get_pfn(ndns);
+	struct ndctl_dax *dax = ndctl_namespace_get_dax(ndns);
+	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
+	const char *dev = ndctl_namespace_get_devname(ndns);
+	char path[SYSFS_ATTR_SIZE];
+	ssize_t len = sizeof(path);
+	const char *bdev;
+
+	if (btt || dax) {
+		dbg(ctx, "%s: badblocks not supported for %s\n", dev,
+				btt ? "btt" : "device-dax");
+		return NULL;
+	}
+
+	if (pfn)
+		bdev = ndctl_pfn_get_block_device(pfn);
+	else
+		bdev = ndctl_namespace_get_block_device(ndns);
+
+	if (!bdev) {
+		dbg(ctx, "%s: failed to determine block device\n", dev);
+		return NULL;
+	}
+
+	if (snprintf(path, len, "/sys/block/%s", bdev) >= len) {
+		err(ctx, "%s: buffer too small!\n", dev);
+		return NULL;
+	}
+
+	return badblocks_iter_first(&ndns->bb_iter, ctx, path);
+}
+
 static int ndctl_bind(struct ndctl_ctx *ctx, struct kmod_module *module,
 		const char *devname)
 {

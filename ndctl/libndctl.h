@@ -439,6 +439,12 @@ struct ndctl_namespace *ndctl_namespace_get_next(struct ndctl_namespace *ndns);
 	     ndns != NULL; \
 	     ndns = _ndns, \
 	     _ndns = _ndns ? ndctl_namespace_get_next(_ndns) : NULL)
+struct badblock *ndctl_namespace_get_first_badblock(struct ndctl_namespace *ndns);
+struct badblock *ndctl_namespace_get_next_badblock(struct ndctl_namespace *ndns);
+#define ndctl_namespace_badblock_foreach(ndns, badblock) \
+        for (badblock = ndctl_namespace_get_first_badblock(ndns); \
+             badblock != NULL; \
+             badblock = ndctl_namespace_get_next_badblock(ndns))
 struct ndctl_ctx *ndctl_namespace_get_ctx(struct ndctl_namespace *ndns);
 struct ndctl_bus *ndctl_namespace_get_bus(struct ndctl_namespace *ndns);
 struct ndctl_region *ndctl_namespace_get_region(struct ndctl_namespace *ndns);
