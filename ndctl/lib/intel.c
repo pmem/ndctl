@@ -56,46 +56,6 @@ static struct ndctl_cmd *alloc_intel_cmd(struct ndctl_dimm *dimm,
 	return cmd;
 }
 
-/*
- * If provided, read the cached shutdown count in case the user does not have
- * access rights to run the smart command, and pretend the command was
- * successful with only the shutdown_count valid.
- */
-static int intel_smart_handle_error(struct ndctl_cmd *cmd)
-{
-	struct ndctl_dimm *dimm = cmd->dimm;
-	struct ndctl_bus *bus = cmd_to_bus(cmd);
-	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
-	char *path = NULL, shutdown_count[16] = {};
-	int fd, rc = cmd->status;
-
-	if (!dimm)
-		goto out;
-
-	if (asprintf(&path, DEF_TMPFS_DIR "/%s/usc",
-		     ndctl_dimm_get_devname(dimm)) < 0)
-		goto out;
-
-	fd = open(path, O_RDONLY);
-	if (fd < 0)
-		goto free_path;
-
-	if (read(fd, shutdown_count, sizeof(shutdown_count)) < 0)
-		goto close;
-
-	cmd->intel->smart.flags = ND_INTEL_SMART_SHUTDOWN_COUNT_VALID;
-	cmd->intel->smart.shutdown_count = strtoull(shutdown_count, NULL, 0);
-	rc = cmd->status = 0;
- close:
-	close (fd);
- free_path:
-	free(path);
- out:
-	if (rc)
-		err(ctx, "failed: %s\n", strerror(errno));
-	return rc;
-}
-
 static struct ndctl_cmd *intel_dimm_cmd_new_smart(struct ndctl_dimm *dimm)
 {
 	struct ndctl_cmd *cmd;
@@ -107,7 +67,6 @@ static struct ndctl_cmd *intel_dimm_cmd_new_smart(struct ndctl_dimm *dimm)
 	if (!cmd)
 		return NULL;
 	cmd->firmware_status = &cmd->intel->smart.status;
-	cmd->handle_error = intel_smart_handle_error;
 
 	return cmd;
 }
