@@ -383,4 +383,5 @@ LIBNDCTL_18 {
 global:
 	ndctl_namespace_get_first_badblock;
 	ndctl_namespace_get_next_badblock;
+	ndctl_dimm_get_dirty_shutdown;
 } LIBNDCTL_17;

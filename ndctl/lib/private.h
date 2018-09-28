@@ -76,6 +76,7 @@ struct ndctl_dimm {
 	unsigned long cmd_family;
 	unsigned long cmd_mask;
 	unsigned long nfit_dsm_mask;
+	long long dirty_shutdown;
 	char *unique_id;
 	char *dimm_path;
 	char *dimm_buf;

@@ -150,6 +150,7 @@ unsigned short ndctl_dimm_get_phys_id(struct ndctl_dimm *dimm);
 unsigned short ndctl_dimm_get_vendor(struct ndctl_dimm *dimm);
 unsigned short ndctl_dimm_get_device(struct ndctl_dimm *dimm);
 unsigned short ndctl_dimm_get_revision(struct ndctl_dimm *dimm);
+long long ndctl_dimm_get_dirty_shutdown(struct ndctl_dimm *dimm);
 unsigned short ndctl_dimm_get_subsystem_vendor(struct ndctl_dimm *dimm);
 unsigned short ndctl_dimm_get_subsystem_device(struct ndctl_dimm *dimm);
 unsigned short ndctl_dimm_get_manufacturing_date(struct ndctl_dimm *dimm);

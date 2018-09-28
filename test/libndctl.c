@@ -118,6 +118,7 @@ struct dimm {
 	unsigned int subsystem_vendor;
 	unsigned short manufacturing_date;
 	unsigned char manufacturing_location;
+	long long dirty_shutdown;
 	union {
 		unsigned long flags;
 		struct {
@@ -136,15 +137,15 @@ struct dimm {
 	(((n & 0xfff) << 16) | ((s & 0xf) << 12) | ((i & 0xf) << 8) \
 	 | ((c & 0xf) << 4) | (d & 0xf))
 static struct dimm dimms0[] = {
-	{ DIMM_HANDLE(0, 0, 0, 0, 0), 0, 0, 2016, 10, { 0 }, 2, { 0x201, 0x301, }, },
-	{ DIMM_HANDLE(0, 0, 0, 0, 1), 1, 0, 2016, 10, { 0 }, 2, { 0x201, 0x301, }, },
-	{ DIMM_HANDLE(0, 0, 1, 0, 0), 2, 0, 2016, 10, { 0 }, 2, { 0x201, 0x301, }, },
-	{ DIMM_HANDLE(0, 0, 1, 0, 1), 3, 0, 2016, 10, { 0 }, 2, { 0x201, 0x301, }, },
+	{ DIMM_HANDLE(0, 0, 0, 0, 0), 0, 0, 2016, 10, 42, { 0 }, 2, { 0x201, 0x301, }, },
+	{ DIMM_HANDLE(0, 0, 0, 0, 1), 1, 0, 2016, 10, 42, { 0 }, 2, { 0x201, 0x301, }, },
+	{ DIMM_HANDLE(0, 0, 1, 0, 0), 2, 0, 2016, 10, 42, { 0 }, 2, { 0x201, 0x301, }, },
+	{ DIMM_HANDLE(0, 0, 1, 0, 1), 3, 0, 2016, 10, 42, { 0 }, 2, { 0x201, 0x301, }, },
 };
 
 static struct dimm dimms1[] = {
 	{
-		DIMM_HANDLE(0, 0, 0, 0, 0), 0, 0, 2016, 10, {
+		DIMM_HANDLE(0, 0, 0, 0, 0), 0, 0, 2016, 10, 42, {
 			.f_arm = 1,
 			.f_save = 1,
 			.f_flush = 1,
@@ -2195,7 +2196,7 @@ static int check_set_config_data(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
  */
 struct smart {
 	unsigned int flags, health, temperature, spares, alarm_flags,
-		     life_used, shutdown_state, vendor_size;
+		     life_used, shutdown_state, shutdown_count, vendor_size;
 };
 
 static int check_smart(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
@@ -2211,6 +2212,7 @@ static int check_smart(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 		.alarm_flags = ND_SMART_SPARE_TRIP | ND_SMART_TEMP_TRIP,
 		.life_used = 5,
 		.shutdown_state = 0,
+		.shutdown_count = 42,
 		.vendor_size = 0,
 	};
 	struct ndctl_cmd *cmd = ndctl_dimm_cmd_new_smart(dimm);
@@ -2230,7 +2232,8 @@ static int check_smart(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 		return rc;
 	}
 
-	__check_smart(dimm, cmd, flags, ~ND_SMART_CTEMP_VALID);
+	__check_smart(dimm, cmd, flags, ~(ND_SMART_CTEMP_VALID
+			| ND_SMART_SHUTDOWN_COUNT_VALID));
 	__check_smart(dimm, cmd, health, -1);
 	__check_smart(dimm, cmd, temperature, -1);
 	__check_smart(dimm, cmd, spares, -1);
@@ -2238,6 +2241,8 @@ static int check_smart(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 	__check_smart(dimm, cmd, life_used, -1);
 	__check_smart(dimm, cmd, shutdown_state, -1);
 	__check_smart(dimm, cmd, vendor_size, -1);
+	if (ndctl_cmd_smart_get_flags(cmd) & ND_SMART_SHUTDOWN_COUNT_VALID)
+		__check_smart(dimm, cmd, shutdown_count, -1);
 
 	check->cmd = cmd;
 	return 0;
@@ -2468,6 +2473,7 @@ static int check_dimms(struct ndctl_bus *bus, struct dimm *dimms, int n,
 		unsigned long bus_commands, unsigned long dimm_commands,
 		struct ndctl_test *test)
 {
+	long long dsc;
 	int i, j, rc;
 
 	for (i = 0; i < n; i++) {
@@ -2550,6 +2556,15 @@ static int check_dimms(struct ndctl_bus *bus, struct dimm *dimms, int n,
 						ndctl_dimm_get_manufacturing_date(dimm));
 				return -ENXIO;
 			}
+		}
+
+		dsc = ndctl_dimm_get_dirty_shutdown(dimm);
+		if (dsc != -ENOENT && dsc != dimms[i].dirty_shutdown) {
+			fprintf(stderr,
+				"dimm%d expected dirty shutdown: %lld got: %lld\n",
+				i, dimms[i].dirty_shutdown,
+				ndctl_dimm_get_dirty_shutdown(dimm));
+			return -ENXIO;
 		}
 
 		rc = check_commands(bus, dimm, bus_commands, dimm_commands, test);

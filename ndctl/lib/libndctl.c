@@ -1391,6 +1391,7 @@ static void *add_dimm(void *parent, int id, const char *dimm_base)
 	dimm->device_id = -1;
 	dimm->revision_id = -1;
 	dimm->health_eventfd = -1;
+	dimm->dirty_shutdown = -ENOENT;
 	dimm->subsystem_vendor_id = -1;
 	dimm->subsystem_device_id = -1;
 	dimm->subsystem_revision_id = -1;
@@ -1455,6 +1456,10 @@ static void *add_dimm(void *parent, int id, const char *dimm_base)
 	sprintf(path, "%s/nfit/rev_id", dimm_base);
 	if (sysfs_read_attr(ctx, path, buf) == 0)
 		dimm->revision_id = strtoul(buf, NULL, 0);
+
+	sprintf(path, "%s/nfit/dirty_shutdown", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) == 0)
+		dimm->dirty_shutdown = strtoll(buf, NULL, 0);
 
 	sprintf(path, "%s/nfit/subsystem_vendor", dimm_base);
 	if (sysfs_read_attr(ctx, path, buf) == 0)
@@ -1556,6 +1561,11 @@ NDCTL_EXPORT unsigned short ndctl_dimm_get_device(struct ndctl_dimm *dimm)
 NDCTL_EXPORT unsigned short ndctl_dimm_get_revision(struct ndctl_dimm *dimm)
 {
 	return dimm->revision_id;
+}
+
+NDCTL_EXPORT long long ndctl_dimm_get_dirty_shutdown(struct ndctl_dimm *dimm)
+{
+	return dimm->dirty_shutdown;
 }
 
 NDCTL_EXPORT unsigned short ndctl_dimm_get_subsystem_vendor(
