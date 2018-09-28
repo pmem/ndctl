@@ -153,17 +153,8 @@ fi
 AC_SUBST([systemd_unitdir])
 AM_CONDITIONAL([ENABLE_SYSTEMD_UNITS], [test "x$with_systemd" = "xyes"])
 
-AC_ARG_WITH([tmpfilesdir],
-	[AS_HELP_STRING([--with-tmpfilesdir=DIR], [Directory for temporary runtime files])],
-	[tmpfilesdir=$withval],
-	[tmpfilesdir="/run"])
-
-UDEVDIR="$(pkg-config udev --variable=udevdir)"
-AC_SUBST([UDEVDIR])
-
 my_CFLAGS="\
 -D DEF_CONF_FILE='\"${sysconfdir}/ndctl/monitor.conf\"' \
--D DEF_TMPFS_DIR='\"${tmpfilesdir}/ndctl\"' \
 -Wall \
 -Wchar-subscripts \
 -Wformat-security \
@@ -204,7 +195,6 @@ AC_MSG_RESULT([
         sysconfdir:             ${sysconfdir}
         libdir:                 ${libdir}
         includedir:             ${includedir}
-        tmpfilesdir:            ${tmpfilesdir}
 
         compiler:               ${CC}
         cflags:                 ${CFLAGS}
