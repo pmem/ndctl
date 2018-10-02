@@ -470,7 +470,7 @@ struct json_object *util_region_badblocks_to_json(struct ndctl_region *region,
 
 		/* get start address of region */
 		addr = ndctl_region_get_resource(region);
-		if (addr == ULONG_MAX)
+		if (addr == ULLONG_MAX)
 			goto err_array;
 
 		/* get address of bad block */
