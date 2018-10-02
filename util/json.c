@@ -465,6 +465,7 @@ struct json_object *util_region_badblocks_to_json(struct ndctl_region *region,
 
 		bbs += bb->len;
 
+		/* recheck so we can still get the badblocks_count from above */
 		if (!(flags & UTIL_JSON_MEDIA_ERRORS))
 			continue;
 
@@ -554,6 +555,7 @@ static struct json_object *dev_badblocks_to_json(struct ndctl_region *region,
 
 		bbs += len;
 
+		/* recheck so we can still get the badblocks_count from above */
 		if (!(flags & UTIL_JSON_MEDIA_ERRORS))
 			continue;
 
