@@ -509,6 +509,56 @@ struct json_object *util_region_badblocks_to_json(struct ndctl_region *region,
 	return NULL;
 }
 
+static struct json_object *util_namespace_badblocks_to_json(
+			struct ndctl_namespace *ndns,
+			unsigned int *bb_count, unsigned long flags)
+{
+	struct json_object *jbb = NULL, *jbbs = NULL, *jobj;
+	struct badblock *bb;
+	int bbs = 0;
+
+	if (flags & UTIL_JSON_MEDIA_ERRORS) {
+		jbbs = json_object_new_array();
+		if (!jbbs)
+			return NULL;
+	} else
+		return NULL;
+
+	ndctl_namespace_badblock_foreach(ndns, bb) {
+		bbs += bb->len;
+
+		/* recheck so we can still get the badblocks_count from above */
+		if (!(flags & UTIL_JSON_MEDIA_ERRORS))
+			continue;
+
+		jbb = json_object_new_object();
+		if (!jbb)
+			goto err_array;
+
+		jobj = json_object_new_int64(bb->offset);
+		if (!jobj)
+			goto err;
+		json_object_object_add(jbb, "offset", jobj);
+
+		jobj = json_object_new_int(bb->len);
+		if (!jobj)
+			goto err;
+		json_object_object_add(jbb, "length", jobj);
+		json_object_array_add(jbbs, jbb);
+	}
+
+	*bb_count = bbs;
+
+	if (bbs)
+		return jbbs;
+
+ err:
+	json_object_put(jbb);
+ err_array:
+	json_object_put(jbbs);
+	return NULL;
+}
+
 static struct json_object *dev_badblocks_to_json(struct ndctl_region *region,
 		unsigned long long dev_begin, unsigned long long dev_size,
 		unsigned int *bb_count, unsigned long flags)
@@ -599,8 +649,11 @@ static struct json_object *util_pfn_badblocks_to_json(struct ndctl_pfn *pfn,
 	unsigned long long pfn_begin, pfn_size;
 
 	pfn_begin = ndctl_pfn_get_resource(pfn);
-	if (pfn_begin == ULLONG_MAX)
-		return NULL;
+	if (pfn_begin == ULLONG_MAX) {
+		struct ndctl_namespace *ndns = ndctl_pfn_get_namespace(pfn);
+
+		return util_namespace_badblocks_to_json(ndns, bb_count, flags);
+	}
 
 	pfn_size = ndctl_pfn_get_size(pfn);
 	if (pfn_size == ULLONG_MAX)
@@ -879,10 +932,14 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 		jbbs = util_dax_badblocks_to_json(dax, &bb_count, flags);
 	else if (btt)
 		util_btt_badblocks_to_json(btt, &bb_count);
-	else
+	else {
 		jbbs = util_region_badblocks_to_json(
 				ndctl_namespace_get_region(ndns), &bb_count,
 				flags);
+		if (!jbbs)
+			jbbs = util_namespace_badblocks_to_json(ndns, &bb_count,
+					flags);
+	}
 
 	if (bb_count) {
 		jobj = json_object_new_int(bb_count);
