@@ -1147,7 +1147,7 @@ int cmd_check_labels(int argc, const char **argv, void *ctx)
 	int count = dimm_action(argc, argv, ctx, action_check, base_options,
 			"ndctl check-labels <nmem0> [<nmem1>..<nmemN>] [<options>]");
 
-	fprintf(stderr, "successfully verified %d nmem%s\n",
+	fprintf(stderr, "successfully verified %d nmem label%s\n",
 			count >= 0 ? count : 0, count > 1 ? "s" : "");
 	return count >= 0 ? 0 : EXIT_FAILURE;
 }
