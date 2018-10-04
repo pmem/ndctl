@@ -77,8 +77,13 @@ static int msft_smart_valid(struct ndctl_cmd *cmd)
 
 static unsigned int msft_cmd_smart_get_flags(struct ndctl_cmd *cmd)
 {
-	if (msft_smart_valid(cmd) < 0)
+	int rc;
+
+	rc = msft_smart_valid(cmd);
+	if (rc < 0) {
+		errno = -rc;
 		return UINT_MAX;
+	}
 
 	/* below health data can be retrieved via MSFT _DSM function 11 */
 	return NDN_MSFT_SMART_HEALTH_VALID |
@@ -103,9 +108,13 @@ static unsigned int msft_cmd_smart_get_health(struct ndctl_cmd *cmd)
 {
 	unsigned int health;
 	unsigned int num;
+	int rc;
 
-	if (msft_smart_valid(cmd) < 0)
+	rc = msft_smart_valid(cmd);
+	if (rc < 0) {
+		errno = -rc;
 		return UINT_MAX;
+	}
 
 	num = num_set_bit_health(CMD_MSFT_SMART(cmd)->health);
 	if (num == 0)
@@ -122,16 +131,26 @@ static unsigned int msft_cmd_smart_get_health(struct ndctl_cmd *cmd)
 
 static unsigned int msft_cmd_smart_get_media_temperature(struct ndctl_cmd *cmd)
 {
-	if (msft_smart_valid(cmd) < 0)
+	int rc;
+
+	rc = msft_smart_valid(cmd);
+	if (rc < 0) {
+		errno = -rc;
 		return UINT_MAX;
+	}
 
 	return CMD_MSFT_SMART(cmd)->temp * 16;
 }
 
 static unsigned int msft_cmd_smart_get_life_used(struct ndctl_cmd *cmd)
 {
-	if (msft_smart_valid(cmd) < 0)
+	int rc;
+
+	rc = msft_smart_valid(cmd);
+	if (rc < 0) {
+		errno = -rc;
 		return UINT_MAX;
+	}
 
 	return 100 - CMD_MSFT_SMART(cmd)->nvm_lifetime;
 }

@@ -85,8 +85,12 @@ static int intel_smart_valid(struct ndctl_cmd *cmd)
 #define intel_smart_get_field(cmd, field) \
 static unsigned int intel_cmd_smart_get_##field(struct ndctl_cmd *cmd) \
 { \
-	if (intel_smart_valid(cmd) < 0) \
+	int rc; \
+	rc = intel_smart_valid(cmd); \
+	if (rc < 0) { \
+		errno = -rc; \
 		return UINT_MAX; \
+	} \
 	return cmd->intel->smart.field; \
 }
 
@@ -173,8 +177,12 @@ static int intel_smart_threshold_valid(struct ndctl_cmd *cmd)
 static unsigned int intel_cmd_smart_threshold_get_##field( \
 			struct ndctl_cmd *cmd) \
 { \
-	if (intel_smart_threshold_valid(cmd) < 0) \
+	int rc; \
+	rc = intel_smart_threshold_valid(cmd); \
+	if (rc < 0) { \
+		errno = -rc; \
 		return UINT_MAX; \
+	} \
 	return cmd->intel->thresh.field; \
 }
 
@@ -431,8 +439,12 @@ static int intel_fw_get_info_valid(struct ndctl_cmd *cmd)
 static unsigned int intel_cmd_fw_info_get_##field( \
 			struct ndctl_cmd *cmd) \
 { \
-	if (intel_fw_get_info_valid(cmd) < 0) \
+	int rc; \
+	rc = intel_fw_get_info_valid(cmd); \
+	if (rc < 0) { \
+		errno = -rc; \
 		return UINT_MAX; \
+	} \
 	return cmd->intel->info.field; \
 }
 
@@ -440,8 +452,12 @@ static unsigned int intel_cmd_fw_info_get_##field( \
 static unsigned long long intel_cmd_fw_info_get_##field( \
 			struct ndctl_cmd *cmd) \
 { \
-	if (intel_fw_get_info_valid(cmd) < 0) \
+	int rc; \
+	rc = intel_fw_get_info_valid(cmd); \
+	if (rc < 0) { \
+		errno = -rc; \
 		return ULLONG_MAX; \
+	} \
 	return cmd->intel->info.field; \
 }
 
@@ -454,8 +470,13 @@ intel_fw_info_get_field64(cmd, run_version);
 static unsigned long long intel_cmd_fw_info_get_updated_version(
 		struct ndctl_cmd *cmd)
 {
-	if (intel_fw_get_info_valid(cmd) < 0)
+	int rc;
+
+	rc = intel_fw_get_info_valid(cmd);
+	if (rc < 0) {
+		errno = -rc;
 		return ULLONG_MAX;
+	}
 	return cmd->intel->info.updated_version;
 
 }
@@ -488,8 +509,13 @@ static int intel_fw_start_valid(struct ndctl_cmd *cmd)
 
 static unsigned int intel_cmd_fw_start_get_context(struct ndctl_cmd *cmd)
 {
-	if (intel_fw_start_valid(cmd) < 0)
+	int rc;
+
+	rc = intel_fw_start_valid(cmd);
+	if (rc < 0) {
+		errno = -rc;
 		return UINT_MAX;
+	}
 	return cmd->intel->start.context;
 }
 
@@ -580,8 +606,13 @@ static int intel_fw_fquery_valid(struct ndctl_cmd *cmd)
 static unsigned long long
 intel_cmd_fw_fquery_get_fw_rev(struct ndctl_cmd *cmd)
 {
-	if (intel_fw_fquery_valid(cmd) < 0)
+	int rc;
+
+	rc = intel_fw_fquery_valid(cmd);
+	if (rc < 0) {
+		errno = -rc;
 		return ULLONG_MAX;
+	}
 	return cmd->intel->fquery.updated_fw_rev;
 }
 

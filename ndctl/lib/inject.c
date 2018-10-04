@@ -498,6 +498,7 @@ NDCTL_EXPORT unsigned long long ndctl_bb_get_block(struct ndctl_bb *bb)
 {
 	if (bb)
 		return bb->block;
+	errno = EINVAL;
 	return ULLONG_MAX;
 }
 
@@ -505,5 +506,6 @@ NDCTL_EXPORT unsigned long long ndctl_bb_get_count(struct ndctl_bb *bb)
 {
 	if (bb)
 		return bb->count;
+	errno = EINVAL;
 	return ULLONG_MAX;
 }

@@ -90,9 +90,13 @@ static unsigned int hpe1_cmd_smart_get_flags(struct ndctl_cmd *cmd)
 {
 	unsigned int hpe1flags;
 	unsigned int flags;
+	int rc;
 
-	if (hpe1_smart_valid(cmd) < 0)
+	rc = hpe1_smart_valid(cmd);
+	if (rc < 0) {
+		errno = -rc;
 		return UINT_MAX;
+	}
 
 	hpe1flags = CMD_HPE1_SMART(cmd)->out_valid_flags;
 	flags = 0;
@@ -118,9 +122,13 @@ static unsigned int hpe1_cmd_smart_get_health(struct ndctl_cmd *cmd)
 {
 	unsigned char hpe1health;
 	unsigned int health;
+	int rc;
 
-	if (hpe1_smart_valid(cmd) < 0)
+	rc = hpe1_smart_valid(cmd);
+	if (rc < 0) {
+		errno = -rc;
 		return UINT_MAX;
+	}
 
 	hpe1health = CMD_HPE1_SMART(cmd)->stat_summary;
 	health = 0;
@@ -136,16 +144,26 @@ static unsigned int hpe1_cmd_smart_get_health(struct ndctl_cmd *cmd)
 
 static unsigned int hpe1_cmd_smart_get_media_temperature(struct ndctl_cmd *cmd)
 {
-	if (hpe1_smart_valid(cmd) < 0)
+	int rc;
+
+	rc = hpe1_smart_valid(cmd);
+	if (rc < 0) {
+		errno = -rc;
 		return UINT_MAX;
+	}
 
 	return CMD_HPE1_SMART(cmd)->curr_temp;
 }
 
 static unsigned int hpe1_cmd_smart_get_spares(struct ndctl_cmd *cmd)
 {
-	if (hpe1_smart_valid(cmd) < 0)
+	int rc;
+
+	rc = hpe1_smart_valid(cmd);
+	if (rc < 0) {
+		errno = -rc;
 		return UINT_MAX;
+	}
 
 	return CMD_HPE1_SMART(cmd)->spare_blocks;
 }
@@ -154,9 +172,13 @@ static unsigned int hpe1_cmd_smart_get_alarm_flags(struct ndctl_cmd *cmd)
 {
 	unsigned int hpe1flags;
 	unsigned int flags;
+	int rc;
 
-	if (hpe1_smart_valid(cmd) < 0)
+	rc = hpe1_smart_valid(cmd);
+	if (rc < 0) {
+		errno = -rc;
 		return UINT_MAX;
+	}
 
 	hpe1flags = CMD_HPE1_SMART(cmd)->alarm_trips;
 	flags = 0;
@@ -170,8 +192,13 @@ static unsigned int hpe1_cmd_smart_get_alarm_flags(struct ndctl_cmd *cmd)
 
 static unsigned int hpe1_cmd_smart_get_life_used(struct ndctl_cmd *cmd)
 {
-	if (hpe1_smart_valid(cmd) < 0)
+	int rc;
+
+	rc = hpe1_smart_valid(cmd);
+	if (rc < 0) {
+		errno = -rc;
 		return UINT_MAX;
+	}
 
 	return CMD_HPE1_SMART(cmd)->device_life;
 }
@@ -179,9 +206,13 @@ static unsigned int hpe1_cmd_smart_get_life_used(struct ndctl_cmd *cmd)
 static unsigned int hpe1_cmd_smart_get_shutdown_state(struct ndctl_cmd *cmd)
 {
 	unsigned int shutdown;
+	int rc;
 
-	if (hpe1_smart_valid(cmd) < 0)
+	rc = hpe1_smart_valid(cmd);
+	if (rc < 0) {
+		errno = -rc;
 		return UINT_MAX;
+	}
 
 	shutdown = CMD_HPE1_SMART(cmd)->last_shutdown_stat;
 	if (shutdown == NDN_HPE1_SMART_LASTSAVEGOOD)
@@ -192,16 +223,26 @@ static unsigned int hpe1_cmd_smart_get_shutdown_state(struct ndctl_cmd *cmd)
 
 static unsigned int hpe1_cmd_smart_get_vendor_size(struct ndctl_cmd *cmd)
 {
-	if (hpe1_smart_valid(cmd) < 0)
+	int rc;
+
+	rc = hpe1_smart_valid(cmd);
+	if (rc < 0) {
+		errno = -rc;
 		return UINT_MAX;
+	}
 
 	return CMD_HPE1_SMART(cmd)->vndr_spec_data_size;
 }
 
 static unsigned char *hpe1_cmd_smart_get_vendor_data(struct ndctl_cmd *cmd)
 {
-	if (hpe1_smart_valid(cmd) < 0)
+	int rc;
+
+	rc = hpe1_smart_valid(cmd);
+	if (rc < 0) {
+		errno = -rc;
 		return NULL;
+	}
 
 	return CMD_HPE1_SMART(cmd)->vnd_spec_data;
 }
@@ -265,9 +306,13 @@ static unsigned int hpe1_cmd_smart_threshold_get_alarm_control(struct ndctl_cmd 
 {
 	unsigned int hpe1flags;
 	unsigned int flags;
+	int rc;
 
-	if (hpe1_smart_threshold_valid(cmd) < 0)
+	rc = hpe1_smart_threshold_valid(cmd);
+	if (rc < 0) {
+		errno = -rc;
 		return UINT_MAX;
+	}
 
 	hpe1flags = CMD_HPE1_SMART_THRESH(cmd)->threshold_alarm_ctl;
 	flags = 0;
@@ -282,16 +327,26 @@ static unsigned int hpe1_cmd_smart_threshold_get_alarm_control(struct ndctl_cmd 
 static unsigned int hpe1_cmd_smart_threshold_get_media_temperature(
 		struct ndctl_cmd *cmd)
 {
-	if (hpe1_smart_threshold_valid(cmd) < 0)
+	int rc;
+
+	rc = hpe1_smart_threshold_valid(cmd);
+	if (rc < 0) {
+		errno = -rc;
 		return UINT_MAX;
+	}
 
 	return CMD_HPE1_SMART_THRESH(cmd)->temp_threshold;
 }
 
 static unsigned int hpe1_cmd_smart_threshold_get_spares(struct ndctl_cmd *cmd)
 {
-	if (hpe1_smart_threshold_valid(cmd) < 0)
+	int rc;
+
+	rc = hpe1_smart_threshold_valid(cmd);
+	if (rc < 0) {
+		errno = -rc;
 		return UINT_MAX;
+	}
 
 	return CMD_HPE1_SMART_THRESH(cmd)->spare_block_threshold;
 }

@@ -565,17 +565,21 @@ NDCTL_EXPORT unsigned long ndctl_dimm_get_available_labels(
 {
 	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
 	char *path = dimm->dimm_buf;
-	int len = dimm->buf_len;
+	int rc, len = dimm->buf_len;
 	char buf[20];
 
 	if (snprintf(path, len, "%s/available_slots", dimm->dimm_path) >= len) {
 		err(ctx, "%s: buffer too small!\n",
 				ndctl_dimm_get_devname(dimm));
+		errno = ENOMEM;
 		return ULONG_MAX;
 	}
 
-	if (sysfs_read_attr(ctx, path, buf) < 0)
+	rc = sysfs_read_attr(ctx, path, buf);
+	if (rc < 0) {
+		errno = -rc;
 		return ULONG_MAX;
+	}
 
 	return strtoul(buf, NULL, 0);
 }

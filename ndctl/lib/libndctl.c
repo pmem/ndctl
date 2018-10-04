@@ -1112,12 +1112,15 @@ NDCTL_EXPORT unsigned long long ndctl_region_get_resource(struct ndctl_region *r
 	if (snprintf(path, len, "%s/resource", region->region_path) >= len) {
 		err(ctx, "%s: buffer too small!\n",
 				ndctl_region_get_devname(region));
+		errno = ENOMEM;
 		return ULLONG_MAX;
 	}
 
 	rc = sysfs_read_attr(ctx, path, buf);
-	if (rc < 0)
+	if (rc < 0) {
+		errno = -rc;
 		return ULLONG_MAX;
+	}
 
 	return strtoull(buf, NULL, 0);
 }
@@ -1256,9 +1259,13 @@ NDCTL_EXPORT unsigned int ndctl_bus_get_scrub_count(struct ndctl_bus *bus)
 {
 	unsigned int scrub_count = 0;
 	bool active = false;
+	int rc;
 
-	if (__ndctl_bus_get_scrub_state(bus, &scrub_count, &active))
+	rc = __ndctl_bus_get_scrub_state(bus, &scrub_count, &active);
+	if (rc) {
+		errno = -rc;
 		return UINT_MAX;
+	}
 	return scrub_count;
 }
 
@@ -1720,15 +1727,19 @@ NDCTL_EXPORT unsigned int ndctl_dimm_get_health(struct ndctl_dimm *dimm)
 	unsigned int health;
 	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
 	const char *devname = ndctl_dimm_get_devname(dimm);
+	int rc;
 
 	cmd = ndctl_dimm_cmd_new_smart(dimm);
 	if (!cmd) {
 		err(ctx, "%s: no smart command support\n", devname);
 		return UINT_MAX;
 	}
-	if (ndctl_cmd_submit(cmd)) {
+	rc = ndctl_cmd_submit(cmd);
+	if (rc) {
 		err(ctx, "%s: smart command failed\n", devname);
 		ndctl_cmd_unref(cmd);
+		if (rc < 0)
+			errno = -rc;
 		return UINT_MAX;
 	}
 
@@ -1743,15 +1754,19 @@ NDCTL_EXPORT unsigned int ndctl_dimm_get_flags(struct ndctl_dimm *dimm)
 	unsigned int flags;
 	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
 	const char *devname = ndctl_dimm_get_devname(dimm);
+	int rc;
 
 	cmd = ndctl_dimm_cmd_new_smart(dimm);
 	if (!cmd) {
 		dbg(ctx, "%s: no smart command support\n", devname);
 		return UINT_MAX;
 	}
-	if (ndctl_cmd_submit(cmd)) {
+	rc = ndctl_cmd_submit(cmd);
+	if (rc) {
 		dbg(ctx, "%s: smart command failed\n", devname);
 		ndctl_cmd_unref(cmd);
+		if (rc < 0)
+			errno = -rc;
 		return UINT_MAX;
 	}
 
@@ -1769,6 +1784,7 @@ NDCTL_EXPORT int ndctl_dimm_is_flag_supported(struct ndctl_dimm *dimm,
 
 NDCTL_EXPORT unsigned int ndctl_dimm_get_event_flags(struct ndctl_dimm *dimm)
 {
+	int rc;
 	struct ndctl_cmd *cmd = NULL;
 	unsigned int alarm_flags, event_flags = 0;
 	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
@@ -1779,9 +1795,12 @@ NDCTL_EXPORT unsigned int ndctl_dimm_get_event_flags(struct ndctl_dimm *dimm)
 		err(ctx, "%s: no smart command support\n", devname);
 		return UINT_MAX;
 	}
-	if (ndctl_cmd_submit(cmd)) {
+	rc = ndctl_cmd_submit(cmd);
+	if (rc) {
 		err(ctx, "%s: smart command failed\n", devname);
 		ndctl_cmd_unref(cmd);
+		if (rc < 0)
+			errno = -rc;
 		return UINT_MAX;
 	}
 
@@ -2166,7 +2185,7 @@ NDCTL_EXPORT unsigned long long ndctl_region_get_available_size(
 	unsigned int nstype = ndctl_region_get_nstype(region);
 	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
 	char *path = region->region_buf;
-	int len = region->buf_len;
+	int rc, len = region->buf_len;
 	char buf[SYSFS_ATTR_SIZE];
 
 	switch (nstype) {
@@ -2180,11 +2199,15 @@ NDCTL_EXPORT unsigned long long ndctl_region_get_available_size(
 	if (snprintf(path, len, "%s/available_size", region->region_path) >= len) {
 		err(ctx, "%s: buffer too small!\n",
 				ndctl_region_get_devname(region));
+		errno = ENOMEM;
 		return ULLONG_MAX;
 	}
 
-	if (sysfs_read_attr(ctx, path, buf) < 0)
+	rc = sysfs_read_attr(ctx, path, buf);
+	if (rc < 0) {
+		errno = -rc;
 		return ULLONG_MAX;
+	}
 
 	return strtoull(buf, NULL, 0);
 }
@@ -2195,7 +2218,7 @@ NDCTL_EXPORT unsigned long long ndctl_region_get_max_available_extent(
 	unsigned int nstype = ndctl_region_get_nstype(region);
 	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
 	char *path = region->region_buf;
-	int len = region->buf_len;
+	int rc, len = region->buf_len;
 	char buf[SYSFS_ATTR_SIZE];
 
 	switch (nstype) {
@@ -2210,12 +2233,15 @@ NDCTL_EXPORT unsigned long long ndctl_region_get_max_available_extent(
 		     "%s/max_available_extent", region->region_path) >= len) {
 		err(ctx, "%s: buffer too small!\n",
 				ndctl_region_get_devname(region));
+		errno = ENOMEM;
 		return ULLONG_MAX;
 	}
 
 	/* fall back to legacy behavior if max extents is not exported */
-	if (sysfs_read_attr(ctx, path, buf) < 0) {
+	rc = sysfs_read_attr(ctx, path, buf);
+	if (rc < 0) {
 		dbg(ctx, "max extents attribute not exported on older kernels\n");
+		errno = -rc;
 		return ULLONG_MAX;
 	}
 
@@ -4017,9 +4043,10 @@ NDCTL_EXPORT unsigned int ndctl_namespace_get_supported_sector_size(
 	if (ndns->lbasize.num == 0)
 		return 0;
 
-	if (i < 0 || i > ndns->lbasize.num)
+	if (i < 0 || i > ndns->lbasize.num) {
+		errno = EINVAL;
 		return UINT_MAX;
-	else
+	} else
 		return ndns->lbasize.supported[i];
 }
 
@@ -4428,9 +4455,10 @@ NDCTL_EXPORT unsigned int ndctl_btt_get_id(struct ndctl_btt *btt)
 NDCTL_EXPORT unsigned int ndctl_btt_get_supported_sector_size(
 		struct ndctl_btt *btt, int i)
 {
-	if (i < 0 || i > btt->lbasize.num)
+	if (i < 0 || i > btt->lbasize.num) {
+		errno = EINVAL;
 		return UINT_MAX;
-	else
+	} else
 		return btt->lbasize.supported[i];
 }
 
