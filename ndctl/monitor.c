@@ -628,7 +628,7 @@ int cmd_monitor(int argc, const char **argv, void *ctx)
 	if (monitor.verbose)
 		ndctl_set_log_priority((struct ndctl_ctx *)ctx, LOG_DEBUG);
 	else
-		ndctl_set_log_priority((struct ndctl_ctx *)ctx, LOG_NOTICE);
+		ndctl_set_log_priority((struct ndctl_ctx *)ctx, LOG_INFO);
 
 	rc = read_config_file((struct ndctl_ctx *)ctx, &monitor, &param);
 	if (rc)
@@ -660,7 +660,7 @@ int cmd_monitor(int argc, const char **argv, void *ctx)
 			err((struct ndctl_ctx *)ctx, "daemon start failed\n");
 			goto out;
 		}
-		err((struct ndctl_ctx *)ctx, "ndctl monitor daemon started\n");
+		info((struct ndctl_ctx *)ctx, "ndctl monitor daemon started\n");
 	}
 
 	if (parse_monitor_event(&monitor, (struct ndctl_ctx *)ctx))
