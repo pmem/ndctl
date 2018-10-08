@@ -45,11 +45,11 @@ build_tag=""
 build_tree()
 {
 	./autogen.sh
-	./configure --disable-asciidoctor
-	make -C Documentation/ndctl asciidoc.conf
-	make -C Documentation/daxctl asciidoc.conf
+	./configure --enable-asciidoctor
+	make -C Documentation/ndctl asciidoctor-extensions.rb
+	make -C Documentation/daxctl asciidoctor-extensions.rb
 	build_ver=$(git describe HEAD --tags)
-	build_tag=${build_type}-${build_ver}
+	build_tag=${build_type}-${build_ver#v}
 }
 
 build_tree >/dev/null
@@ -76,12 +76,23 @@ man_to_md()
 	# 1. replace ndctl-<>1 with url to that page in markdown format
 	# 2. enclose the option names in literal `` blocks
 	# 3. same as 2, but for non option arguments (e.g. <dimm>)
-	asciidoc -b docbook -f $cfg --unsafe -o- $file | \
+	asciidoctor -b docbook5 \
+			-I $ndir/Documentation/ndctl \
+			-r asciidoctor-extensions \
+			-amansource=ndctl \
+			-amanmanual="ndctl Manual" \
+			-andctl_version=$build_ver \
+			-o- $file | \
 		pandoc -f docbook -t markdown_github | \
 		sed -e "s/\(ndctl-[^1]*\)1/[\1](\1.md)/g" | \
 		sed -e 's/^\([-]\{1,2\}.*\)  $/`\1`  /g' | \
 		sed -e 's/^&lt;/`</g' -e 's/&gt;  $/>`  /g' \
 			>> $out
+
+	# NOTE: pandoc now warns that markdown_github is deprecated, and
+	# we must use gfm instead, but gfm's rendering of the 'options'
+	# sections will need further tweaking. It also renders sed keys 2
+	# and 3 useless. Keep markdown_gfm for now until our hand is forced
 }
 
 mkdir -p md
