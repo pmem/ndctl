@@ -6,16 +6,20 @@ layout: pmdk
 NAME
 ====
 
-ndctl-list - dump the platform nvdimm device topology and attributes in json
+ndctl-list - dump the platform nvdimm device topology and attributes in
+json
 
 SYNOPSIS
 ========
 
 >     ndctl list [<options>]
 
-Walk all the nvdimm buses in the system and list all attached devices along with some of their major attributes.
+Walk all the nvdimm buses in the system and list all attached devices
+along with some of their major attributes.
 
-Options can be specified to limit the output to devices of a certain class. Where the classes are buses, dimms, regions, and namespaces. By default, *ndctl list* with no options is equivalent to:
+Options can be specified to limit the output to devices of a certain
+class. Where the classes are buses, dimms, regions, and namespaces. By
+default, *ndctl list* with no options is equivalent to:
 
 >     ndctl list --namespaces --bus=all --region=all
 
@@ -62,23 +66,28 @@ OPTIONS
     optionally filtered by bus id (see --bus= option).
 
 `-b; --bus=`  
-Enforce that the operation only be carried on devices that are attached to the given bus. Where *bus* can be a provider name or a bus id number.
+Enforce that the operation only be carried on devices that are attached
+to the given bus. Where *bus* can be a provider name or a bus id number.
 
 `-d; --dimm=`  
-An *nmemX* device name, or dimm id number. The dimm id number here is X in *nmemX*. Filter listing by devices that reference the given dimm. For example to see all namespaces comprised of storage capacity on nmem0:
+An *nmemX* device name, or dimm id number. The dimm id number here is X
+in *nmemX*. Filter listing by devices that reference the given dimm. For
+example to see all namespaces comprised of storage capacity on nmem0:
 
 <!-- -->
 
     # ndctl list --dimm=nmem0 --namespaces
 
 `-n; --namespace=`  
-An *namespaceX.Y* device name, or namespace region plus id tuple *X.Y*. Limit the namespace list to the single identified device if present.
+An *namespaceX.Y* device name, or namespace region plus id tuple *X.Y*.
+Limit the namespace list to the single identified device if present.
 
 `-t; --type=`  
 Filter listing by region type (*pmem* or *blk*)
 
 `-m; --mode=`  
-Filter listing by the mode (*raw*, *fsdax*, *sector* or *devdax*) of the namespace(s).
+Filter listing by the mode (*raw*, *fsdax*, *sector* or *devdax*) of the
+namespace(s).
 
 `-U; --numa-node=`  
 Filter listing by numa node
@@ -120,7 +129,8 @@ Include dimm firmware info in the listing. For example:
 >     }
 
 `-X; --device-dax`  
-Include device-dax ("daxregion") details when a namespace is in "devdax" mode.
+Include device-dax ("daxregion") details when a namespace is in "devdax"
+mode.
 
 >     {
 >       "dev":"namespace0.0",
@@ -144,13 +154,20 @@ Include device-dax ("daxregion") details when a namespace is in "devdax" mode.
 Include region info in the listing
 
 `-N; --namespaces`  
-Include namespace info in the listing. Namespace info is listed by default if no other options are specified to the command.
+Include namespace info in the listing. Namespace info is listed by
+default if no other options are specified to the command.
 
 `-i; --idle`  
 Include idle (not enabled) devices in the listing
 
 `-M; --media-errors`  
-Include media errors (badblocks) in the listing. Note that the *badblock\_count* property is included in the listing by default when the count is non-zero, otherwise it is hidden. Also, if the namespace is in *sector* mode the *badblocks* listing is not included and *badblock\_count* property may include blocks that are located in metadata, or unused capacity in the namespace. Convert a *sector* namespace into *raw* mode to list precise *badblocks* offsets.
+Include media errors (badblocks) in the listing. Note that the
+*badblock\_count* property is included in the listing by default when
+the count is non-zero, otherwise it is hidden. Also, if the namespace is
+in *sector* mode the *badblocks* listing is not included and
+*badblock\_count* property may include blocks that are located in
+metadata, or unused capacity in the namespace. Convert a *sector*
+namespace into *raw* mode to list precise *badblocks* offsets.
 
 >     {
 >       "dev":"namespace7.0",
@@ -175,15 +192,26 @@ Include media errors (badblocks) in the listing. Note that the *badblock\_count*
 >     }
 
 `-v; --verbose`  
-Increase verbosity of the output. This can be specified multiple times to be even more verbose on the informational and miscellaneous output, and can be used to override omitted flags for showing specific information.
-**-v** In addition to the enabled namespaces default output, show the numa\_node, raw\_uuid, and bad block media errors.
-**-vv** Everything *-v* provides, plus automatically enable --dimms, --buses, and --regions.
-**-vvv** Everything *-vv* provides, plus --health, --idle, and --firmware.
+Increase verbosity of the output. This can be specified multiple times
+to be even more verbose on the informational and miscellaneous output,
+and can be used to override omitted flags for showing specific
+information.  
+
+-   **-v** In addition to the enabled namespaces default output, show
+    the numa\_node, raw\_uuid, and bad block media errors.  
+
+-   **-vv** Everything *-v* provides, plus automatically enable --dimms,
+    --buses, and --regions.  
+
+-   **-vvv** Everything *-vv* provides, plus --health, --idle, and
+    --firmware.
 
 <!-- -->
 
 `-u; --human`  
-Format numbers representing storage sizes, or offsets as human readable strings with units instead of the default machine-friendly raw-integer data. Convert other numeric fields into hexadecimal strings.
+Format numbers representing storage sizes, or offsets as human readable
+strings with units instead of the default machine-friendly raw-integer
+data. Convert other numeric fields into hexadecimal strings.
 
 <!-- -->
 
@@ -210,7 +238,10 @@ Format numbers representing storage sizes, or offsets as human readable strings 
 COPYRIGHT
 =========
 
-Copyright (c) 2016 - 2018, Intel Corporation. License GPLv2: GNU GPL version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.
+Copyright (c) 2016 - 2018, Intel Corporation. License GPLv2: GNU GPL
+version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
+are free to change and redistribute it. There is NO WARRANTY, to the
+extent permitted by law.
 
 SEE ALSO
 ========

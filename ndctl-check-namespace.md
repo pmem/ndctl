@@ -16,9 +16,13 @@ SYNOPSIS
 DESCRIPTION
 ===========
 
-A namespace in the *sector* mode will have metadata on it to describe the kernel BTT (Block Translation Table). The check-namespace command can be used to check the consistency of this metadata, and optionally, also attempt to repair it, if it has enough information to do so.
+A namespace in the *sector* mode will have metadata on it to describe
+the kernel BTT (Block Translation Table). The check-namespace command
+can be used to check the consistency of this metadata, and optionally,
+also attempt to repair it, if it has enough information to do so.
 
-The namespace being checked has to be disabled before initiating a check on it as a precautionary measure. The --force option can override this.
+The namespace being checked has to be disabled before initiating a check
+on it as a precautionary measure. The --force option can override this.
 
 EXAMPLES
 ========
@@ -37,17 +41,23 @@ OPTIONS
 =======
 
 `-R; --repair`  
-Perform metadata repairs if possible. Without this option, the raw namespace contents will not be touched.
+Perform metadata repairs if possible. Without this option, the raw
+namespace contents will not be touched.
 
 `-L; --rewrite-log`  
-Regenerate the BTT log and write it to media. This can be used to convert from the old (pre 4.15) padding format that was incompatible with other BTT implementations to the updated format. This requires the --repair option to be provided.
+Regenerate the BTT log and write it to media. This can be used to
+convert from the old (pre 4.15) padding format that was incompatible
+with other BTT implementations to the updated format. This requires the
+--repair option to be provided.
 
     WARNING: Do not interrupt this operation as it can potentially cause
     unrecoverable metadata corruption. It is highly recommended to create
     a backup of the raw namespace before attempting this.
 
 `-f; --force`  
-Unless this option is specified, a check-namespace operation will fail if the namespace is presently active. Specifying --force causes the namespace to be disabled before checking.
+Unless this option is specified, a check-namespace operation will fail
+if the namespace is presently active. Specifying --force causes the
+namespace to be disabled before checking.
 
 `-v; --verbose`  
 Emit debug messages for the namespace check process.
@@ -58,14 +68,19 @@ Emit debug messages for the namespace check process.
     optionally filtered by bus id (see --bus= option).
 
 `-b; --bus=`  
-Enforce that the operation only be carried on devices that are attached to the given bus. Where *bus* can be a provider name or a bus id number.
+Enforce that the operation only be carried on devices that are attached
+to the given bus. Where *bus* can be a provider name or a bus id number.
 
 COPYRIGHT
 =========
 
-Copyright (c) 2016 - 2018, Intel Corporation. License GPLv2: GNU GPL version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.
+Copyright (c) 2016 - 2018, Intel Corporation. License GPLv2: GNU GPL
+version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
+are free to change and redistribute it. There is NO WARRANTY, to the
+extent permitted by law.
 
 SEE ALSO
 ========
 
-[ndctl-disable-namespace](ndctl-disable-namespace.md), [ndctl-enable-namespace](ndctl-enable-namespace.md), [UEFI NVDIMM Label Protocol](http://www.uefi.org/sites/default/files/resources/UEFI_Spec_2_7.pdf)
+[ndctl-disable-namespace](ndctl-disable-namespace.md) , [ndctl-enable-namespace](ndctl-enable-namespace.md) , [UEFI NVDIMM Label
+Protocol](http://www.uefi.org/sites/default/files/resources/UEFI_Spec_2_7.pdf)

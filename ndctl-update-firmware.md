@@ -16,7 +16,9 @@ SYNOPSIS
 DESCRIPTION
 ===========
 
-Provide a generic interface for updating NVDIMM firmware. The use of this depends on support from the underlying libndctl, kernel, as well as the platform itself.
+Provide a generic interface for updating NVDIMM firmware. The use of
+this depends on support from the underlying libndctl, kernel, as well as
+the platform itself.
 
 OPTIONS
 =======
@@ -27,7 +29,8 @@ OPTIONS
     optionally filtered by bus id (see --bus= option).
 
 `-b; --bus=`  
-Enforce that the operation only be carried on devices that are attached to the given bus. Where *bus* can be a provider name or a bus id number.
+Enforce that the operation only be carried on devices that are attached
+to the given bus. Where *bus* can be a provider name or a bus id number.
 
 `-f; --firmware`  
 firmware file used to perform the update
@@ -38,4 +41,7 @@ Emit debug messages for the namespace check process.
 COPYRIGHT
 =========
 
-Copyright (c) 2016 - 2018, Intel Corporation. License GPLv2: GNU GPL version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.
+Copyright (c) 2016 - 2018, Intel Corporation. License GPLv2: GNU GPL
+version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
+are free to change and redistribute it. There is NO WARRANTY, to the
+extent permitted by law.

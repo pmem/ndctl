@@ -6,16 +6,20 @@ layout: pmdk
 NAME
 ====
 
-daxctl-list - dump the platform Device-DAX regions, devices, and attributes in json.
+daxctl-list - dump the platform Device-DAX regions, devices, and
+attributes in json.
 
 SYNOPSIS
 ========
 
 >     daxctl list [<options>]
 
-Walk all the device-dax-regions in the system and list all device instances along with some of their major attributes.
+Walk all the device-dax-regions in the system and list all device
+instances along with some of their major attributes.
 
-Options can be specified to limit the output to objects of a certain class. Where the classes are regions or devices. By default, *daxctl list* with no options is equivalent to:
+Options can be specified to limit the output to objects of a certain
+class. Where the classes are regions or devices. By default, *daxctl
+list* with no options is equivalent to:
 
 >     daxctl list --devices
 
@@ -38,10 +42,15 @@ OPTIONS
 =======
 
 `-r; --region=`  
-A device-dax region is a contiguous range of memory that hosts one or more /dev/daxX.Y devices, where X is the region id and Y is the device instance id. The keyword *all* can be specified to carry out the operation on every region in the system.
+A device-dax region is a contiguous range of memory that hosts one or
+more /dev/daxX.Y devices, where X is the region id and Y is the device
+instance id. The keyword *all* can be specified to carry out the
+operation on every region in the system.
 
 `-d; --dev=`  
-Specify a dax device name, &lt;region id&gt;.&lt;instance id&gt; tuple, or keyword *all* to filter the listing. For example to list the first device instance in region1:
+Specify a dax device name, &lt;region id&gt;.&lt;instance id&gt; tuple,
+or keyword *all* to filter the listing. For example to list the first
+device instance in region1:
 
 <!-- -->
 
@@ -62,7 +71,10 @@ Include region info in the listing
 Include idle (not enabled / zero-sized) devices in the listing
 
 `-u; --human`  
-By default *daxctl list* will output machine-friendly raw-integer data. Instead, with this flag, numbers representing storage size will be formatted as human readable strings with units, other fields are converted to hexadecimal strings. Example:
+By default *daxctl list* will output machine-friendly raw-integer data.
+Instead, with this flag, numbers representing storage size will be
+formatted as human readable strings with units, other fields are
+converted to hexadecimal strings. Example:
 
 <!-- -->
 
@@ -81,4 +93,7 @@ By default *daxctl list* will output machine-friendly raw-integer data. Instead,
 COPYRIGHT
 =========
 
-Copyright (c) 2016 - 2018, Intel Corporation. License GPLv2: GNU GPL version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.
+Copyright (c) 2016 - 2018, Intel Corporation. License GPLv2: GNU GPL
+version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
+are free to change and redistribute it. There is NO WARRANTY, to the
+extent permitted by law.

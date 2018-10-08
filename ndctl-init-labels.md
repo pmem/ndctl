@@ -6,7 +6,8 @@ layout: pmdk
 NAME
 ====
 
-ndctl-init-labels - initialize the label data area on a dimm or set of dimms
+ndctl-init-labels - initialize the label data area on a dimm or set of
+dimms
 
 SYNOPSIS
 ========
@@ -16,9 +17,18 @@ SYNOPSIS
 DESCRIPTION
 ===========
 
-The namespace label area is a small persistent partition of capacity available on some NVDIMM devices. The label area is used to resolve aliasing between *pmem* and *blk* capacity by delineating namespace boundaries. By default, and in kernels prior to v4.10, the kernel only honors labels when a DIMM aliases PMEM and BLK capacity. Starting with v4.10 the kernel will honor labels for sub-dividing PMEM if all the DIMMs in an interleave set / region have a valid namespace index block.
+The namespace label area is a small persistent partition of capacity
+available on some NVDIMM devices. The label area is used to resolve
+aliasing between *pmem* and *blk* capacity by delineating namespace
+boundaries. By default, and in kernels prior to v4.10, the kernel only
+honors labels when a DIMM aliases PMEM and BLK capacity. Starting with
+v4.10 the kernel will honor labels for sub-dividing PMEM if all the
+DIMMs in an interleave set / region have a valid namespace index block.
 
-This command can be used to initialize the namespace index block if it is missing or reinitialize it if it is damaged. Note that reinitialization effectively destroys all existing namespace labels on the DIMM.
+This command can be used to initialize the namespace index block if it
+is missing or reinitialize it if it is damaged. Note that
+reinitialization effectively destroys all existing namespace labels on
+the DIMM.
 
 EXAMPLE
 =======
@@ -50,7 +60,8 @@ Find the DIMMs that comprise a given region:
       ]
     }
 
-Disable that region so the DIMM label area can be written from userspace:
+Disable that region so the DIMM label area can be written from
+userspace:
 
     # ndctl disable-region region1
 
@@ -70,26 +81,37 @@ OPTIONS
 =======
 
 `<memory device(s)>`  
-One or more *nmemX* device names. The keyword *all* can be specified to operate on every dimm in the system, optionally filtered by bus id (see --bus= option).
+One or more *nmemX* device names. The keyword *all* can be specified to
+operate on every dimm in the system, optionally filtered by bus id (see
+--bus= option).
 
 `-b; --bus=`  
-Limit operation to memory devices (dimms) that are on the given bus. Where *bus* can be a provider name or a bus id number.
+Limit operation to memory devices (dimms) that are on the given bus.
+Where *bus* can be a provider name or a bus id number.
 
 `-v`  
-Turn on verbose debug messages in the library (if ndctl was built with logging and debug enabled).
+Turn on verbose debug messages in the library (if ndctl was built with
+logging and debug enabled).
 
 `-f; --force`  
-Force initialization of the label space even if there appears to be an existing / valid namespace index. Warning, this will destroy all defined namespaces on the dimm.
+Force initialization of the label space even if there appears to be an
+existing / valid namespace index. Warning, this will destroy all defined
+namespaces on the dimm.
 
 `-V; --label-version`  
-Initialize with a specific version of labels from the namespace label specification. Defaults to 1.1
+Initialize with a specific version of labels from the namespace label
+specification. Defaults to 1.1
 
 COPYRIGHT
 =========
 
-Copyright (c) 2016 - 2018, Intel Corporation. License GPLv2: GNU GPL version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you are free to change and redistribute it. There is NO WARRANTY, to the extent permitted by law.
+Copyright (c) 2016 - 2018, Intel Corporation. License GPLv2: GNU GPL
+version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
+are free to change and redistribute it. There is NO WARRANTY, to the
+extent permitted by law.
 
 SEE ALSO
 ========
 
-[ndctl-create-namespace](ndctl-create-namespace.md), [UEFI NVDIMM Label Protocol](http://www.uefi.org/sites/default/files/resources/UEFI_Spec_2_7.pdf)
+[ndctl-create-namespace](ndctl-create-namespace.md) , [UEFI NVDIMM Label
+Protocol](http://www.uefi.org/sites/default/files/resources/UEFI_Spec_2_7.pdf)
