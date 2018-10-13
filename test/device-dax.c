@@ -244,23 +244,8 @@ static int __test_device_dax(unsigned long align, int loglevel,
 	if (rc)
 		goto out;
 
-	/* upgrade to a writable mapping */
 	close(fd);
 	munmap(buf, VERIFY_SIZE(align));
-	fd = open(path, O_RDWR);
-	if (fd < 0) {
-		fprintf(stderr, "%s: failed to open(O_RDWR) device-dax instance\n",
-				daxctl_dev_get_devname(dev));
-		rc = -ENXIO;
-		goto out;
-	}
-
-	buf = mmap(NULL, VERIFY_SIZE(align), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
-	if (buf == MAP_FAILED) {
-		fprintf(stderr, "%s: expected PROT_WRITE + MAP_SHARED success\n",
-				path);
-		return -ENXIO;
-	}
 
 	/*
 	 * Prior to 4.8-final these tests cause crashes, or are
@@ -270,21 +255,39 @@ static int __test_device_dax(unsigned long align, int loglevel,
 		static const bool devdax = false;
 		int fd2;
 
+		fd = open(path, O_RDWR);
+		if (fd < 0) {
+			fprintf(stderr, "%s: failed to open for direct-io test\n",
+					daxctl_dev_get_devname(dev));
+			rc = -ENXIO;
+			goto out;
+		}
 		rc = test_dax_directio(fd, align, NULL, 0);
 		if (rc) {
 			fprintf(stderr, "%s: failed dax direct-i/o\n",
 					ndctl_namespace_get_devname(ndns));
 			goto out;
 		}
+		close(fd);
 
 		fprintf(stderr, "%s: test dax poison\n",
 				ndctl_namespace_get_devname(ndns));
+
+		fd = open(path, O_RDWR);
+		if (fd < 0) {
+			fprintf(stderr, "%s: failed to open for poison test\n",
+					daxctl_dev_get_devname(dev));
+			rc = -ENXIO;
+			goto out;
+		}
+
 		rc = test_dax_poison(test, fd, align, NULL, 0, devdax);
 		if (rc) {
 			fprintf(stderr, "%s: failed dax poison\n",
 					ndctl_namespace_get_devname(ndns));
 			goto out;
 		}
+		close(fd);
 
 		fd2 = open("/proc/self/smaps", O_RDONLY);
 		if (fd2 < 0) {
@@ -304,6 +307,22 @@ static int __test_device_dax(unsigned long align, int loglevel,
 			rc = -ENXIO;
 			goto out;
 		}
+	}
+
+	/* establish a writable mapping */
+	fd = open(path, O_RDWR);
+	if (fd < 0) {
+		fprintf(stderr, "%s: failed to open(O_RDWR) device-dax instance\n",
+				daxctl_dev_get_devname(dev));
+		rc = -ENXIO;
+		goto out;
+	}
+
+	buf = mmap(NULL, VERIFY_SIZE(align), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+	if (buf == MAP_FAILED) {
+		fprintf(stderr, "%s: expected PROT_WRITE + MAP_SHARED success\n",
+				path);
+		return -ENXIO;
 	}
 
 	rc = reset_device_dax(ndns);
