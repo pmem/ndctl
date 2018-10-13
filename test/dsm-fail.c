@@ -291,48 +291,39 @@ static int do_test(struct ndctl_ctx *ctx, struct ndctl_test *test)
 			&log_ctx);
 	if (rc)
 		goto out;
-	fprintf(stderr, "%s:%d\n", __func__, __LINE__);
 	rc = test_dimms_enable(bus, victim, true);
 	if (rc)
 		goto out;
-	fprintf(stderr, "%s:%d\n", __func__, __LINE__);
 	rc = test_regions_enable(bus, victim, victim_region, true, 2);
 	if (rc)
 		goto out;
-	fprintf(stderr, "%s:%d\n", __func__, __LINE__);
 	rc = set_dimm_response(DIMM_PATH, ND_CMD_GET_CONFIG_SIZE, 0, &log_ctx);
 	if (rc)
 		goto out;
 
 	ndctl_region_foreach(bus, region)
 		ndctl_region_disable_invalidate(region);
-	fprintf(stderr, "%s:%d\n", __func__, __LINE__);
 	rc = dimms_disable(bus);
 	if (rc)
 		goto out;
-	fprintf(stderr, "%s:%d\n", __func__, __LINE__);
 
 	rc = set_dimm_response(DIMM_PATH, ND_CMD_GET_CONFIG_DATA, -EACCES,
 			&log_ctx);
 	if (rc)
 		goto out;
-	fprintf(stderr, "%s:%d\n", __func__, __LINE__);
+
 	rc = test_dimms_enable(bus, victim, false);
 	if (rc)
 		goto out;
-	fprintf(stderr, "%s:%d\n", __func__, __LINE__);
 	rc = test_regions_enable(bus, victim, victim_region, false, 0);
 	if (rc)
 		goto out;
-	fprintf(stderr, "%s:%d\n", __func__, __LINE__);
 	rc = set_dimm_response(DIMM_PATH, ND_CMD_GET_CONFIG_DATA, 0, &log_ctx);
 	if (rc)
 		goto out;
-	fprintf(stderr, "%s:%d\n", __func__, __LINE__);
 	rc = dimms_disable(bus);
 	if (rc)
 		goto out;
-	fprintf(stderr, "%s:%d\n", __func__, __LINE__);
 
  out:
 	err = rc;
