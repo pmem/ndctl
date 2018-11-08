@@ -537,8 +537,12 @@ NDCTL_EXPORT int ndctl_dimm_zero_labels(struct ndctl_dimm *dimm)
 		goto out_write;
 	}
 	rc = ndctl_cmd_submit(cmd_write);
-	if (rc || ndctl_cmd_get_firmware_status(cmd_write))
+	if (rc < 0)
 		goto out_write;
+	if (ndctl_cmd_get_firmware_status(cmd_write)) {
+		rc = -ENXIO;
+		goto out_write;
+	}
 
 	/*
 	 * If the dimm is already disabled the kernel is not holding a cached
