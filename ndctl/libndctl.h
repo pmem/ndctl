@@ -20,7 +20,7 @@
 #include <errno.h>
 #include <limits.h>
 
-#ifdef HAVE_LIBUUID
+#ifdef HAVE_UUID
 #include <uuid/uuid.h>
 #else
 typedef unsigned char uuid_t[16];

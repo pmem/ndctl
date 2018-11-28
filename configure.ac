@@ -112,7 +112,8 @@ AM_CONDITIONAL([ENABLE_POISON],
 
 PKG_CHECK_MODULES([KMOD], [libkmod])
 PKG_CHECK_MODULES([UDEV], [libudev])
-PKG_CHECK_MODULES([UUID], [uuid])
+PKG_CHECK_MODULES([UUID], [uuid],
+	[AC_DEFINE([HAVE_UUID], [1], [Define to 1 if using libuuid])])
 PKG_CHECK_MODULES([JSON], [json-c])
 
 AC_ARG_WITH([bash],
