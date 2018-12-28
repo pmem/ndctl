@@ -49,60 +49,33 @@ do { \
 static void log_syslog(struct ndctl_ctx *ctx, int priority, const char *file,
 		int line, const char *fn, const char *format, va_list args)
 {
-	char *buf;
-
-	if (vasprintf(&buf, format, args) < 0) {
-		fail("vasprintf error\n");
-		return;
-	}
-	syslog(priority, "%s", buf);
-
-	free(buf);
-	return;
+	vsyslog(priority, format, args);
 }
 
 static void log_standard(struct ndctl_ctx *ctx, int priority, const char *file,
 		int line, const char *fn, const char *format, va_list args)
 {
-	char *buf;
-
-	if (vasprintf(&buf, format, args) < 0) {
-		fail("vasprintf error\n");
-		return;
-	}
-
 	if (priority == 6)
-		fprintf(stdout, "%s", buf);
+		vfprintf(stdout, format, args);
 	else
-		fprintf(stderr, "%s", buf);
-
-	free(buf);
-	return;
+		vfprintf(stderr, format, args);
 }
 
 static void log_file(struct ndctl_ctx *ctx, int priority, const char *file,
 		int line, const char *fn, const char *format, va_list args)
 {
 	FILE *f = monitor.log_file;
-	char *buf;
-	struct timespec ts;
-	char timestamp[32];
-
-	if (vasprintf(&buf, format, args) < 0) {
-		fail("vasprintf error\n");
-		return;
-	}
 
 	if (priority != LOG_NOTICE) {
+		struct timespec ts;
+
 		clock_gettime(CLOCK_REALTIME, &ts);
-		sprintf(timestamp, "%10ld.%09ld", ts.tv_sec, ts.tv_nsec);
-		fprintf(f, "[%s] [%d] %s", timestamp, getpid(), buf);
+		fprintf(f, "[%10ld.%09ld] [%d] ", ts.tv_sec, ts.tv_nsec, getpid());
+		vfprintf(f, format, args);
 	} else
-		fprintf(f, "%s", buf);
+		vfprintf(f, format, args);
 
 	fflush(f);
-	free(buf);
-	return;
 }
 
 static struct json_object *dimm_event_to_json(struct monitor_dimm *mdimm)
