@@ -954,7 +954,7 @@ static const struct option init_options[] = {
 	OPT_END(),
 };
 
-static int dimm_action(int argc, const char **argv, void *ctx,
+static int dimm_action(int argc, const char **argv, struct ndctl_ctx *ctx,
 		int (*action)(struct ndctl_dimm *dimm, struct action_context *actx),
 		const struct option *options, const char *usage)
 {
@@ -1102,7 +1102,7 @@ static int dimm_action(int argc, const char **argv, void *ctx,
 	return rc;
 }
 
-int cmd_write_labels(int argc, const char **argv, void *ctx)
+int cmd_write_labels(int argc, const char **argv, struct ndctl_ctx *ctx)
 {
 	int count = dimm_action(argc, argv, ctx, action_write, write_options,
 			"ndctl write-labels <nmem> [-i <filename>]");
@@ -1112,7 +1112,7 @@ int cmd_write_labels(int argc, const char **argv, void *ctx)
 	return count >= 0 ? 0 : EXIT_FAILURE;
 }
 
-int cmd_read_labels(int argc, const char **argv, void *ctx)
+int cmd_read_labels(int argc, const char **argv, struct ndctl_ctx *ctx)
 {
 	int count = dimm_action(argc, argv, ctx, action_read, read_options,
 			"ndctl read-labels <nmem0> [<nmem1>..<nmemN>] [-o <filename>]");
@@ -1122,7 +1122,7 @@ int cmd_read_labels(int argc, const char **argv, void *ctx)
 	return count >= 0 ? 0 : EXIT_FAILURE;
 }
 
-int cmd_zero_labels(int argc, const char **argv, void *ctx)
+int cmd_zero_labels(int argc, const char **argv, struct ndctl_ctx *ctx)
 {
 	int count = dimm_action(argc, argv, ctx, action_zero, base_options,
 			"ndctl zero-labels <nmem0> [<nmem1>..<nmemN>] [<options>]");
@@ -1132,7 +1132,7 @@ int cmd_zero_labels(int argc, const char **argv, void *ctx)
 	return count >= 0 ? 0 : EXIT_FAILURE;
 }
 
-int cmd_init_labels(int argc, const char **argv, void *ctx)
+int cmd_init_labels(int argc, const char **argv, struct ndctl_ctx *ctx)
 {
 	int count = dimm_action(argc, argv, ctx, action_init, init_options,
 			"ndctl init-labels <nmem0> [<nmem1>..<nmemN>] [<options>]");
@@ -1142,7 +1142,7 @@ int cmd_init_labels(int argc, const char **argv, void *ctx)
 	return count >= 0 ? 0 : EXIT_FAILURE;
 }
 
-int cmd_check_labels(int argc, const char **argv, void *ctx)
+int cmd_check_labels(int argc, const char **argv, struct ndctl_ctx *ctx)
 {
 	int count = dimm_action(argc, argv, ctx, action_check, base_options,
 			"ndctl check-labels <nmem0> [<nmem1>..<nmemN>] [<options>]");
@@ -1152,7 +1152,7 @@ int cmd_check_labels(int argc, const char **argv, void *ctx)
 	return count >= 0 ? 0 : EXIT_FAILURE;
 }
 
-int cmd_disable_dimm(int argc, const char **argv, void *ctx)
+int cmd_disable_dimm(int argc, const char **argv, struct ndctl_ctx *ctx)
 {
 	int count = dimm_action(argc, argv, ctx, action_disable, base_options,
 			"ndctl disable-dimm <nmem0> [<nmem1>..<nmemN>] [<options>]");
@@ -1162,7 +1162,7 @@ int cmd_disable_dimm(int argc, const char **argv, void *ctx)
 	return count >= 0 ? 0 : EXIT_FAILURE;
 }
 
-int cmd_enable_dimm(int argc, const char **argv, void *ctx)
+int cmd_enable_dimm(int argc, const char **argv, struct ndctl_ctx *ctx)
 {
 	int count = dimm_action(argc, argv, ctx, action_enable, base_options,
 			"ndctl enable-dimm <nmem0> [<nmem1>..<nmemN>] [<options>]");
@@ -1172,7 +1172,7 @@ int cmd_enable_dimm(int argc, const char **argv, void *ctx)
 	return count >= 0 ? 0 : EXIT_FAILURE;
 }
 
-int cmd_update_firmware(int argc, const char **argv, void *ctx)
+int cmd_update_firmware(int argc, const char **argv, struct ndctl_ctx *ctx)
 {
 	int count = dimm_action(argc, argv, ctx, action_update, update_options,
 			"ndctl update-firmware <nmem0> [<nmem1>..<nmemN>] [<options>]");

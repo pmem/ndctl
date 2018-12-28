@@ -353,7 +353,7 @@ static int do_inject(const char *namespace, struct ndctl_ctx *ctx)
 	return rc;
 }
 
-int cmd_inject_error(int argc, const char **argv, void *ctx)
+int cmd_inject_error(int argc, const char **argv, struct ndctl_ctx *ctx)
 {
 	const char * const u[] = {
 		"ndctl inject-error <namespace> [<options>]",

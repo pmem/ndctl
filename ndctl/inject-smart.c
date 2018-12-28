@@ -491,7 +491,7 @@ static int do_smart(const char *dimm_arg, struct ndctl_ctx *ctx)
 	return rc;
 }
 
-int cmd_inject_smart(int argc, const char **argv, void *ctx)
+int cmd_inject_smart(int argc, const char **argv, struct ndctl_ctx *ctx)
 {
 	const char * const u[] = {
 		"ndctl inject-smart <dimm> [<options>]",

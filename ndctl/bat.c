@@ -16,7 +16,7 @@
 #include <limits.h>
 #include <util/parse-options.h>
 
-int cmd_bat(int argc, const char **argv, void *ctx)
+int cmd_bat(int argc, const char **argv, struct ndctl_ctx *ctx)
 {
 	int loglevel = LOG_DEBUG, i, rc;
 	struct ndctl_test *test;

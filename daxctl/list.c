@@ -63,7 +63,7 @@ static int num_list_flags(void)
 	return list.regions + list.devs;
 }
 
-int cmd_list(int argc, const char **argv, void *ctx)
+int cmd_list(int argc, const char **argv, struct daxctl_ctx *ctx)
 {
 	const struct option options[] = {
 		OPT_INTEGER('r', "region", &param.region_id, "filter by region"),

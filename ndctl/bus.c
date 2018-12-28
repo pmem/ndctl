@@ -97,7 +97,7 @@ static int bus_action(int argc, const char **argv, const char *usage,
 	return fail ? fail : -ENXIO;
 }
 
-int cmd_start_scrub(int argc, const char **argv, void *ctx)
+int cmd_start_scrub(int argc, const char **argv, struct ndctl_ctx *ctx)
 {
 	char *usage = "ndctl start-scrub [<bus-id> <bus-id2> ... <bus-idN>] [<options>]";
 	int start = bus_action(argc, argv, usage, bus_options,
@@ -112,7 +112,7 @@ int cmd_start_scrub(int argc, const char **argv, void *ctx)
 	}
 }
 
-int cmd_wait_scrub(int argc, const char **argv, void *ctx)
+int cmd_wait_scrub(int argc, const char **argv, struct ndctl_ctx *ctx)
 {
 	char *usage = "ndctl wait-scrub [<bus-id> <bus-id2> ... <bus-idN>] [<options>]";
 	int wait = bus_action(argc, argv, usage, bus_options,

@@ -26,7 +26,7 @@ static char *result(int rc)
 		return "PASS";
 }
 
-int cmd_test(int argc, const char **argv, void *ctx)
+int cmd_test(int argc, const char **argv, struct ndctl_ctx *ctx)
 {
 	struct ndctl_test *test;
 	int loglevel = LOG_DEBUG, i, rc;

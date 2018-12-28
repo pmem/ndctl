@@ -580,7 +580,7 @@ out:
 	return rc;
 }
 
-int cmd_monitor(int argc, const char **argv, void *ctx)
+int cmd_monitor(int argc, const char **argv, struct ndctl_ctx *ctx)
 {
 	const struct option options[] = {
 		OPT_STRING('b', "bus", &param.bus, "bus-id", "filter by bus"),

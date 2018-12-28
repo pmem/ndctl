@@ -82,12 +82,15 @@ int main_handle_options(const char ***argv, int *argc, const char *usage_msg,
 }
 
 static int run_builtin(struct cmd_struct *p, int argc, const char **argv,
-		void *ctx)
+		void *ctx, enum program prog)
 {
 	int status;
 	struct stat st;
 
-	status = p->fn(argc, argv, ctx);
+	if (prog == PROG_NDCTL)
+		status = p->n_fn(argc, argv, ctx);
+	else
+		status = p->d_fn(argc, argv, ctx);
 
 	if (status)
 		return status & 0xff;
@@ -119,7 +122,7 @@ out:
 }
 
 void main_handle_internal_command(int argc, const char **argv, void *ctx,
-		struct cmd_struct *cmds, int num_cmds)
+		struct cmd_struct *cmds, int num_cmds, enum program prog)
 {
 	const char *cmd = argv[0];
 	int i;
@@ -134,6 +137,6 @@ void main_handle_internal_command(int argc, const char **argv, void *ctx,
 		struct cmd_struct *p = cmds+i;
 		if (strcmp(p->cmd, cmd))
 			continue;
-		exit(run_builtin(p, argc, argv, ctx));
+		exit(run_builtin(p, argc, argv, ctx, prog));
 	}
 }
