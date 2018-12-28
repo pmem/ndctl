@@ -623,14 +623,14 @@ int cmd_monitor(int argc, const char **argv, struct ndctl_ctx *ctx)
 		usage_with_options(u, options);
 
 	/* default to log_standard */
-	ndctl_set_log_fn((struct ndctl_ctx *)ctx, log_standard);
+	ndctl_set_log_fn(ctx, log_standard);
 
 	if (monitor.verbose)
-		ndctl_set_log_priority((struct ndctl_ctx *)ctx, LOG_DEBUG);
+		ndctl_set_log_priority(ctx, LOG_DEBUG);
 	else
-		ndctl_set_log_priority((struct ndctl_ctx *)ctx, LOG_INFO);
+		ndctl_set_log_priority(ctx, LOG_INFO);
 
-	rc = read_config_file((struct ndctl_ctx *)ctx, &monitor, &param);
+	rc = read_config_file(ctx, &monitor, &param);
 	if (rc)
 		goto out;
 
@@ -638,7 +638,7 @@ int cmd_monitor(int argc, const char **argv, struct ndctl_ctx *ctx)
 		if (strncmp(monitor.log, "./", 2) != 0)
 			fix_filename(prefix, (const char **)&monitor.log);
 		if (strncmp(monitor.log, "./syslog", 8) == 0)
-			ndctl_set_log_fn((struct ndctl_ctx *)ctx, log_syslog);
+			ndctl_set_log_fn(ctx, log_syslog);
 		else if (strncmp(monitor.log, "./standard", 10) == 0)
 			; /*default, already set */
 		else {
@@ -649,21 +649,21 @@ int cmd_monitor(int argc, const char **argv, struct ndctl_ctx *ctx)
 				goto out;
 			}
 			fclose(f);
-			ndctl_set_log_fn((struct ndctl_ctx *)ctx, log_file);
+			ndctl_set_log_fn(ctx, log_file);
 		}
 	}
 
 	if (monitor.daemon) {
 		if (!monitor.log || strncmp(monitor.log, "./", 2) == 0)
-			ndctl_set_log_fn((struct ndctl_ctx *)ctx, log_syslog);
+			ndctl_set_log_fn(ctx, log_syslog);
 		if (daemon(0, 0) != 0) {
-			err((struct ndctl_ctx *)ctx, "daemon start failed\n");
+			err(ctx, "daemon start failed\n");
 			goto out;
 		}
-		info((struct ndctl_ctx *)ctx, "ndctl monitor daemon started\n");
+		info(ctx, "ndctl monitor daemon started\n");
 	}
 
-	if (parse_monitor_event(&monitor, (struct ndctl_ctx *)ctx))
+	if (parse_monitor_event(&monitor, ctx))
 		goto out;
 
 	fctx.filter_bus = filter_bus;
@@ -681,7 +681,7 @@ int cmd_monitor(int argc, const char **argv, struct ndctl_ctx *ctx)
 		goto out;
 
 	if (!mfa.num_dimm) {
-		dbg((struct ndctl_ctx *)ctx, "no dimms to monitor\n");
+		dbg(ctx, "no dimms to monitor\n");
 		if (!monitor.daemon)
 			rc = -ENXIO;
 		goto out;
