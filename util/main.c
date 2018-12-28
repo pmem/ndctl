@@ -21,10 +21,10 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <builtin.h>
 
 #include <util/strbuf.h>
 #include <util/util.h>
+#include <util/main.h>
 
 int main_handle_options(const char ***argv, int *argc, const char *usage_msg,
 		struct cmd_struct *cmds, int num_cmds)

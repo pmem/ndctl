@@ -28,7 +28,7 @@
 #include <util/strbuf.h>
 #include <util/util.h>
 #include <util/main.h>
-#include <builtin.h>
+#include <daxctl/builtin.h>
 
 const char daxctl_usage_string[] = "daxctl [--version] [--help] COMMAND [ARGS]";
 const char daxctl_more_info_string[] =
@@ -65,8 +65,6 @@ static int cmd_help(int argc, const char **argv, void *ctx)
 
 	return help_show_man_page(argv[0], "daxctl", "DAXCTL_MAN_VIEWER");
 }
-
-int cmd_list(int argc, const char **argv, void *ctx);
 
 static struct cmd_struct commands[] = {
 	{ "version", cmd_version },

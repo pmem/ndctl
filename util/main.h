@@ -16,7 +16,12 @@
 
 #ifndef __MAIN_H__
 #define __MAIN_H__
-struct cmd_struct;
+
+struct cmd_struct {
+	const char *cmd;
+	int (*fn)(int, const char **, void *ctx);
+};
+
 int main_handle_options(const char ***argv, int *argc, const char *usage_msg,
 		struct cmd_struct *cmds, int num_cmds);
 void main_handle_internal_command(int argc, const char **argv, void *ctx,

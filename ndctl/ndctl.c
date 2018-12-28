@@ -21,7 +21,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <builtin.h>
+#include <ndctl/builtin.h>
 #include <ndctl/libndctl.h>
 #include <ccan/array_size/array_size.h>
 
@@ -30,8 +30,8 @@
 #include <util/util.h>
 #include <util/main.h>
 
-const char ndctl_usage_string[] = "ndctl [--version] [--help] COMMAND [ARGS]";
-const char ndctl_more_info_string[] =
+static const char ndctl_usage_string[] = "ndctl [--version] [--help] COMMAND [ARGS]";
+static const char ndctl_more_info_string[] =
 	"See 'ndctl help COMMAND' for more information on a specific command.\n"
 	" ndctl --list-cmds to see all available commands";
 
