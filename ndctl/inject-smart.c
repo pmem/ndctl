@@ -24,7 +24,6 @@
 #include <ccan/array_size/array_size.h>
 #include <ccan/short_types/short_types.h>
 
-#include "private.h"
 #include <builtin.h>
 #include <test.h>
 
