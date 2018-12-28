@@ -503,7 +503,7 @@ static int read_config_file(struct ndctl_ctx *ctx, struct monitor *_monitor,
 	if (_monitor->config_file)
 		config_file = strdup(_monitor->config_file);
 	else
-		config_file = strdup(DEF_CONF_FILE);
+		config_file = strdup(NDCTL_CONF_FILE);
 	if (!config_file) {
 		fail("strdup default config file failed\n");
 		rc = -ENOMEM;

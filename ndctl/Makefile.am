@@ -43,10 +43,8 @@ ndctl_SOURCES += ../test/libndctl.c \
 		 test.c
 endif
 
-monitor_config_file = monitor.conf
-monitor_configdir = $(sysconfdir)/ndctl/
-monitor_config_DATA = $(monitor_config_file)
-EXTRA_DIST += $(monitor_config_file)
+monitor_configdir = $(ndctl_monitorconfdir)
+monitor_config_DATA = $(ndctl_monitorconf)
 
 if ENABLE_SYSTEMD_UNITS
 systemd_unit_DATA = ndctl-monitor.service

@@ -154,8 +154,14 @@ fi
 AC_SUBST([systemd_unitdir])
 AM_CONDITIONAL([ENABLE_SYSTEMD_UNITS], [test "x$with_systemd" = "xyes"])
 
+ndctl_monitorconfdir=${sysconfdir}/ndctl
+ndctl_monitorconf=monitor.conf
+AC_SUBST([ndctl_monitorconfdir])
+AC_SUBST([ndctl_monitorconf])
+AC_DEFINE_UNQUOTED(NDCTL_CONF_FILE, ["$ndctl_monitorconfdir/$ndctl_monitorconf"],
+	[default ndctl monitor conf path])
+
 my_CFLAGS="\
--D DEF_CONF_FILE='\"${sysconfdir}/ndctl/monitor.conf\"' \
 -Wall \
 -Wchar-subscripts \
 -Wformat-security \
