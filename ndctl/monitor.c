@@ -20,6 +20,7 @@ static struct monitor {
 	const char *log;
 	const char *config_file;
 	const char *dimm_event;
+	FILE *log_file;
 	bool daemon;
 	bool human;
 	bool verbose;
@@ -82,7 +83,7 @@ static void log_standard(struct ndctl_ctx *ctx, int priority, const char *file,
 static void log_file(struct ndctl_ctx *ctx, int priority, const char *file,
 		int line, const char *fn, const char *format, va_list args)
 {
-	FILE *f;
+	FILE *f = monitor.log_file;
 	char *buf;
 	struct timespec ts;
 	char timestamp[32];
@@ -90,16 +91,6 @@ static void log_file(struct ndctl_ctx *ctx, int priority, const char *file,
 	if (vasprintf(&buf, format, args) < 0) {
 		fail("vasprintf error\n");
 		return;
-	}
-
-	f = fopen(monitor.log, "a+");
-	if (!f) {
-		ndctl_set_log_fn(ctx, log_syslog);
-		err(ctx, "open logfile %s failed, forward messages to syslog\n",
-				monitor.log);
-		did_fail = 1;
-		notice(ctx, "%s\n", buf);
-		goto end;
 	}
 
 	if (priority != LOG_NOTICE) {
@@ -110,8 +101,6 @@ static void log_file(struct ndctl_ctx *ctx, int priority, const char *file,
 		fprintf(f, "%s", buf);
 
 	fflush(f);
-	fclose(f);
-end:
 	free(buf);
 	return;
 }
@@ -613,7 +602,6 @@ int cmd_monitor(int argc, const char **argv, struct ndctl_ctx *ctx)
 	struct util_filter_ctx fctx = { 0 };
 	struct monitor_filter_arg mfa = { 0 };
 	int i, rc;
-	FILE *f;
 
 	argc = parse_options_prefix(argc, argv, prefix, options, u, 0);
 	for (i = 0; i < argc; i++) {
@@ -642,13 +630,12 @@ int cmd_monitor(int argc, const char **argv, struct ndctl_ctx *ctx)
 		else if (strncmp(monitor.log, "./standard", 10) == 0)
 			; /*default, already set */
 		else {
-			f = fopen(monitor.log, "a+");
-			if (!f) {
+			monitor.log_file = fopen(monitor.log, "a+");
+			if (!monitor.log_file) {
 				error("open %s failed\n", monitor.log);
 				rc = -errno;
 				goto out;
 			}
-			fclose(f);
 			ndctl_set_log_fn(ctx, log_file);
 		}
 	}
@@ -689,5 +676,7 @@ int cmd_monitor(int argc, const char **argv, struct ndctl_ctx *ctx)
 
 	rc = monitor_event(ctx, &mfa);
 out:
+	if (monitor.log_file)
+		fclose(monitor.log_file);
 	return rc;
 }
