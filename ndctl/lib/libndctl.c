@@ -4303,7 +4303,12 @@ NDCTL_EXPORT int ndctl_namespace_delete(struct ndctl_namespace *ndns)
 	}
 
 	rc = namespace_set_size(ndns, 0);
-	if (rc)
+	/*
+	 * if the namespace has already been deleted, this will return
+	 * -ENXIO due to the uuid check in __size_store. We can safely
+	 *  ignore it in the case of writing a zero.
+	 */
+	if (rc && (rc != -ENXIO))
 		return rc;
 
 	region->namespaces_init = 0;
