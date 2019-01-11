@@ -30,8 +30,8 @@ static void smart_threshold_to_json(struct ndctl_dimm *dimm,
 	if (!cmd)
 		return;
 
-	rc = ndctl_cmd_submit(cmd);
-	if (rc || ndctl_cmd_get_firmware_status(cmd))
+	rc = ndctl_cmd_submit_xlat(cmd);
+	if (rc < 0)
 		goto out;
 
 	alarm_control = ndctl_cmd_smart_threshold_get_alarm_control(cmd);
@@ -115,8 +115,8 @@ struct json_object *util_dimm_health_to_json(struct ndctl_dimm *dimm)
 	if (!cmd)
 		goto err;
 
-	rc = ndctl_cmd_submit(cmd);
-	if (rc || ndctl_cmd_get_firmware_status(cmd)) {
+	rc = ndctl_cmd_submit_xlat(cmd);
+	if (rc < 0) {
 		jobj = json_object_new_string("unknown");
 		if (jobj)
 			json_object_object_add(jhealth, "health_state", jobj);

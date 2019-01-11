@@ -280,8 +280,8 @@ static int smart_set_thresh(struct ndctl_dimm *dimm)
 		goto out;
 	}
 
-	rc = ndctl_cmd_submit(st_cmd);
-	if (rc) {
+	rc = ndctl_cmd_submit_xlat(st_cmd);
+	if (rc < 0) {
 		error("%s: smart threshold command failed: %s (%d)\n",
 			name, strerror(abs(rc)), rc);
 		goto out;
@@ -320,8 +320,8 @@ static int smart_set_thresh(struct ndctl_dimm *dimm)
 		ndctl_cmd_smart_threshold_set_alarm_control(sst_cmd, alarm);
 	}
 
-	rc = ndctl_cmd_submit(sst_cmd);
-	if (rc)
+	rc = ndctl_cmd_submit_xlat(sst_cmd);
+	if (rc < 0)
 		error("%s: smart set threshold command failed: %s (%d)\n",
 			name, strerror(abs(rc)), rc);
 
@@ -351,8 +351,8 @@ out:
 			if (sctx.err_continue == false) \
 				goto out; \
 		} \
-		rc = ndctl_cmd_submit(si_cmd); \
-		if (rc) { \
+		rc = ndctl_cmd_submit_xlat(si_cmd); \
+		if (rc < 0) { \
 			error("%s: smart inject %s command failed: %s (%d)\n", \
 				name, #arg, strerror(abs(rc)), rc); \
 			if (sctx.err_continue == false) \
@@ -382,8 +382,8 @@ out:
 			if (sctx.err_continue == false) \
 				goto out; \
 		} \
-		rc = ndctl_cmd_submit(si_cmd); \
-		if (rc) { \
+		rc = ndctl_cmd_submit_xlat(si_cmd); \
+		if (rc < 0) { \
 			error("%s: smart inject %s command failed: %s (%d)\n", \
 				name, #arg, strerror(abs(rc)), rc); \
 			if (sctx.err_continue == false) \
