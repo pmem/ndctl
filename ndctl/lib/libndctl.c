@@ -2704,6 +2704,16 @@ static const char *ndctl_dimm_get_cmd_subname(struct ndctl_cmd *cmd)
 	return ops->cmd_desc(cmd->pkg->nd_command);
 }
 
+NDCTL_EXPORT int ndctl_cmd_xlat_firmware_status(struct ndctl_cmd *cmd)
+{
+	struct ndctl_dimm *dimm = cmd->dimm;
+	struct ndctl_dimm_ops *ops = dimm ? dimm->ops : NULL;
+
+	if (!dimm || !ops || !ops->xlat_firmware_status)
+		return -ENOMSG;
+	return ops->xlat_firmware_status(cmd);
+}
+
 static int do_cmd(int fd, int ioctl_cmd, struct ndctl_cmd *cmd)
 {
 	int rc;
@@ -2817,6 +2827,24 @@ NDCTL_EXPORT int ndctl_cmd_submit(struct ndctl_cmd *cmd)
  out:
 	cmd->status = rc;
 	return rc;
+}
+
+NDCTL_EXPORT int ndctl_cmd_submit_xlat(struct ndctl_cmd *cmd)
+{
+	int rc, xlat_rc;
+
+	rc = ndctl_cmd_submit(cmd);
+	if (rc < 0)
+		return rc;
+
+	/*
+	 * NOTE: This can lose a positive rc when xlat_rc is non-zero. The
+	 * positive rc indicates a buffer underrun from the original command
+	 * submission. If the caller cares about that (generally not very
+	 * useful), then the xlat function is available separately as well.
+	 */
+	xlat_rc = ndctl_cmd_xlat_firmware_status(cmd);
+	return (xlat_rc == 0) ? rc : xlat_rc;
 }
 
 NDCTL_EXPORT int ndctl_cmd_get_status(struct ndctl_cmd *cmd)

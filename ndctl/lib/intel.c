@@ -16,6 +16,54 @@
 #include <ndctl/libndctl.h>
 #include "private.h"
 
+static int intel_cmd_xlat_firmware_status(struct ndctl_cmd *cmd)
+{
+	struct nd_pkg_intel *pkg = cmd->intel;
+	unsigned int status, ext_status;
+
+	status = (*cmd->firmware_status) & ND_INTEL_STATUS_MASK;
+	ext_status = (*cmd->firmware_status) & ND_INTEL_STATUS_EXTEND_MASK;
+
+	/* Common statuses */
+	switch (status) {
+	case ND_INTEL_STATUS_SUCCESS:
+		return 0;
+	case ND_INTEL_STATUS_NOTSUPP:
+		return -EOPNOTSUPP;
+	case ND_INTEL_STATUS_NOTEXIST:
+		return -ENXIO;
+	case ND_INTEL_STATUS_INVALPARM:
+		return -EINVAL;
+	case ND_INTEL_STATUS_HWERR:
+		return -EIO;
+	case ND_INTEL_STATUS_RETRY:
+		return -EAGAIN;
+	case ND_INTEL_STATUS_EXTEND:
+		/* refer to extended status, break out of this */
+		break;
+	case ND_INTEL_STATUS_NORES:
+		return -EAGAIN;
+	case ND_INTEL_STATUS_NOTREADY:
+		return -EBUSY;
+	}
+
+	/* Extended status is command specific */
+	switch (pkg->gen.nd_command) {
+	case ND_INTEL_SMART:
+	case ND_INTEL_SMART_THRESHOLD:
+	case ND_INTEL_SMART_SET_THRESHOLD:
+		/* ext status not specified */
+		break;
+	case ND_INTEL_SMART_INJECT:
+		/* smart injection not enabled */
+		if (ext_status == ND_INTEL_STATUS_INJ_DISABLED)
+			return -ENXIO;
+		break;
+	}
+
+	return -ENOMSG;
+}
+
 static struct ndctl_cmd *alloc_intel_cmd(struct ndctl_dimm *dimm,
 		unsigned func, size_t in_size, size_t out_size)
 {
@@ -780,4 +828,5 @@ struct ndctl_dimm_ops * const intel_dimm_ops = &(struct ndctl_dimm_ops) {
 	.fw_xlat_firmware_status = intel_cmd_fw_xlat_firmware_status,
 	.new_ack_shutdown_count = intel_dimm_cmd_new_lss,
 	.fw_update_supported = intel_dimm_fw_update_supported,
+	.xlat_firmware_status = intel_cmd_xlat_firmware_status,
 };

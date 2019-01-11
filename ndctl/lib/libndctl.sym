@@ -385,3 +385,9 @@ global:
 	ndctl_namespace_get_next_badblock;
 	ndctl_dimm_get_dirty_shutdown;
 } LIBNDCTL_17;
+
+LIBNDCTL_19 {
+global:
+	ndctl_cmd_xlat_firmware_status;
+	ndctl_cmd_submit_xlat;
+} LIBNDCTL_18;

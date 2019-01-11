@@ -179,5 +179,6 @@ struct nd_pkg_intel {
 #define ND_INTEL_STATUS_FQ_BUSY		0x20000
 #define ND_INTEL_STATUS_FQ_BAD		0x30000
 #define ND_INTEL_STATUS_FQ_ORDER	0x40000
+#define ND_INTEL_STATUS_INJ_DISABLED	0x10000
 
 #endif /* __INTEL_H__ */
