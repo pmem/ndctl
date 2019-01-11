@@ -226,7 +226,7 @@ static int enable_dimm_supported_threshold_alarms(struct ndctl_dimm *dimm)
 		err(&monitor, "%s: no smart threshold command support\n", name);
 		goto out;
 	}
-	if (ndctl_cmd_submit(st_cmd)) {
+	if (ndctl_cmd_submit_xlat(st_cmd) < 0) {
 		err(&monitor, "%s: smart threshold command failed\n", name);
 		goto out;
 	}
@@ -246,8 +246,8 @@ static int enable_dimm_supported_threshold_alarms(struct ndctl_dimm *dimm)
 		alarm |= ND_SMART_CTEMP_TRIP;
 	ndctl_cmd_smart_threshold_set_alarm_control(sst_cmd, alarm);
 
-	rc = ndctl_cmd_submit(sst_cmd);
-	if (rc) {
+	rc = ndctl_cmd_submit_xlat(sst_cmd);
+	if (rc < 0) {
 		err(&monitor, "%s: smart set threshold command failed\n", name);
 		goto out;
 	}
