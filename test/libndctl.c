@@ -2057,7 +2057,7 @@ static int check_get_config_size(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 	}
 
 	rc = ndctl_cmd_submit(cmd);
-	if (rc) {
+	if (rc < 0) {
 		fprintf(stderr, "%s: dimm: %#x failed to submit cmd: %d\n",
 			__func__, ndctl_dimm_get_handle(dimm), rc);
 		ndctl_cmd_unref(cmd);
@@ -2091,7 +2091,7 @@ static int check_get_config_data(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 	}
 
 	rc = ndctl_cmd_submit(cmd);
-	if (rc) {
+	if (rc < 0) {
 		fprintf(stderr, "%s: dimm: %#x failed to submit cmd: %zd\n",
 			__func__, ndctl_dimm_get_handle(dimm), rc);
 		ndctl_cmd_unref(cmd);
@@ -2116,7 +2116,7 @@ static int check_set_config_data(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 	struct ndctl_cmd *cmd_read = check_cmds[ND_CMD_GET_CONFIG_DATA].cmd;
 	struct ndctl_cmd *cmd = ndctl_dimm_cmd_new_cfg_write(cmd_read);
 	char buf[20], result[sizeof(buf)];
-	size_t rc;
+	int rc;
 
 	if (!cmd) {
 		fprintf(stderr, "%s: dimm: %#x failed to create cmd\n",
@@ -2127,23 +2127,23 @@ static int check_set_config_data(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 	memset(buf, 0, sizeof(buf));
 	ndctl_cmd_cfg_write_set_data(cmd, buf, sizeof(buf), 0);
 	rc = ndctl_cmd_submit(cmd);
-	if (rc) {
-		fprintf(stderr, "%s: dimm: %#x failed to submit cmd: %zd\n",
+	if (rc < 0) {
+		fprintf(stderr, "%s: dimm: %#x failed to submit cmd: %d\n",
 			__func__, ndctl_dimm_get_handle(dimm), rc);
 		ndctl_cmd_unref(cmd);
 		return rc;
 	}
 
 	rc = ndctl_cmd_submit(cmd_read);
-	if (rc) {
-		fprintf(stderr, "%s: dimm: %#x failed to submit read1: %zd\n",
+	if (rc < 0) {
+		fprintf(stderr, "%s: dimm: %#x failed to submit read1: %d\n",
 				__func__, ndctl_dimm_get_handle(dimm), rc);
 		ndctl_cmd_unref(cmd);
 		return rc;
 	}
 	ndctl_cmd_cfg_read_get_data(cmd_read, result, sizeof(result), 0);
 	if (memcmp(result, buf, sizeof(result)) != 0) {
-		fprintf(stderr, "%s: dimm: %#x read1 data miscompare: %zd\n",
+		fprintf(stderr, "%s: dimm: %#x read1 data miscompare: %d\n",
 				__func__, ndctl_dimm_get_handle(dimm), rc);
 		ndctl_cmd_unref(cmd);
 		return -ENXIO;
@@ -2152,23 +2152,23 @@ static int check_set_config_data(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 	sprintf(buf, "dimm-%#x", ndctl_dimm_get_handle(dimm));
 	ndctl_cmd_cfg_write_set_data(cmd, buf, sizeof(buf), 0);
 	rc = ndctl_cmd_submit(cmd);
-	if (rc) {
-		fprintf(stderr, "%s: dimm: %#x failed to submit cmd: %zd\n",
+	if (rc < 0) {
+		fprintf(stderr, "%s: dimm: %#x failed to submit cmd: %d\n",
 			__func__, ndctl_dimm_get_handle(dimm), rc);
 		ndctl_cmd_unref(cmd);
 		return rc;
 	}
 
 	rc = ndctl_cmd_submit(cmd_read);
-	if (rc) {
-		fprintf(stderr, "%s: dimm: %#x failed to submit read2: %zd\n",
+	if (rc < 0) {
+		fprintf(stderr, "%s: dimm: %#x failed to submit read2: %d\n",
 				__func__, ndctl_dimm_get_handle(dimm), rc);
 		ndctl_cmd_unref(cmd);
 		return rc;
 	}
 	ndctl_cmd_cfg_read_get_data(cmd_read, result, sizeof(result), 0);
 	if (memcmp(result, buf, sizeof(result)) != 0) {
-		fprintf(stderr, "%s: dimm: %#x read2 data miscompare: %zd\n",
+		fprintf(stderr, "%s: dimm: %#x read2 data miscompare: %d\n",
 				__func__, ndctl_dimm_get_handle(dimm), rc);
 		ndctl_cmd_unref(cmd);
 		return rc;
@@ -2225,7 +2225,7 @@ static int check_smart(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 	}
 
 	rc = ndctl_cmd_submit(cmd);
-	if (rc) {
+	if (rc < 0) {
 		fprintf(stderr, "%s: dimm: %#x failed to submit cmd: %d\n",
 			__func__, ndctl_dimm_get_handle(dimm), rc);
 		ndctl_cmd_unref(cmd);
@@ -2326,7 +2326,7 @@ static int check_smart_threshold(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 	}
 
 	rc = ndctl_cmd_submit(cmd);
-	if (rc) {
+	if (rc < 0) {
 		fprintf(stderr, "%s: dimm: %#x failed to submit cmd: %d\n",
 			__func__, ndctl_dimm_get_handle(dimm), rc);
 		ndctl_cmd_unref(cmd);
@@ -2375,7 +2375,7 @@ static int check_smart_threshold(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 		}
 
 		rc = ndctl_cmd_submit(cmd_set);
-		if (rc) {
+		if (rc < 0) {
 			fprintf(stderr, "%s: dimm: %#x failed to submit cmd_set: %d\n",
 					__func__, ndctl_dimm_get_handle(dimm), rc);
 			ndctl_cmd_unref(cmd_set);

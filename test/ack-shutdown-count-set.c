@@ -27,12 +27,8 @@ static int test_dimm(struct ndctl_dimm *dimm)
 	if (!cmd)
 		return -ENOMEM;
 
-	rc = ndctl_cmd_submit(cmd);
-	if (rc < 0)
-		goto out;
-
-	rc = ndctl_cmd_get_firmware_status(cmd);
-	if (rc != 0) {
+	rc = ndctl_cmd_submit_xlat(cmd);
+	if (rc < 0) {
 		fprintf(stderr, "dimm %s LSS enable set failed\n",
 				ndctl_dimm_get_devname(dimm));
 		goto out;

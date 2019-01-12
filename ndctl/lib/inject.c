@@ -156,7 +156,7 @@ static int ndctl_namespace_inject_one_error(struct ndctl_namespace *ndns,
 			(1 << ND_ARS_ERR_INJ_OPT_NOTIFY);
 
 	rc = ndctl_cmd_submit(cmd);
-	if (rc) {
+	if (rc < 0) {
 		dbg(ctx, "Error submitting command: %d\n", rc);
 		goto out;
 	}
@@ -234,7 +234,7 @@ static int ndctl_namespace_uninject_one_error(struct ndctl_namespace *ndns,
 	err_inj_clr->err_inj_clr_spa_range_length = length;
 
 	rc = ndctl_cmd_submit(cmd);
-	if (rc) {
+	if (rc < 0) {
 		dbg(ctx, "Error submitting command: %d\n", rc);
 		goto out;
 	}
@@ -443,7 +443,7 @@ NDCTL_EXPORT int ndctl_namespace_injection_status(struct ndctl_namespace *ndns)
 
 		cmd = ndctl_bus_cmd_new_ars_cap(bus, ns_offset, ns_size);
 		rc = ndctl_cmd_submit(cmd);
-		if (rc) {
+		if (rc < 0) {
 			dbg(ctx, "Error submitting ars_cap: %d\n", rc);
 			goto out;
 		}
@@ -464,7 +464,7 @@ NDCTL_EXPORT int ndctl_namespace_injection_status(struct ndctl_namespace *ndns)
 			(struct nd_cmd_ars_err_inj_stat *)&pkg->nd_payload[0];
 
 		rc = ndctl_cmd_submit(cmd);
-		if (rc) {
+		if (rc < 0) {
 			dbg(ctx, "Error submitting command: %d\n", rc);
 			goto out;
 		}

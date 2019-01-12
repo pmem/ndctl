@@ -25,7 +25,7 @@ struct json_object *util_dimm_firmware_to_json(struct ndctl_dimm *dimm,
 		goto err;
 
 	rc = ndctl_cmd_submit(cmd);
-	if (rc || ndctl_cmd_fw_xlat_firmware_status(cmd) != FW_SUCCESS) {
+	if ((rc < 0) || ndctl_cmd_fw_xlat_firmware_status(cmd) != FW_SUCCESS) {
 		jobj = util_json_object_hex(-1, flags);
 		if (jobj)
 			json_object_object_add(jfirmware, "current_version",

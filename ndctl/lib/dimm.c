@@ -331,8 +331,8 @@ static int nvdimm_set_config_data(struct nvdimm_data *ndd, size_t offset,
 	if (rc < 0)
 		goto out;
 
-	rc = ndctl_cmd_submit(cmd_write);
-	if (rc || ndctl_cmd_get_firmware_status(cmd_write))
+	rc = ndctl_cmd_submit_xlat(cmd_write);
+	if (rc < 0)
 		rc = -ENXIO;
  out:
 	ndctl_cmd_unref(cmd_write);
@@ -487,15 +487,15 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_read_labels(struct ndctl_dimm *dimm)
         cmd_size = ndctl_dimm_cmd_new_cfg_size(dimm);
         if (!cmd_size)
                 return NULL;
-        rc = ndctl_cmd_submit(cmd_size);
-        if (rc || ndctl_cmd_get_firmware_status(cmd_size))
+        rc = ndctl_cmd_submit_xlat(cmd_size);
+        if (rc < 0)
                 goto out_size;
 
         cmd_read = ndctl_dimm_cmd_new_cfg_read(cmd_size);
         if (!cmd_read)
                 goto out_size;
-        rc = ndctl_cmd_submit(cmd_read);
-        if (rc || ndctl_cmd_get_firmware_status(cmd_read))
+        rc = ndctl_cmd_submit_xlat(cmd_read);
+        if (rc < 0)
                 goto out_read;
 	ndctl_cmd_unref(cmd_size);
 
@@ -536,13 +536,9 @@ NDCTL_EXPORT int ndctl_dimm_zero_labels(struct ndctl_dimm *dimm)
 		rc = -ENXIO;
 		goto out_write;
 	}
-	rc = ndctl_cmd_submit(cmd_write);
+	rc = ndctl_cmd_submit_xlat(cmd_write);
 	if (rc < 0)
 		goto out_write;
-	if (ndctl_cmd_get_firmware_status(cmd_write)) {
-		rc = -ENXIO;
-		goto out_write;
-	}
 
 	/*
 	 * If the dimm is already disabled the kernel is not holding a cached

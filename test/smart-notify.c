@@ -22,7 +22,7 @@ static void do_notify(struct ndctl_dimm *dimm)
 	}
 
 	rc = ndctl_cmd_submit(s_cmd);
-	if (rc) {
+	if (rc < 0) {
 		fprintf(stderr, "%s: smart command failed: %d %s\n", name,
 				rc, strerror(errno));
 		goto out;
@@ -49,7 +49,7 @@ static void do_notify(struct ndctl_dimm *dimm)
 	}
 
 	rc = ndctl_cmd_submit(st_cmd);
-	if (rc) {
+	if (rc < 0) {
 		fprintf(stderr, "%s: smart threshold command failed: %d %s\n",
 				name, rc, strerror(errno));
 		goto out;
@@ -148,7 +148,7 @@ static void do_notify(struct ndctl_dimm *dimm)
 
 		ndctl_cmd_smart_threshold_set_alarm_control(sst_cmd, set_alarm);
 		rc = ndctl_cmd_submit(sst_cmd);
-		if (rc) {
+		if (rc < 0) {
 			fprintf(stderr, "%s: smart set threshold command failed: %d %s\n",
 					name, rc, strerror(errno));
 			goto out;
@@ -166,7 +166,7 @@ static void do_notify(struct ndctl_dimm *dimm)
 	}
 
 	rc = ndctl_cmd_submit(sst_cmd);
-	if (rc) {
+	if (rc < 0) {
 		fprintf(stderr, "%s: smart set threshold defaults failed: %d %s\n",
 				name, rc, strerror(errno));
 		goto out;

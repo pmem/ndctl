@@ -75,7 +75,7 @@ static int check_ars_cap(struct ndctl_bus *bus, uint64_t start,
 	}
 
 	rc = ndctl_cmd_submit(cmd);
-	if (rc) {
+	if (rc < 0) {
 		fprintf(stderr, "%s: bus: %s failed to submit cmd: %d\n",
 				__func__, ndctl_bus_get_provider(bus), rc);
 		ndctl_cmd_unref(cmd);
@@ -115,7 +115,7 @@ static int check_ars_start(struct ndctl_bus *bus, struct check_cmd *check)
 	}
 
 	rc = ndctl_cmd_submit(cmd);
-	if (rc) {
+	if (rc < 0) {
 		fprintf(stderr, "%s: bus: %s failed to submit cmd: %d\n",
 				__func__, ndctl_bus_get_provider(bus), rc);
 		ndctl_cmd_unref(cmd);
@@ -149,7 +149,7 @@ static int check_ars_status(struct ndctl_bus *bus, struct check_cmd *check)
 	}
 
 	rc = ndctl_cmd_submit(cmd);
-	if (rc) {
+	if (rc < 0) {
 		fprintf(stderr, "%s: bus: %s failed to submit cmd: %d\n",
 				__func__, ndctl_bus_get_provider(bus), rc);
 		ndctl_cmd_unref(cmd);
@@ -210,7 +210,7 @@ static int check_clear_error(struct ndctl_bus *bus, struct check_cmd *check)
 	}
 
 	rc = ndctl_cmd_submit(clear_err);
-	if (rc) {
+	if (rc < 0) {
 		fprintf(stderr, "%s: bus: %s failed to submit cmd: %d\n",
 				__func__, ndctl_bus_get_provider(bus), rc);
 		ndctl_cmd_unref(clear_err);

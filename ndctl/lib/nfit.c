@@ -133,7 +133,7 @@ int ndctl_bus_nfit_translate_spa(struct ndctl_bus *bus,
 	translate_spa->spa = address;
 
 	rc = ndctl_cmd_submit(cmd);
-	if (rc) {
+	if (rc < 0) {
 		ndctl_cmd_unref(cmd);
 		return rc;
 	}
