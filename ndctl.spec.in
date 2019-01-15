@@ -117,8 +117,9 @@ make check
 %{_bindir}/ndctl
 %{_mandir}/man1/ndctl*
 %{bashcompdir}/
-%{_sysconfdir}/ndctl/monitor.conf
 %{_unitdir}/ndctl-monitor.service
+
+%config(noreplace) %{_sysconfdir}/ndctl/monitor.conf
 
 %files -n daxctl
 %defattr(-,root,root)
