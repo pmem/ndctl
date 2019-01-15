@@ -10,6 +10,7 @@
 #include <util/util.h>
 #include <util/parse-options.h>
 #include <util/strbuf.h>
+#include <ndctl/config.h>
 #include <ndctl/ndctl.h>
 #include <ndctl/libndctl.h>
 #include <sys/epoll.h>

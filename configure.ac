@@ -158,8 +158,6 @@ ndctl_monitorconfdir=${sysconfdir}/ndctl
 ndctl_monitorconf=monitor.conf
 AC_SUBST([ndctl_monitorconfdir])
 AC_SUBST([ndctl_monitorconf])
-AC_DEFINE_UNQUOTED(NDCTL_CONF_FILE, ["$ndctl_monitorconfdir/$ndctl_monitorconf"],
-	[default ndctl monitor conf path])
 
 my_CFLAGS="\
 -Wall \

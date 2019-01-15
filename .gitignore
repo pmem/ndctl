@@ -23,6 +23,7 @@ daxctl/lib/libdaxctl.la
 daxctl/lib/libdaxctl.lo
 daxctl/lib/libdaxctl.pc
 *.a
+ndctl/config.h
 ndctl/lib/libndctl.pc
 ndctl/ndctl
 rhel/
