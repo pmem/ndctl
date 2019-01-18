@@ -444,26 +444,38 @@ static void dax_devices_init(struct daxctl_region *region)
 {
 	struct daxctl_ctx *ctx = daxctl_region_get_ctx(region);
 	char daxdev_fmt[50];
-	char *region_path;
+	size_t i;
 
 	if (region->devices_init)
 		return;
 
 	region->devices_init = 1;
 	sprintf(daxdev_fmt, "dax%d.", region->id);
-	if (asprintf(&region_path, "%s/dax", region->region_path) < 0) {
-		dbg(ctx, "region path alloc fail\n");
-		return;
+	for (i = 0; i < ARRAY_SIZE(dax_subsystems); i++) {
+		char *region_path;
+
+		if (i == DAX_BUS)
+			region_path = region->region_path;
+		else if (i == DAX_CLASS) {
+			if (asprintf(&region_path, "%s/dax",
+						region->region_path) < 0) {
+				dbg(ctx, "region path alloc fail\n");
+				continue;
+			}
+		} else
+			continue;
+		sysfs_device_parse(ctx, region_path, daxdev_fmt, region,
+				add_dax_dev);
+		if (i == DAX_CLASS)
+			free(region_path);
 	}
-	sysfs_device_parse(ctx, region_path, daxdev_fmt, region, add_dax_dev);
-	free(region_path);
 }
 
-static char *dax_region_path(const char *base, const char *device)
+static char *dax_region_path(const char *device, enum dax_subsystem subsys)
 {
 	char *path, *region_path, *c;
 
-	if (asprintf(&path, "%s/%s", base, device) < 0)
+	if (asprintf(&path, "%s/%s", dax_subsystems[subsys], device) < 0)
 		return NULL;
 
 	/* dax_region must be the instance's direct parent */
@@ -472,13 +484,20 @@ static char *dax_region_path(const char *base, const char *device)
 	if (!region_path)
 		return NULL;
 
-	/* 'region_path' is now regionX/dax/daxX.Y', trim back to regionX */
+	/*
+	 * 'region_path' is now regionX/dax/daxX.Y' (DAX_CLASS), or
+	 * regionX/daxX.Y (DAX_BUS), trim it back to the regionX
+	 * component
+	 */
 	c = strrchr(region_path, '/');
 	if (!c) {
 		free(region_path);
 		return NULL;
 	}
 	*c = '\0';
+
+	if (subsys == DAX_BUS)
+		return region_path;
 
 	c = strrchr(region_path, '/');
 	if (!c) {
@@ -490,20 +509,15 @@ static char *dax_region_path(const char *base, const char *device)
 	return region_path;
 }
 
-static void dax_regions_init(struct daxctl_ctx *ctx)
+static void __dax_regions_init(struct daxctl_ctx *ctx, enum dax_subsystem subsys)
 {
-	const char *base = "/sys/class/dax";
 	struct dirent *de;
-	DIR *dir;
+	DIR *dir = NULL;
 
-	if (ctx->regions_init)
-		return;
-
-	ctx->regions_init = 1;
-
-	dir = opendir(base);
+	dir = opendir(dax_subsystems[subsys]);
 	if (!dir) {
-		dbg(ctx, "no dax regions found\n");
+		dbg(ctx, "no dax regions found via: %s\n",
+				dax_subsystems[subsys]);
 		return;
 	}
 
@@ -516,7 +530,7 @@ static void dax_regions_init(struct daxctl_ctx *ctx)
 			continue;
 		if (sscanf(de->d_name, "dax%d.%d", &region_id, &id) != 2)
 			continue;
-		dev_path = dax_region_path(base, de->d_name);
+		dev_path = dax_region_path(de->d_name, subsys);
 		if (!dev_path) {
 			err(ctx, "dax region path allocation failure\n");
 			continue;
@@ -527,6 +541,22 @@ static void dax_regions_init(struct daxctl_ctx *ctx)
 			err(ctx, "add_dax_region() for %s failed\n", de->d_name);
 	}
 	closedir(dir);
+}
+
+static void dax_regions_init(struct daxctl_ctx *ctx)
+{
+	size_t i;
+
+	if (ctx->regions_init)
+		return;
+
+	ctx->regions_init = 1;
+
+	for (i = 0; i < ARRAY_SIZE(dax_subsystems); i++) {
+		if (i == DAX_UNKNOWN)
+			continue;
+		__dax_regions_init(ctx, i);
+	}
 }
 
 DAXCTL_EXPORT struct daxctl_dev *daxctl_dev_get_first(struct daxctl_region *region)

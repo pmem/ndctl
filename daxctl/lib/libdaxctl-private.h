@@ -15,6 +15,17 @@
 
 #define DAXCTL_EXPORT __attribute__ ((visibility("default")))
 
+enum dax_subsystem {
+	DAX_UNKNOWN,
+	DAX_CLASS,
+	DAX_BUS,
+};
+
+static const char *dax_subsystems[] = {
+	[DAX_CLASS] = "/sys/class/dax",
+	[DAX_BUS] = "/sys/bus/dax/devices",
+};
+
 /**
  * struct daxctl_region - container for dax_devices
  */
