@@ -126,6 +126,7 @@ make check
 %license util/COPYING licenses/BSD-MIT licenses/CC0
 %{_bindir}/daxctl
 %{_mandir}/man1/daxctl*
+%{_datadir}/daxctl/daxctl.conf
 
 %files -n LNAME
 %defattr(-,root,root)

@@ -70,6 +70,7 @@ static struct cmd_struct commands[] = {
 	{ "version", .d_fn = cmd_version },
 	{ "list", .d_fn = cmd_list },
 	{ "help", .d_fn = cmd_help },
+	{ "migrate-device-model", .d_fn = cmd_migrate },
 };
 
 int main(int argc, const char **argv)

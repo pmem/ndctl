@@ -18,6 +18,8 @@ libdaxctl_la_SOURCES =\
 libdaxctl_la_LIBADD =\
 	$(UUID_LIBS)
 
+daxctl_modprobe_data_DATA = daxctl.conf
+
 EXTRA_DIST += libdaxctl.sym
 
 libdaxctl_la_LDFLAGS = $(AM_LDFLAGS) \

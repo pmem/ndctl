@@ -159,6 +159,11 @@ ndctl_monitorconf=monitor.conf
 AC_SUBST([ndctl_monitorconfdir])
 AC_SUBST([ndctl_monitorconf])
 
+daxctl_modprobe_datadir=${datadir}/daxctl
+daxctl_modprobe_data=daxctl.conf
+AC_SUBST([daxctl_modprobe_datadir])
+AC_SUBST([daxctl_modprobe_data])
+
 my_CFLAGS="\
 -Wall \
 -Wchar-subscripts \
