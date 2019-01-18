@@ -51,6 +51,13 @@ man1_MANS = \
 
 CLEANFILES = $(man1_MANS)
 
+.ONESHELL:
+attrs.adoc: $(srcdir)/Makefile.am
+	$(AM_V_GEN) cat <<- EOF >$@
+		:ndctl_monitorconfdir: $(ndctl_monitorconfdir)
+		:ndctl_monitorconf: $(ndctl_monitorconf)
+		EOF
+
 XML_DEPS = \
 	../../version.m4 \
 	Makefile \
@@ -63,7 +70,8 @@ XML_DEPS = \
 	xable-namespace-options.txt \
 	ars-description.txt \
 	labels-description.txt \
-	labels-options.txt
+	labels-options.txt \
+	attrs.adoc
 
 RM ?= rm -f
 
