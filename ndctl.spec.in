@@ -101,13 +101,9 @@ find $RPM_BUILD_ROOT -name '*.la' -exec rm -f {} ';'
 %check
 make check
 
-%post -n LNAME -p /sbin/ldconfig
+%ldconfig_scriptlets -n LNAME
 
-%postun -n LNAME -p /sbin/ldconfig
-
-%post -n DAX_LNAME -p /sbin/ldconfig
-
-%postun -n DAX_LNAME -p /sbin/ldconfig
+%ldconfig_scriptlets -n DAX_LNAME
 
 %define bashcompdir %(pkg-config --variable=completionsdir bash-completion)
 
