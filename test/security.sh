@@ -53,8 +53,6 @@ test_cleanup()
 	if [ -f $masterpath ]; then
 		rm -f "$masterpath"
 	fi
-
-	rm -f "$keypath"/"$NFIT_TEST_BUS0".kek
 }
 
 lock_dimm()

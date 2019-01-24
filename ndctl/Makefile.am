@@ -27,7 +27,8 @@ ndctl_SOURCES = ndctl.c \
 		monitor.c
 
 if ENABLE_KEYUTILS
-ndctl_SOURCES += util/keys.c
+ndctl_SOURCES += util/keys.c \
+		load-keys.c
 endif
 
 if ENABLE_DESTRUCTIVE

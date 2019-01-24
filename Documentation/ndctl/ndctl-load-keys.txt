@@ -1,0 +1,50 @@
+// SPDX-License-Identifier: GPL-2.0
+
+include::attrs.adoc[]
+
+ndctl-load-keys(1)
+==================
+
+NAME
+----
+ndctl-load-keys - load the kek and encrypted passphrases into the keyring
+
+SYNOPSIS
+--------
+[verse]
+'ndctl load-keys' [<options>]
+
+DESCRIPTION
+-----------
+The 'load-keys' command loads the master key ('kek') and the encrypted
+passphrases for all NVDIMMs into the user keyring maintained by the kernel.
+The command is expected to be called during initialization and before the
+libnvdimm kernel module is loaded, typically from an initrd. This is typically
+set up using a modprobe config that calls the command before module load.
+
+NOTE: All key files are expected to be in the format: nvdimm_<id>_hostname +
+The `'_`' character is used to delimit the different components in the file name.
+Within the hostname, the `'_`' character is allowed since it is the last component
+of the file name.
+
+NOTE: This command is typically never called directly by a user.
+
+OPTIONS
+-------
+-p::
+--key-path=::
+	Path to where key related files reside. This parameter is optional
+	and the default location is {ndctl_keysdir}.
+
+-t::
+--tpm-handle=::
+	Provide a TPM handle (should be a string such as 0x81000001).
+	If the key path ({ndctl_keysdir}) contains a file called tpm.handle
+	which contains the handle string, then this option may be left out,
+	and the tpm handle will be obtained from the file. If both are present,
+	then this option will override (but not overwrite) anything that is
+	in the file.
+
+include::intel-nvdimm-security.txt[]
+
+include::../copyright.txt[]

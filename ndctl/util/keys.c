@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <fcntl.h>
 #include <sys/param.h>
 #include <keyutils.h>
 #include <syslog.h>
@@ -70,16 +71,23 @@ static int get_key_desc(struct ndctl_dimm *dimm, char *desc,
 	return 0;
 }
 
-static char *load_key_blob(const char *path, int *size)
+char *ndctl_load_key_blob(const char *path, int *size, const char *postfix,
+		int dirfd)
 {
 	struct stat st;
-	FILE *bfile = NULL;
-	ssize_t read;
-	int rc;
-	char *blob, *pl;
+	ssize_t read_bytes = 0;
+	int rc, fd;
+	char *blob, *pl, *rdptr;
 	char prefix[] = "load ";
 
-	rc = stat(path, &st);
+	fd = openat(dirfd, path, O_RDONLY);
+	if (fd < 0) {
+		fprintf(stderr, "failed to open file %s: %s\n",
+				path, strerror(errno));
+		return NULL;
+	}
+
+	rc = fstat(fd, &st);
 	if (rc < 0) {
 		fprintf(stderr, "stat: %s\n", strerror(errno));
 		return NULL;
@@ -95,31 +103,44 @@ static char *load_key_blob(const char *path, int *size)
 	}
 
 	*size = st.st_size + sizeof(prefix) - 1;
+	/*
+	 * We need to increment postfix and space.
+	 * "keyhandle=" is 10 bytes, plus null termination.
+	 */
+	if (postfix)
+		*size += strlen(postfix) + 10 + 1;
 	blob = malloc(*size);
 	if (!blob) {
 		fprintf(stderr, "Unable to allocate memory for blob\n");
 		return NULL;
 	}
 
-	bfile = fopen(path, "r");
-	if (!bfile) {
-		fprintf(stderr, "Unable to open %s: %s\n", path, strerror(errno));
-		free(blob);
-		return NULL;
-	}
-
 	memcpy(blob, prefix, sizeof(prefix) - 1);
 	pl = blob + sizeof(prefix) - 1;
-	read = fread(pl, st.st_size, 1, bfile);
-	if (read < 0) {
-		fprintf(stderr, "Failed to read from blob file: %s\n",
-				strerror(errno));
-		free(blob);
-		fclose(bfile);
-		return NULL;
+
+	rdptr = pl;
+	do {
+		rc = read(fd, rdptr, st.st_size - read_bytes);
+		if (rc < 0) {
+			fprintf(stderr, "Failed to read from blob file: %s\n",
+					strerror(errno));
+			free(blob);
+			close(fd);
+			return NULL;
+		}
+		read_bytes += rc;
+		rdptr += rc;
+	} while (read_bytes != st.st_size);
+
+	close(fd);
+
+	if (postfix) {
+		pl += read_bytes;
+		*pl = ' ';
+		pl++;
+		rc = sprintf(pl, "keyhandle=%s", postfix);
 	}
 
-	fclose(bfile);
 	return blob;
 }
 
@@ -247,7 +268,7 @@ static key_serial_t dimm_load_key(struct ndctl_dimm *dimm,
 	if (rc < 0)
 		return rc;
 
-	blob = load_key_blob(path, &size);
+	blob = ndctl_load_key_blob(path, &size, NULL, -1);
 	if (!blob)
 		return -ENOMEM;
 
