@@ -36,4 +36,5 @@ int cmd_setup_passphrase(int argc, const char **argv, struct ndctl_ctx *ctx);
 int cmd_update_passphrase(int argc, const char **argv, struct ndctl_ctx *ctx);
 int cmd_remove_passphrase(int argc, const char **argv, struct ndctl_ctx *ctx);
 int cmd_freeze_security(int argc, const char **argv, struct ndctl_ctx *ctx);
+int cmd_sanitize_dimm(int argc, const char **argv, struct ndctl_ctx *ctx);
 #endif /* _NDCTL_BUILTIN_H_ */

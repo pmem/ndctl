@@ -459,10 +459,9 @@ int ndctl_dimm_update_key(struct ndctl_dimm *dimm, const char *kek)
 	return 0;
 }
 
-int ndctl_dimm_remove_key(struct ndctl_dimm *dimm)
+static key_serial_t check_dimm_key(struct ndctl_dimm *dimm)
 {
 	key_serial_t key;
-	int rc;
 
 	key = dimm_check_key(dimm, false);
 	if (key < 0) {
@@ -473,15 +472,67 @@ int ndctl_dimm_remove_key(struct ndctl_dimm *dimm)
 		}
 	}
 
-	rc = ndctl_dimm_disable_passphrase(dimm, key);
+	return key;
+}
+
+static int run_key_op(struct ndctl_dimm *dimm,
+		key_serial_t key,
+		int (*run_op)(struct ndctl_dimm *, long), const char *name)
+{
+	int rc;
+
+	rc = run_op(dimm, key);
 	if (rc < 0) {
-		fprintf(stderr, "Failed to disable security for %s\n",
+		fprintf(stderr, "Failed %s for %s\n", name,
 				ndctl_dimm_get_devname(dimm));
 		return rc;
 	}
 
-	rc = dimm_remove_key(dimm, false);
-	if (rc < 0)
-		fprintf(stderr, "Unable to cleanup key.\n");
 	return 0;
+}
+
+static int discard_key(struct ndctl_dimm *dimm)
+{
+	int rc;
+
+	rc = dimm_remove_key(dimm, false);
+	if (rc < 0) {
+		fprintf(stderr, "Unable to cleanup key.\n");
+		return rc;
+	}
+	return 0;
+}
+
+int ndctl_dimm_remove_key(struct ndctl_dimm *dimm)
+{
+	key_serial_t key;
+	int rc;
+
+	key = check_dimm_key(dimm);
+	if (key < 0)
+		return key;
+
+	rc = run_key_op(dimm, key, ndctl_dimm_disable_passphrase,
+			"remove passphrase");
+	if (rc < 0)
+		return rc;
+
+	return discard_key(dimm);
+}
+
+int ndctl_dimm_secure_erase_key(struct ndctl_dimm *dimm)
+{
+	key_serial_t key;
+	int rc;
+
+	key = check_dimm_key(dimm);
+	if (key < 0)
+		return key;
+
+	rc = run_key_op(dimm, key, ndctl_dimm_secure_erase,
+			"crypto erase");
+	if (rc < 0)
+		return rc;
+
+	return discard_key(dimm);
 }

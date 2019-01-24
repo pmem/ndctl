@@ -1,0 +1,45 @@
+// SPDX-License-Identifier: GPL-2.0
+
+include::attrs.adoc[]
+
+ndctl-sanitize-dimm(1)
+======================
+
+NAME
+----
+ndctl-sanitize-dimm - Perform a cryptographic destruction of the contents of
+the given NVDIMM(s)
+
+SYNOPSIS
+--------
+[verse]
+'ndctl sanitize-dimm' <nmem0> [<nmem1>..<nmemN>] [<options>]
+
+DESCRIPTION
+-----------
+The 'sanitize-dimm' command performs a cryptographic destruction of the
+contents of the given NVDIMM. It scrambles the data, and any metadata or
+info-blocks, but it doesn't modify namespace labels. Therefore, any
+namespaces on regions associated with the given NVDIMM will be retained,
+but they will end up in the 'raw' mode.
+
+Additionally, after completion of this command, the security and passphrase
+for the given NVDIMM will be disabled, and the passphrase and any key material
+will also be removed from the keyring and the ndctl keys directory at
+{ndctl_keysdir}
+
+OPTIONS
+-------
+<dimm>::
+include::xable-dimm-options.txt[]
+
+--verbose::
+        Emit debug messages.
+
+include::intel-nvdimm-security.txt[]
+
+include::../copyright.txt[]
+
+SEE ALSO
+--------
+https://trustedcomputinggroup.org/wp-content/uploads/TCG_SWG_SIIS_Version_1_07_Revision_1_00.pdf

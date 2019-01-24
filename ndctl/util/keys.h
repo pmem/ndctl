@@ -13,6 +13,7 @@ enum ndctl_key_type {
 int ndctl_dimm_setup_key(struct ndctl_dimm *dimm, const char *kek);
 int ndctl_dimm_update_key(struct ndctl_dimm *dimm, const char *kek);
 int ndctl_dimm_remove_key(struct ndctl_dimm *dimm);
+int ndctl_dimm_secure_erase_key(struct ndctl_dimm *dimm);
 #else
 static inline int ndctl_dimm_setup_key(struct ndctl_dimm *dimm,
 		const char *kek)
@@ -27,6 +28,11 @@ static inline int ndctl_dimm_update_key(struct ndctl_dimm *dimm,
 }
 
 static inline int ndctl_dimm_remove_key(struct ndctl_dimm *dimm)
+{
+	return -EOPNOTSUPP;
+}
+
+static inline int ndctl_dimm_secure_erase_key(struct ndctl_dimm *dimm)
 {
 	return -EOPNOTSUPP;
 }
