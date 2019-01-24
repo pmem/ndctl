@@ -91,6 +91,7 @@ static struct cmd_struct commands[] = {
 	{ "setup-passphrase", { cmd_setup_passphrase } },
 	{ "update-passphrase", { cmd_update_passphrase } },
 	{ "remove-passphrase", { cmd_remove_passphrase } },
+	{ "freeze-security", { cmd_freeze_security } },
 	{ "list", { cmd_list } },
 	{ "monitor", { cmd_monitor } },
 	{ "help", { cmd_help } },

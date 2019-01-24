@@ -1,0 +1,63 @@
+// SPDX-License-Identifier: GPL-2.0
+
+ndctl-freeze-security(1)
+========================
+
+NAME
+----
+ndctl-freeze-security - Set the given DIMM(s) to reject future security operations
+
+SYNOPSIS
+--------
+[verse]
+'ndctl freeze-security' <nmem0> [<nmem1>..<nmemN>] [<options>]
+
+DESCRIPTION
+-----------
+Prevent any further security operations on the given DIMMs until the
+next reboot. This is used in scenarios where the administrator has
+taken all expected security actions for the current boot and wants the
+DIMM to enforce / lock the current state.
+
+EXAMPLES
+--------
+
+----
+$ ndctl list -d nmem0
+[
+  {
+    "dev":"nmem0",
+    "id":"cdab-0a-07e0-ffffffff",
+    "handle":0,
+    "phys_id":0,
+    "security":"unlocked"
+  }
+]
+
+$ ndctl freeze-security  nmem0
+security freezed 1 nmem.
+
+$ ndctl list -d nmem0
+[
+  {
+    "dev":"nmem0",
+    "id":"cdab-0a-07e0-ffffffff",
+    "handle":0,
+    "phys_id":0,
+    "security":"frozen"
+  }
+]
+----
+
+OPTIONS
+-------
+<dimm>::
+include::xable-dimm-options.txt[]
+
+-v::
+--verbose::
+        Emit debug messages.
+
+include::intel-nvdimm-security.txt[]
+
+include::../copyright.txt[]

@@ -397,4 +397,5 @@ global:
 	ndctl_dimm_get_security;
 	ndctl_dimm_update_passphrase;
 	ndctl_dimm_disable_passphrase;
+	ndctl_dimm_freeze_security;
 } LIBNDCTL_18;
