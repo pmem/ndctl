@@ -395,4 +395,6 @@ global:
 	ndctl_dax_get_supported_alignment;
 	ndctl_dax_get_num_alignments;
 	ndctl_dimm_get_security;
+	ndctl_dimm_update_passphrase;
+	ndctl_dimm_disable_passphrase;
 } LIBNDCTL_18;

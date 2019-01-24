@@ -1,0 +1,38 @@
+// SPDX-License-Identifier: GPL-2.0
+
+ndctl-remove-passphrase(1)
+===========================
+
+NAME
+----
+ndctl-remove-passphrase - Stop a DIMM from locking at power-loss and requiring
+a passphrase to access media
+
+SYNOPSIS
+--------
+[verse]
+'ndctl remove-passphrase' <nmem0> [<nmem1>..<nmemN>] [<options>]
+
+DESCRIPTION
+-----------
+Search the user keyring for an encrypted passphrase for the NVDIMM in question.
+If not found, attempt to load the passphrase blob. After disabling the
+passphrase, remove the 'key-ID' from the keyring as well as the passphrase blob
+from the file system.
+
+OPTIONS
+-------
+<dimm>::
+include::xable-dimm-options.txt[]
+
+-v::
+--verbose::
+        Emit debug messages.
+
+include::intel-nvdimm-security.txt[]
+
+include::../copyright.txt[]
+
+SEE ALSO:
+---------
+linkndctl:ndctl-setup-passphrase[1], linkndctl:ndctl-update-passphrase[1]

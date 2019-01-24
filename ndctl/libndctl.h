@@ -688,6 +688,10 @@ int ndctl_dimm_fw_update_supported(struct ndctl_dimm *dimm);
 int ndctl_cmd_xlat_firmware_status(struct ndctl_cmd *cmd);
 int ndctl_cmd_submit_xlat(struct ndctl_cmd *cmd);
 
+#define ND_PASSPHRASE_SIZE	32
+#define ND_KEY_DESC_LEN	22
+#define ND_KEY_DESC_PREFIX  7
+
 enum ndctl_security_state {
 	NDCTL_SECURITY_INVALID = -1,
 	NDCTL_SECURITY_DISABLED = 0,
@@ -698,6 +702,12 @@ enum ndctl_security_state {
 };
 
 enum ndctl_security_state ndctl_dimm_get_security(struct ndctl_dimm *dimm);
+int ndctl_dimm_update_passphrase(struct ndctl_dimm *dimm,
+		long ckey, long nkey);
+int ndctl_dimm_disable_passphrase(struct ndctl_dimm *dimm, long key);
+
+#define ND_KEY_DESC_SIZE	128
+#define ND_KEY_CMD_SIZE		128
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -164,6 +164,23 @@ daxctl_modprobe_data=daxctl.conf
 AC_SUBST([daxctl_modprobe_datadir])
 AC_SUBST([daxctl_modprobe_data])
 
+AC_ARG_WITH([keyutils],
+	    AS_HELP_STRING([--with-keyutils],
+			[Enable keyutils functionality (security).  @<:@default=yes@:>@]), [], [with_keyutils=yes])
+
+if test "x$with_keyutils" = "xyes"; then
+	AC_CHECK_HEADERS([keyutils.h],,[
+		AC_MSG_ERROR([keyutils.h not found, consider installing
+			      keyutils-libs-devel.])
+		])
+fi
+AS_IF([test "x$with_keyutils" = "xyes"],
+	[AC_DEFINE([ENABLE_KEYUTILS], [1], [Enable keyutils support])])
+AM_CONDITIONAL([ENABLE_KEYUTILS], [test "x$with_keyutils" = "xyes"])
+
+ndctl_keysdir=${sysconfdir}/ndctl/keys
+AC_SUBST([ndctl_keysdir])
+
 my_CFLAGS="\
 -Wall \
 -Wchar-subscripts \

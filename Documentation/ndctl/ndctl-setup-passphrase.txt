@@ -1,0 +1,55 @@
+// SPDX-License-Identifier: GPL-2.0
+
+include::attrs.adoc[]
+
+ndctl-setup-passphrase(1)
+=========================
+
+NAME
+----
+ndctl-setup-passphrase - setup and enable the security passphrase for an NVDIMM
+
+SYNOPSIS
+--------
+[verse]
+'ndctl setup-passphrase' <nmem0> [<nmem1>..<nmemN>] -k <key_handle> [<options>]
+
+DESCRIPTION
+-----------
+Setup and enable a security passphrase for one or more NVDIMMs.
+
+For this command to succeed, it is expected that the master key has previously
+been loaded into the user keyring. More information on how this can be done
+can be found in the kernel documentation at:
+https://www.kernel.org/doc/html/latest/security/keys/trusted-encrypted.html
+
+The passphrase blobs are created in the {ndctl_keysdir} directory with a file
+name format of `"nvdimm_<dimm-unique-id>_<hostname>.blob"`
+
+The command will fail if the passphrase is already in the user keyring or if
+a passphrase blob already exists in {ndctl_keysdir}.
+
+OPTIONS
+-------
+<dimm>::
+include::xable-dimm-options.txt[]
+
+-k::
+--key_handle=::
+	Handle for the master 'kek' (key-encryption-key) that will be used for
+	sealing the passphrase(s) for the given DIMM(s). The format is:
+	`<key type>:<key description>`
+	  e.g. `trusted:nvdimm-master` +
+	NOTE: The 'kek' is expected to have been loaded into the user keyring.
+
+-v::
+--verbose::
+        Emit debug messages.
+
+include::intel-nvdimm-security.txt[]
+
+include::../copyright.txt[]
+
+SEE ALSO:
+---------
+linkndctl:ndctl-update-passphrase[1], linkndctl:ndctl-remove-passphrase[1]

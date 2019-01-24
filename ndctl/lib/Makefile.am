@@ -30,6 +30,10 @@ libndctl_la_LIBADD =\
 	$(UUID_LIBS) \
 	$(KMOD_LIBS)
 
+if ENABLE_KEYUTILS
+libndctl_la_LIBADD += -lkeyutils
+endif
+
 EXTRA_DIST += libndctl.sym
 
 libndctl_la_LDFLAGS = $(AM_LDFLAGS) \
