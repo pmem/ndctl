@@ -394,4 +394,5 @@ global:
 	ndctl_pfn_get_num_alignments;
 	ndctl_dax_get_supported_alignment;
 	ndctl_dax_get_num_alignments;
+	ndctl_dimm_get_security;
 } LIBNDCTL_18;

@@ -688,6 +688,17 @@ int ndctl_dimm_fw_update_supported(struct ndctl_dimm *dimm);
 int ndctl_cmd_xlat_firmware_status(struct ndctl_cmd *cmd);
 int ndctl_cmd_submit_xlat(struct ndctl_cmd *cmd);
 
+enum ndctl_security_state {
+	NDCTL_SECURITY_INVALID = -1,
+	NDCTL_SECURITY_DISABLED = 0,
+	NDCTL_SECURITY_UNLOCKED,
+	NDCTL_SECURITY_LOCKED,
+	NDCTL_SECURITY_FROZEN,
+	NDCTL_SECURITY_OVERWRITE,
+};
+
+enum ndctl_security_state ndctl_dimm_get_security(struct ndctl_dimm *dimm);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

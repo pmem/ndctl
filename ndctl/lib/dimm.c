@@ -598,3 +598,36 @@ NDCTL_EXPORT unsigned long ndctl_dimm_get_available_labels(
 
 	return strtoul(buf, NULL, 0);
 }
+
+NDCTL_EXPORT enum ndctl_security_state ndctl_dimm_get_security(
+		struct ndctl_dimm *dimm)
+{
+	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
+	char *path = dimm->dimm_buf;
+	int len = dimm->buf_len;
+	char buf[64];
+	int rc;
+
+	if (snprintf(path, len, "%s/security", dimm->dimm_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_dimm_get_devname(dimm));
+		return NDCTL_SECURITY_INVALID;
+	}
+
+	rc = sysfs_read_attr(ctx, path, buf);
+	if (rc < 0)
+		return NDCTL_SECURITY_INVALID;
+
+	if (strcmp(buf, "disabled") == 0)
+		return NDCTL_SECURITY_DISABLED;
+	else if (strcmp(buf, "unlocked") == 0)
+		return NDCTL_SECURITY_UNLOCKED;
+	else if (strcmp(buf, "locked") == 0)
+		return NDCTL_SECURITY_LOCKED;
+	else if (strcmp(buf, "frozen") == 0)
+		return NDCTL_SECURITY_FROZEN;
+	else if (strcmp(buf, "overwrite") == 0)
+		return NDCTL_SECURITY_OVERWRITE;
+
+	return NDCTL_SECURITY_INVALID;
+}
