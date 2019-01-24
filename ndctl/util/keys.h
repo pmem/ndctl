@@ -7,13 +7,17 @@
 enum ndctl_key_type {
 	ND_USER_KEY,
 	ND_USER_OLD_KEY,
+	ND_MASTER_KEY,
+	ND_MASTER_OLD_KEY,
 };
 
 #ifdef ENABLE_KEYUTILS
 char *ndctl_load_key_blob(const char *path, int *size, const char *postfix,
 		int dirfd);
-int ndctl_dimm_setup_key(struct ndctl_dimm *dimm, const char *kek);
-int ndctl_dimm_update_key(struct ndctl_dimm *dimm, const char *kek);
+int ndctl_dimm_setup_key(struct ndctl_dimm *dimm, const char *kek,
+				enum ndctl_key_type key_type);
+int ndctl_dimm_update_key(struct ndctl_dimm *dimm, const char *kek,
+				enum ndctl_key_type key_type);
 int ndctl_dimm_remove_key(struct ndctl_dimm *dimm);
 int ndctl_dimm_secure_erase_key(struct ndctl_dimm *dimm);
 int ndctl_dimm_overwrite_key(struct ndctl_dimm *dimm);
@@ -24,13 +28,13 @@ char *ndctl_load_key_blob(const char *path, int *size, const char *postfix,
 	return NULL;
 }
 static inline int ndctl_dimm_setup_key(struct ndctl_dimm *dimm,
-		const char *kek)
+		const char *kek, enum ndctl_key_type key_type)
 {
 	return -EOPNOTSUPP;
 }
 
 static inline int ndctl_dimm_update_key(struct ndctl_dimm *dimm,
-		const char *kek)
+		const char *kek, enum ndctl_key_type key_type)
 {
 	return -EOPNOTSUPP;
 }

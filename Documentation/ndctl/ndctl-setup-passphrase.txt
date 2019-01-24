@@ -42,6 +42,11 @@ include::xable-dimm-options.txt[]
 	  e.g. `trusted:nvdimm-master` +
 	NOTE: The 'kek' is expected to have been loaded into the user keyring.
 
+-m::
+--master-passphrase::
+	Indicates that we are managing the master passphrase instead of the
+	user passphrase.
+
 -v::
 --verbose::
         Emit debug messages.

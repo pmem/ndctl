@@ -401,4 +401,5 @@ global:
 	ndctl_dimm_secure_erase;
 	ndctl_dimm_overwrite;
 	ndctl_dimm_wait_overwrite;
+	ndctl_dimm_update_master_passphrase;
 } LIBNDCTL_18;

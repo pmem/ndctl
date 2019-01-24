@@ -49,6 +49,7 @@ static struct parameters {
 	const char *kek;
 	bool crypto_erase;
 	bool overwrite;
+	bool master_pass;
 	bool force;
 	bool json;
 	bool verbose;
@@ -852,7 +853,8 @@ static int action_setup_passphrase(struct ndctl_dimm *dimm,
 	if (!param.kek)
 		return -EINVAL;
 
-	return ndctl_dimm_setup_key(dimm, param.kek);
+	return ndctl_dimm_setup_key(dimm, param.kek,
+			param.master_pass ? ND_MASTER_KEY : ND_USER_KEY);
 }
 
 static int action_update_passphrase(struct ndctl_dimm *dimm,
@@ -864,7 +866,8 @@ static int action_update_passphrase(struct ndctl_dimm *dimm,
 		return -EOPNOTSUPP;
 	}
 
-	return ndctl_dimm_update_key(dimm, param.kek);
+	return ndctl_dimm_update_key(dimm, param.kek,
+			param.master_pass ? ND_MASTER_KEY : ND_USER_KEY);
 }
 
 static int action_remove_passphrase(struct ndctl_dimm *dimm,
@@ -1049,6 +1052,10 @@ OPT_BOOLEAN('c', "crypto-erase", &param.crypto_erase, \
 OPT_BOOLEAN('o', "overwrite", &param.overwrite, \
 		"overwrite a dimm")
 
+#define MASTER_OPTIONS() \
+OPT_BOOLEAN('m', "master-passphrase", &param.master_pass, \
+		"use master passphrase")
+
 static const struct option read_options[] = {
 	BASE_OPTIONS(),
 	READ_OPTIONS(),
@@ -1081,11 +1088,13 @@ static const struct option init_options[] = {
 static const struct option key_options[] = {
 	BASE_OPTIONS(),
 	KEY_OPTIONS(),
+	MASTER_OPTIONS(),
 };
 
 static const struct option sanitize_options[] = {
 	BASE_OPTIONS(),
 	SANITIZE_OPTIONS(),
+	MASTER_OPTIONS(),
 	OPT_END(),
 };
 
