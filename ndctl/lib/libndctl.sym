@@ -399,4 +399,5 @@ global:
 	ndctl_dimm_disable_passphrase;
 	ndctl_dimm_freeze_security;
 	ndctl_dimm_secure_erase;
+	ndctl_dimm_overwrite;
 } LIBNDCTL_18;

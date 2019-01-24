@@ -7,8 +7,8 @@ ndctl-sanitize-dimm(1)
 
 NAME
 ----
-ndctl-sanitize-dimm - Perform a cryptographic destruction of the contents of
-the given NVDIMM(s)
+ndctl-sanitize-dimm - Perform a cryptographic destruction or overwrite of
+the contents of the given NVDIMM(s)
 
 SYNOPSIS
 --------
@@ -28,10 +28,28 @@ for the given NVDIMM will be disabled, and the passphrase and any key material
 will also be removed from the keyring and the ndctl keys directory at
 {ndctl_keysdir}
 
+The command supports two different methods of performing the cryptographic
+erase. The default is 'crypto-erase', but additionally, an 'overwrite' option
+is available which overwrites not only the data area, but also the label area,
+thus losing record of any namespaces the given NVDIMM participates in.
+
 OPTIONS
 -------
 <dimm>::
 include::xable-dimm-options.txt[]
+
+-c::
+--crypto-erase::
+	Replace the media encryption key on the NVDIMM causing all existing
+	data to read as cipher text with the new key. This does not change
+	label data. Namespaces get reverted to raw mode.
+
+-o::
+--ovewrite::
+	Wipe the entire DIMM, including label data. This can take significant
+	time, and the command is non-blocking. With this option, the overwrite
+	request is merely submitted to the NVDIMM, and the completion is
+	asynchronous.
 
 --verbose::
         Emit debug messages.

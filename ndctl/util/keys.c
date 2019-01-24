@@ -480,19 +480,19 @@ int ndctl_dimm_update_key(struct ndctl_dimm *dimm, const char *kek)
 	return 0;
 }
 
-static key_serial_t check_dimm_key(struct ndctl_dimm *dimm)
+static key_serial_t check_dimm_key(struct ndctl_dimm *dimm, bool need_key)
 {
 	key_serial_t key;
 
 	key = dimm_check_key(dimm, false);
 	if (key < 0) {
 		key = dimm_load_key(dimm, false);
-		if (key < 0) {
+		if (key < 0 && need_key) {
 			fprintf(stderr, "Unable to load key\n");
 			return -ENOKEY;
-		}
+		} else
+			key = 0;
 	}
-
 	return key;
 }
 
@@ -521,6 +521,7 @@ static int discard_key(struct ndctl_dimm *dimm)
 		fprintf(stderr, "Unable to cleanup key.\n");
 		return rc;
 	}
+
 	return 0;
 }
 
@@ -529,7 +530,7 @@ int ndctl_dimm_remove_key(struct ndctl_dimm *dimm)
 	key_serial_t key;
 	int rc;
 
-	key = check_dimm_key(dimm);
+	key = check_dimm_key(dimm, true);
 	if (key < 0)
 		return key;
 
@@ -546,7 +547,7 @@ int ndctl_dimm_secure_erase_key(struct ndctl_dimm *dimm)
 	key_serial_t key;
 	int rc;
 
-	key = check_dimm_key(dimm);
+	key = check_dimm_key(dimm, true);
 	if (key < 0)
 		return key;
 
@@ -556,4 +557,24 @@ int ndctl_dimm_secure_erase_key(struct ndctl_dimm *dimm)
 		return rc;
 
 	return discard_key(dimm);
+}
+
+int ndctl_dimm_overwrite_key(struct ndctl_dimm *dimm)
+{
+	key_serial_t key;
+	int rc;
+
+	key = check_dimm_key(dimm, false);
+	if (key < 0)
+		return key;
+
+	rc = run_key_op(dimm, key, ndctl_dimm_overwrite,
+			"overwrite");
+	if (rc < 0)
+		return rc;
+
+	if (key > 0)
+		return discard_key(dimm);
+
+	return 0;
 }

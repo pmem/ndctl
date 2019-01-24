@@ -47,6 +47,8 @@ static struct parameters {
 	const char *infile;
 	const char *labelversion;
 	const char *kek;
+	bool crypto_erase;
+	bool overwrite;
 	bool force;
 	bool json;
 	bool verbose;
@@ -906,9 +908,26 @@ static int action_sanitize_dimm(struct ndctl_dimm *dimm,
 		return -EOPNOTSUPP;
 	}
 
-	rc = ndctl_dimm_secure_erase_key(dimm);
-	if (rc < 0)
-		return rc;
+	/*
+	 * Setting crypto erase to be default. The other method will be
+	 * overwrite.
+	 */
+	if (!param.crypto_erase && !param.overwrite) {
+		param.crypto_erase = true;
+		printf("No santize method passed in, default to crypto-erase\n");
+	}
+
+	if (param.crypto_erase) {
+		rc = ndctl_dimm_secure_erase_key(dimm);
+		if (rc < 0)
+			return rc;
+	}
+
+	if (param.overwrite) {
+		rc = ndctl_dimm_overwrite_key(dimm);
+		if (rc < 0)
+			return rc;
+	}
 
 	return 0;
 }
@@ -1006,6 +1025,12 @@ OPT_STRING('V', "label-version", &param.labelversion, "version-number", \
 OPT_STRING('k', "key-handle", &param.kek, "key-handle", \
 		"master encryption key handle")
 
+#define SANITIZE_OPTIONS() \
+OPT_BOOLEAN('c', "crypto-erase", &param.crypto_erase, \
+		"crypto erase a dimm"), \
+OPT_BOOLEAN('o', "overwrite", &param.overwrite, \
+		"overwrite a dimm")
+
 static const struct option read_options[] = {
 	BASE_OPTIONS(),
 	READ_OPTIONS(),
@@ -1038,6 +1063,11 @@ static const struct option init_options[] = {
 static const struct option key_options[] = {
 	BASE_OPTIONS(),
 	KEY_OPTIONS(),
+};
+
+static const struct option sanitize_options[] = {
+	BASE_OPTIONS(),
+	SANITIZE_OPTIONS(),
 	OPT_END(),
 };
 
@@ -1315,10 +1345,14 @@ int cmd_freeze_security(int argc, const char **argv, void *ctx)
 int cmd_sanitize_dimm(int argc, const char **argv, void *ctx)
 {
 	int count = dimm_action(argc, argv, ctx, action_sanitize_dimm,
-			base_options,
+			sanitize_options,
 			"ndctl sanitize-dimm <nmem0> [<nmem1>..<nmemN>] [<options>]");
 
-	fprintf(stderr, "sanitized %d nmem%s.\n", count >= 0 ? count : 0,
-			count > 1 ? "s" : "");
+	if (param.overwrite)
+		fprintf(stderr, "overwrite issued for %d nmem%s.\n",
+				count >= 0 ? count : 0, count > 1 ? "s" : "");
+	else
+		fprintf(stderr, "sanitized %d nmem%s.\n",
+				count >= 0 ? count : 0, count > 1 ? "s" : "");
 	return count >= 0 ? 0 : EXIT_FAILURE;
 }
