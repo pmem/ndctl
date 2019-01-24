@@ -539,13 +539,14 @@ int ndctl_dimm_update_key(struct ndctl_dimm *dimm, const char *kek,
 	return 0;
 }
 
-static key_serial_t check_dimm_key(struct ndctl_dimm *dimm, bool need_key)
+static key_serial_t check_dimm_key(struct ndctl_dimm *dimm, bool need_key,
+		enum ndctl_key_type key_type)
 {
 	key_serial_t key;
 
-	key = dimm_check_key(dimm, ND_USER_KEY);
+	key = dimm_check_key(dimm, key_type);
 	if (key < 0) {
-		key = dimm_load_key(dimm, ND_USER_KEY);
+		key = dimm_load_key(dimm, key_type);
 		if (key < 0 && need_key) {
 			fprintf(stderr, "Unable to load key\n");
 			return -ENOKEY;
@@ -589,7 +590,7 @@ int ndctl_dimm_remove_key(struct ndctl_dimm *dimm)
 	key_serial_t key;
 	int rc;
 
-	key = check_dimm_key(dimm, true);
+	key = check_dimm_key(dimm, true, ND_USER_KEY);
 	if (key < 0)
 		return key;
 
@@ -601,21 +602,31 @@ int ndctl_dimm_remove_key(struct ndctl_dimm *dimm)
 	return discard_key(dimm);
 }
 
-int ndctl_dimm_secure_erase_key(struct ndctl_dimm *dimm)
+int ndctl_dimm_secure_erase_key(struct ndctl_dimm *dimm,
+		enum ndctl_key_type key_type)
 {
 	key_serial_t key;
 	int rc;
 
-	key = check_dimm_key(dimm, true);
+	key = check_dimm_key(dimm, true, key_type);
 	if (key < 0)
 		return key;
 
-	rc = run_key_op(dimm, key, ndctl_dimm_secure_erase,
-			"crypto erase");
+	if (key_type == ND_MASTER_KEY)
+		rc = run_key_op(dimm, key, ndctl_dimm_master_secure_erase,
+				"master crypto erase");
+	else if (key_type == ND_USER_KEY)
+		rc = run_key_op(dimm, key, ndctl_dimm_secure_erase,
+				"crypto erase");
+	else
+		rc = -EINVAL;
 	if (rc < 0)
 		return rc;
 
-	return discard_key(dimm);
+	if (key_type == ND_USER_KEY)
+		return discard_key(dimm);
+
+	return 0;
 }
 
 int ndctl_dimm_overwrite_key(struct ndctl_dimm *dimm)
@@ -623,7 +634,7 @@ int ndctl_dimm_overwrite_key(struct ndctl_dimm *dimm)
 	key_serial_t key;
 	int rc;
 
-	key = check_dimm_key(dimm, false);
+	key = check_dimm_key(dimm, false, ND_USER_KEY);
 	if (key < 0)
 		return key;
 

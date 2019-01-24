@@ -51,6 +51,11 @@ include::xable-dimm-options.txt[]
 	request is merely submitted to the NVDIMM, and the completion is
 	asynchronous.
 
+-m::
+--master_passphrase::
+	Indicate that we are using the master passphrase to perform the erase.
+	This only is applicable to the 'crypto-erase' option.
+
 --verbose::
         Emit debug messages.
 
