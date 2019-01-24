@@ -60,4 +60,4 @@ include::../copyright.txt[]
 
 SEE ALSO
 --------
-https://trustedcomputinggroup.org/wp-content/uploads/TCG_SWG_SIIS_Version_1_07_Revision_1_00.pdf
+linkndctl:ndctl-wait-overwrite[1], https://trustedcomputinggroup.org/wp-content/uploads/TCG_SWG_SIIS_Version_1_07_Revision_1_00.pdf

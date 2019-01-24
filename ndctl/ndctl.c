@@ -94,6 +94,7 @@ static struct cmd_struct commands[] = {
 	{ "freeze-security", { cmd_freeze_security } },
 	{ "sanitize-dimm", { cmd_sanitize_dimm } },
 	{ "load-keys", { cmd_load_keys } },
+	{ "wait-overwrite", { cmd_wait_overwrite } },
 	{ "list", { cmd_list } },
 	{ "monitor", { cmd_monitor } },
 	{ "help", { cmd_help } },

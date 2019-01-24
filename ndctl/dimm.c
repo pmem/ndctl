@@ -932,6 +932,24 @@ static int action_sanitize_dimm(struct ndctl_dimm *dimm,
 	return 0;
 }
 
+static int action_wait_overwrite(struct ndctl_dimm *dimm,
+		struct action_context *actx)
+{
+	int rc;
+
+	if (ndctl_dimm_get_security(dimm) < 0) {
+		error("%s: security operation not supported\n",
+				ndctl_dimm_get_devname(dimm));
+		return -EOPNOTSUPP;
+	}
+
+	rc = ndctl_dimm_wait_overwrite(dimm);
+	if (rc == 1)
+		printf("%s: overwrite completed.\n",
+				ndctl_dimm_get_devname(dimm));
+	return rc;
+}
+
 static int __action_init(struct ndctl_dimm *dimm,
 		enum ndctl_namespace_version version, int chk_only)
 {
@@ -1354,5 +1372,14 @@ int cmd_sanitize_dimm(int argc, const char **argv, void *ctx)
 	else
 		fprintf(stderr, "sanitized %d nmem%s.\n",
 				count >= 0 ? count : 0, count > 1 ? "s" : "");
+	return count >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_wait_overwrite(int argc, const char **argv, void *ctx)
+{
+	int count = dimm_action(argc, argv, ctx, action_wait_overwrite,
+			base_options,
+			"ndctl wait-overwrite <nmem0> [<nmem1>..<nmemN>] [<options>]");
+
 	return count >= 0 ? 0 : EXIT_FAILURE;
 }
