@@ -2,6 +2,8 @@
 
 # Taken from perf's completion script.
 
+### common helpers between ndctl and daxctl
+
 __my_reassemble_comp_words_by_ref()
 {
 	local exclude i j first
@@ -49,7 +51,7 @@ __my_reassemble_comp_words_by_ref()
 }
 
 # Define preload_get_comp_words_by_ref="false", if the function
-# __ndctl_get_comp_words_by_ref() is required instead.
+# __nd_common_get_comp_words_by_ref() is required instead.
 preload_get_comp_words_by_ref="true"
 
 if [ $preload_get_comp_words_by_ref = "true" ]; then
@@ -57,7 +59,7 @@ if [ $preload_get_comp_words_by_ref = "true" ]; then
 	preload_get_comp_words_by_ref="false"
 fi
 [ $preload_get_comp_words_by_ref = "true" ] ||
-__ndctl_get_comp_words_by_ref()
+__nd_common_get_comp_words_by_ref()
 {
 	local exclude cur_ words_ cword_
 	if [ "$1" = "-n" ]; then
@@ -84,6 +86,29 @@ __ndctl_get_comp_words_by_ref()
 		shift
 	done
 }
+
+__nd_common_prev_skip_opts ()
+{
+	local i cmd_ cmds_
+
+	let i=cword-1
+	cmds_=$($cmd $1 --list-cmds)
+	prev_skip_opts=()
+	while [ $i -ge 0 ]; do
+		if [[ ${words[i]} == $1 ]]; then
+			return
+		fi
+		for cmd_ in $cmds_; do
+			if [[ ${words[i]} == $cmd_ ]]; then
+				prev_skip_opts=${words[i]}
+				return
+			fi
+		done
+		((i--))
+	done
+}
+
+### ndctl
 
 __ndctlcomp()
 {
@@ -351,27 +376,6 @@ __ndctl_add_special_opts()
 	esac
 }
 
-__ndctl_prev_skip_opts ()
-{
-	local i cmd_ cmds_
-
-	let i=cword-1
-	cmds_=$($cmd $1 --list-cmds)
-	prev_skip_opts=()
-	while [ $i -ge 0 ]; do
-		if [[ ${words[i]} == $1 ]]; then
-			return
-		fi
-		for cmd_ in $cmds_; do
-			if [[ ${words[i]} == $cmd_ ]]; then
-				prev_skip_opts=${words[i]}
-				return
-			fi
-		done
-		((i--))
-	done
-}
-
 __ndctl_init_filters()
 {
 	bus_filter=''
@@ -430,7 +434,7 @@ __ndctl_main()
 	__ndctl_init_filters
 
 	# Skip options backward and find the last ndctl command
-	__ndctl_prev_skip_opts
+	__nd_common_prev_skip_opts
 	subcmd=$prev_skip_opts
 	# List ndctl subcommands or long options
 	if [ -z $subcmd ]; then
@@ -498,9 +502,106 @@ _ndctl()
 	if [ $preload_get_comp_words_by_ref = "true" ]; then
 		_get_comp_words_by_ref -n =: cur words cword prev
 	else
-		__ndctl_get_comp_words_by_ref -n =: cur words cword prev
+		__nd_common_get_comp_words_by_ref -n =: cur words cword prev
 	fi
 	__ndctl_main
-} &&
+}
 
-complete -o nospace -F _ndctl ndctl 2>/dev/null
+### daxctl ###
+
+__daxctl_get_devs()
+{
+	local opts="--devices $*"
+	echo "$(daxctl list $opts | grep -E "^\s*\"chardev\":" | cut -d\" -f4)"
+}
+
+__daxctlcomp()
+{
+	local i=0
+
+	COMPREPLY=( $( compgen -W "$1" -- "$2" ) )
+	for cword in "${COMPREPLY[@]}"; do
+		if [[ "$cword" == @(--region|--dev) ]]; then
+			COMPREPLY[$i]="${cword}="
+		else
+			COMPREPLY[$i]="${cword} "
+		fi
+		((i++))
+	done
+}
+
+__daxctl_comp_options()
+{
+
+	local cur=$1
+	local opts
+
+	if [[ "$cur" == *=* ]]; then
+		local cur_subopt=${cur%%=*}
+		local cur_arg=${cur##*=}
+		case $cur_subopt in
+		--region)
+			opts=$(__ndctl_get_regions -i)
+			;;
+		--dev)
+			opts=$(__daxctl_get_devs -i)
+			;;
+		*)
+			return
+			;;
+		esac
+		__daxctlcomp "$opts" "$cur_arg"
+	fi
+}
+
+__daxctl_comp_non_option_args()
+{
+	# there aren't any commands that accept non option arguments yet
+	return
+}
+
+__daxctl_main()
+{
+	local cmd subcmd
+
+	cmd=${words[0]}
+	COMPREPLY=()
+
+	# Skip options backward and find the last daxctl command
+	__nd_common_prev_skip_opts
+	subcmd=$prev_skip_opts
+	# List daxctl subcommands or long options
+	if [ -z $subcmd ]; then
+		if [[ $cur == --* ]]; then
+			cmds="--version --help --list-cmds"
+		else
+			cmds=$($cmd --list-cmds)
+		fi
+		__daxctlcomp "$cmds" "$cur"
+	else
+		# List long option names
+		if [[ $cur == --* ]];  then
+			opts=$($cmd $subcmd --list-opts)
+			__daxctlcomp "$opts" "$cur"
+			__daxctl_comp_options "$cur"
+		else
+			[ -z "$subcmd" ] && return
+			__daxctl_comp_non_option_args "$subcmd" "$cur"
+		fi
+	fi
+}
+
+type daxctl &>/dev/null &&
+_daxctl()
+{
+	local cur words cword prev
+	if [ $preload_get_comp_words_by_ref = "true" ]; then
+		_get_comp_words_by_ref -n =: cur words cword prev
+	else
+		__nd_common_get_comp_words_by_ref -n =: cur words cword prev
+	fi
+	__daxctl_main
+}
+
+complete -o nospace -F _ndctl ndctl
+complete -o nospace -F _daxctl daxctl
