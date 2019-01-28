@@ -3,7 +3,6 @@ Version:	VERSION
 Release:	1%{?dist}
 Summary:	Manage "libnvdimm" subsystem devices (Non-volatile Memory)
 License:	GPLv2
-Group:		System Environment/Base
 Url:		https://github.com/pmem/ndctl
 Source0:	https://github.com/pmem/%{name}/archive/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
 
@@ -32,7 +31,6 @@ Firmware Interface Table).
 %package -n DNAME
 Summary:	Development files for libndctl
 License:	LGPLv2
-Group:		Development/Libraries
 Requires:	LNAME%{?_isa} = %{version}-%{release}
 
 %description -n DNAME
@@ -42,7 +40,6 @@ developing applications that use %{name}.
 %package -n daxctl
 Summary:	Manage Device-DAX instances
 License:	GPLv2
-Group:		System Environment/Base
 Requires:	DAX_LNAME%{?_isa} = %{version}-%{release}
 
 %description -n daxctl
@@ -54,7 +51,6 @@ filesystem.
 %package -n DAX_DNAME
 Summary:	Development files for libdaxctl
 License:	LGPLv2
-Group:		Development/Libraries
 Requires:	DAX_LNAME%{?_isa} = %{version}-%{release}
 
 %description -n DAX_DNAME
@@ -67,7 +63,6 @@ mappings of performance / feature-differentiated memory.
 %package -n LNAME
 Summary:	Management library for "libnvdimm" subsystem devices (Non-volatile Memory)
 License:	LGPLv2
-Group:		System Environment/Libraries
 Requires:	DAX_LNAME%{?_isa} = %{version}-%{release}
 
 
@@ -77,7 +72,6 @@ Libraries for %{name}.
 %package -n DAX_LNAME
 Summary:	Management library for "Device DAX" devices
 License:	LGPLv2
-Group:		System Environment/Libraries
 
 %description -n DAX_LNAME
 Device DAX is a facility for establishing DAX mappings of performance /
