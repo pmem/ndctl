@@ -2710,7 +2710,7 @@ NDCTL_EXPORT int ndctl_cmd_xlat_firmware_status(struct ndctl_cmd *cmd)
 	struct ndctl_dimm_ops *ops = dimm ? dimm->ops : NULL;
 
 	if (!dimm || !ops || !ops->xlat_firmware_status)
-		return -ENOMSG;
+		return 0;
 	return ops->xlat_firmware_status(cmd);
 }
 
