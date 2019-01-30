@@ -469,6 +469,8 @@ static int validate_namespace_options(struct ndctl_region *region,
 {
 	const char *region_name = ndctl_region_get_devname(region);
 	unsigned long long size_align = SZ_4K, units = 1, resource;
+	struct ndctl_pfn *pfn = NULL;
+	struct ndctl_dax *dax = NULL;
 	unsigned int ways;
 	int rc = 0;
 
@@ -525,10 +527,24 @@ static int validate_namespace_options(struct ndctl_region *region,
 	} else if (ndns)
 		p->mode = ndctl_namespace_get_mode(ndns);
 
-	if (param.align) {
-		struct ndctl_pfn *pfn = ndctl_region_get_pfn_seed(region);
-		struct ndctl_dax *dax = ndctl_region_get_dax_seed(region);
+	if (p->mode == NDCTL_NS_MODE_MEMORY) {
+		pfn = ndctl_region_get_pfn_seed(region);
+		if (!pfn && param.mode_default) {
+			debug("%s fsdax mode not available\n", region_name);
+			p->mode = NDCTL_NS_MODE_RAW;
+		}
+		/*
+		 * NB: We only fail validation if a pfn-specific option is used
+		 */
+	} else if (p->mode == NDCTL_NS_MODE_DAX) {
+		dax = ndctl_region_get_dax_seed(region);
+		if (!dax) {
+			error("Kernel does not support devdax mode\n");
+			return -ENODEV;
+		}
+	}
 
+	if (param.align) {
 		p->align = parse_size64(param.align);
 
 		if (p->mode == NDCTL_NS_MODE_MEMORY && p->align != SZ_2M
@@ -709,30 +725,12 @@ static int validate_namespace_options(struct ndctl_region *region,
 			|| p->mode == NDCTL_NS_MODE_DAX)
 		p->loc = NDCTL_PFN_LOC_PMEM;
 
-	/* check if we need, and whether the kernel supports, pfn devices */
-	if (do_setup_pfn(ndns, p)) {
-		struct ndctl_pfn *pfn = ndctl_region_get_pfn_seed(region);
-
-		if (!pfn && param.mode_default) {
-			debug("%s fsdax mode not available\n", region_name);
-			p->mode = NDCTL_NS_MODE_RAW;
-		} else if (!pfn) {
-			error("operation failed, %s fsdax mode not available\n",
-					region_name);
-			return -EINVAL;
-		}
+	if (!pfn && do_setup_pfn(ndns, p)) {
+		error("operation failed, %s cannot support requested mode\n",
+			region_name);
+		return -EINVAL;
 	}
 
-	/* check if we need, and whether the kernel supports, dax devices */
-	if (p->mode == NDCTL_NS_MODE_DAX) {
-		struct ndctl_dax *dax = ndctl_region_get_dax_seed(region);
-
-		if (!dax) {
-			error("operation failed, %s devdax mode not available\n",
-					region_name);
-			return -EINVAL;
-		}
-	}
 
 	p->autolabel = param.autolabel;
 
