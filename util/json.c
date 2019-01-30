@@ -753,6 +753,7 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 	struct ndctl_btt *btt;
 	struct ndctl_pfn *pfn;
 	struct ndctl_dax *dax;
+	unsigned long align = 0;
 	char buf[40];
 	uuid_t uuid;
 	int numa;
@@ -825,6 +826,7 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 		util_raw_uuid_to_json(ndns, flags, jndns);
 		bdev = ndctl_btt_get_block_device(btt);
 	} else if (pfn) {
+		align = ndctl_pfn_get_align(pfn);
 		ndctl_pfn_get_uuid(pfn, uuid);
 		uuid_unparse(uuid, buf);
 		jobj = json_object_new_string(buf);
@@ -837,6 +839,7 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 		struct daxctl_region *dax_region;
 
 		dax_region = ndctl_dax_get_daxctl_region(dax);
+		align = ndctl_dax_get_align(dax);
 		ndctl_dax_get_uuid(dax, uuid);
 		uuid_unparse(uuid, buf);
 		jobj = json_object_new_string(buf);
@@ -895,6 +898,13 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 		if (!jobj)
 			goto err;
 		json_object_object_add(jndns, "sector_size", jobj);
+	}
+
+	if (align) {
+		jobj = json_object_new_int64(align);
+		if (!jobj)
+			goto err;
+		json_object_object_add(jndns, "align", jobj);
 	}
 
 	if (bdev && bdev[0]) {
