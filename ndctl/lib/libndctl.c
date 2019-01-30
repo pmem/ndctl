@@ -461,6 +461,7 @@ static void free_namespace(struct ndctl_namespace *ndns, struct list_head *head)
 	free(ndns->ndns_buf);
 	free(ndns->bdev);
 	free(ndns->alt_name);
+	badblocks_iter_free(&ndns->bb_iter);
 	kmod_module_unref(ndns->module);
 	free(ndns);
 }
