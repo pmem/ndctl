@@ -390,4 +390,8 @@ LIBNDCTL_19 {
 global:
 	ndctl_cmd_xlat_firmware_status;
 	ndctl_cmd_submit_xlat;
+	ndctl_pfn_get_supported_alignment;
+	ndctl_pfn_get_num_alignments;
+	ndctl_dax_get_supported_alignment;
+	ndctl_dax_get_num_alignments;
 } LIBNDCTL_18;
