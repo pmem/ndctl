@@ -893,7 +893,7 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 	 * happens because they use pre-v1.2 labels or because they
 	 * don't have a label space (devtype=nd_namespace_io).
 	 */
-	if (sector_size < UINT_MAX && flags & UTIL_JSON_VERBOSE) {
+	if (sector_size < UINT_MAX) {
 		jobj = json_object_new_int(sector_size);
 		if (!jobj)
 			goto err;
