@@ -116,7 +116,7 @@ __ndctlcomp()
 
 	COMPREPLY=( $( compgen -W "$1" -- "$2" ) )
 	for cword in "${COMPREPLY[@]}"; do
-		if [[ "$cword" == @(--bus|--region|--type|--mode|--size|--dimm|--reconfig|--uuid|--name|--sector-size|--map|--namespace|--input|--output|--label-version|--align|--block|--count|--firmware|--media-temperature|--ctrl-temperature|--spares|--media-temperature-threshold|--ctrl-temperature-threshold|--spares-threshold|--media-temperature-alarm|--ctrl-temperature-alarm|--spares-alarm|--numa-node|--log|--dimm-event|--config-file) ]]; then
+		if [[ "$cword" == @(--bus|--region|--type|--mode|--size|--dimm|--reconfig|--uuid|--name|--sector-size|--map|--namespace|--input|--output|--label-version|--align|--block|--count|--firmware|--media-temperature|--ctrl-temperature|--spares|--media-temperature-threshold|--ctrl-temperature-threshold|--spares-threshold|--media-temperature-alarm|--ctrl-temperature-alarm|--spares-alarm|--numa-node|--log|--dimm-event|--config-file|--key-handle|--key-path|--tpm-handle) ]]; then
 			COMPREPLY[$i]="${cword}="
 		else
 			COMPREPLY[$i]="${cword} "
@@ -298,6 +298,10 @@ __ndctl_comp_options()
 			__ndctl_file_comp "$cur_arg"
 			return
 			;;
+		--key-path)
+			__ndctl_file_comp "$cur_arg"
+			return
+			;;
 		*)
 			return
 			;;
@@ -357,6 +361,19 @@ __ndctl_comp_non_option_args()
 		;&
 	start-scrub)
 		opts="$(__ndctl_get_buses) all"
+		;;
+	setup-passphrase)
+		;&
+	update-passphrase)
+		;&
+	remove-passphrase)
+		;&
+	freeze-security)
+		;&
+	sanitize-dimm)
+		;&
+	wait-overwrite)
+		opts="$(__ndctl_get_dimms -i) all"
 		;;
 	*)
 		return
