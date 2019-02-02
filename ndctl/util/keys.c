@@ -260,14 +260,15 @@ static key_serial_t dimm_create_key(struct ndctl_dimm *dimm,
 
 	 wrote = fwrite(buffer, 1, size, fp);
 	 if (wrote != size) {
-		 if (wrote == -1)
-			 rc = -errno;
-		 else
-			 rc = -EIO;
-		 fprintf(stderr, "Failed to write to %s: %s\n",
-				 path, strerror(-rc));
-		 free(buffer);
-		 return rc;
+		if (wrote == -1)
+			rc = -errno;
+		else
+			rc = -EIO;
+		fprintf(stderr, "Failed to write to %s: %s\n",
+				path, strerror(-rc));
+		fclose(fp);
+		free(buffer);
+		return rc;
 	 }
 
 	 fclose(fp);
