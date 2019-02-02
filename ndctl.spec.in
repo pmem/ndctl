@@ -109,6 +109,7 @@ make check
 %{_mandir}/man1/ndctl*
 %{bashcompdir}/
 %{_unitdir}/ndctl-monitor.service
+%{_sysconfdir}/ndctl/keys/keys.readme
 %{_sysconfdir}/modprobe.d/nvdimm-security.conf
 
 %config(noreplace) %{_sysconfdir}/ndctl/monitor.conf

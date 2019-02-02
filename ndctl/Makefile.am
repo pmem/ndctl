@@ -29,6 +29,8 @@ ndctl_SOURCES = ndctl.c \
 if ENABLE_KEYUTILS
 ndctl_SOURCES += util/keys.c \
 		load-keys.c
+keys_configdir = $(ndctl_keysdir)
+keys_config_DATA = $(ndctl_keysreadme)
 endif
 
 if ENABLE_DESTRUCTIVE

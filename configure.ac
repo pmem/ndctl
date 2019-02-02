@@ -179,7 +179,9 @@ AS_IF([test "x$with_keyutils" = "xyes"],
 AM_CONDITIONAL([ENABLE_KEYUTILS], [test "x$with_keyutils" = "xyes"])
 
 ndctl_keysdir=${sysconfdir}/ndctl/keys
+ndctl_keysreadme=keys.readme
 AC_SUBST([ndctl_keysdir])
+AC_SUBST([ndctl_keysreadme])
 
 my_CFLAGS="\
 -Wall \
