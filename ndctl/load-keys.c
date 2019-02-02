@@ -86,7 +86,7 @@ static int load_dimm_keys(struct loadkeys *lk_ctx)
 {
 	int rc;
 	struct dirent *dent;
-	char *fname, *id, *blob;
+	char *fname = NULL, *id, *blob = NULL;
 	char desc[ND_KEY_DESC_SIZE];
 	int size, count = 0;
 	key_serial_t key;
@@ -107,13 +107,19 @@ static int load_dimm_keys(struct loadkeys *lk_ctx)
 		 * as the nvdimm id.
 		 */
 		id = strtok(fname, "_");
-		if (!id)
+		if (!id) {
+			free(fname);
 			continue;
-		if (strcmp(id, "nvdimm") != 0)
+		}
+		if (strcmp(id, "nvdimm") != 0) {
+			free(fname);
 			continue;
+		}
 		id = strtok(NULL, "_");
-		if (!id)
+		if (!id) {
+			free(fname);
 			continue;
+		}
 
 		blob = ndctl_load_key_blob(dent->d_name, &size, NULL,
 				lk_ctx->dirfd);
