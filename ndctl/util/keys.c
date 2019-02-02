@@ -393,6 +393,7 @@ static int verify_kek(struct ndctl_dimm *dimm, const char *kek)
 {
 	char *type, *desc, *key_handle;
 	key_serial_t key;
+	int rc = 0;
 
 	key_handle = strdup(kek);
 	if (!key_handle)
@@ -401,29 +402,34 @@ static int verify_kek(struct ndctl_dimm *dimm, const char *kek)
 	type = strtok(key_handle, ":");
 	if (!type) {
 		fprintf(stderr, "No key type found for kek handle\n");
-		return -EINVAL;
+		rc = -EINVAL;
+		goto out;
 	}
 
 	if (strcmp(type, "trusted") != 0 &&
 			strcmp(type, "user") != 0) {
 		fprintf(stderr, "No such key type: %s", type);
-		return -EINVAL;
+		rc = -EINVAL;
+		goto out;
 	}
 
 	desc = strtok(NULL, ":");
 	if (!desc) {
 		fprintf(stderr, "No description found for kek handle\n");
-		return -EINVAL;
+		rc = -EINVAL;
+		goto out;
 	}
 
 	key = keyctl_search(KEY_SPEC_USER_KEYRING, type, desc, 0);
 	if (key < 0) {
 		fprintf(stderr, "No key encryption key found\n");
-		return key;
+		rc = key;
+		goto out;
 	}
 
+out:
 	free(key_handle);
-	return 0;
+	return rc;
 }
 
 int ndctl_dimm_setup_key(struct ndctl_dimm *dimm, const char *kek,
