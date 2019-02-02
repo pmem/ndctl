@@ -582,7 +582,7 @@ NDCTL_EXPORT unsigned long ndctl_dimm_get_available_labels(
 	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
 	char *path = dimm->dimm_buf;
 	int rc, len = dimm->buf_len;
-	char buf[20];
+	char buf[SYSFS_ATTR_SIZE];
 
 	if (snprintf(path, len, "%s/available_slots", dimm->dimm_path) >= len) {
 		err(ctx, "%s: buffer too small!\n",
@@ -605,8 +605,8 @@ NDCTL_EXPORT enum ndctl_security_state ndctl_dimm_get_security(
 {
 	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
 	char *path = dimm->dimm_buf;
+	char buf[SYSFS_ATTR_SIZE];
 	int len = dimm->buf_len;
-	char buf[64];
 	int rc;
 
 	if (snprintf(path, len, "%s/security", dimm->dimm_path) >= len) {
