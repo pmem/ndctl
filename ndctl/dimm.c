@@ -51,6 +51,7 @@ static struct parameters {
 	bool overwrite;
 	bool zero_key;
 	bool master_pass;
+	bool human;
 	bool force;
 	bool json;
 	bool verbose;
@@ -80,7 +81,7 @@ static int action_zero(struct ndctl_dimm *dimm, struct action_context *actx)
 }
 
 static struct json_object *dump_label_json(struct ndctl_dimm *dimm,
-		struct ndctl_cmd *cmd_read, ssize_t size)
+		struct ndctl_cmd *cmd_read, ssize_t size, unsigned long flags)
 {
 	struct json_object *jarray = json_object_new_array();
 	struct json_object *jlabel = NULL;
@@ -141,12 +142,13 @@ static struct json_object *dump_label_json(struct ndctl_dimm *dimm,
 			break;
 		json_object_object_add(jlabel, "nlabel", jobj);
 
-		jobj = json_object_new_int64(le64_to_cpu(nslabel.flags));
+		jobj = util_json_object_hex(le32_to_cpu(nslabel.flags), flags);
 		if (!jobj)
 			break;
 		json_object_object_add(jlabel, "flags", jobj);
 
-		jobj = json_object_new_int64(le64_to_cpu(nslabel.isetcookie));
+		jobj = util_json_object_hex(le64_to_cpu(nslabel.isetcookie),
+				flags);
 		if (!jobj)
 			break;
 		json_object_object_add(jlabel, "isetcookie", jobj);
@@ -156,12 +158,12 @@ static struct json_object *dump_label_json(struct ndctl_dimm *dimm,
 			break;
 		json_object_object_add(jlabel, "lbasize", jobj);
 
-		jobj = json_object_new_int64(le64_to_cpu(nslabel.dpa));
+		jobj = util_json_object_hex(le64_to_cpu(nslabel.dpa), flags);
 		if (!jobj)
 			break;
 		json_object_object_add(jlabel, "dpa", jobj);
 
-		jobj = json_object_new_int64(le64_to_cpu(nslabel.rawsize));
+		jobj = util_json_object_size(le64_to_cpu(nslabel.rawsize), flags);
 		if (!jobj)
 			break;
 		json_object_object_add(jlabel, "rawsize", jobj);
@@ -266,6 +268,7 @@ static struct json_object *dump_index_json(struct ndctl_cmd *cmd_read, ssize_t s
 static struct json_object *dump_json(struct ndctl_dimm *dimm,
 		struct ndctl_cmd *cmd_read, ssize_t size)
 {
+	unsigned long flags = param.human ? UTIL_JSON_HUMAN : 0;
 	struct json_object *jdimm = json_object_new_object();
 	struct json_object *jlabel, *jobj, *jindex;
 
@@ -274,7 +277,7 @@ static struct json_object *dump_json(struct ndctl_dimm *dimm,
 	jindex = dump_index_json(cmd_read, size);
 	if (!jindex)
 		goto err_jindex;
-	jlabel = dump_label_json(dimm, cmd_read, size);
+	jlabel = dump_label_json(dimm, cmd_read, size, flags);
 	if (!jlabel)
 		goto err_jlabel;
 
@@ -1046,7 +1049,8 @@ OPT_BOOLEAN('v',"verbose", &param.verbose, "turn on debug")
 #define READ_OPTIONS() \
 OPT_STRING('o', "output", &param.outfile, "output-file", \
 	"filename to write label area contents"), \
-OPT_BOOLEAN('j', "json", &param.json, "parse label data into json")
+OPT_BOOLEAN('j', "json", &param.json, "parse label data into json"), \
+OPT_BOOLEAN('u', "human", &param.human, "use human friendly number formats ")
 
 #define WRITE_OPTIONS() \
 OPT_STRING('i', "input", &param.infile, "input-file", \
