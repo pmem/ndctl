@@ -141,6 +141,11 @@ static struct json_object *dump_label_json(struct ndctl_dimm *dimm,
 			break;
 		json_object_object_add(jlabel, "nlabel", jobj);
 
+		jobj = json_object_new_int64(le64_to_cpu(nslabel.flags));
+		if (!jobj)
+			break;
+		json_object_object_add(jlabel, "flags", jobj);
+
 		jobj = json_object_new_int64(le64_to_cpu(nslabel.isetcookie));
 		if (!jobj)
 			break;
