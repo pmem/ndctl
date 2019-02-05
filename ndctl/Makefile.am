@@ -47,6 +47,10 @@ ndctl_LDADD =\
 	$(KMOD_LIBS) \
 	$(JSON_LIBS)
 
+if ENABLE_KEYUTILS
+ndctl_LDADD += -lkeyutils
+endif
+
 if ENABLE_TEST
 ndctl_SOURCES += ../test/libndctl.c \
 		 ../test/dsm-fail.c \
