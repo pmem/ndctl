@@ -93,7 +93,9 @@ static struct cmd_struct commands[] = {
 	{ "remove-passphrase", { cmd_remove_passphrase } },
 	{ "freeze-security", { cmd_freeze_security } },
 	{ "sanitize-dimm", { cmd_sanitize_dimm } },
+#ifdef ENABLE_KEYUTILS
 	{ "load-keys", { cmd_load_keys } },
+#endif
 	{ "wait-overwrite", { cmd_wait_overwrite } },
 	{ "list", { cmd_list } },
 	{ "monitor", { cmd_monitor } },
