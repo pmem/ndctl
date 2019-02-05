@@ -207,7 +207,6 @@ my_CFLAGS="\
 -Wmissing-declarations \
 -Wmissing-prototypes \
 -Wnested-externs \
--Wpointer-arith \
 -Wshadow \
 -Wsign-compare \
 -Wstrict-prototypes \
