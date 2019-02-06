@@ -21,11 +21,12 @@ and dumping the json format notifications to syslog, standard output or
 a logfile.
 
 The objects to monitor and smart events to notify can be selected by
-setting options and/or the default configuration file
-(/etc/ndctl/monitor.conf). Both of the values in configuration file and
-in options will work. If there is a conflict, the values in options will
-override the values in configuration file. The changed values in
-configuration file will work after the monitor is restarted.
+setting options and/or the configuration file at /etc/ndctl/monitor.conf
+
+Both, the values in configuration file and in options will work. If
+there is a conflict, the values in options will override the values in
+the configuration file. Any updated values in the configuration file
+will take effect only after the monitor process is restarted.
 
 EXAMPLES
 ========
@@ -79,7 +80,7 @@ otherwise *standard*. Note that standard and relative path for
 
 `-c; --config-file=`  
 Provide the config file to use. This overrides the default config
-typically found in /etc/ndctl/
+typically found in /etc/ndctl
 
 `--daemon`  
 Run a monitor as a daemon.

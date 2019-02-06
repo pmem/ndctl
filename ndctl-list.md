@@ -98,6 +98,14 @@ Include bus info in the listing
 `-D; --dimms`  
 Include dimm info in the listing
 
+>     {
+>       "dev":"nmem0",
+>       "id":"cdab-0a-07e0-ffffffff",
+>       "handle":0,
+>       "phys_id":0,
+>       "security:":"disabled"
+>     }
+
 `-H; --health`  
 Include dimm health info in the listing. For example:
 
@@ -238,7 +246,7 @@ data. Convert other numeric fields into hexadecimal strings.
 COPYRIGHT
 =========
 
-Copyright (c) 2016 - 2018, Intel Corporation. License GPLv2: GNU GPL
+Copyright (c) 2016 - 2019, Intel Corporation. License GPLv2: GNU GPL
 version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
 are free to change and redistribute it. There is NO WARRANTY, to the
 extent permitted by law.
