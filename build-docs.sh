@@ -46,6 +46,7 @@ build_tree()
 {
 	./autogen.sh
 	./configure --enable-asciidoctor
+	make -C Documentation/ndctl attrs.adoc
 	make -C Documentation/ndctl asciidoctor-extensions.rb
 	make -C Documentation/daxctl asciidoctor-extensions.rb
 	build_ver=$(git describe HEAD --tags)
