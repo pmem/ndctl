@@ -306,6 +306,43 @@ DAXCTL_EXPORT struct daxctl_region *daxctl_new_region(struct daxctl_ctx *ctx,
 	return region;
 }
 
+static bool device_model_is_dax_bus(struct daxctl_dev *dev)
+{
+	const char *devname = daxctl_dev_get_devname(dev);
+	struct daxctl_ctx *ctx = daxctl_dev_get_ctx(dev);
+	char *path = dev->dev_buf, *resolved;
+	size_t len = dev->buf_len;
+	struct stat sb;
+
+	if (snprintf(path, len, "/dev/%s", devname) < 0)
+		return false;
+
+	if (lstat(path, &sb) < 0) {
+		err(ctx, "%s: stat for %s failed: %s\n",
+			devname, path, strerror(errno));
+		return false;
+	}
+
+	if (snprintf(path, len, "/sys/dev/char/%d:%d/subsystem",
+			major(sb.st_rdev), minor(sb.st_rdev)) < 0)
+		return false;
+
+	resolved = realpath(path, NULL);
+	if (!resolved) {
+		err(ctx, "%s:  unable to determine subsys: %s\n",
+			devname, strerror(errno));
+		return false;
+	}
+
+	if (strcmp(resolved, "/sys/bus/dax") == 0) {
+		free(resolved);
+		return true;
+	}
+
+	free(resolved);
+	return false;
+}
+
 static void *add_dax_dev(void *parent, int id, const char *daxdev_base)
 {
 	const char *devname = devpath_to_devname(daxdev_base);
@@ -557,6 +594,39 @@ static void dax_regions_init(struct daxctl_ctx *ctx)
 			continue;
 		__dax_regions_init(ctx, i);
 	}
+}
+
+static int is_enabled(const char *drvpath)
+{
+	struct stat st;
+
+	if (lstat(drvpath, &st) < 0 || !S_ISLNK(st.st_mode))
+		return 0;
+	else
+		return 1;
+}
+
+DAXCTL_EXPORT int daxctl_dev_is_enabled(struct daxctl_dev *dev)
+{
+	struct daxctl_ctx *ctx = daxctl_dev_get_ctx(dev);
+	char *path = dev->dev_buf;
+	int len = dev->buf_len;
+
+	if (!device_model_is_dax_bus(dev))
+		return 1;
+
+	if (snprintf(path, len, "%s/driver", dev->dev_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				daxctl_dev_get_devname(dev));
+		return 0;
+	}
+
+	return is_enabled(path);
+}
+
+DAXCTL_EXPORT struct daxctl_ctx *daxctl_dev_get_ctx(struct daxctl_dev *dev)
+{
+	return dev->region->ctx;
 }
 
 DAXCTL_EXPORT struct daxctl_dev *daxctl_dev_get_first(struct daxctl_region *region)
