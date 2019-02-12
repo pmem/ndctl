@@ -13,7 +13,9 @@
 #ifndef __NDCTL_NAMESPACE_H__
 #define __NDCTL_NAMESPACE_H__
 #include <sys/types.h>
+#include <util/util.h>
 #include <util/size.h>
+#include <util/fletcher.h>
 #include <ccan/endian/endian.h>
 #include <ccan/short_types/short_types.h>
 
@@ -202,4 +204,53 @@ struct arena_map {
 	struct btt_sb *info2;
 	size_t info2_len;
 };
+
+#define PFN_SIG_LEN 16
+#define PFN_SIG "NVDIMM_PFN_INFO\0"
+#define DAX_SIG "NVDIMM_DAX_INFO\0"
+
+struct pfn_sb {
+	u8 signature[PFN_SIG_LEN];
+	u8 uuid[16];
+	u8 parent_uuid[16];
+	le32 flags;
+	le16 version_major;
+	le16 version_minor;
+	le64 dataoff; /* relative to namespace_base + start_pad */
+	le64 npfns;
+	le32 mode;
+	/* minor-version-1 additions for section alignment */
+	le32 start_pad;
+	le32 end_trunc;
+	/* minor-version-2 record the base alignment of the mapping */
+	le32 align;
+	u8 padding[4000];
+	le64 checksum;
+};
+
+union info_block {
+	struct pfn_sb pfn_sb;
+	struct btt_sb btt_sb;
+};
+
+static inline bool verify_infoblock_checksum(union info_block *sb)
+{
+	uint64_t sum;
+	le64 sum_save;
+
+	BUILD_BUG_ON(sizeof(union info_block) != SZ_4K);
+
+	/* all infoblocks share the btt_sb layout for checksum */
+	sum_save = sb->btt_sb.checksum;
+	sb->btt_sb.checksum = 0;
+	sum = fletcher64(&sb->btt_sb, sizeof(*sb), 1);
+	if (sum != sum_save)
+		return false;
+	/* restore the checksum in the buffer */
+	sb->btt_sb.checksum = sum_save;
+
+	return true;
+}
+
+
 #endif /* __NDCTL_NAMESPACE_H__ */

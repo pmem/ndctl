@@ -21,6 +21,7 @@
 
 #include <ndctl.h>
 #include "action.h"
+#include "namespace.h"
 #include <sys/stat.h>
 #include <uuid/uuid.h>
 #include <sys/types.h>
@@ -40,6 +41,9 @@ static struct parameters {
 	bool do_scan;
 	bool mode_default;
 	bool autolabel;
+	bool no_verify;
+	bool human;
+	bool json;
 	const char *bus;
 	const char *map;
 	const char *type;
@@ -51,6 +55,8 @@ static struct parameters {
 	const char *reconfig;
 	const char *sector_size;
 	const char *align;
+	const char *outfile;
+	const char *infile;
 } param = {
 	.autolabel = true,
 };
@@ -78,6 +84,13 @@ struct parsed_parameters {
 	unsigned long align;
 	bool autolabel;
 };
+
+#define pr_verbose(fmt, ...) \
+	({if (verbose) { \
+		fprintf(stderr, fmt, ##__VA_ARGS__); \
+	} else { \
+		do { } while (0); \
+	}})
 
 #define debug(fmt, ...) \
 	({if (verbose) { \
@@ -120,6 +133,16 @@ OPT_BOOLEAN('R', "repair", &repair, "perform metadata repairs"), \
 OPT_BOOLEAN('L', "rewrite-log", &logfix, "regenerate the log"), \
 OPT_BOOLEAN('f', "force", &force, "check namespace even if currently active")
 
+#define READ_INFOBLOCK_OPTIONS() \
+OPT_FILENAME('o', "output", &param.outfile, "output-file", \
+	"filename to write label area contents"), \
+OPT_FILENAME('f', "file", &param.infile, "input-file", \
+	"filename to readinfo block instead of a namespace"), \
+OPT_BOOLEAN('n', "no-verify", &param.no_verify, \
+	"skip parent uuid, and checksum validation"), \
+OPT_BOOLEAN('j', "json", &param.json, "parse label data into json"), \
+OPT_BOOLEAN('u', "human", &param.human, "use human friendly number formats ")
+
 static const struct option base_options[] = {
 	BASE_OPTIONS(),
 	OPT_END(),
@@ -141,6 +164,12 @@ static const struct option create_options[] = {
 static const struct option check_options[] = {
 	BASE_OPTIONS(),
 	CHECK_OPTIONS(),
+	OPT_END(),
+};
+
+static const struct option read_infoblock_options[] = {
+	BASE_OPTIONS(),
+	READ_INFOBLOCK_OPTIONS(),
 	OPT_END(),
 };
 
@@ -285,15 +314,27 @@ static const char *parse_namespace_options(int argc, const char **argv,
 			case ACTION_CHECK:
 				action_string = "check";
 				break;
+			case ACTION_READ_INFOBLOCK:
+				action_string = "read-infoblock";
+				break;
 			default:
 				action_string = "<>";
 				break;
 		}
-		error("specify a namespace to %s, or \"all\"\n", action_string);
-		rc = -EINVAL;
+
+		if ((mode == ACTION_READ_INFOBLOCK && !param.infile)
+				|| mode != ACTION_READ_INFOBLOCK) {
+			error("specify a namespace to %s, or \"all\"\n", action_string);
+			rc = -EINVAL;
+		}
 	}
 	for (i = mode == ACTION_CREATE ? 0 : 1; i < argc; i++) {
 		error("unknown extra parameter \"%s\"\n", argv[i]);
+		rc = -EINVAL;
+	}
+
+	if (mode == ACTION_READ_INFOBLOCK && param.infile && argc) {
+		error("specify a namespace, or --file, not both\n");
 		rc = -EINVAL;
 	}
 
@@ -1051,10 +1092,319 @@ static int namespace_reconfig(struct ndctl_region *region,
 int namespace_check(struct ndctl_namespace *ndns, bool verbose, bool force,
 		bool repair, bool logfix);
 
+struct read_infoblock_ctx {
+	struct json_object *jblocks;
+	FILE *f_out;
+};
+
+#define parse_field(sb, field)						\
+	jobj = json_object_new_int(le32_to_cpu((sb)->field));		\
+	if (!jobj)							\
+		goto err;						\
+	json_object_object_add(jblock, #field, jobj);
+
+#define parse_hex(sb, field, sz)						\
+	jobj = util_json_object_hex(le##sz##_to_cpu((sb)->field), flags);	\
+	if (!jobj)								\
+		goto err;							\
+	json_object_object_add(jblock, #field, jobj);
+
+
+static json_object *btt_parse(struct btt_sb *btt_sb, struct ndctl_namespace *ndns,
+		const char *path, unsigned long flags)
+{
+	uuid_t uuid;
+	char str[40];
+	struct json_object *jblock, *jobj;
+	const char *cmd = "read-info-block";
+	const bool verify = !param.no_verify;
+
+	if (verify && !verify_infoblock_checksum((union info_block *) btt_sb)) {
+		pr_verbose("%s: %s checksum verification failed\n", cmd, __func__);
+		return NULL;
+	}
+
+	if (ndns) {
+		ndctl_namespace_get_uuid(ndns, uuid);
+		if (verify && !uuid_is_null(uuid) && memcmp(uuid, btt_sb->parent_uuid,
+					sizeof(uuid) != 0)) {
+			pr_verbose("%s: %s uuid verification failed\n", cmd, __func__);
+			return NULL;
+		}
+	}
+
+	jblock = json_object_new_object();
+	if (!jblock)
+		return NULL;
+
+	if (ndns) {
+		jobj = json_object_new_string(ndctl_namespace_get_devname(ndns));
+		if (!jobj)
+			goto err;
+		json_object_object_add(jblock, "dev", jobj);
+	} else {
+		jobj = json_object_new_string(path);
+		if (!jobj)
+			goto err;
+		json_object_object_add(jblock, "file", jobj);
+	}
+
+	jobj = json_object_new_string((char *) btt_sb->signature);
+	if (!jobj)
+		goto err;
+	json_object_object_add(jblock, "signature", jobj);
+
+	uuid_unparse((void *) btt_sb->uuid, str);
+	jobj = json_object_new_string(str);
+	if (!jobj)
+		goto err;
+	json_object_object_add(jblock, "uuid", jobj);
+
+	uuid_unparse((void *) btt_sb->parent_uuid, str);
+	jobj = json_object_new_string(str);
+	if (!jobj)
+		goto err;
+	json_object_object_add(jblock, "parent_uuid", jobj);
+
+	jobj = util_json_object_hex(le32_to_cpu(btt_sb->flags), flags);
+	if (!jobj)
+		goto err;
+	json_object_object_add(jblock, "flags", jobj);
+
+	if (snprintf(str, 4, "%d.%d", btt_sb->version_major,
+				btt_sb->version_minor) >= 4)
+		goto err;
+	jobj = json_object_new_string(str);
+	if (!jobj)
+		goto err;
+	json_object_object_add(jblock, "version", jobj);
+
+	parse_field(btt_sb, external_lbasize);
+	parse_field(btt_sb, external_nlba);
+	parse_field(btt_sb, internal_lbasize);
+	parse_field(btt_sb, internal_nlba);
+	parse_field(btt_sb, nfree);
+	parse_field(btt_sb, infosize);
+	parse_hex(btt_sb, nextoff, 64);
+	parse_hex(btt_sb, dataoff, 64);
+	parse_hex(btt_sb, mapoff, 64);
+	parse_hex(btt_sb, logoff, 64);
+	parse_hex(btt_sb, info2off, 64);
+
+	return jblock;
+err:
+	pr_verbose("%s: failed to create json representation\n", cmd);
+	json_object_put(jblock);
+	return NULL;
+}
+
+static json_object *pfn_parse(struct pfn_sb *pfn_sb, struct ndctl_namespace *ndns,
+		const char *path, unsigned long flags)
+{
+	uuid_t uuid;
+	char str[40];
+	struct json_object *jblock, *jobj;
+	const char *cmd = "read-info-block";
+	const bool verify = !param.no_verify;
+
+	if (verify && !verify_infoblock_checksum((union info_block *) pfn_sb)) {
+		pr_verbose("%s: %s checksum verification failed\n", cmd, __func__);
+		return NULL;
+	}
+
+	if (ndns) {
+		ndctl_namespace_get_uuid(ndns, uuid);
+		if (verify && !uuid_is_null(uuid) && memcmp(uuid, pfn_sb->parent_uuid,
+					sizeof(uuid) != 0)) {
+			pr_verbose("%s: %s uuid verification failed\n", cmd, __func__);
+			return NULL;
+		}
+	}
+
+	jblock = json_object_new_object();
+	if (!jblock)
+		return NULL;
+
+	if (ndns) {
+		jobj = json_object_new_string(ndctl_namespace_get_devname(ndns));
+		if (!jobj)
+			goto err;
+		json_object_object_add(jblock, "dev", jobj);
+	} else {
+		jobj = json_object_new_string(path);
+		if (!jobj)
+			goto err;
+		json_object_object_add(jblock, "file", jobj);
+	}
+
+	jobj = json_object_new_string((char *) pfn_sb->signature);
+	if (!jobj)
+		goto err;
+	json_object_object_add(jblock, "signature", jobj);
+
+	uuid_unparse((void *) pfn_sb->uuid, str);
+	jobj = json_object_new_string(str);
+	if (!jobj)
+		goto err;
+	json_object_object_add(jblock, "uuid", jobj);
+
+	uuid_unparse((void *) pfn_sb->parent_uuid, str);
+	jobj = json_object_new_string(str);
+	if (!jobj)
+		goto err;
+	json_object_object_add(jblock, "parent_uuid", jobj);
+
+	jobj = util_json_object_hex(le32_to_cpu(pfn_sb->flags), flags);
+	if (!jobj)
+		goto err;
+	json_object_object_add(jblock, "flags", jobj);
+
+	if (snprintf(str, 4, "%d.%d", pfn_sb->version_major,
+				pfn_sb->version_minor) >= 4)
+		goto err;
+	jobj = json_object_new_string(str);
+	if (!jobj)
+		goto err;
+	json_object_object_add(jblock, "version", jobj);
+
+	parse_hex(pfn_sb, dataoff, 64);
+	parse_hex(pfn_sb, npfns, 64);
+	parse_field(pfn_sb, mode);
+	parse_hex(pfn_sb, start_pad, 32);
+	parse_hex(pfn_sb, end_trunc, 32);
+	parse_hex(pfn_sb, align, 32);
+
+	return jblock;
+err:
+	pr_verbose("%s: failed to create json representation\n", cmd);
+	json_object_put(jblock);
+	return NULL;
+}
+
+#define INFOBLOCK_SZ SZ_8K
+
+static int parse_namespace_infoblock(char *_buf, struct ndctl_namespace *ndns,
+		const char *path, struct read_infoblock_ctx *ri_ctx)
+{
+	int rc;
+	void *buf = _buf;
+	unsigned long flags = param.human ? UTIL_JSON_HUMAN : 0;
+	struct btt_sb *btt1_sb = buf + SZ_4K, *btt2_sb = buf;
+	struct json_object *jblock = NULL, *jblocks = ri_ctx->jblocks;
+	struct pfn_sb *pfn_sb = buf + SZ_4K, *dax_sb = buf + SZ_4K;
+
+	if (!param.json) {
+		rc = fwrite(buf, 1, INFOBLOCK_SZ, ri_ctx->f_out);
+		if (rc != INFOBLOCK_SZ)
+			return -EIO;
+		fflush(ri_ctx->f_out);
+		return 0;
+	}
+
+	if (!jblocks) {
+		jblocks = json_object_new_array();
+		if (!jblocks)
+			return -ENOMEM;
+		ri_ctx->jblocks = jblocks;
+	}
+
+	if (memcmp(btt1_sb->signature, BTT_SIG, BTT_SIG_LEN) == 0) {
+		jblock = btt_parse(btt1_sb, ndns, path, flags);
+		if (jblock)
+			json_object_array_add(jblocks, jblock);
+	}
+
+	if (memcmp(btt2_sb->signature, BTT_SIG, BTT_SIG_LEN) == 0) {
+		jblock = btt_parse(btt2_sb, ndns, path, flags);
+		if (jblock)
+			json_object_array_add(jblocks, jblock);
+	}
+
+	if (memcmp(pfn_sb->signature, PFN_SIG, PFN_SIG_LEN) == 0) {
+		jblock = pfn_parse(pfn_sb, ndns, path, flags);
+		if (jblock)
+			json_object_array_add(jblocks, jblock);
+	}
+
+	if (memcmp(dax_sb->signature, DAX_SIG, PFN_SIG_LEN) == 0) {
+		jblock = pfn_parse(dax_sb, ndns, path, flags);
+		if (jblock)
+			json_object_array_add(jblocks, jblock);
+	}
+
+	return 0;
+}
+
+static int file_read_infoblock(const char *path, struct ndctl_namespace *ndns,
+		struct read_infoblock_ctx *ri_ctx)
+{
+	const char *devname = ndns ? ndctl_namespace_get_devname(ndns) : "";
+	const char *cmd = "read-info-block";
+	void *buf = NULL;
+	int fd = -1, rc;
+
+	buf = calloc(1, INFOBLOCK_SZ);
+	if (!buf)
+		return -ENOMEM;
+
+	fd = open(path, O_RDONLY|O_EXCL);
+	if (fd < 0) {
+		pr_verbose("%s: %s failed to open %s: %s\n",
+				cmd, devname, path, strerror(errno));
+		rc = -errno;
+		goto out;
+	}
+
+	rc = read(fd, buf, INFOBLOCK_SZ);
+	if (rc < 0) {
+		pr_verbose("%s: %s failed to read %s: %s\n",
+				cmd, devname, path, strerror(errno));
+		rc = -errno;
+		goto out;
+	}
+
+	rc = parse_namespace_infoblock(buf, ndns, path, ri_ctx);
+out:
+	free(buf);
+	if (fd >= 0)
+		close(fd);
+	return rc;
+}
+
+static int namespace_read_infoblock(struct ndctl_namespace *ndns,
+		struct read_infoblock_ctx *ri_ctx)
+{
+	int rc;
+	char path[50];
+	const char *cmd = "read-info-block";
+	const char *devname = ndctl_namespace_get_devname(ndns);
+
+	if (ndctl_namespace_is_active(ndns)) {
+		pr_verbose("%s: %s enabled, must be disabled\n", cmd, devname);
+		return -EBUSY;
+	}
+
+	ndctl_namespace_set_raw_mode(ndns, 1);
+	rc = ndctl_namespace_enable(ndns);
+	if (rc < 0) {
+		pr_verbose("%s: %s failed to enable\n", cmd, devname);
+		goto out;
+	}
+
+	sprintf(path, "/dev/%s", ndctl_namespace_get_block_device(ndns));
+	rc = file_read_infoblock(path, ndns, ri_ctx);
+
+out:
+	ndctl_namespace_set_raw_mode(ndns, 0);
+	ndctl_namespace_disable_invalidate(ndns);
+	return rc;
+}
+
 static int do_xaction_namespace(const char *namespace,
 		enum device_action action, struct ndctl_ctx *ctx,
 		int *processed)
 {
+	struct read_infoblock_ctx ri_ctx = { 0 };
 	struct ndctl_namespace *ndns, *_n;
 	struct ndctl_region *region;
 	const char *ndns_name;
@@ -1062,6 +1412,26 @@ static int do_xaction_namespace(const char *namespace,
 	int rc = -ENXIO;
 
 	*processed = 0;
+
+	if (action == ACTION_READ_INFOBLOCK) {
+		if (!param.outfile)
+			ri_ctx.f_out = stdout;
+		else {
+			ri_ctx.f_out = fopen(param.outfile, "w+");
+			if (!ri_ctx.f_out) {
+				fprintf(stderr, "failed to open: %s: (%s)\n",
+						param.outfile, strerror(errno));
+				return -errno;
+			}
+		}
+
+		if (param.infile) {
+			rc = file_read_infoblock(param.infile, NULL, &ri_ctx);
+			if (ri_ctx.jblocks)
+				util_display_json_array(ri_ctx.f_out, ri_ctx.jblocks, 0);
+			return rc;
+		}
+	}
 
 	if (!namespace && action != ACTION_CREATE)
 		return rc;
@@ -1136,6 +1506,11 @@ static int do_xaction_namespace(const char *namespace,
 					if (rc == 0)
 						*processed = 1;
 					return rc;
+				case ACTION_READ_INFOBLOCK:
+					rc = namespace_read_infoblock(ndns, &ri_ctx);
+					if (rc == 0)
+						(*processed)++;
+					break;
 				default:
 					rc = -EINVAL;
 					break;
@@ -1143,6 +1518,12 @@ static int do_xaction_namespace(const char *namespace,
 			}
 		}
 	}
+
+	if (ri_ctx.jblocks)
+		util_display_json_array(ri_ctx.f_out, ri_ctx.jblocks, 0);
+
+	if (ri_ctx.f_out && ri_ctx.f_out != stdout)
+		fclose(ri_ctx.f_out);
 
 	return rc;
 }
@@ -1238,5 +1619,21 @@ int cmd_check_namespace(int argc , const char **argv, struct ndctl_ctx *ctx)
 				strerror(-rc));
 	fprintf(stderr, "checked %d namespace%s\n", checked,
 			checked == 1 ? "" : "s");
+	return rc;
+}
+
+int cmd_read_infoblock(int argc , const char **argv, struct ndctl_ctx *ctx)
+{
+	char *xable_usage = "ndctl read-info-block <namespace> [<options>]";
+	const char *namespace = parse_namespace_options(argc, argv,
+			ACTION_READ_INFOBLOCK, read_infoblock_options,
+			xable_usage);
+	int read, rc;
+
+	rc = do_xaction_namespace(namespace, ACTION_READ_INFOBLOCK, ctx, &read);
+	if (rc < 0)
+		fprintf(stderr, "error checking namespaces: %s\n",
+				strerror(-rc));
+	fprintf(stderr, "read %d namespace%s\n", read, read == 1 ? "" : "s");
 	return rc;
 }
