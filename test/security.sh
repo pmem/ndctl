@@ -63,7 +63,7 @@ lock_dimm()
 	# inline. Once a subsequent user arrives we can refactor this to a
 	# helper in test/common:
 	#   get_test_dimm_path "nfit_test.0" "nmem3"
-	handle="$(ndctl list -b "$NFIT_TEST_BUS0"  -d "$dev" -i | jq -r .[].dimms[0].handle)"
+	handle="$($NDCTL list -b "$NFIT_TEST_BUS0"  -d "$dev" -i | jq -r .[].dimms[0].handle)"
 	test_dimm_path=""
 	for test_dimm in /sys/devices/platform/"$NFIT_TEST_BUS0"/nfit_test_dimm/test_dimm*; do
 		td_handle_file="$test_dimm/handle"
