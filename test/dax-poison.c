@@ -5,7 +5,6 @@
 #include <signal.h>
 #include <setjmp.h>
 #include <sys/mman.h>
-#include <linux/mman.h>
 #include <fcntl.h>
 #include <string.h>
 #include <errno.h>
