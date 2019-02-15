@@ -103,12 +103,30 @@ AS_IF([test "x$enable_test" = "xyes"],
 AM_CONDITIONAL([ENABLE_TEST], [test "x$enable_test" = "xyes"])
 
 AC_CHECK_DECLS([BUS_MCEERR_AR], [enable_bus_mc_err=yes], [], [[#include <signal.h>]])
+AC_CHECK_DECLS([MAP_SHARED_VALIDATE], [kernel_map_shared_validate=yes], [], [[#include <linux/mman.h>]])
+AC_CHECK_DECLS([MAP_SYNC], [kernel_map_sync=yes], [], [[#include <linux/mman.h>]])
+AS_UNSET([ac_cv_have_decl_MAP_SHARED_VALIDATE])
+AS_UNSET([ac_cv_have_decl_MAP_SYNC])
+AC_CHECK_DECLS([MAP_SHARED_VALIDATE], [enable_map_shared_validate=yes], [], [[#include <sys/mman.h>]])
 AC_CHECK_DECLS([MAP_SYNC], [enable_map_sync=yes], [], [[#include <sys/mman.h>]])
 
-AS_IF([test "x$enable_bus_mc_err" = "xyes" -a "x$enable_map_sync" = "xyes"],
+if test "x$kernel_map_shared_validate" = "xyes" -a "x$enable_map_shared_validate" != "xyes" ; then
+	AC_MSG_WARN([MAP_SHARED_VALIDATE supported by kernel but not by <sys/mman.h>, consider installing glibc-2.28 or later.])
+fi
+if test "x$kernel_map_shared_validate" != "xyes" -a "x$enable_map_shared_validate" != "xyes" ; then
+	AC_MSG_WARN([MAP_SHARED_VALIDATE not supported by kernel, consider installing kernel-4.15 or later.])
+fi
+if test "x$kernel_map_sync" = "xyes" -a "x$enable_map_sync" != "xyes" ; then
+	AC_MSG_WARN([MAP_SYNC supported by kernel but not by <sys/mman.h>, consider installing glibc-2.28 or later.])
+fi
+if test "x$kernel_map_sync" != "xyes" -a "x$enable_map_sync" != "xyes" ; then
+	AC_MSG_WARN([MAP_SYNC not supported by kernel or architecture, consider installing kernel-4.15 or later.])
+fi
+
+AS_IF([test "x$enable_bus_mc_err" = "xyes" -a "x$enable_map_sync" = "xyes" -a "x$enable_map_shared_validate" = "xyes"],
 	[AC_DEFINE([ENABLE_POISON], [1], [ndctl test poison support])])
 AM_CONDITIONAL([ENABLE_POISON],
-	[test "x$enable_bus_mc_err" = "xyes" -a "x$enable_map_sync" = "xyes"])
+	[test "x$enable_bus_mc_err" = "xyes" -a "x$enable_map_sync" = "xyes" -a "x$enable_map_shared_validate" = "xyes"])
 
 PKG_CHECK_MODULES([KMOD], [libkmod])
 PKG_CHECK_MODULES([UDEV], [libudev])
