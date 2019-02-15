@@ -2,9 +2,20 @@
 set -e
 
 NAME=ndctl
-REFDIR="$HOME/git/ndctl"  # for faster cloning, if available
+
+if [ ! -x ./git-version ]; then
+	echo "$0 : ERROR: Must run from top level of git tree"
+	exit 1
+fi
+
+REFDIR=$PWD
+
 UPSTREAM=$REFDIR #TODO update once we have a public upstream
 OUTDIR=$HOME/rpmbuild/SOURCES
+
+if [ ! -d $OUTDIR ]; then
+	mkdir -p $OUTDIR
+fi
 
 [ -n "$1" ] && HEAD="$1" || HEAD="HEAD"
 
