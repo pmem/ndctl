@@ -170,8 +170,7 @@ AC_ARG_WITH([keyutils],
 
 if test "x$with_keyutils" = "xyes"; then
 	AC_CHECK_HEADERS([keyutils.h],,[
-		AC_MSG_ERROR([keyutils.h not found, consider installing
-			      keyutils-libs-devel.])
+		AC_MSG_ERROR([keyutils.h not found, consider installing the keyutils library development package (variously named keyutils-libs-devel, keyutils-devel, or libkeyutils-dev).])
 		])
 fi
 AS_IF([test "x$with_keyutils" = "xyes"],
