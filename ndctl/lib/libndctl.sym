@@ -404,3 +404,9 @@ global:
 	ndctl_dimm_update_master_passphrase;
 	ndctl_dimm_master_secure_erase;
 } LIBNDCTL_18;
+
+
+LIBNDCTL_20 {
+global:
+	ndctl_bus_poll_scrub_completion;
+} LIBNDCTL_19;

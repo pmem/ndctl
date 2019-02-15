@@ -16,10 +16,24 @@
 
 static struct {
 	bool verbose;
+	unsigned int poll_interval;
 } param;
 
-static const struct option bus_options[] = {
-	OPT_BOOLEAN('v',"verbose", &param.verbose, "turn on debug"),
+
+#define BASE_OPTIONS() \
+	OPT_BOOLEAN('v',"verbose", &param.verbose, "turn on debug")
+
+#define WAIT_OPTIONS() \
+	OPT_UINTEGER('p', "poll", &param.poll_interval, "poll interval (seconds)")
+
+static const struct option start_options[] = {
+	BASE_OPTIONS(),
+	OPT_END(),
+};
+
+static const struct option wait_options[] = {
+	BASE_OPTIONS(),
+	WAIT_OPTIONS(),
 	OPT_END(),
 };
 
@@ -27,7 +41,8 @@ static int scrub_action(struct ndctl_bus *bus, enum device_action action)
 {
 	switch (action) {
 	case ACTION_WAIT:
-		return ndctl_bus_wait_for_scrub_completion(bus);
+		return ndctl_bus_poll_scrub_completion(bus,
+				param.poll_interval, 0);
 	case ACTION_START:
 		return ndctl_bus_start_scrub(bus);
 	default:
@@ -100,7 +115,7 @@ static int bus_action(int argc, const char **argv, const char *usage,
 int cmd_start_scrub(int argc, const char **argv, struct ndctl_ctx *ctx)
 {
 	char *usage = "ndctl start-scrub [<bus-id> <bus-id2> ... <bus-idN>] [<options>]";
-	int start = bus_action(argc, argv, usage, bus_options,
+	int start = bus_action(argc, argv, usage, start_options,
 			ACTION_START, ctx);
 
 	if (start <= 0) {
@@ -115,7 +130,7 @@ int cmd_start_scrub(int argc, const char **argv, struct ndctl_ctx *ctx)
 int cmd_wait_scrub(int argc, const char **argv, struct ndctl_ctx *ctx)
 {
 	char *usage = "ndctl wait-scrub [<bus-id> <bus-id2> ... <bus-idN>] [<options>]";
-	int wait = bus_action(argc, argv, usage, bus_options,
+	int wait = bus_action(argc, argv, usage, wait_options,
 			ACTION_WAIT, ctx);
 
 	if (wait <= 0) {

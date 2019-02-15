@@ -1273,22 +1273,33 @@ NDCTL_EXPORT unsigned int ndctl_bus_get_scrub_count(struct ndctl_bus *bus)
 }
 
 /**
- * ndctl_bus_wait_for_scrub - wait for a scrub to complete
+ * ndctl_bus_poll_scrub_completion - wait for a scrub to complete
  * @bus: bus for which to check whether a scrub is in progress
+ * @poll_interval: nr seconds between wake up and re-read the status
+ * @timeout: total number of seconds to wait
  *
- * Upon return this bus has completed any in-progress scrubs. This is
- * different from ndctl_cmd_ars_in_progress in that the latter checks
- * the output of an ars_status command to see if the in-progress flag
- * is set, i.e. provides the firmware's view of whether a scrub is in
- * progress. ndctl_bus_wait_for_scrub instead checks the kernel's view
- * of whether a scrub is in progress by looking at the 'scrub' file in
- * sysfs.
+ * Upon return this bus has completed any in-progress scrubs if @timeout
+ * is 0 otherwise -ETIMEDOUT when @timeout seconds have expired. This
+ * is different from ndctl_cmd_ars_in_progress in that the latter checks
+ * the output of an ars_status command to see if the in-progress flag is
+ * set, i.e. provides the firmware's view of whether a scrub is in
+ * progress. ndctl_bus_wait_for_scrub_completion() instead checks the
+ * kernel's view of whether a scrub is in progress by looking at the
+ * 'scrub' file in sysfs.
+ *
+ * The @poll_interval option changes the frequency at which the kernel
+ * status is polled, but it requires a supporting kernel for that poll
+ * interval to be reflected to the kernel's polling of the ARS
+ * interface. Kernel's with poll interval support limit that polling to
+ * root (CAP_SYS_RAWIO) processes.
  */
-NDCTL_EXPORT int ndctl_bus_wait_for_scrub_completion(struct ndctl_bus *bus)
+NDCTL_EXPORT int ndctl_bus_poll_scrub_completion(struct ndctl_bus *bus,
+		unsigned int poll_interval, unsigned int timeout)
 {
 	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
+	const char *provider = ndctl_bus_get_provider(bus);
+	char buf[SYSFS_ATTR_SIZE] = { 0 };
 	unsigned int scrub_count;
-	char buf[SYSFS_ATTR_SIZE];
 	struct pollfd fds;
 	char in_progress;
 	int fd = 0, rc;
@@ -1314,30 +1325,69 @@ NDCTL_EXPORT int ndctl_bus_wait_for_scrub_completion(struct ndctl_bus *bus)
 			rc = 0;
 			break;
 		} else if (rc == 2 && in_progress == '+') {
+			long tmo;
+
+			if (!timeout)
+				tmo = poll_interval;
+			else if (!poll_interval)
+				tmo = timeout;
+			else
+				tmo = min(poll_interval, timeout);
+
+			tmo *= 1000;
+			if (tmo == 0)
+				tmo = -1;
+
 			/* scrub in progress, wait */
-			rc = poll(&fds, 1, -1);
-			if (rc < 0) {
-				rc = -errno;
-				dbg(ctx, "poll error: %s\n", strerror(errno));
-				break;
-			}
-			dbg(ctx, "poll wake: revents: %d\n", fds.revents);
+			rc = poll(&fds, 1, tmo);
+			dbg(ctx, "%s: poll wake: rc: %d status: \'%s\'\n",
+					provider, rc, buf);
+			if (rc > 0)
+				fds.revents = 0;
 			if (pread(fd, buf, 1, 0) == -1) {
 				rc = -errno;
 				break;
 			}
-			fds.revents = 0;
+
+			if (rc < 0) {
+				rc = -errno;
+				dbg(ctx, "%s: poll error: %s\n", provider,
+						strerror(errno));
+				break;
+			} else if (rc == 0) {
+				dbg(ctx, "%s: poll timeout: interval: %d timeout: %d\n",
+						provider, poll_interval, timeout);
+				if (!timeout)
+					continue;
+
+				if (!poll_interval || poll_interval > timeout) {
+					rc = -ETIMEDOUT;
+					break;
+				}
+
+				if (timeout > poll_interval)
+					timeout -= poll_interval;
+				else if (timeout == poll_interval) {
+					timeout = 1;
+					poll_interval = 0;
+				}
+			}
 		}
 	}
 
 	if (rc == 0)
-		dbg(ctx, "bus%d: scrub complete\n", ndctl_bus_get_id(bus));
+		dbg(ctx, "%s: scrub complete, status: \'%s\'\n", provider, buf);
 	else
-		dbg(ctx, "bus%d: error waiting for scrub completion: %s\n",
-			ndctl_bus_get_id(bus), strerror(-rc));
+		dbg(ctx, "%s: error waiting for scrub completion: %s\n",
+			provider, strerror(-rc));
 	if (fd)
 		close (fd);
 	return rc;
+}
+
+NDCTL_EXPORT int ndctl_bus_wait_for_scrub_completion(struct ndctl_bus *bus)
+{
+	return ndctl_bus_poll_scrub_completion(bus, 0, 0);
 }
 
 static int ndctl_bind(struct ndctl_ctx *ctx, struct kmod_module *module,

@@ -133,6 +133,8 @@ enum ndctl_persistence_domain ndctl_bus_get_persistence_domain(
 		struct ndctl_bus *bus);
 int ndctl_bus_wait_probe(struct ndctl_bus *bus);
 int ndctl_bus_wait_for_scrub_completion(struct ndctl_bus *bus);
+int ndctl_bus_poll_scrub_completion(struct ndctl_bus *bus,
+		unsigned int poll_interval, unsigned int timeout);
 unsigned int ndctl_bus_get_scrub_count(struct ndctl_bus *bus);
 int ndctl_bus_get_scrub_state(struct ndctl_bus *bus);
 int ndctl_bus_start_scrub(struct ndctl_bus *bus);
