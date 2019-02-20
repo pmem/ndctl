@@ -518,6 +518,7 @@ static void __free_pfn(struct ndctl_pfn *pfn, struct list_head *head, void *to_f
 	free(pfn->pfn_path);
 	free(pfn->pfn_buf);
 	free(pfn->bdev);
+	free(pfn->alignments.supported);
 	free(to_free);
 }
 
