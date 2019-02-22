@@ -106,7 +106,7 @@ from the keyring, and the associated passphrase blob is deleted.
 
 === CRYPTO (SECURE) ERASE
 
-This operation is similar to disable-passphrase. The kernel issues a WBINVD
+This operation is similar to remove-passphrase. The kernel issues a WBINVD
 instruction before and after the operation to ensure no data corruption from
 a stale CPU cache. Use ndctl's sanitize-dimm command with the `--crypto-erase`
 option to perform this operation.
