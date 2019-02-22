@@ -91,7 +91,7 @@ the option of providing a new 'kek' for the new passphrase, but continuing to
 use the existing 'kek' is also acceptable.
 The following operations are performed for 'update-passphrase':
 
-. Remove the enrypted passphrase from the kernel's user keyring.
+. Remove the encrypted passphrase from the kernel's user keyring.
 . Rename the passphrase blob to old.
 . Load this old passphrase blob into the keyring with an "old" name.
 . Create the new passphrase and encrypt with the  'kek'.
