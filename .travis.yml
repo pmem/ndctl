@@ -1,0 +1,23 @@
+dist: xenial
+language: c
+sudo: required
+ccache: ccache
+
+git:
+  depth: 5
+  quiet: true
+
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq --no-install-recommends -y systemd dh-systemd libkmod2 libkmod-dev libudev1 libudev-dev keyutils libkeyutils-dev libjson-c-dev libuuid1 asciidoctor jq kmod dracut build-essential git-core libelf-dev asciidoc binutils-dev
+  - sudo apt-get build-dep linux-image-$(uname -r)
+
+install:
+  - ./autogen.sh
+  - ./configure CFLAGS='-g -O2' --prefix=/usr --sysconfdir=/etc --libdir=/usr/lib
+  - make -j$(nproc --all)
+  - sudo make install
+
+jobs:
+  include:
+      script: true

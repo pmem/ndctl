@@ -1,4 +1,6 @@
 # ndctl
+[![Build Status](https://travis-ci.org/pmem/ndctl.svg?branch=master)](https://travis-ci.org/pmem/ndctl)
+
 Utility library for managing the libnvdimm (non-volatile memory device)
 sub-system in the Linux kernel
   
