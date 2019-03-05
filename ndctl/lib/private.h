@@ -242,9 +242,6 @@ struct ndctl_namespace {
  *
  * A command may only specify one of @source, or @iter.total_buf, not both.
  */
-enum {
-	READ, WRITE,
-};
 struct ndctl_cmd {
 	struct ndctl_dimm *dimm;
 	struct ndctl_bus *bus;

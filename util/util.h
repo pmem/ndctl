@@ -73,6 +73,10 @@
 #define BUILD_BUG_ON_ZERO(e) (sizeof(struct { int:-!!(e); }))
 #define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
 
+enum {
+	READ, WRITE,
+};
+
 static inline const char *skip_prefix(const char *str, const char *prefix)
 {
         size_t len = strlen(prefix);
