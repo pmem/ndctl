@@ -308,6 +308,7 @@ struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_read(struct ndctl_cmd *cfg_size);
 struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_write(struct ndctl_cmd *cfg_read);
 int ndctl_dimm_zero_labels(struct ndctl_dimm *dimm);
 struct ndctl_cmd *ndctl_dimm_read_labels(struct ndctl_dimm *dimm);
+struct ndctl_cmd *ndctl_dimm_read_label_index(struct ndctl_dimm *dimm);
 int ndctl_dimm_validate_labels(struct ndctl_dimm *dimm);
 enum ndctl_namespace_version {
 	NDCTL_NS_VERSION_1_1,

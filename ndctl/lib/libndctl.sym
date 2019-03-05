@@ -411,4 +411,5 @@ global:
 	ndctl_bus_poll_scrub_completion;
 	ndctl_cmd_cfg_read_set_extent;
 	ndctl_cmd_cfg_write_set_extent;
+	ndctl_dimm_read_label_index;
 } LIBNDCTL_19;
