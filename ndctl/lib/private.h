@@ -254,6 +254,7 @@ struct ndctl_cmd {
 	int status;
 	u32 *firmware_status;
 	struct ndctl_cmd_iter {
+		u32 init_offset;
 		u32 *offset;
 		u32 *xfer; /* pointer to xfer length in cmd */
 		u8 *data; /* pointer to the data buffer location in cmd */
