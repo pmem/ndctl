@@ -321,7 +321,7 @@ struct json_object *util_daxctl_devs_to_list(struct daxctl_region *region,
 }
 
 #define _SZ(get_max, get_elem, type) \
-static struct json_object *type##_build_size_array(struct type *arg)	\
+static struct json_object *util_##type##_build_size_array(struct ndctl_##type *arg)	\
 {								\
 	struct json_object *arr = json_object_new_array();	\
 	int i;							\
@@ -346,11 +346,78 @@ err:								\
 	return NULL;						\
 }
 #define SZ(type, kind) _SZ(ndctl_##type##_get_num_##kind##s, \
-			   ndctl_##type##_get_supported_##kind, ndctl_##type)
+			   ndctl_##type##_get_supported_##kind, type)
 SZ(pfn, alignment)
 SZ(dax, alignment)
 SZ(btt, sector_size)
-//SZ(namespace, sector_size)
+
+struct json_object *util_region_capabilities_to_json(struct ndctl_region *region)
+{
+	struct json_object *jcaps, *jcap, *jobj;
+	struct ndctl_btt *btt = ndctl_region_get_btt_seed(region);
+	struct ndctl_pfn *pfn = ndctl_region_get_pfn_seed(region);
+	struct ndctl_dax *dax = ndctl_region_get_dax_seed(region);
+
+	if (!btt || !pfn || !dax)
+		return NULL;
+
+	jcaps = json_object_new_array();
+	if (!jcaps)
+		return NULL;
+
+	if (btt) {
+		jcap = json_object_new_object();
+		if (!jcap)
+			goto err;
+		json_object_array_add(jcaps, jcap);
+
+		jobj = json_object_new_string("sector");
+		if (!jobj)
+			goto err;
+		json_object_object_add(jcap, "mode", jobj);
+		jobj = util_btt_build_size_array(btt);
+		if (!jobj)
+			goto err;
+		json_object_object_add(jcap, "sector_sizes", jobj);
+	}
+
+	if (pfn) {
+		jcap = json_object_new_object();
+		if (!jcap)
+			goto err;
+		json_object_array_add(jcaps, jcap);
+
+		jobj = json_object_new_string("fsdax");
+		if (!jobj)
+			goto err;
+		json_object_object_add(jcap, "mode", jobj);
+		jobj = util_pfn_build_size_array(pfn);
+		if (!jobj)
+			goto err;
+		json_object_object_add(jcap, "alignments", jobj);
+	}
+
+	if (dax) {
+		jcap = json_object_new_object();
+		if (!jcap)
+			goto err;
+		json_object_array_add(jcaps, jcap);
+
+		jobj = json_object_new_string("devdax");
+		if (!jobj)
+			goto err;
+		json_object_object_add(jcap, "mode", jobj);
+		jobj = util_dax_build_size_array(dax);
+		if (!jobj)
+			goto err;
+		json_object_object_add(jcap, "alignments", jobj);
+	}
+
+	return jcaps;
+err:
+	json_object_put(jcaps);
+	return NULL;
+}
 
 struct json_object *util_daxctl_region_to_json(struct daxctl_region *region,
 		const char *ident, unsigned long flags)
@@ -788,7 +855,7 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 {
 	struct json_object *jndns = json_object_new_object();
 	enum ndctl_pfn_loc loc = NDCTL_PFN_LOC_NONE;
-	struct json_object *jobj, *jbbs = NULL, *size_array = NULL;
+	struct json_object *jobj, *jbbs = NULL;
 	const char *locations[] = {
 		[NDCTL_PFN_LOC_NONE] = "none",
 		[NDCTL_PFN_LOC_RAM] = "mem",
@@ -798,7 +865,6 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 	unsigned int sector_size = UINT_MAX;
 	enum ndctl_namespace_mode mode;
 	const char *bdev = NULL, *name;
-	const char *size_array_name;
 	unsigned int bb_count = 0;
 	struct ndctl_btt *btt;
 	struct ndctl_pfn *pfn;
@@ -985,19 +1051,6 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 		if (jobj)
 			json_object_object_add(jndns, "numa_node", jobj);
 	}
-
-	if (pfn) {
-		size_array_name = "supported_alignments";
-		size_array = ndctl_pfn_build_size_array(pfn);
-	} else if (dax) {
-		size_array_name = "supported_alignments";
-		size_array = ndctl_dax_build_size_array(dax);
-	} else if (btt) {
-		size_array_name = "supported sector sizes";
-		size_array = ndctl_btt_build_size_array(btt);
-	}
-	if (size_array && flags & UTIL_JSON_VERBOSE)
-		json_object_object_add(jndns, size_array_name, size_array);
 
 	if (pfn)
 		jbbs = util_pfn_badblocks_to_json(pfn, &bb_count, flags);

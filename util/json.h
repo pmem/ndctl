@@ -24,6 +24,7 @@ enum util_json_flags {
 	UTIL_JSON_DAX_DEVS = (1 << 3),
 	UTIL_JSON_HUMAN = (1 << 4),
 	UTIL_JSON_VERBOSE = (1 << 5),
+	UTIL_JSON_CAPABILITIES = (1 << 6),
 };
 
 struct json_object;
@@ -56,4 +57,5 @@ struct json_object *util_json_object_hex(unsigned long long val,
 struct json_object *util_dimm_health_to_json(struct ndctl_dimm *dimm);
 struct json_object *util_dimm_firmware_to_json(struct ndctl_dimm *dimm,
 		unsigned long flags);
+struct json_object *util_region_capabilities_to_json(struct ndctl_region *region);
 #endif /* __NDCTL_JSON_H__ */

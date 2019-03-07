@@ -36,6 +36,7 @@ static struct {
 	bool media_errors;
 	bool human;
 	bool firmware;
+	bool capabilities;
 	int verbose;
 } list;
 
@@ -53,6 +54,8 @@ static unsigned long listopts_to_flags(void)
 		flags |= UTIL_JSON_HUMAN;
 	if (list.verbose)
 		flags |= UTIL_JSON_VERBOSE;
+	if (list.capabilities)
+		flags |= UTIL_JSON_CAPABILITIES;
 	return flags;
 }
 
@@ -185,6 +188,12 @@ static struct json_object *region_to_json(struct ndctl_region *region,
 	}
 	if ((flags & UTIL_JSON_MEDIA_ERRORS) && jbbs)
 		json_object_object_add(jregion, "badblocks", jbbs);
+
+	if (flags & UTIL_JSON_CAPABILITIES) {
+		jobj = util_region_capabilities_to_json(region);
+		if (jobj)
+			json_object_object_add(jregion, "capabilities", jobj);
+	}
 
 	pd = ndctl_region_get_persistence_domain(region);
 	switch (pd) {
@@ -450,6 +459,8 @@ int cmd_list(int argc, const char **argv, struct ndctl_ctx *ctx)
 				"include namespace info (default)"),
 		OPT_BOOLEAN('X', "device-dax", &list.dax,
 				"include device-dax info"),
+		OPT_BOOLEAN('C', "capabilities", &list.capabilities,
+				"include region capability info"),
 		OPT_BOOLEAN('i', "idle", &list.idle, "include idle devices"),
 		OPT_BOOLEAN('M', "media-errors", &list.media_errors,
 				"include media errors"),
@@ -487,6 +498,7 @@ int cmd_list(int argc, const char **argv, struct ndctl_ctx *ctx)
 		list.idle = true;
 		list.firmware = true;
 		list.health = true;
+		list.capabilities = true;
 	case 2:
 		list.dimms = true;
 		list.buses = true;
