@@ -650,8 +650,5 @@ int ndctl_dimm_overwrite_key(struct ndctl_dimm *dimm)
 	if (rc < 0)
 		return rc;
 
-	if (key > 0)
-		return discard_key(dimm);
-
 	return 0;
 }
