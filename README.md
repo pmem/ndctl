@@ -104,6 +104,8 @@ to /etc/depmod.d with the following contents:
 override nfit * extra
 override device_dax * extra
 override dax_pmem * extra
+override dax_pmem_core * extra
+override dax_pmem_compat * extra
 override libnvdimm * extra
 override nd_blk * extra
 override nd_btt * extra
