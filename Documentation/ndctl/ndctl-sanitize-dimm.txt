@@ -53,7 +53,7 @@ include::xable-dimm-options.txt[]
 	tens of minutes to many hours.
 
 -m::
---master_passphrase::
+--master-passphrase::
 	Indicate that we are using the master passphrase to perform the erase.
 	This only is applicable to the 'crypto-erase' option.
 
