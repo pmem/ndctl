@@ -49,7 +49,8 @@ include::xable-dimm-options.txt[]
 	Wipe the entire DIMM, including label data. This can take significant
 	time, and the command is non-blocking. With this option, the overwrite
 	request is merely submitted to the NVDIMM, and the completion is
-	asynchronous.
+	asynchronous. Depending on the medium and capacity, overwrite may take
+	tens of minutes to many hours.
 
 -m::
 --master_passphrase::
