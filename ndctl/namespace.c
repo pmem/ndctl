@@ -41,6 +41,7 @@ static struct parameters {
 	bool do_scan;
 	bool mode_default;
 	bool autolabel;
+	bool autorecover;
 	bool no_verify;
 	bool human;
 	bool json;
@@ -59,6 +60,7 @@ static struct parameters {
 	const char *infile;
 } param = {
 	.autolabel = true,
+	.autorecover = true,
 };
 
 void builtin_xaction_namespace_reset(void)
@@ -83,6 +85,7 @@ struct parsed_parameters {
 	unsigned long sector_size;
 	unsigned long align;
 	bool autolabel;
+	bool autorecover;
 };
 
 #define pr_verbose(fmt, ...) \
@@ -126,7 +129,8 @@ OPT_STRING('t', "type", &param.type, "type", \
 OPT_STRING('a', "align", &param.align, "align", \
 	"specify the namespace alignment in bytes (default: 2M)"), \
 OPT_BOOLEAN('f', "force", &force, "reconfigure namespace even if currently active"), \
-OPT_BOOLEAN('L', "autolabel", &param.autolabel, "automatically initialize labels")
+OPT_BOOLEAN('L', "autolabel", &param.autolabel, "automatically initialize labels"), \
+OPT_BOOLEAN('R', "autorecover", &param.autorecover, "automatically cleanup on failure")
 
 #define CHECK_OPTIONS() \
 OPT_BOOLEAN('R', "repair", &repair, "perform metadata repairs"), \
@@ -431,7 +435,7 @@ static int setup_namespace(struct ndctl_region *region,
 			try(ndctl_pfn, set_align, pfn, p->align);
 		try(ndctl_pfn, set_namespace, pfn, ndns);
 		rc = ndctl_pfn_enable(pfn);
-		if (rc)
+		if (rc && p->autorecover)
 			ndctl_pfn_set_namespace(pfn, NULL);
 	} else if (p->mode == NDCTL_NS_MODE_DAX) {
 		struct ndctl_dax *dax = ndctl_region_get_dax_seed(region);
@@ -442,7 +446,7 @@ static int setup_namespace(struct ndctl_region *region,
 		try(ndctl_dax, set_align, dax, p->align);
 		try(ndctl_dax, set_namespace, dax, ndns);
 		rc = ndctl_dax_enable(dax);
-		if (rc)
+		if (rc && p->autorecover)
 			ndctl_dax_set_namespace(dax, NULL);
 	} else if (p->mode == NDCTL_NS_MODE_SAFE) {
 		struct ndctl_btt *btt = ndctl_region_get_btt_seed(region);
@@ -785,6 +789,7 @@ static int validate_namespace_options(struct ndctl_region *region,
 
 
 	p->autolabel = param.autolabel;
+	p->autorecover = param.autorecover;
 
 	return 0;
 }
@@ -839,7 +844,7 @@ static int namespace_create(struct ndctl_region *region)
 	}
 
 	rc = setup_namespace(region, ndns, &p);
-	if (rc) {
+	if (rc && p.autorecover) {
 		ndctl_namespace_set_enforce_mode(ndns, NDCTL_NS_MODE_RAW);
 		ndctl_namespace_delete(ndns);
 	}
