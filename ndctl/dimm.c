@@ -49,6 +49,7 @@ static struct parameters {
 	const char *kek;
 	bool crypto_erase;
 	bool overwrite;
+	bool zero_key;
 	bool master_pass;
 	bool force;
 	bool json;
@@ -904,6 +905,7 @@ static int action_sanitize_dimm(struct ndctl_dimm *dimm,
 		struct action_context *actx)
 {
 	int rc;
+	enum ndctl_key_type key_type;
 
 	if (ndctl_dimm_get_security(dimm) < 0) {
 		error("%s: security operation not supported\n",
@@ -927,8 +929,14 @@ static int action_sanitize_dimm(struct ndctl_dimm *dimm,
 	}
 
 	if (param.crypto_erase) {
-		rc = ndctl_dimm_secure_erase_key(dimm, param.master_pass ?
-				ND_MASTER_KEY : ND_USER_KEY);
+		if (param.zero_key)
+			key_type = ND_ZERO_KEY;
+		else if (param.master_pass)
+			key_type = ND_MASTER_KEY;
+		else
+			key_type = ND_USER_KEY;
+
+		rc = ndctl_dimm_secure_erase_key(dimm, key_type);
 		if (rc < 0)
 			return rc;
 	}
@@ -1057,7 +1065,9 @@ OPT_STRING('k', "key-handle", &param.kek, "key-handle", \
 OPT_BOOLEAN('c', "crypto-erase", &param.crypto_erase, \
 		"crypto erase a dimm"), \
 OPT_BOOLEAN('o', "overwrite", &param.overwrite, \
-		"overwrite a dimm")
+		"overwrite a dimm"), \
+OPT_BOOLEAN('z', "zero-key", &param.zero_key, \
+		"pass in a zero key")
 
 #define MASTER_OPTIONS() \
 OPT_BOOLEAN('m', "master-passphrase", &param.master_pass, \

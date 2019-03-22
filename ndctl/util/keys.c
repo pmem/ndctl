@@ -612,17 +612,19 @@ int ndctl_dimm_remove_key(struct ndctl_dimm *dimm)
 int ndctl_dimm_secure_erase_key(struct ndctl_dimm *dimm,
 		enum ndctl_key_type key_type)
 {
-	key_serial_t key;
+	key_serial_t key = 0;
 	int rc;
 
-	key = check_dimm_key(dimm, true, key_type);
-	if (key < 0)
-		return key;
+	if (key_type != ND_ZERO_KEY) {
+		key = check_dimm_key(dimm, true, key_type);
+		if (key < 0)
+			return key;
+	}
 
 	if (key_type == ND_MASTER_KEY)
 		rc = run_key_op(dimm, key, ndctl_dimm_master_secure_erase,
 				"master crypto erase");
-	else if (key_type == ND_USER_KEY)
+	else if (key_type == ND_USER_KEY || key_type == ND_ZERO_KEY)
 		rc = run_key_op(dimm, key, ndctl_dimm_secure_erase,
 				"crypto erase");
 	else

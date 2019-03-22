@@ -9,6 +9,7 @@ enum ndctl_key_type {
 	ND_USER_OLD_KEY,
 	ND_MASTER_KEY,
 	ND_MASTER_OLD_KEY,
+	ND_ZERO_KEY,
 };
 
 #ifdef ENABLE_KEYUTILS

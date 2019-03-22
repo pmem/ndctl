@@ -56,6 +56,10 @@ include::xable-dimm-options.txt[]
 	Indicate that we are using the master passphrase to perform the erase.
 	This only is applicable to the 'crypto-erase' option.
 
+-z::
+--zero-key::
+	Passing in a key with payload that is just 0's.
+
 --verbose::
         Emit debug messages.
 
