@@ -275,17 +275,13 @@ static void filter_dimm(struct ndctl_dimm *dimm, struct util_filter_ctx *fctx)
 		err(&monitor, "%s: no smart support\n", name);
 		return;
 	}
-	if (!ndctl_dimm_is_cmd_supported(dimm, ND_CMD_SMART_THRESHOLD)) {
-		err(&monitor, "%s: no smart threshold support\n", name);
-		return;
-	}
 
-	if (!ndctl_dimm_is_flag_supported(dimm, ND_SMART_ALARM_VALID)) {
+	if (!ndctl_dimm_is_cmd_supported(dimm, ND_CMD_SMART_THRESHOLD)) {
+		dbg(&monitor, "%s: no smart threshold support\n", name);
+	} else if (!ndctl_dimm_is_flag_supported(dimm, ND_SMART_ALARM_VALID)) {
 		err(&monitor, "%s: smart alarm invalid\n", name);
 		return;
-	}
-
-	if (enable_dimm_supported_threshold_alarms(dimm)) {
+	} else if (enable_dimm_supported_threshold_alarms(dimm)) {
 		err(&monitor, "%s: enable supported threshold alarms failed\n", name);
 		return;
 	}
