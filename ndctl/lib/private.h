@@ -292,6 +292,7 @@ struct ndctl_bb {
 
 struct ndctl_dimm_ops {
 	const char *(*cmd_desc)(int);
+	bool (*cmd_is_supported)(struct ndctl_dimm *, int);
 	struct ndctl_cmd *(*new_smart)(struct ndctl_dimm *);
 	unsigned int (*smart_get_flags)(struct ndctl_cmd *);
 	unsigned int (*smart_get_health)(struct ndctl_cmd *);

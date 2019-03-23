@@ -1769,6 +1769,11 @@ NDCTL_EXPORT int ndctl_dimm_failed_map(struct ndctl_dimm *dimm)
 NDCTL_EXPORT int ndctl_dimm_is_cmd_supported(struct ndctl_dimm *dimm,
 		int cmd)
 {
+	struct ndctl_dimm_ops *ops = dimm->ops;
+
+	if (ops && ops->cmd_is_supported)
+		return ops->cmd_is_supported(dimm, cmd);
+
 	return !!(dimm->cmd_mask & (1ULL << cmd));
 }
 
