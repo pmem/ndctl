@@ -9,6 +9,19 @@
 #include "private.h"
 #include "hyperv.h"
 
+static bool hyperv_cmd_is_supported(struct ndctl_dimm *dimm, int cmd)
+{
+	/*
+	 * "ndctl monitor" requires ND_CMD_SMART, which is not really supported
+	 * by Hyper-V virtual NVDIMM. Nevertheless, ND_CMD_SMART can be emulated
+	 * by ND_HYPERV_CMD_GET_HEALTH_INFO and ND_HYPERV_CMD_GET_SHUTDOWN_INFO.
+	 */
+	if (cmd == ND_CMD_SMART )
+		return true;
+
+	return !!(dimm->cmd_mask & (1ULL << cmd));
+}
+
 static struct ndctl_cmd *alloc_hyperv_cmd(struct ndctl_dimm *dimm,
 		unsigned int command)
 {
@@ -161,6 +174,7 @@ static int hyperv_cmd_xlat_firmware_status(struct ndctl_cmd *cmd)
 }
 
 struct ndctl_dimm_ops * const hyperv_dimm_ops = &(struct ndctl_dimm_ops) {
+	.cmd_is_supported = hyperv_cmd_is_supported,
 	.new_smart = hyperv_dimm_cmd_new_smart,
 	.smart_get_flags = hyperv_cmd_get_flags,
 	.smart_get_health = hyperv_cmd_get_health,
