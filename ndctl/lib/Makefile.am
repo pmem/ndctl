@@ -20,6 +20,7 @@ libndctl_la_SOURCES =\
 	intel.c \
 	hpe1.c \
 	msft.c \
+	hyperv.c \
 	ars.c \
 	firmware.c \
 	libndctl.c

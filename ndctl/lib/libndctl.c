@@ -1543,6 +1543,8 @@ static void *add_dimm(void *parent, int id, const char *dimm_base)
 		dimm->ops = hpe1_dimm_ops;
 	if (dimm->cmd_family == NVDIMM_FAMILY_MSFT)
 		dimm->ops = msft_dimm_ops;
+	if (dimm->cmd_family == NVDIMM_FAMILY_HYPERV)
+		dimm->ops = hyperv_dimm_ops;
 
 	sprintf(path, "%s/nfit/dsm_mask", dimm_base);
 	if (sysfs_read_attr(ctx, path, buf) == 0)
