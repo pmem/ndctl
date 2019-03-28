@@ -213,10 +213,8 @@ static int load_keys(struct loadkeys *lk_ctx, const char *keypath,
 
 	if (!tpmhandle) {
 		rc = check_tpm_handle(lk_ctx);
-		if (rc < 0) {
-			rc = -errno;
-			goto erropen;
-		}
+		if (rc < 0)
+			fprintf(stderr, "No TPM handle discovered.\n");
 	}
 
 	rc = load_master_key(lk_ctx, param.key_path);
