@@ -25,12 +25,7 @@ static struct parameters {
 	const char *tpm_handle;
 } param;
 
-enum key_type {
-	KEY_USER = 0,
-	KEY_TRUSTED,
-};
-
-static const char *key_names[] = {"user", "trusted"};
+static const char *key_names[] = {"user", "trusted", "encrypted"};
 
 static struct loadkeys {
 	enum key_type key_type;
@@ -44,6 +39,7 @@ static int load_master_key(struct loadkeys *lk_ctx, const char *keypath)
 	char *blob;
 	int size, rc;
 	char path[PATH_MAX];
+	enum key_type;
 
 	rc = sprintf(path, "%s/nvdimm-master.blob", keypath);
 	if (rc < 0)
@@ -65,7 +61,8 @@ static int load_master_key(struct loadkeys *lk_ctx, const char *keypath)
 		return -errno;
 	}
 
-	blob = ndctl_load_key_blob(path, &size, param.tpm_handle, -1);
+	blob = ndctl_load_key_blob(path, &size, param.tpm_handle, -1,
+			lk_ctx->key_type);
 	if (!blob)
 		return -ENOMEM;
 
@@ -122,7 +119,7 @@ static int load_dimm_keys(struct loadkeys *lk_ctx)
 		}
 
 		blob = ndctl_load_key_blob(dent->d_name, &size, NULL,
-				lk_ctx->dirfd);
+				lk_ctx->dirfd, KEY_ENCRYPTED);
 		if (!blob) {
 			free(fname);
 			continue;

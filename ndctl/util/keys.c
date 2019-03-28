@@ -103,13 +103,17 @@ static int get_key_desc(struct ndctl_dimm *dimm, char *desc,
 }
 
 char *ndctl_load_key_blob(const char *path, int *size, const char *postfix,
-		int dirfd)
+		int dirfd, enum key_type key_type)
 {
 	struct stat st;
 	ssize_t read_bytes = 0;
 	int rc, fd;
 	char *blob, *pl, *rdptr;
 	char prefix[] = "load ";
+	bool need_prefix = false;
+
+	if (key_type == KEY_ENCRYPTED || key_type == KEY_TRUSTED)
+		need_prefix = true;
 
 	fd = openat(dirfd, path, O_RDONLY);
 	if (fd < 0) {
@@ -133,7 +137,10 @@ char *ndctl_load_key_blob(const char *path, int *size, const char *postfix,
 		return NULL;
 	}
 
-	*size = st.st_size + sizeof(prefix) - 1;
+	*size = st.st_size;
+	if (need_prefix)
+		*size += strlen(prefix);
+
 	/*
 	 * We need to increment postfix and space.
 	 * "keyhandle=" is 10 bytes, plus null termination.
@@ -146,8 +153,11 @@ char *ndctl_load_key_blob(const char *path, int *size, const char *postfix,
 		return NULL;
 	}
 
-	memcpy(blob, prefix, sizeof(prefix) - 1);
-	pl = blob + sizeof(prefix) - 1;
+	if (need_prefix) {
+		memcpy(blob, prefix, strlen(prefix));
+		pl = blob + strlen(prefix);
+	} else
+		pl = blob;
 
 	rdptr = pl;
 	do {
@@ -300,7 +310,7 @@ static key_serial_t dimm_load_key(struct ndctl_dimm *dimm,
 	if (rc < 0)
 		return rc;
 
-	blob = ndctl_load_key_blob(path, &size, NULL, -1);
+	blob = ndctl_load_key_blob(path, &size, NULL, -1, KEY_ENCRYPTED);
 	if (!blob)
 		return -ENOMEM;
 

@@ -12,9 +12,15 @@ enum ndctl_key_type {
 	ND_ZERO_KEY,
 };
 
+enum key_type {
+	KEY_USER = 0,
+	KEY_TRUSTED,
+	KEY_ENCRYPTED,
+};
+
 #ifdef ENABLE_KEYUTILS
 char *ndctl_load_key_blob(const char *path, int *size, const char *postfix,
-		int dirfd);
+		int dirfd, enum key_type key_type);
 int ndctl_dimm_setup_key(struct ndctl_dimm *dimm, const char *kek,
 				enum ndctl_key_type key_type);
 int ndctl_dimm_update_key(struct ndctl_dimm *dimm, const char *kek,
@@ -25,7 +31,7 @@ int ndctl_dimm_secure_erase_key(struct ndctl_dimm *dimm,
 int ndctl_dimm_overwrite_key(struct ndctl_dimm *dimm);
 #else
 char *ndctl_load_key_blob(const char *path, int *size, const char *postfix,
-		int dirfd)
+		int dirfd, enum key_type key_type)
 {
 	return NULL;
 }
