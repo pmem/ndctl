@@ -6,8 +6,10 @@ rc=77
 dev=""
 id=""
 keypath="/etc/ndctl/keys"
-masterkey="nvdimm-master-test"
-masterpath="$keypath/$masterkey"
+masterkey="nvdimm-master"
+masterpath="$keypath/$masterkey.blob"
+backup_key=0
+backup_handle=0
 
 . ./common
 
@@ -32,6 +34,15 @@ setup_keys()
 		mkdir -p "$keypath"
 	fi
 
+	if [ -f "$masterpath" ]; then
+		mv "$masterpath" "$masterpath.bak"
+		$backup_key=1
+	fi
+	if [ -f "$keypath/tpm.handle" ]; then
+		mv "$keypath/tpm.handle" "$keypath/tmp.handle.bak"
+		$backup_handle=1
+	fi
+
 	dd if=/dev/urandom bs=1 count=32 2>/dev/null | keyctl padd user "$masterkey" @u
 	keyctl pipe "$(keyctl search @u user $masterkey)" > "$masterpath"
 }
@@ -43,15 +54,24 @@ test_cleanup()
 	fi
 
 	if keyctl search @u user "$masterkey"; then
-		keyctl unlink "$(keyctl search @u user $masterkey)"
+		keyctl unlink "$(keyctl search @u user "$masterkey")"
 	fi
 
 	if [ -f "$keypath"/nvdimm_"$id"_"$(hostname)".blob ]; then
 		rm -f "$keypath"/nvdimm_"$id"_"$(hostname)".blob
 	fi
+}
 
+post_cleanup()
+{
 	if [ -f $masterpath ]; then
 		rm -f "$masterpath"
+	fi
+	if [ "$backup_key" -eq 1 ]; then
+		mv "$masterpath.bak" "$masterpath"
+	fi
+	if [ "$backup_handle" -eq 1 ]; then
+		mv "$keypath/tpm.handle.bak" "$keypath/tmp.handle"
 	fi
 }
 
@@ -168,8 +188,8 @@ test_4_security_unlock()
 	remove_passphrase
 }
 
-# this should always be the last test. with security frozen, nfit_test must
-# be removed and is no longer usable
+# This should always be the last nvdimm security test.
+# with security frozen, nfit_test must be removed and is no longer usable
 test_5_security_freeze()
 {
 	setup_passphrase
@@ -184,6 +204,33 @@ test_5_security_freeze()
 	echo "$sstate"
 	if [ "$sstate" != "frozen" ]; then
 		echo "Incorrect security state: $sstate expected: frozen"
+		err "$LINENO"
+	fi
+}
+
+test_6_load_keys()
+{
+	if keyctl search @u encrypted nvdimm:"$id"; then
+		keyctl unlink "$(keyctl search @u encrypted nvdimm:"$id")"
+	fi
+
+	if keyctl search @u user "$masterkey"; then
+		keyctl unlink "$(keyctl search @u user "$masterkey")"
+	fi
+
+	$NDCTL load-keys
+
+	if keyctl search @u user "$masterkey"; then
+		echo "master key loaded"
+	else
+		echo "master key failed to loaded"
+		err "$LINENO"
+	fi
+
+	if keyctl search @u encrypted nvdimm:"$id"; then
+		echo "dimm key loaded"
+	else
+		echo "dimm key failed to load"
 		err "$LINENO"
 	fi
 }
@@ -210,11 +257,18 @@ test_3_security_setup_and_erase
 echo "Test 4, unlock dimm"
 test_4_security_unlock
 
-# Freeze should always be run last because it locks security state and require
-# nfit_test module unload.
+# Freeze should always be the last nvdimm security test because it locks
+# security state and require nfit_test module unload. However, this does
+# not impact any key management testing via libkeyctl.
 echo "Test 5, freeze security"
 test_5_security_freeze
 
+# Load-keys is independent of actual nvdimm security and is part of key
+# mangement testing.
+echo "Test 6, test load-keys"
+test_6_load_keys
+
 test_cleanup
+post_cleanup
 _cleanup
 exit 0
