@@ -484,8 +484,11 @@ static int read_config_file(struct ndctl_ctx *ctx, struct monitor *_monitor,
 
 	f = fopen(config_file, "r");
 	if (!f) {
-		err(&monitor, "config-file: %s cannot be opened\n", config_file);
-		rc = -errno;
+		if (_monitor->config_file) {
+			err(&monitor, "config-file: %s cannot be opened\n",
+				config_file);
+			rc = -errno;
+		}
 		goto out;
 	}
 
