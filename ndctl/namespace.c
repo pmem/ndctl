@@ -36,6 +36,7 @@ static bool verbose;
 static bool force;
 static bool repair;
 static bool logfix;
+static bool scrub;
 static struct parameters {
 	bool do_scan;
 	bool mode_default;
@@ -120,6 +121,9 @@ OPT_BOOLEAN('R', "repair", &repair, "perform metadata repairs"), \
 OPT_BOOLEAN('L', "rewrite-log", &logfix, "regenerate the log"), \
 OPT_BOOLEAN('f', "force", &force, "check namespace even if currently active")
 
+#define CLEAR_OPTIONS() \
+OPT_BOOLEAN('s', "scrub", &scrub, "run a scrub to find latent errors")
+
 static const struct option base_options[] = {
 	BASE_OPTIONS(),
 	OPT_END(),
@@ -141,6 +145,12 @@ static const struct option create_options[] = {
 static const struct option check_options[] = {
 	BASE_OPTIONS(),
 	CHECK_OPTIONS(),
+	OPT_END(),
+};
+
+static const struct option clear_options[] = {
+	BASE_OPTIONS(),
+	CLEAR_OPTIONS(),
 	OPT_END(),
 };
 
@@ -284,6 +294,9 @@ static const char *parse_namespace_options(int argc, const char **argv,
 				break;
 			case ACTION_CHECK:
 				action_string = "check";
+				break;
+			case ACTION_CLEAR:
+				action_string = "clear errors for";
 				break;
 			default:
 				action_string = "<>";
@@ -1051,6 +1064,251 @@ static int namespace_reconfig(struct ndctl_region *region,
 int namespace_check(struct ndctl_namespace *ndns, bool verbose, bool force,
 		bool repair, bool logfix);
 
+static int bus_send_clear(struct ndctl_bus *bus, unsigned long long start,
+		unsigned long long size)
+{
+	const char *busname = ndctl_bus_get_provider(bus);
+	struct ndctl_cmd *cmd_cap, *cmd_clear;
+	unsigned long long cleared;
+	struct ndctl_range range;
+	int rc;
+
+	/* get ars_cap */
+	cmd_cap = ndctl_bus_cmd_new_ars_cap(bus, start, size);
+	if (!cmd_cap) {
+		debug("bus: %s failed to create cmd\n", busname);
+		return -ENOTTY;
+	}
+
+	rc = ndctl_cmd_submit_xlat(cmd_cap);
+	if (rc < 0) {
+		debug("bus: %s failed to submit cmd: %d\n", busname, rc);
+		ndctl_cmd_unref(cmd_cap);
+		return rc;
+	}
+
+	/* send clear_error */
+	if (ndctl_cmd_ars_cap_get_range(cmd_cap, &range)) {
+		debug("bus: %s failed to get ars_cap range\n", busname);
+		return -ENXIO;
+	}
+
+	cmd_clear = ndctl_bus_cmd_new_clear_error(range.address,
+					range.length, cmd_cap);
+	if (!cmd_clear) {
+		debug("bus: %s failed to create cmd\n", busname);
+		return -ENOTTY;
+	}
+
+	rc = ndctl_cmd_submit_xlat(cmd_clear);
+	if (rc < 0) {
+		debug("bus: %s failed to submit cmd: %d\n", busname, rc);
+		ndctl_cmd_unref(cmd_clear);
+		return rc;
+	}
+
+	cleared = ndctl_cmd_clear_error_get_cleared(cmd_clear);
+	if (cleared != range.length) {
+		debug("bus: %s expected to clear: %lld actual: %lld\n",
+				busname, range.length, cleared);
+		return -ENXIO;
+	}
+
+	ndctl_cmd_unref(cmd_cap);
+	ndctl_cmd_unref(cmd_clear);
+	return 0;
+}
+
+static int nstype_clear_badblocks(struct ndctl_namespace *ndns,
+		const char *devname, unsigned long long dev_begin,
+		unsigned long long dev_size)
+{
+	struct ndctl_region *region = ndctl_namespace_get_region(ndns);
+	struct ndctl_bus *bus = ndctl_region_get_bus(region);
+	unsigned long long region_begin, dev_end;
+	unsigned int cleared = 0;
+	struct badblock *bb;
+	int rc = 0;
+
+	region_begin = ndctl_region_get_resource(region);
+	if (region_begin == ULLONG_MAX) {
+		ndctl_namespace_enable(ndns);
+		return -errno;
+	}
+
+	dev_end = dev_begin + dev_size - 1;
+
+	ndctl_region_badblock_foreach(region, bb) {
+		unsigned long long bb_begin, bb_end, bb_len;
+
+		bb_begin = region_begin + (bb->offset << 9);
+		bb_len = bb->len << 9;
+		bb_end = bb_begin + bb_len - 1;
+
+		/* bb is not fully contained in the usable area */
+		if (bb_begin < dev_begin || bb_end > dev_end)
+			continue;
+
+		rc = bus_send_clear(bus, bb_begin, bb_len);
+		if (rc) {
+			error("%s: failed to clear badblock at {%lld, %u}\n",
+				devname, bb->offset, bb->len);
+			break;
+		}
+		cleared += bb->len;
+	}
+	debug("%s: cleared %u badblocks\n", devname, cleared);
+
+	rc = ndctl_namespace_enable(ndns);
+	if (rc < 0)
+		return rc;
+	return 0;
+}
+
+static int dax_clear_badblocks(struct ndctl_dax *dax)
+{
+	struct ndctl_namespace *ndns = ndctl_dax_get_namespace(dax);
+	const char *devname = ndctl_dax_get_devname(dax);
+	unsigned long long begin, size;
+	int rc;
+
+	begin = ndctl_dax_get_resource(dax);
+	if (begin == ULLONG_MAX)
+		return -ENXIO;
+
+	size = ndctl_dax_get_size(dax);
+	if (size == ULLONG_MAX)
+		return -ENXIO;
+
+	rc = ndctl_namespace_disable_safe(ndns);
+	if (rc) {
+		error("%s: unable to disable namespace: %s\n", devname,
+			strerror(-rc));
+		return rc;
+	}
+	return nstype_clear_badblocks(ndns, devname, begin, size);
+}
+
+static int pfn_clear_badblocks(struct ndctl_pfn *pfn)
+{
+	struct ndctl_namespace *ndns = ndctl_pfn_get_namespace(pfn);
+	const char *devname = ndctl_pfn_get_devname(pfn);
+	unsigned long long begin, size;
+	int rc;
+
+	begin = ndctl_pfn_get_resource(pfn);
+	if (begin == ULLONG_MAX)
+		return -ENXIO;
+
+	size = ndctl_pfn_get_size(pfn);
+	if (size == ULLONG_MAX)
+		return -ENXIO;
+
+	rc = ndctl_namespace_disable_safe(ndns);
+	if (rc) {
+		error("%s: unable to disable namespace: %s\n", devname,
+			strerror(-rc));
+		return rc;
+	}
+	return nstype_clear_badblocks(ndns, devname, begin, size);
+}
+
+static int raw_clear_badblocks(struct ndctl_namespace *ndns)
+{
+	const char *devname = ndctl_namespace_get_devname(ndns);
+	unsigned long long begin, size;
+	int rc;
+
+	begin = ndctl_namespace_get_resource(ndns);
+	if (begin == ULLONG_MAX)
+		return -ENXIO;
+
+	size = ndctl_namespace_get_size(ndns);
+	if (size == ULLONG_MAX)
+		return -ENXIO;
+
+	rc = ndctl_namespace_disable_safe(ndns);
+	if (rc) {
+		error("%s: unable to disable namespace: %s\n", devname,
+			strerror(-rc));
+		return rc;
+	}
+	return nstype_clear_badblocks(ndns, devname, begin, size);
+}
+
+static int namespace_wait_scrub(struct ndctl_namespace *ndns)
+{
+	const char *devname = ndctl_namespace_get_devname(ndns);
+	struct ndctl_bus *bus = ndctl_namespace_get_bus(ndns);
+	int in_progress, rc;
+
+	in_progress = ndctl_bus_get_scrub_state(bus);
+	if (in_progress < 0) {
+		error("%s: Unable to determine scrub state: %s\n", devname,
+				strerror(-in_progress));
+		return in_progress;
+	}
+
+	/* start a scrub if asked and if one isn't in progress */
+	if (scrub && (!in_progress)) {
+		rc = ndctl_bus_start_scrub(bus);
+		if (rc) {
+			error("%s: Unable to start scrub: %s\n", devname,
+					strerror(-rc));
+			return rc;
+		}
+	}
+
+	/*
+	 * wait for any in-progress scrub, whether started above, or
+	 * started automatically at boot time
+	 */
+	rc = ndctl_bus_wait_for_scrub_completion(bus);
+	if (rc) {
+		error("%s: Error waiting for scrub: %s\n", devname,
+				strerror(-rc));
+		return rc;
+	}
+
+	return 0;
+}
+
+static int namespace_clear_bb(struct ndctl_namespace *ndns)
+{
+	struct ndctl_pfn *pfn = ndctl_namespace_get_pfn(ndns);
+	struct ndctl_dax *dax = ndctl_namespace_get_dax(ndns);
+	struct ndctl_btt *btt = ndctl_namespace_get_btt(ndns);
+	struct json_object *jndns;
+	int rc;
+
+	if (btt) {
+		/* skip btt error clearing for now */
+		debug("%s: skip error clearing for btt\n",
+				ndctl_btt_get_devname(btt));
+		return 1;
+	}
+
+	rc = namespace_wait_scrub(ndns);
+	if (rc)
+		return rc;
+
+	if (dax)
+		rc = dax_clear_badblocks(dax);
+	else if (pfn)
+		rc = pfn_clear_badblocks(pfn);
+	else
+		rc = raw_clear_badblocks(ndns);
+
+	if (rc)
+		return rc;
+
+	jndns = util_namespace_to_json(ndns, UTIL_JSON_MEDIA_ERRORS);
+	if (jndns)
+		printf("%s\n", json_object_to_json_string_ext(jndns,
+				JSON_C_TO_STRING_PRETTY));
+	return 0;
+}
+
 static int do_xaction_namespace(const char *namespace,
 		enum device_action action, struct ndctl_ctx *ctx,
 		int *processed)
@@ -1128,6 +1386,11 @@ static int do_xaction_namespace(const char *namespace,
 				case ACTION_CHECK:
 					rc = namespace_check(ndns, verbose,
 							force, repair, logfix);
+					if (rc == 0)
+						(*processed)++;
+					break;
+				case ACTION_CLEAR:
+					rc = namespace_clear_bb(ndns);
 					if (rc == 0)
 						(*processed)++;
 					break;
@@ -1238,5 +1501,21 @@ int cmd_check_namespace(int argc , const char **argv, struct ndctl_ctx *ctx)
 				strerror(-rc));
 	fprintf(stderr, "checked %d namespace%s\n", checked,
 			checked == 1 ? "" : "s");
+	return rc;
+}
+
+int cmd_clear_errors(int argc , const char **argv, struct ndctl_ctx *ctx)
+{
+	char *xable_usage = "ndctl clear_errors <namespace> [<options>]";
+	const char *namespace = parse_namespace_options(argc, argv,
+			ACTION_CLEAR, clear_options, xable_usage);
+	int cleared, rc;
+
+	rc = do_xaction_namespace(namespace, ACTION_CLEAR, ctx, &cleared);
+	if (rc < 0)
+		fprintf(stderr, "error clearing namespaces: %s\n",
+				strerror(-rc));
+	fprintf(stderr, "cleared %d namespace%s\n", cleared,
+			cleared == 1 ? "" : "s");
 	return rc;
 }
