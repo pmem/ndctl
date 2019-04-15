@@ -89,7 +89,7 @@ static int region_action(struct ndctl_region *region, enum device_action mode)
 		break;
 	}
 
-	return 0;
+	return rc;
 }
 
 static int do_xable_region(const char *region_arg, enum device_action mode,
