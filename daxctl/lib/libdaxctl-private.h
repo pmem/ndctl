@@ -39,6 +39,13 @@ static const char *dax_modules[] = {
 	[DAXCTL_DEV_MODE_RAM] = "kmem",
 };
 
+enum memory_op {
+	MEM_SET_OFFLINE,
+	MEM_SET_ONLINE,
+	MEM_IS_ONLINE,
+	MEM_COUNT,
+};
+
 /**
  * struct daxctl_region - container for dax_devices
  */
@@ -70,7 +77,18 @@ struct daxctl_dev {
 	struct kmod_module *module;
 	struct kmod_list *kmod_list;
 	struct daxctl_region *region;
+	struct daxctl_memory *mem;
+	int target_node;
 };
+
+struct daxctl_memory {
+	struct daxctl_dev *dev;
+	void *mem_buf;
+	size_t buf_len;
+	char *node_path;
+	unsigned long block_size;
+};
+
 
 static inline int check_kmod(struct kmod_ctx *kmod_ctx)
 {

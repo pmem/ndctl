@@ -73,6 +73,17 @@ int daxctl_dev_is_enabled(struct daxctl_dev *dev);
 int daxctl_dev_disable(struct daxctl_dev *dev);
 int daxctl_dev_enable_devdax(struct daxctl_dev *dev);
 int daxctl_dev_enable_ram(struct daxctl_dev *dev);
+int daxctl_dev_get_target_node(struct daxctl_dev *dev);
+
+struct daxctl_memory;
+struct daxctl_memory *daxctl_dev_get_memory(struct daxctl_dev *dev);
+struct daxctl_dev *daxctl_memory_get_dev(struct daxctl_memory *mem);
+const char *daxctl_memory_get_node_path(struct daxctl_memory *mem);
+unsigned long daxctl_memory_get_block_size(struct daxctl_memory *mem);
+int daxctl_memory_online(struct daxctl_memory *mem);
+int daxctl_memory_offline(struct daxctl_memory *mem);
+int daxctl_memory_is_online(struct daxctl_memory *mem);
+int daxctl_memory_num_sections(struct daxctl_memory *mem);
 
 #define daxctl_dev_foreach(region, dev) \
         for (dev = daxctl_dev_get_first(region); \

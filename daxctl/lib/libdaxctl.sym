@@ -59,4 +59,13 @@ global:
 	daxctl_dev_enable_devdax;
 	daxctl_dev_enable_ram;
 	daxctl_dev_get_resource;
+	daxctl_dev_get_target_node;
+	daxctl_dev_get_memory;
+	daxctl_memory_get_dev;
+	daxctl_memory_get_node_path;
+	daxctl_memory_get_block_size;
+	daxctl_memory_online;
+	daxctl_memory_offline;
+	daxctl_memory_is_online;
+	daxctl_memory_num_sections;
 } LIBDAXCTL_5;
