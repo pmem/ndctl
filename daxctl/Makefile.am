@@ -15,10 +15,12 @@ daxctl_SOURCES =\
 		daxctl.c \
 		list.c \
 		migrate.c \
+		device.c \
 		../util/json.c
 
 daxctl_LDADD =\
 	lib/libdaxctl.la \
 	../libutil.a \
 	$(UUID_LIBS) \
+	$(KMOD_LIBS) \
 	$(JSON_LIBS)
