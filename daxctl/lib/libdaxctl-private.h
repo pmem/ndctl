@@ -13,6 +13,8 @@
 #ifndef _LIBDAXCTL_PRIVATE_H_
 #define _LIBDAXCTL_PRIVATE_H_
 
+#include <libkmod.h>
+
 #define DAXCTL_EXPORT __attribute__ ((visibility("default")))
 
 enum dax_subsystem {
@@ -24,6 +26,17 @@ enum dax_subsystem {
 static const char *dax_subsystems[] = {
 	[DAX_CLASS] = "/sys/class/dax",
 	[DAX_BUS] = "/sys/bus/dax/devices",
+};
+
+enum daxctl_dev_mode {
+	DAXCTL_DEV_MODE_DEVDAX = 0,
+	DAXCTL_DEV_MODE_RAM,
+	DAXCTL_DEV_MODE_END,
+};
+
+static const char *dax_modules[] = {
+	[DAXCTL_DEV_MODE_DEVDAX] = "device_dax",
+	[DAXCTL_DEV_MODE_RAM] = "kmem",
 };
 
 /**
@@ -53,6 +66,14 @@ struct daxctl_dev {
 	char *dev_path;
 	struct list_node list;
 	unsigned long long size;
+	struct kmod_module *module;
+	struct kmod_list *kmod_list;
 	struct daxctl_region *region;
 };
+
+static inline int check_kmod(struct kmod_ctx *kmod_ctx)
+{
+	return kmod_ctx ? 0 : -ENXIO;
+}
+
 #endif /* _LIBDAXCTL_PRIVATE_H_ */

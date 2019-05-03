@@ -55,4 +55,7 @@ LIBDAXCTL_6 {
 global:
 	daxctl_dev_get_ctx;
 	daxctl_dev_is_enabled;
+	daxctl_dev_disable;
+	daxctl_dev_enable_devdax;
+	daxctl_dev_enable_ram;
 } LIBDAXCTL_5;

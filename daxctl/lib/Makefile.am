@@ -16,7 +16,8 @@ libdaxctl_la_SOURCES =\
 	libdaxctl.c
 
 libdaxctl_la_LIBADD =\
-	$(UUID_LIBS)
+	$(UUID_LIBS) \
+	$(KMOD_LIBS)
 
 daxctl_modprobe_data_DATA = daxctl.conf
 

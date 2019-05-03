@@ -46,6 +46,7 @@ struct daxctl_ctx {
 	void *userdata;
 	int regions_init;
 	struct list_head regions;
+	struct kmod_ctx *kmod_ctx;
 };
 
 /**
@@ -84,11 +85,19 @@ DAXCTL_EXPORT void daxctl_set_userdata(struct daxctl_ctx *ctx, void *userdata)
  */
 DAXCTL_EXPORT int daxctl_new(struct daxctl_ctx **ctx)
 {
+	struct kmod_ctx *kmod_ctx;
 	struct daxctl_ctx *c;
+	int rc = 0;
 
 	c = calloc(1, sizeof(struct daxctl_ctx));
 	if (!c)
 		return -ENOMEM;
+
+	kmod_ctx = kmod_new(NULL, NULL);
+	if (check_kmod(kmod_ctx) != 0) {
+		rc = -ENXIO;
+		goto out;
+	}
 
 	c->refcount = 1;
 	log_init(&c->ctx, "libdaxctl", "DAXCTL_LOG");
@@ -96,8 +105,12 @@ DAXCTL_EXPORT int daxctl_new(struct daxctl_ctx **ctx)
 	dbg(c, "log_priority=%d\n", c->ctx.log_priority);
 	*ctx = c;
 	list_head_init(&c->regions);
+	c->kmod_ctx = kmod_ctx;
 
 	return 0;
+out:
+	free(c);
+	return rc;
 }
 
 /**
@@ -132,6 +145,7 @@ DAXCTL_EXPORT void daxctl_unref(struct daxctl_ctx *ctx)
 	list_for_each_safe(&ctx->regions, region, _r, list)
 		free_region(region, &ctx->regions);
 
+	kmod_unref(ctx->kmod_ctx);
 	info(ctx, "context %p released\n", ctx);
 	free(ctx);
 }
@@ -189,6 +203,7 @@ static void free_dev(struct daxctl_dev *dev, struct list_head *head)
 {
 	if (head)
 		list_del_from(head, &dev->list);
+	kmod_module_unref_list(dev->kmod_list);
 	free(dev->dev_buf);
 	free(dev->dev_path);
 	free(dev);
@@ -343,6 +358,27 @@ static bool device_model_is_dax_bus(struct daxctl_dev *dev)
 	return false;
 }
 
+static struct kmod_list *to_module_list(struct daxctl_ctx *ctx,
+		const char *alias)
+{
+	struct kmod_list *list = NULL;
+	int rc;
+
+	if (!ctx->kmod_ctx || !alias)
+		return NULL;
+	if (alias[0] == 0)
+		return NULL;
+
+	rc = kmod_module_new_from_lookup(ctx->kmod_ctx, alias, &list);
+	if (rc < 0 || !list) {
+		dbg(ctx, "failed to find modules for alias: %s %d list: %s\n",
+				alias, rc, list ? "populated" : "empty");
+		return NULL;
+	}
+
+	return list;
+}
+
 static void *add_dax_dev(void *parent, int id, const char *daxdev_base)
 {
 	const char *devname = devpath_to_devname(daxdev_base);
@@ -352,6 +388,7 @@ static void *add_dax_dev(void *parent, int id, const char *daxdev_base)
 	struct daxctl_dev *dev, *dev_dup;
 	char buf[SYSFS_ATTR_SIZE];
 	struct stat st;
+	int rc;
 
 	if (!path)
 		return NULL;
@@ -382,6 +419,14 @@ static void *add_dax_dev(void *parent, int id, const char *daxdev_base)
 	if (!dev->dev_buf)
 		goto err_read;
 	dev->buf_len = strlen(daxdev_base) + 50;
+
+	sprintf(path, "%s/modalias", daxdev_base);
+	rc = sysfs_read_attr(ctx, path, buf);
+	/* older kernels may be lack the modalias attribute */
+	if (rc < 0 && rc != -ENOENT)
+		goto err_read;
+	if (rc == 0)
+		dev->kmod_list = to_module_list(ctx, buf);
 
 	daxctl_dev_foreach(region, dev_dup)
 		if (dev_dup->id == dev->id) {
@@ -606,6 +651,92 @@ static int is_enabled(const char *drvpath)
 		return 1;
 }
 
+static int daxctl_bind(struct daxctl_ctx *ctx, const char *devname,
+		const char *mod_name)
+{
+	DIR *dir;
+	int rc = 0;
+	char path[200];
+	struct dirent *de;
+	const int len = sizeof(path);
+
+	if (!devname) {
+		err(ctx, "missing devname\n");
+		return -EINVAL;
+	}
+
+	if (snprintf(path, len, "/sys/bus/dax/drivers") >= len) {
+		err(ctx, "%s: buffer too small!\n", devname);
+		return -ENXIO;
+	}
+
+	dir = opendir(path);
+	if (!dir) {
+		err(ctx, "%s: opendir(\"%s\") failed\n", devname, path);
+		return -ENXIO;
+	}
+
+	while ((de = readdir(dir)) != NULL) {
+		char *drv_path;
+
+		if (de->d_ino == 0)
+			continue;
+		if (de->d_name[0] == '.')
+			continue;
+		if (strcmp(de->d_name, mod_name) != 0)
+			continue;
+
+		if (asprintf(&drv_path, "%s/%s/new_id", path, de->d_name) < 0) {
+			err(ctx, "%s: path allocation failure\n", devname);
+			rc = -ENOMEM;
+			break;
+		}
+		rc = sysfs_write_attr_quiet(ctx, drv_path, devname);
+		free(drv_path);
+
+		if (asprintf(&drv_path, "%s/%s/bind", path, de->d_name) < 0) {
+			err(ctx, "%s: path allocation failure\n", devname);
+			rc = -ENOMEM;
+			break;
+		}
+		rc = sysfs_write_attr_quiet(ctx, drv_path, devname);
+		free(drv_path);
+		break;
+	}
+	closedir(dir);
+
+	if (rc) {
+		dbg(ctx, "%s: bind failed\n", devname);
+		return rc;
+	}
+	return 0;
+}
+
+static int daxctl_unbind(struct daxctl_ctx *ctx, const char *devpath)
+{
+	const char *devname = devpath_to_devname(devpath);
+	char path[200];
+	const int len = sizeof(path);
+	int rc;
+
+	if (snprintf(path, len, "%s/driver/remove_id", devpath) >= len) {
+		err(ctx, "%s: buffer too small!\n", devname);
+		return -ENXIO;
+	}
+
+	rc = sysfs_write_attr(ctx, path, devname);
+	if (rc)
+		return rc;
+
+	if (snprintf(path, len, "%s/driver/unbind", devpath) >= len) {
+		err(ctx, "%s: buffer too small!\n", devname);
+		return -ENXIO;
+	}
+
+	return sysfs_write_attr(ctx, path, devname);
+
+}
+
 DAXCTL_EXPORT int daxctl_dev_is_enabled(struct daxctl_dev *dev)
 {
 	struct daxctl_ctx *ctx = daxctl_dev_get_ctx(dev);
@@ -622,6 +753,119 @@ DAXCTL_EXPORT int daxctl_dev_is_enabled(struct daxctl_dev *dev)
 	}
 
 	return is_enabled(path);
+}
+
+static int daxctl_insert_kmod_for_mode(struct daxctl_dev *dev,
+		const char *mod_name)
+{
+	const char *devname = daxctl_dev_get_devname(dev);
+	struct daxctl_ctx *ctx = daxctl_dev_get_ctx(dev);
+	struct kmod_list *iter;
+	int rc = -ENXIO;
+
+	if (dev->kmod_list == NULL) {
+		err(ctx, "%s: a modalias lookup list was not created\n",
+				devname);
+		return rc;
+	}
+
+	kmod_list_foreach(iter, dev->kmod_list) {
+		struct kmod_module *mod = kmod_module_get_module(iter);
+		const char *name = kmod_module_get_name(mod);
+
+		if (strcmp(name, mod_name) != 0) {
+			kmod_module_unref(mod);
+			continue;
+		}
+		dbg(ctx, "%s inserting module: %s\n", devname, name);
+		rc = kmod_module_probe_insert_module(mod,
+				KMOD_PROBE_APPLY_BLACKLIST, NULL, NULL, NULL,
+				NULL);
+		if (rc < 0) {
+			err(ctx, "%s: insert failure: %d\n", devname, rc);
+			return rc;
+		}
+		dev->module = mod;
+	}
+
+	if (rc == -ENXIO)
+		err(ctx, "%s: Unable to find module: %s in alias list\n",
+				devname, mod_name);
+	return rc;
+}
+
+static int daxctl_dev_enable(struct daxctl_dev *dev, enum daxctl_dev_mode mode)
+{
+	struct daxctl_region *region = daxctl_dev_get_region(dev);
+	const char *devname = daxctl_dev_get_devname(dev);
+	struct daxctl_ctx *ctx = daxctl_dev_get_ctx(dev);
+	const char *mod_name = dax_modules[mode];
+	int rc;
+
+	if (!device_model_is_dax_bus(dev)) {
+		err(ctx, "%s: error: device model is dax-class\n", devname);
+		return -EOPNOTSUPP;
+	}
+
+	if (daxctl_dev_is_enabled(dev))
+		return 0;
+
+	if (mode >= DAXCTL_DEV_MODE_END || mod_name == NULL) {
+		err(ctx, "%s: Invalid mode: %d\n", devname, mode);
+		return -EINVAL;
+	}
+
+	rc = daxctl_insert_kmod_for_mode(dev, mod_name);
+	if (rc)
+		return rc;
+
+	rc = daxctl_bind(ctx, devname, mod_name);
+	if (!daxctl_dev_is_enabled(dev)) {
+		err(ctx, "%s: failed to enable\n", devname);
+		return rc ? rc : -ENXIO;
+	}
+
+	region->devices_init = 0;
+	dax_devices_init(region);
+	rc = 0;
+	dbg(ctx, "%s: enabled\n", devname);
+	return rc;
+}
+
+DAXCTL_EXPORT int daxctl_dev_enable_devdax(struct daxctl_dev *dev)
+{
+	return daxctl_dev_enable(dev, DAXCTL_DEV_MODE_DEVDAX);
+}
+
+DAXCTL_EXPORT int daxctl_dev_enable_ram(struct daxctl_dev *dev)
+{
+	return daxctl_dev_enable(dev, DAXCTL_DEV_MODE_RAM);
+}
+
+DAXCTL_EXPORT int daxctl_dev_disable(struct daxctl_dev *dev)
+{
+	const char *devname = daxctl_dev_get_devname(dev);
+	struct daxctl_ctx *ctx = daxctl_dev_get_ctx(dev);
+
+	if (!device_model_is_dax_bus(dev)) {
+		err(ctx, "%s: error: device model is dax-class\n", devname);
+		return -EOPNOTSUPP;
+	}
+
+	if (!daxctl_dev_is_enabled(dev))
+		return 0;
+
+	daxctl_unbind(ctx, dev->dev_path);
+
+	if (daxctl_dev_is_enabled(dev)) {
+		err(ctx, "%s: failed to disable\n", devname);
+		return -EBUSY;
+	}
+
+	kmod_module_unref(dev->module);
+	dbg(ctx, "%s: disabled\n", devname);
+
+	return 0;
 }
 
 DAXCTL_EXPORT struct daxctl_ctx *daxctl_dev_get_ctx(struct daxctl_dev *dev)
