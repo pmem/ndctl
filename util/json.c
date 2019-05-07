@@ -269,6 +269,7 @@ struct json_object *util_dimm_to_json(struct ndctl_dimm *dimm,
 struct json_object *util_daxctl_dev_to_json(struct daxctl_dev *dev,
 		unsigned long flags)
 {
+	struct daxctl_memory *mem = daxctl_dev_get_memory(dev);
 	const char *devname = daxctl_dev_get_devname(dev);
 	struct json_object *jdev, *jobj;
 	int node;
@@ -290,6 +291,19 @@ struct json_object *util_daxctl_dev_to_json(struct daxctl_dev *dev,
 		jobj = json_object_new_int(node);
 		if (jobj)
 			json_object_object_add(jdev, "target_node", jobj);
+	}
+
+	if (mem)
+		jobj = json_object_new_string("system-ram");
+	else
+		jobj = json_object_new_string("devdax");
+	if (jobj)
+		json_object_object_add(jdev, "mode", jobj);
+
+	if (!daxctl_dev_is_enabled(dev)) {
+		jobj = json_object_new_string("disabled");
+		if (jobj)
+			json_object_object_add(jdev, "state", jobj);
 	}
 
 	return jdev;
