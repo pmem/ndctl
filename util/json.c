@@ -271,6 +271,7 @@ struct json_object *util_daxctl_dev_to_json(struct daxctl_dev *dev,
 {
 	const char *devname = daxctl_dev_get_devname(dev);
 	struct json_object *jdev, *jobj;
+	int node;
 
 	jdev = json_object_new_object();
 	if (!devname || !jdev)
@@ -283,6 +284,13 @@ struct json_object *util_daxctl_dev_to_json(struct daxctl_dev *dev,
 	jobj = util_json_object_size(daxctl_dev_get_size(dev), flags);
 	if (jobj)
 		json_object_object_add(jdev, "size", jobj);
+
+	node = daxctl_dev_get_target_node(dev);
+	if (node >= 0) {
+		jobj = json_object_new_int(node);
+		if (jobj)
+			json_object_object_add(jdev, "target_node", jobj);
+	}
 
 	return jdev;
 }
