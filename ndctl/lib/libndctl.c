@@ -1306,6 +1306,8 @@ NDCTL_EXPORT int ndctl_bus_poll_scrub_completion(struct ndctl_bus *bus,
 	int fd = 0, rc;
 
 	fd = open(bus->scrub_path, O_RDONLY|O_CLOEXEC);
+	if (fd < 0)
+		return -errno;
 	memset(&fds, 0, sizeof(fds));
 	fds.fd = fd;
 	for (;;) {
