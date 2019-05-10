@@ -1083,40 +1083,42 @@ static int bus_send_clear(struct ndctl_bus *bus, unsigned long long start,
 	rc = ndctl_cmd_submit_xlat(cmd_cap);
 	if (rc < 0) {
 		debug("bus: %s failed to submit cmd: %d\n", busname, rc);
-		ndctl_cmd_unref(cmd_cap);
-		return rc;
+		goto out_cap;
 	}
 
 	/* send clear_error */
 	if (ndctl_cmd_ars_cap_get_range(cmd_cap, &range)) {
 		debug("bus: %s failed to get ars_cap range\n", busname);
-		return -ENXIO;
+		rc = -ENXIO;
+		goto out_cap;
 	}
 
 	cmd_clear = ndctl_bus_cmd_new_clear_error(range.address,
 					range.length, cmd_cap);
 	if (!cmd_clear) {
 		debug("bus: %s failed to create cmd\n", busname);
-		return -ENOTTY;
+		rc = -ENOTTY;
+		goto out_cap;
 	}
 
 	rc = ndctl_cmd_submit_xlat(cmd_clear);
 	if (rc < 0) {
 		debug("bus: %s failed to submit cmd: %d\n", busname, rc);
-		ndctl_cmd_unref(cmd_clear);
-		return rc;
+		goto out_clr;
 	}
 
 	cleared = ndctl_cmd_clear_error_get_cleared(cmd_clear);
 	if (cleared != range.length) {
 		debug("bus: %s expected to clear: %lld actual: %lld\n",
 				busname, range.length, cleared);
-		return -ENXIO;
+		rc = -ENXIO;
 	}
 
-	ndctl_cmd_unref(cmd_cap);
+out_clr:
 	ndctl_cmd_unref(cmd_clear);
-	return 0;
+out_cap:
+	ndctl_cmd_unref(cmd_cap);
+	return rc;
 }
 
 static int nstype_clear_badblocks(struct ndctl_namespace *ndns,
