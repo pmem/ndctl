@@ -1146,7 +1146,7 @@ static int nstype_clear_badblocks(struct ndctl_namespace *ndns,
 		unsigned long long bb_begin, bb_end, bb_len;
 
 		bb_begin = region_begin + (bb->offset << 9);
-		bb_len = bb->len << 9;
+		bb_len = (unsigned long long)bb->len << 9;
 		bb_end = bb_begin + bb_len - 1;
 
 		/* bb is not fully contained in the usable area */
