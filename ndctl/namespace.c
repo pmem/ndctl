@@ -1134,8 +1134,10 @@ static int nstype_clear_badblocks(struct ndctl_namespace *ndns,
 
 	region_begin = ndctl_region_get_resource(region);
 	if (region_begin == ULLONG_MAX) {
-		ndctl_namespace_enable(ndns);
-		return -errno;
+		rc = -errno;
+		if (ndctl_namespace_enable(ndns) < 0)
+			error("%s: failed to reenable namespace\n", devname);
+		return rc;
 	}
 
 	dev_end = dev_begin + dev_size - 1;
