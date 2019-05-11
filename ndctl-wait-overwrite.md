@@ -136,7 +136,7 @@ The user has the option of providing a new *kek* for the new passphrase,
 but continuing to use the existing *kek* is also acceptable. The
 following operations are performed for *update-passphrase*:
 
-1.  Remove the enrypted passphrase from the kernel’s user keyring.
+1.  Remove the encrypted passphrase from the kernel’s user keyring.
 
 2.  Rename the passphrase blob to old.
 
@@ -159,7 +159,7 @@ deleted.
 CRYPTO (SECURE) ERASE
 ---------------------
 
-This operation is similar to disable-passphrase. The kernel issues a
+This operation is similar to remove-passphrase. The kernel issues a
 WBINVD instruction before and after the operation to ensure no data
 corruption from a stale CPU cache. Use ndctl’s sanitize-dimm command
 with the `--crypto-erase` option to perform this operation.

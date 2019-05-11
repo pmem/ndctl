@@ -3,7 +3,7 @@ title: ndctl
 layout: pmdk
 ---
 [View the Project on GitHub](https://github.com/pmem/ndctl)  
-**Generated from [ndctl-64.1](https://github.com/pmem/ndctl/releases/tag/v64.1) [[tree]](https://github.com/pmem/ndctl/tree/v64.1)**  
+**Generated from [ndctl-65](https://github.com/pmem/ndctl/releases/tag/v65) [[tree]](https://github.com/pmem/ndctl/tree/v65)**  
 
 ---
 
@@ -11,6 +11,7 @@ layout: pmdk
 * [ndctl](ndctl.md)
 * [ndctl-check-labels](ndctl-check-labels.md)
 * [ndctl-check-namespace](ndctl-check-namespace.md)
+* [ndctl-clear-errors](ndctl-clear-errors.md)
 * [ndctl-create-namespace](ndctl-create-namespace.md)
 * [ndctl-destroy-namespace](ndctl-destroy-namespace.md)
 * [ndctl-disable-dimm](ndctl-disable-dimm.md)

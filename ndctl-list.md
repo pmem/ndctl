@@ -168,6 +168,10 @@ default if no other options are specified to the command.
 `-i; --idle`  
 Include idle (not enabled) devices in the listing
 
+`-C; --capabilities`  
+Include region capabilities in the listing, i.e. supported namespace
+modes and variable properties like sector sizes and alignments.
+
 `-M; --media-errors`  
 Include media errors (badblocks) in the listing. Note that the
 *badblock\_count* property is included in the listing by default when
@@ -211,8 +215,8 @@ information.
 -   **-vv** Everything *-v* provides, plus automatically enable --dimms,
     --buses, and --regions.  
 
--   **-vvv** Everything *-vv* provides, plus --health, --idle, and
-    --firmware.
+-   **-vvv** Everything *-vv* provides, plus --health, --capabilities,
+    --idle, and --firmware.
 
 <!-- -->
 
