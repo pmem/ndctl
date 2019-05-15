@@ -54,6 +54,7 @@ TESTS +=\
 	dax.sh \
 	device-dax \
 	device-dax-fio.sh \
+	dm.sh \
 	mmap.sh
 
 check_PROGRAMS +=\
