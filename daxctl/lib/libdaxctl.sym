@@ -58,4 +58,5 @@ global:
 	daxctl_dev_disable;
 	daxctl_dev_enable_devdax;
 	daxctl_dev_enable_ram;
+	daxctl_dev_get_resource;
 } LIBDAXCTL_5;

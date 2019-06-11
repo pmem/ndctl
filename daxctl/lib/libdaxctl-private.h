@@ -65,6 +65,7 @@ struct daxctl_dev {
 	size_t buf_len;
 	char *dev_path;
 	struct list_node list;
+	unsigned long long resource;
 	unsigned long long size;
 	struct kmod_module *module;
 	struct kmod_list *kmod_list;

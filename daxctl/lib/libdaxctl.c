@@ -24,6 +24,7 @@
 
 #include <util/log.h>
 #include <util/sysfs.h>
+#include <util/iomem.h>
 #include <daxctl/libdaxctl.h>
 #include "libdaxctl-private.h"
 
@@ -405,6 +406,12 @@ static void *add_dax_dev(void *parent, int id, const char *daxdev_base)
 		goto err_read;
 	dev->major = major(st.st_rdev);
 	dev->minor = minor(st.st_rdev);
+
+	sprintf(path, "%s/resource", daxdev_base);
+	if (sysfs_read_attr(ctx, path, buf) == 0)
+		dev->resource = strtoull(buf, NULL, 0);
+	else
+		dev->resource = iomem_get_dev_resource(ctx, daxdev_base);
 
 	sprintf(path, "%s/size", daxdev_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
@@ -926,6 +933,11 @@ DAXCTL_EXPORT int daxctl_dev_get_major(struct daxctl_dev *dev)
 DAXCTL_EXPORT int daxctl_dev_get_minor(struct daxctl_dev *dev)
 {
 	return dev->minor;
+}
+
+DAXCTL_EXPORT unsigned long long daxctl_dev_get_resource(struct daxctl_dev *dev)
+{
+	return dev->resource;
 }
 
 DAXCTL_EXPORT unsigned long long daxctl_dev_get_size(struct daxctl_dev *dev)

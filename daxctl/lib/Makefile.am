@@ -9,6 +9,8 @@ lib_LTLIBRARIES = libdaxctl.la
 libdaxctl_la_SOURCES =\
 	../libdaxctl.h \
 	libdaxctl-private.h \
+	../../util/iomem.c \
+	../../util/iomem.h \
 	../../util/sysfs.c \
 	../../util/sysfs.h \
 	../../util/log.c \
