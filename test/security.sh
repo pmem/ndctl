@@ -36,11 +36,11 @@ setup_keys()
 
 	if [ -f "$masterpath" ]; then
 		mv "$masterpath" "$masterpath.bak"
-		$backup_key=1
+		backup_key=1
 	fi
 	if [ -f "$keypath/tpm.handle" ]; then
 		mv "$keypath/tpm.handle" "$keypath/tmp.handle.bak"
-		$backup_handle=1
+		backup_handle=1
 	fi
 
 	dd if=/dev/urandom bs=1 count=32 2>/dev/null | keyctl padd user "$masterkey" @u
