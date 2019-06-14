@@ -34,28 +34,36 @@ NDCTL_EXPORT int ndctl_bus_has_error_injection(struct ndctl_bus *bus)
 	return 0;
 }
 
-static void ndctl_namespace_get_injection_bounds(
+static int ndctl_namespace_get_injection_bounds(
 		struct ndctl_namespace *ndns, unsigned long long *ns_offset,
 		unsigned long long *ns_size)
 {
 	struct ndctl_pfn *pfn = ndctl_namespace_get_pfn(ndns);
 	struct ndctl_dax *dax = ndctl_namespace_get_dax(ndns);
+	struct ndctl_btt *btt = ndctl_namespace_get_btt(ndns);
 
 	if (!ns_offset || !ns_size)
-		return;
+		return -ENXIO;
 
 	if (pfn) {
 		*ns_offset = ndctl_pfn_get_resource(pfn);
 		*ns_size = ndctl_pfn_get_size(pfn);
-		return;
-	} else if (dax) {
+		return 0;
+	}
+
+	if (dax) {
 		*ns_offset = ndctl_dax_get_resource(dax);
 		*ns_size = ndctl_dax_get_size(dax);
-		return;
+		return 0;
 	}
-	/* raw or btt */
+
+	if (btt)
+		return -EOPNOTSUPP;
+
+	/* raw */
 	*ns_offset = ndctl_namespace_get_resource(ndns);
 	*ns_size = ndctl_namespace_get_size(ndns);
+	return 0;
 }
 
 static int block_to_spa_offset(struct ndctl_namespace *ndns,
@@ -64,8 +72,11 @@ static int block_to_spa_offset(struct ndctl_namespace *ndns,
 {
 	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
 	unsigned long long ns_offset, ns_size;
+	int rc;
 
-	ndctl_namespace_get_injection_bounds(ndns, &ns_offset, &ns_size);
+	rc = ndctl_namespace_get_injection_bounds(ndns, &ns_offset, &ns_size);
+	if (rc)
+		return rc;
 	*offset = ns_offset + block * 512;
 	*length = count * 512;
 
@@ -98,8 +109,10 @@ static int ndctl_namespace_get_clear_unit(struct ndctl_namespace *ndns)
 	struct ndctl_cmd *cmd;
 	int rc;
 
-	ndctl_namespace_get_injection_bounds(ndns, &ns_offset,
+	rc = ndctl_namespace_get_injection_bounds(ndns, &ns_offset,
 		&ns_size);
+	if (rc)
+		return rc;
 	cmd = ndctl_bus_cmd_new_ars_cap(bus, ns_offset, ns_size);
 	rc = ndctl_cmd_submit(cmd);
 	if (rc < 0) {
@@ -438,8 +451,10 @@ NDCTL_EXPORT int ndctl_namespace_injection_status(struct ndctl_namespace *ndns)
 		return -EOPNOTSUPP;
 
 	if (ndctl_bus_has_nfit(bus)) {
-		ndctl_namespace_get_injection_bounds(ndns, &ns_offset,
+		rc = ndctl_namespace_get_injection_bounds(ndns, &ns_offset,
 			&ns_size);
+		if (rc)
+			return rc;
 
 		cmd = ndctl_bus_cmd_new_ars_cap(bus, ns_offset, ns_size);
 		rc = ndctl_cmd_submit(cmd);
