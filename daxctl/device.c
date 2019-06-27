@@ -39,6 +39,8 @@ static unsigned long flags;
 
 enum device_action {
 	ACTION_RECONFIG,
+	ACTION_ONLINE,
+	ACTION_OFFLINE,
 };
 
 #define BASE_OPTIONS() \
@@ -56,6 +58,11 @@ OPT_BOOLEAN('f', "force", &param.force, \
 static const struct option reconfig_options[] = {
 	BASE_OPTIONS(),
 	RECONFIG_OPTIONS(),
+	OPT_END(),
+};
+
+static const struct option memory_options[] = {
+	BASE_OPTIONS(),
 	OPT_END(),
 };
 
@@ -78,6 +85,12 @@ static const char *parse_device_options(int argc, const char **argv,
 		switch (action) {
 		case ACTION_RECONFIG:
 			action_string = "reconfigure";
+			break;
+		case ACTION_ONLINE:
+			action_string = "online memory for";
+			break;
+		case ACTION_OFFLINE:
+			action_string = "offline memory for";
 			break;
 		default:
 			action_string = "<>";
@@ -121,6 +134,10 @@ static const char *parse_device_options(int argc, const char **argv,
 				rc =  -EINVAL;
 			}
 		}
+		break;
+	case ACTION_ONLINE:
+	case ACTION_OFFLINE:
+		/* nothing special */
 		break;
 	}
 	if (rc) {
@@ -394,6 +411,33 @@ static int do_reconfig(struct daxctl_dev *dev, enum dev_mode mode,
 	return 0;
 }
 
+static int do_xline(struct daxctl_dev *dev, enum device_action action)
+{
+	struct daxctl_memory *mem = daxctl_dev_get_memory(dev);
+	const char *devname = daxctl_dev_get_devname(dev);
+	int rc;
+
+	if (!mem) {
+		fprintf(stderr,
+			"%s: memory operations are not applicable in devdax mode\n",
+			devname);
+		return -ENXIO;
+	}
+
+	switch (action) {
+	case ACTION_ONLINE:
+		rc = dev_online_memory(dev);
+		break;
+	case ACTION_OFFLINE:
+		rc = dev_offline_memory(dev);
+		break;
+	default:
+		fprintf(stderr, "%s: invalid action: %d\n", devname, action);
+		rc = -EINVAL;
+	}
+	return rc;
+}
+
 static int do_xaction_device(const char *device, enum device_action action,
 		struct daxctl_ctx *ctx, int *processed)
 {
@@ -416,6 +460,16 @@ static int do_xaction_device(const char *device, enum device_action action,
 			switch (action) {
 			case ACTION_RECONFIG:
 				rc = do_reconfig(dev, reconfig_mode, &jdevs);
+				if (rc == 0)
+					(*processed)++;
+				break;
+			case ACTION_ONLINE:
+				rc = do_xline(dev, action);
+				if (rc == 0)
+					(*processed)++;
+				break;
+			case ACTION_OFFLINE:
+				rc = do_xline(dev, action);
 				if (rc == 0)
 					(*processed)++;
 				break;
@@ -450,6 +504,40 @@ int cmd_reconfig_device(int argc, const char **argv, struct daxctl_ctx *ctx)
 				strerror(-rc));
 
 	fprintf(stderr, "reconfigured %d device%s\n", processed,
+			processed == 1 ? "" : "s");
+	return rc;
+}
+
+int cmd_online_memory(int argc, const char **argv, struct daxctl_ctx *ctx)
+{
+	char *usage = "daxctl online-memory <device> [<options>]";
+	const char *device = parse_device_options(argc, argv, ACTION_ONLINE,
+			memory_options, usage, ctx);
+	int processed, rc;
+
+	rc = do_xaction_device(device, ACTION_ONLINE, ctx, &processed);
+	if (rc < 0)
+		fprintf(stderr, "error onlining memory: %s\n",
+				strerror(-rc));
+
+	fprintf(stderr, "onlined memory for %d device%s\n", processed,
+			processed == 1 ? "" : "s");
+	return rc;
+}
+
+int cmd_offline_memory(int argc, const char **argv, struct daxctl_ctx *ctx)
+{
+	char *usage = "daxctl offline-memory <device> [<options>]";
+	const char *device = parse_device_options(argc, argv, ACTION_OFFLINE,
+			memory_options, usage, ctx);
+	int processed, rc;
+
+	rc = do_xaction_device(device, ACTION_OFFLINE, ctx, &processed);
+	if (rc < 0)
+		fprintf(stderr, "error offlining memory: %s\n",
+				strerror(-rc));
+
+	fprintf(stderr, "offlined memory for %d device%s\n", processed,
 			processed == 1 ? "" : "s");
 	return rc;
 }
