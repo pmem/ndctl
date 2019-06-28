@@ -15,11 +15,24 @@ else
 	exit 1
 fi
 
+# DAXCTL
+#
+if [ -f "../daxctl/daxctl" ] && [ -x "../daxctl/daxctl" ]; then
+	export DAXCTL=../daxctl/daxctl
+elif [ -f "./daxctl/daxctl" ] && [ -x "./daxctl/daxctl" ]; then
+	export DAXCTL=./daxctl/daxctl
+else
+	echo "Couldn't find an daxctl binary"
+	exit 1
+fi
+
+
 # NFIT_TEST_BUS[01]
 #
-NFIT_TEST_BUS0=nfit_test.0
-NFIT_TEST_BUS1=nfit_test.1
-
+NFIT_TEST_BUS0="nfit_test.0"
+NFIT_TEST_BUS1="nfit_test.1"
+ACPI_BUS="ACPI.NFIT"
+E820_BUS="e820"
 
 # Functions
 
