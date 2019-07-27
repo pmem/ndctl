@@ -27,6 +27,13 @@ include::labels-options.txt[]
 	parse the label data into json assuming the 'NVDIMM Namespace
 	Specification' format.
 
+-u::
+--human::
+	enable json output and convert number formats to human readable
+	strings, for example show the size in terms of "KB", "MB", "GB", etc
+	instead of a signed 64-bit numbers per the JSON interchange
+	format (implies --json).
+
 include::../copyright.txt[]
 
 SEE ALSO
