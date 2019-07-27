@@ -791,9 +791,13 @@ static int namespace_create(struct ndctl_region *region)
 		return -EAGAIN;
 	}
 
-	available = ndctl_region_get_max_available_extent(region);
-	if (available == ULLONG_MAX)
-		available = ndctl_region_get_available_size(region);
+	if (ndctl_region_get_nstype(region) == ND_DEVICE_NAMESPACE_IO)
+		available = ndctl_region_get_size(region);
+	else {
+		available = ndctl_region_get_max_available_extent(region);
+		if (available == ULLONG_MAX)
+			available = ndctl_region_get_available_size(region);
+	}
 	if (!available || p.size > available) {
 		debug("%s: insufficient capacity size: %llx avail: %llx\n",
 			devname, p.size, available);
