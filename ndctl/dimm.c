@@ -1027,7 +1027,7 @@ static int __action_init(struct ndctl_dimm *dimm,
 
  out:
 	ndctl_cmd_unref(cmd_read);
-	return rc;
+	return rc >= 0 ? 0 : rc;
 }
 
 static int action_init(struct ndctl_dimm *dimm, struct action_context *actx)
