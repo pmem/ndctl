@@ -168,6 +168,16 @@ int nfit_test_init(struct kmod_ctx **ctx, struct kmod_module **mod,
 				&& !ndctl_test_attempt(test,
 					KERNEL_VERSION(4, 7, 0)))
 			continue;
+
+		/*
+		 * Skip device-dax bus-model modules on pre-v5.1
+		 */
+		if ((strstr(name, "dax_pmem_core")
+				|| strstr(name, "dax_pmem_compat"))
+				&& !ndctl_test_attempt(test,
+					KERNEL_VERSION(5, 1, 0)))
+			continue;
+
 retry:
 		rc = kmod_module_new_from_name(*ctx, name, mod);
 		if (rc) {
