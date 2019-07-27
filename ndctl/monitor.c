@@ -357,8 +357,8 @@ static int monitor_event(struct ndctl_ctx *ctx,
 	while (1) {
 		did_fail = 0;
 		nfds = epoll_wait(epollfd, events, mfa->num_dimm, -1);
-		if (nfds <= 0) {
-			err(&monitor, "epoll_wait error\n");
+		if (nfds <= 0 && errno != EINTR) {
+			err(&monitor, "epoll_wait error: (%s)\n", strerror(errno));
 			rc = -errno;
 			goto out;
 		}
