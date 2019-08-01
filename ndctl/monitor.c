@@ -646,7 +646,7 @@ int cmd_monitor(int argc, const char **argv, struct ndctl_ctx *ctx)
 		goto out;
 
 	if (!mfa.num_dimm) {
-		dbg(&monitor, "no dimms to monitor\n");
+		info(&monitor, "no dimms to monitor, exiting\n");
 		if (!monitor.daemon)
 			rc = -ENXIO;
 		goto out;
