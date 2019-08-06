@@ -415,4 +415,5 @@ global:
 LIBNDCTL_21 {
 	ndctl_cmd_cfg_read_set_extent;
 	ndctl_cmd_cfg_write_set_extent;
+	ndctl_dimm_read_label_index;
 } LIBNDCTL_20;

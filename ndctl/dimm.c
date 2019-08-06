@@ -982,7 +982,7 @@ static int __action_init(struct ndctl_dimm *dimm,
 	struct ndctl_cmd *cmd_read;
 	int rc;
 
-	cmd_read = ndctl_dimm_read_labels(dimm);
+	cmd_read = ndctl_dimm_read_label_index(dimm);
 	if (!cmd_read)
 		return -ENXIO;
 

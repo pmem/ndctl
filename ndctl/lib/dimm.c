@@ -370,14 +370,15 @@ static struct namespace_label *label_base(struct nvdimm_data *ndd)
 	return (struct namespace_label *) base;
 }
 
-static void init_ndd(struct nvdimm_data *ndd, struct ndctl_cmd *cmd_read)
+static void init_ndd(struct nvdimm_data *ndd, struct ndctl_cmd *cmd_read,
+		struct ndctl_cmd *cmd_size)
 {
 	ndctl_cmd_unref(ndd->cmd_read);
 	memset(ndd, 0, sizeof(*ndd));
 	ndd->cmd_read = cmd_read;
 	ndctl_cmd_ref(cmd_read);
 	ndd->data = cmd_read->iter.total_buf;
-	ndd->config_size = cmd_read->iter.total_xfer;
+	ndd->config_size = cmd_size->get_size->config_size;
 	ndd->ns_current = -1;
 	ndd->ns_next = -1;
 }
@@ -490,6 +491,52 @@ NDCTL_EXPORT int ndctl_dimm_validate_labels(struct ndctl_dimm *dimm)
 	return label_validate(&dimm->ndd);
 }
 
+NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_read_label_index(struct ndctl_dimm *dimm)
+{
+        struct ndctl_bus *bus = ndctl_dimm_get_bus(dimm);
+        struct ndctl_cmd *cmd_size, *cmd_read;
+	struct nvdimm_data *ndd = &dimm->ndd;
+        int rc;
+
+        rc = ndctl_bus_wait_probe(bus);
+        if (rc < 0)
+                return NULL;
+
+        cmd_size = ndctl_dimm_cmd_new_cfg_size(dimm);
+        if (!cmd_size)
+                return NULL;
+        rc = ndctl_cmd_submit_xlat(cmd_size);
+        if (rc < 0)
+                goto out_size;
+
+        cmd_read = ndctl_dimm_cmd_new_cfg_read(cmd_size);
+        if (!cmd_read)
+                goto out_size;
+	/*
+	 * To calc the namespace index size use the minimum label
+	 * size which corresponds to the maximum namespace index size.
+	 */
+	init_ndd(ndd, cmd_read, cmd_size);
+	ndd->nslabel_size = 128;
+	rc = ndctl_cmd_cfg_read_set_extent(cmd_read,
+			sizeof_namespace_index(ndd) * 2, 0);
+	if (rc < 0)
+		goto out_read;
+
+        rc = ndctl_cmd_submit_xlat(cmd_read);
+        if (rc < 0)
+                goto out_read;
+	ndctl_cmd_unref(cmd_size);
+
+	return cmd_read;
+
+ out_read:
+        ndctl_cmd_unref(cmd_read);
+ out_size:
+        ndctl_cmd_unref(cmd_size);
+        return NULL;
+}
+
 NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_read_labels(struct ndctl_dimm *dimm)
 {
         struct ndctl_bus *bus = ndctl_dimm_get_bus(dimm);
@@ -515,7 +562,7 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_read_labels(struct ndctl_dimm *dimm)
                 goto out_read;
 	ndctl_cmd_unref(cmd_size);
 
-	init_ndd(&dimm->ndd, cmd_read);
+	init_ndd(&dimm->ndd, cmd_read, cmd_size);
 
 	return cmd_read;
 
