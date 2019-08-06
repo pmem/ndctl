@@ -47,6 +47,8 @@ static struct parameters {
 	const char *infile;
 	const char *labelversion;
 	const char *kek;
+	unsigned len;
+	unsigned offset;
 	bool crypto_erase;
 	bool overwrite;
 	bool zero_key;
@@ -77,7 +79,7 @@ static int action_enable(struct ndctl_dimm *dimm, struct action_context *actx)
 
 static int action_zero(struct ndctl_dimm *dimm, struct action_context *actx)
 {
-	return ndctl_dimm_zero_labels(dimm);
+	return ndctl_dimm_zero_label_extent(dimm, param.len, param.offset);
 }
 
 static struct json_object *dump_label_json(struct ndctl_dimm *dimm,
@@ -299,15 +301,17 @@ static struct json_object *dump_json(struct ndctl_dimm *dimm,
 	return NULL;
 }
 
-static int rw_bin(FILE *f, struct ndctl_cmd *cmd, ssize_t size, int rw)
+static int rw_bin(FILE *f, struct ndctl_cmd *cmd, ssize_t size,
+		unsigned int start_offset, int rw)
 {
 	char buf[4096];
 	ssize_t offset, write = 0;
 
-	for (offset = 0; offset < size; offset += sizeof(buf)) {
+	for (offset = start_offset; offset < start_offset + size;
+			offset += sizeof(buf)) {
 		ssize_t len = min_t(ssize_t, sizeof(buf), size - offset), rc;
 
-		if (rw) {
+		if (rw == WRITE) {
 			len = fread(buf, 1, len, f);
 			if (len == 0)
 				break;
@@ -343,9 +347,9 @@ static int action_write(struct ndctl_dimm *dimm, struct action_context *actx)
 		return -EBUSY;
 	}
 
-	cmd_read = ndctl_dimm_read_labels(dimm);
+	cmd_read = ndctl_dimm_read_label_extent(dimm, param.len, param.offset);
 	if (!cmd_read)
-		return -ENXIO;
+		return -EINVAL;
 
 	cmd_write = ndctl_dimm_cmd_new_cfg_write(cmd_read);
 	if (!cmd_write) {
@@ -354,7 +358,7 @@ static int action_write(struct ndctl_dimm *dimm, struct action_context *actx)
 	}
 
 	size = ndctl_cmd_cfg_read_get_size(cmd_read);
-	rc = rw_bin(actx->f_in, cmd_write, size, 1);
+	rc = rw_bin(actx->f_in, cmd_write, size, param.offset, WRITE);
 
 	/*
 	 * If the dimm is already disabled the kernel is not holding a cached
@@ -381,9 +385,9 @@ static int action_read(struct ndctl_dimm *dimm, struct action_context *actx)
 	ssize_t size;
 	int rc = 0;
 
-	cmd_read = ndctl_dimm_read_labels(dimm);
+	cmd_read = ndctl_dimm_read_label_extent(dimm, param.len, param.offset);
 	if (!cmd_read)
-		return -ENXIO;
+		return -EINVAL;
 
 	size = ndctl_cmd_cfg_read_get_size(cmd_read);
 	if (actx->jdimms) {
@@ -394,7 +398,7 @@ static int action_read(struct ndctl_dimm *dimm, struct action_context *actx)
 		else
 			rc = -ENOMEM;
 	} else
-		rc = rw_bin(actx->f_out, cmd_read, size, 0);
+		rc = rw_bin(actx->f_out, cmd_read, size, param.offset, READ);
 
 	ndctl_cmd_unref(cmd_read);
 
@@ -1082,15 +1086,28 @@ OPT_BOOLEAN('z', "zero-key", &param.zero_key, \
 OPT_BOOLEAN('m', "master-passphrase", &param.master_pass, \
 		"use master passphrase")
 
+#define LABEL_OPTIONS() \
+OPT_UINTEGER('s', "size", &param.len, "number of label bytes to operate"), \
+OPT_UINTEGER('O', "offset", &param.offset, \
+	"offset into the label area to start operation")
+
 static const struct option read_options[] = {
 	BASE_OPTIONS(),
+	LABEL_OPTIONS(),
 	READ_OPTIONS(),
 	OPT_END(),
 };
 
 static const struct option write_options[] = {
 	BASE_OPTIONS(),
+	LABEL_OPTIONS(),
 	WRITE_OPTIONS(),
+	OPT_END(),
+};
+
+static const struct option zero_options[] = {
+	BASE_OPTIONS(),
+	LABEL_OPTIONS(),
 	OPT_END(),
 };
 
@@ -1136,6 +1153,7 @@ static int dimm_action(int argc, const char **argv, struct ndctl_ctx *ctx,
 		NULL
 	};
 	unsigned long id;
+	bool json = false;
 
         argc = parse_options(argc, argv, options, u, 0);
 
@@ -1160,7 +1178,14 @@ static int dimm_action(int argc, const char **argv, struct ndctl_ctx *ctx,
 		return -EINVAL;
 	}
 
-	if (param.json || param.human) {
+	json = param.json || param.human;
+	if (action == action_read && json && (param.len || param.offset)) {
+		fprintf(stderr, "--size and --offset are incompatible with --json\n");
+		usage_with_options(u, options);
+		return -EINVAL;
+	}
+
+	if (json) {
 		actx.jdimms = json_object_new_array();
 		if (!actx.jdimms)
 			return -ENOMEM;
@@ -1294,7 +1319,7 @@ int cmd_read_labels(int argc, const char **argv, struct ndctl_ctx *ctx)
 
 int cmd_zero_labels(int argc, const char **argv, struct ndctl_ctx *ctx)
 {
-	int count = dimm_action(argc, argv, ctx, action_zero, base_options,
+	int count = dimm_action(argc, argv, ctx, action_zero, zero_options,
 			"ndctl zero-labels <nmem0> [<nmem1>..<nmemN>] [<options>]");
 
 	fprintf(stderr, "zeroed %d nmem%s\n", count >= 0 ? count : 0,

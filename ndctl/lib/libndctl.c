@@ -31,6 +31,7 @@
 #include <ccan/build_assert/build_assert.h>
 
 #include <ndctl.h>
+#include <util/util.h>
 #include <util/size.h>
 #include <util/sysfs.h>
 #include <ndctl/libndctl.h>
