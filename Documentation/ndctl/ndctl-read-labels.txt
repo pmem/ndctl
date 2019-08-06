@@ -19,6 +19,13 @@ file.  In the multi-dimm case the data is concatenated.
 OPTIONS
 -------
 include::labels-options.txt[]
+-I::
+--index::
+	Limit the span of the label operation to just the index-block
+	area. This is useful to determine if the dimm label area is
+	initialized. Note that this option and --size/--offset are
+	mutually exclusive.
+
 -o::
 --output::
 	output file
