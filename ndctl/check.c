@@ -907,59 +907,100 @@ static int btt_discover_arenas(struct btt_chk *bttc)
 	return ret;
 }
 
+/*
+ * Wrap call to mmap(2) to work with btt device offsets that are not aligned
+ * to system page boundary. It works by rounding down the requested offset
+ * to sys_page_size when calling mmap(2) and then returning a fixed-up pointer
+ * to the correct offset in the mmaped region.
+ */
+static void *btt_mmap(struct btt_chk *bttc, size_t length, off_t offset)
+{
+	off_t page_offset;
+	int prot_flags;
+	uint8_t *addr;
+
+	if (!bttc->opts->repair)
+		prot_flags = PROT_READ;
+	else
+		prot_flags = PROT_READ|PROT_WRITE;
+
+	/* Calculate the page_offset from the system page boundary */
+	page_offset = offset - rounddown(offset, bttc->sys_page_size);
+
+	/* Update the offset and length with the page_offset calculated above */
+	offset -= page_offset;
+	length += page_offset;
+
+	addr = mmap(NULL, length, prot_flags, MAP_SHARED, bttc->fd, offset);
+
+	/* If needed fixup the return pointer to correct offset requested */
+	if (addr != MAP_FAILED)
+		addr += page_offset;
+
+	dbg(bttc, "addr = %p, length = %#lx, offset = %#lx, page_offset = %#lx\n",
+	    (void *) addr, length, offset, page_offset);
+
+	return addr == MAP_FAILED ? NULL : addr;
+}
+
+static void btt_unmap(struct btt_chk *bttc, void *ptr, size_t length)
+{
+	off_t page_offset;
+	uintptr_t addr = (uintptr_t) ptr;
+
+	/* Calculate the page_offset from system page boundary */
+	page_offset = addr - rounddown(addr, bttc->sys_page_size);
+
+	addr -= page_offset;
+	length += page_offset;
+
+	munmap((void *) addr, length);
+	dbg(bttc, "addr = %p, length = %#lx, page_offset = %#lx\n",
+	    (void *) addr, length, page_offset);
+}
+
 static int btt_create_mappings(struct btt_chk *bttc)
 {
 	struct arena_info *a;
-	int mmap_flags;
 	int i;
-
-	if (!bttc->opts->repair)
-		mmap_flags = PROT_READ;
-	else
-		mmap_flags = PROT_READ|PROT_WRITE;
 
 	for (i = 0; i < bttc->num_arenas; i++) {
 		a = &bttc->arena[i];
 		a->map.info_len = BTT_INFO_SIZE;
-		a->map.info = mmap(NULL, a->map.info_len, mmap_flags,
-			MAP_SHARED, bttc->fd, a->infooff);
-		if (a->map.info == MAP_FAILED) {
+		a->map.info = btt_mmap(bttc, a->map.info_len, a->infooff);
+		if (!a->map.info) {
 			err(bttc, "mmap arena[%d].info [sz = %#lx, off = %#lx] failed: %s\n",
 				i, a->map.info_len, a->infooff, strerror(errno));
 			return -errno;
 		}
 
 		a->map.data_len = a->mapoff - a->dataoff;
-		a->map.data = mmap(NULL, a->map.data_len, mmap_flags,
-			MAP_SHARED, bttc->fd, a->dataoff);
-		if (a->map.data == MAP_FAILED) {
+		a->map.data = btt_mmap(bttc, a->map.data_len, a->dataoff);
+		if (!a->map.data) {
 			err(bttc, "mmap arena[%d].data [sz = %#lx, off = %#lx] failed: %s\n",
 				i, a->map.data_len, a->dataoff, strerror(errno));
 			return -errno;
 		}
 
 		a->map.map_len = a->logoff - a->mapoff;
-		a->map.map = mmap(NULL, a->map.map_len, mmap_flags,
-			MAP_SHARED, bttc->fd, a->mapoff);
-		if (a->map.map == MAP_FAILED) {
+		a->map.map = btt_mmap(bttc, a->map.map_len, a->mapoff);
+		if (!a->map.map) {
 			err(bttc, "mmap arena[%d].map [sz = %#lx, off = %#lx] failed: %s\n",
 				i, a->map.map_len, a->mapoff, strerror(errno));
 			return -errno;
 		}
 
 		a->map.log_len = a->info2off - a->logoff;
-		a->map.log = mmap(NULL, a->map.log_len, mmap_flags,
-			MAP_SHARED, bttc->fd, a->logoff);
-		if (a->map.log == MAP_FAILED) {
+		a->map.log = btt_mmap(bttc, a->map.log_len, a->logoff);
+		if (!a->map.log) {
 			err(bttc, "mmap arena[%d].log [sz = %#lx, off = %#lx] failed: %s\n",
 				i, a->map.log_len, a->logoff, strerror(errno));
 			return -errno;
 		}
 
 		a->map.info2_len = BTT_INFO_SIZE;
-		a->map.info2 = mmap(NULL, a->map.info2_len, mmap_flags,
-			MAP_SHARED, bttc->fd, a->info2off);
-		if (a->map.info2 == MAP_FAILED) {
+		a->map.info2 = btt_mmap(bttc, a->map.info2_len, a->info2off);
+		if (!a->map.info2) {
 			err(bttc, "mmap arena[%d].info2 [sz = %#lx, off = %#lx] failed: %s\n",
 				i, a->map.info2_len, a->info2off, strerror(errno));
 			return -errno;
@@ -977,15 +1018,15 @@ static void btt_remove_mappings(struct btt_chk *bttc)
 	for (i = 0; i < bttc->num_arenas; i++) {
 		a = &bttc->arena[i];
 		if (a->map.info)
-			munmap(a->map.info, a->map.info_len);
+			btt_unmap(bttc, a->map.info, a->map.info_len);
 		if (a->map.data)
-			munmap(a->map.data, a->map.data_len);
+			btt_unmap(bttc, a->map.data, a->map.data_len);
 		if (a->map.map)
-			munmap(a->map.map, a->map.map_len);
+			btt_unmap(bttc, a->map.map, a->map.map_len);
 		if (a->map.log)
-			munmap(a->map.log, a->map.log_len);
+			btt_unmap(bttc, a->map.log, a->map.log_len);
 		if (a->map.info2)
-			munmap(a->map.info2, a->map.info2_len);
+			btt_unmap(bttc, a->map.info2, a->map.info2_len);
 	}
 }
 
