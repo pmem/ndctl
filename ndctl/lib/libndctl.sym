@@ -410,3 +410,9 @@ LIBNDCTL_20 {
 global:
 	ndctl_bus_poll_scrub_completion;
 } LIBNDCTL_19;
+
+
+LIBNDCTL_21 {
+	ndctl_cmd_cfg_read_set_extent;
+	ndctl_cmd_cfg_write_set_extent;
+} LIBNDCTL_20;

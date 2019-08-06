@@ -2582,6 +2582,7 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_read(struct ndctl_cmd *cfg
 	cmd->get_data->in_offset = 0;
 	cmd->get_data->in_length = cfg_size->get_size->max_xfer;
 	cmd->firmware_status = &cmd->get_data->status;
+	cmd->iter.init_offset = 0;
 	cmd->iter.offset = &cmd->get_data->in_offset;
 	cmd->iter.xfer = &cmd->get_data->in_length;
 	cmd->iter.max_xfer = cfg_size->get_size->max_xfer;
@@ -2593,8 +2594,41 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_read(struct ndctl_cmd *cfg
 		free(cmd);
 		return NULL;
 	}
+	cmd->source = cfg_size;
+	ndctl_cmd_ref(cfg_size);
 
 	return cmd;
+}
+
+static void iter_set_extent(struct ndctl_cmd_iter *iter, unsigned int len,
+		unsigned int offset)
+{
+	iter->init_offset = offset;
+	*iter->offset = offset;
+	*iter->xfer = min(iter->max_xfer, len);
+	iter->total_xfer = len;
+}
+
+NDCTL_EXPORT int ndctl_cmd_cfg_read_set_extent(struct ndctl_cmd *cfg_read,
+		unsigned int len, unsigned int offset)
+{
+	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(cmd_to_bus(cfg_read));
+	struct ndctl_cmd *cfg_size = cfg_read->source;
+
+	if (cfg_read->type != ND_CMD_GET_CONFIG_DATA
+			|| cfg_read->status <= 0) {
+		dbg(ctx, "expected unsubmitted cfg_read command\n");
+		return -EINVAL;
+	}
+
+	if (offset + len > cfg_size->get_size->config_size) {
+		dbg(ctx, "read %d from %d exceeds %d\n", len, offset,
+				cfg_size->get_size->config_size);
+		return -EINVAL;
+	}
+
+	iter_set_extent(&cfg_read->iter, len, offset);
+	return 0;
 }
 
 NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_write(struct ndctl_cmd *cfg_read)
@@ -2632,10 +2666,11 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_write(struct ndctl_cmd *cf
 	cmd->type = ND_CMD_SET_CONFIG_DATA;
 	cmd->size = size;
 	cmd->status = 1;
-	cmd->set_data->in_offset = 0;
+	cmd->set_data->in_offset = cfg_read->iter.init_offset;
 	cmd->set_data->in_length = cfg_read->iter.max_xfer;
 	cmd->firmware_status = (u32 *) (cmd->cmd_buf
 		+ sizeof(struct nd_cmd_set_config_hdr) + cfg_read->iter.max_xfer);
+	cmd->iter.init_offset = cfg_read->iter.init_offset;
 	cmd->iter.offset = &cmd->set_data->in_offset;
 	cmd->iter.xfer = &cmd->set_data->in_length;
 	cmd->iter.max_xfer = cfg_read->iter.max_xfer;
@@ -2657,18 +2692,33 @@ NDCTL_EXPORT unsigned int ndctl_cmd_cfg_size_get_size(struct ndctl_cmd *cfg_size
 	return 0;
 }
 
-NDCTL_EXPORT ssize_t ndctl_cmd_cfg_read_get_data(struct ndctl_cmd *cfg_read,
-		void *buf, unsigned int len, unsigned int offset)
+static ssize_t iter_access(struct ndctl_cmd_iter *iter, unsigned int len,
+		unsigned int offset)
 {
+	if (offset < iter->init_offset
+			|| offset > iter->init_offset + iter->total_xfer
+			|| len + offset < len)
+		return -EINVAL;
+	if (len + offset > iter->init_offset + iter->total_xfer)
+		len = iter->total_xfer - offset;
+	return len;
+}
+
+NDCTL_EXPORT ssize_t ndctl_cmd_cfg_read_get_data(struct ndctl_cmd *cfg_read,
+		void *buf, unsigned int _len, unsigned int offset)
+{
+	struct ndctl_cmd_iter *iter;
+	ssize_t len;
+
 	if (cfg_read->type != ND_CMD_GET_CONFIG_DATA || cfg_read->status > 0)
 		return -EINVAL;
 	if (cfg_read->status < 0)
 		return cfg_read->status;
-	if (offset > cfg_read->iter.total_xfer || len + offset < len)
-		return -EINVAL;
-	if (len + offset > cfg_read->iter.total_xfer)
-		len = cfg_read->iter.total_xfer - offset;
-	memcpy(buf, cfg_read->iter.total_buf + offset, len);
+
+	iter = &cfg_read->iter;
+	len = iter_access(&cfg_read->iter, _len, offset);
+	if (len >= 0)
+		memcpy(buf, iter->total_buf + offset, len);
 	return len;
 }
 
@@ -2681,29 +2731,56 @@ NDCTL_EXPORT ssize_t ndctl_cmd_cfg_read_get_size(struct ndctl_cmd *cfg_read)
 	return cfg_read->iter.total_xfer;
 }
 
-NDCTL_EXPORT ssize_t ndctl_cmd_cfg_write_set_data(struct ndctl_cmd *cfg_write,
-		void *buf, unsigned int len, unsigned int offset)
+NDCTL_EXPORT int ndctl_cmd_cfg_write_set_extent(struct ndctl_cmd *cfg_write,
+		unsigned int len, unsigned int offset)
 {
+	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(cmd_to_bus(cfg_write));
+	struct ndctl_cmd *cfg_size, *cfg_read;
+
+	if (cfg_write->type != ND_CMD_SET_CONFIG_DATA
+			|| cfg_write->status <= 0) {
+		dbg(ctx, "expected unsubmitted cfg_write command\n");
+		return -EINVAL;
+	}
+
+	cfg_read = cfg_write->source;
+	cfg_size = cfg_read->source;
+
+	if (offset + len > cfg_size->get_size->config_size) {
+		dbg(ctx, "write %d from %d exceeds %d\n", len, offset,
+				cfg_size->get_size->config_size);
+		return -EINVAL;
+	}
+
+	iter_set_extent(&cfg_write->iter, len, offset);
+	return 0;
+}
+
+NDCTL_EXPORT ssize_t ndctl_cmd_cfg_write_set_data(struct ndctl_cmd *cfg_write,
+		void *buf, unsigned int _len, unsigned int offset)
+{
+	ssize_t len;
+
 	if (cfg_write->type != ND_CMD_SET_CONFIG_DATA || cfg_write->status < 1)
 		return -EINVAL;
 	if (cfg_write->status < 0)
 		return cfg_write->status;
-	if (offset > cfg_write->iter.total_xfer || len + offset < len)
-		return -EINVAL;
-	if (len + offset > cfg_write->iter.total_xfer)
-		len = cfg_write->iter.total_xfer - offset;
-	memcpy(cfg_write->iter.total_buf + offset, buf, len);
+	len = iter_access(&cfg_write->iter, _len, offset);
+	if (len >= 0)
+		memcpy(cfg_write->iter.total_buf + offset, buf, len);
 	return len;
 }
 
 NDCTL_EXPORT ssize_t ndctl_cmd_cfg_write_zero_data(struct ndctl_cmd *cfg_write)
 {
+	struct ndctl_cmd_iter *iter = &cfg_write->iter;
+
 	if (cfg_write->type != ND_CMD_SET_CONFIG_DATA || cfg_write->status < 1)
 		return -EINVAL;
 	if (cfg_write->status < 0)
 		return cfg_write->status;
-	memset(cfg_write->iter.total_buf, 0, cfg_write->iter.total_xfer);
-	return cfg_write->iter.total_xfer;
+	memset(iter->total_buf + iter->init_offset, 0, iter->total_xfer);
+	return iter->total_xfer;
 }
 
 NDCTL_EXPORT void ndctl_cmd_unref(struct ndctl_cmd *cmd)

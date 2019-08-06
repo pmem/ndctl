@@ -321,6 +321,10 @@ unsigned int ndctl_cmd_cfg_size_get_size(struct ndctl_cmd *cfg_size);
 ssize_t ndctl_cmd_cfg_read_get_data(struct ndctl_cmd *cfg_read, void *buf,
 		unsigned int len, unsigned int offset);
 ssize_t ndctl_cmd_cfg_read_get_size(struct ndctl_cmd *cfg_read);
+int ndctl_cmd_cfg_read_set_extent(struct ndctl_cmd *cfg_read,
+		unsigned int len, unsigned int offset);
+int ndctl_cmd_cfg_write_set_extent(struct ndctl_cmd *cfg_write,
+		unsigned int len, unsigned int offset);
 ssize_t ndctl_cmd_cfg_write_set_data(struct ndctl_cmd *cfg_write, void *buf,
 		unsigned int len, unsigned int offset);
 ssize_t ndctl_cmd_cfg_write_zero_data(struct ndctl_cmd *cfg_write);
