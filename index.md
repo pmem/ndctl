@@ -3,7 +3,7 @@ title: ndctl
 layout: pmdk
 ---
 [View the Project on GitHub](https://github.com/pmem/ndctl)  
-**Generated from [ndctl-65](https://github.com/pmem/ndctl/releases/tag/v65) [[tree]](https://github.com/pmem/ndctl/tree/v65)**  
+**Generated from [ndctl-66](https://github.com/pmem/ndctl/releases/tag/v66) [[tree]](https://github.com/pmem/ndctl/tree/v66)**  
 
 ---
 
@@ -44,3 +44,6 @@ layout: pmdk
 * [daxctl](daxctl.md)
 * [daxctl-list](daxctl-list.md)
 * [daxctl-migrate-device-model](daxctl-migrate-device-model.md)
+* [daxctl-offline-memory](daxctl-offline-memory.md)
+* [daxctl-online-memory](daxctl-online-memory.md)
+* [daxctl-reconfigure-device](daxctl-reconfigure-device.md)

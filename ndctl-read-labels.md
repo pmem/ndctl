@@ -31,6 +31,13 @@ One or more *nmemX* device names. The keyword *all* can be specified to
 operate on every dimm in the system, optionally filtered by bus id (see
 --bus= option).
 
+`-s; --size=`  
+Limit the operation to the given number of bytes. A size of 0 indicates
+to operate over the entire label capacity.
+
+`-O; --offset=`  
+Begin the operation at the given offset into the label area.
+
 `-b; --bus=`  
 Limit operation to memory devices (dimms) that are on the given bus.
 Where *bus* can be a provider name or a bus id number.
@@ -39,12 +46,22 @@ Where *bus* can be a provider name or a bus id number.
 Turn on verbose debug messages in the library (if ndctl was built with
 logging and debug enabled).
 
+`-I; --index`  
+Limit the span of the label operation to just the index-block area. This
+is useful to determine if the dimm label area is initialized. Note that
+this option and --size/--offset are mutually exclusive.
+
 `-o; --output`  
 output file
 
 `-j; --json`  
 parse the label data into json assuming the *NVDIMM Namespace
 Specification* format.
+
+`-u; --human`  
+enable json output and convert number formats to human readable strings,
+for example show the size in terms of "KB", "MB", "GB", etc instead of a
+signed 64-bit numbers per the JSON interchange format (implies --json).
 
 COPYRIGHT
 =========

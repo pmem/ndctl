@@ -85,6 +85,13 @@ One or more *nmemX* device names. The keyword *all* can be specified to
 operate on every dimm in the system, optionally filtered by bus id (see
 --bus= option).
 
+`-s; --size=`  
+Limit the operation to the given number of bytes. A size of 0 indicates
+to operate over the entire label capacity.
+
+`-O; --offset=`  
+Begin the operation at the given offset into the label area.
+
 `-b; --bus=`  
 Limit operation to memory devices (dimms) that are on the given bus.
 Where *bus* can be a provider name or a bus id number.

@@ -42,4 +42,4 @@ extent permitted by law.
 SEE ALSO
 ========
 
-linkdaxctl:[ndctl-create-namespace\[](ndctl-create-namespace\[.md)\], linkdaxctl:[ndctl-list\[](ndctl-list\[.md)\]
+[ndctl-create-namespace](ndctl-create-namespace.md), [ndctl-list](ndctl-list.md)

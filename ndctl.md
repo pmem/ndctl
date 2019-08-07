@@ -30,7 +30,7 @@ ndctl is utility for managing the "libnvdimm" kernel subsystem. The
 interface for platform NVDIMM resources like those defined by the ACPI
 6.0 NFIT (NVDIMM Firmware Interface Table). Operations supported by the
 tool include, provisioning capacity (namespaces), as well as
-enumerating/enabling/disabling the devices (dimms, regions, namspaces)
+enumerating/enabling/disabling the devices (dimms, regions, namespaces)
 associated with an NVDIMM bus.
 
 COPYRIGHT
