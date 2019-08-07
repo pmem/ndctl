@@ -889,7 +889,9 @@ static void *add_bus(void *parent, int id, const char *ctl_base)
 
 	ndctl_bus_foreach(ctx, bus_dup)
 		if (strcmp(ndctl_bus_get_provider(bus_dup),
-					ndctl_bus_get_provider(bus)) == 0) {
+					ndctl_bus_get_provider(bus)) == 0
+				&& strcmp(ndctl_bus_get_devname(bus_dup),
+					ndctl_bus_get_devname(bus)) == 0) {
 			free_bus(bus, NULL);
 			free(path);
 			return bus_dup;
