@@ -599,6 +599,22 @@ static int validate_namespace_options(struct ndctl_region *region,
 		}
 	} else {
 		/*
+		 * If we are trying to reconfigure with the same namespace mode,
+		 * use the align details from the original namespace. Otherwise
+		 * pick the align details from seed namespace
+		 */
+		if (ndns && p->mode == ndctl_namespace_get_mode(ndns)) {
+			struct ndctl_pfn *ns_pfn = ndctl_namespace_get_pfn(ndns);
+			struct ndctl_dax *ns_dax = ndctl_namespace_get_dax(ndns);
+
+			if (ns_pfn)
+				p->align = ndctl_pfn_get_align(ns_pfn);
+			else if (ns_dax)
+				p->align = ndctl_dax_get_align(ns_dax);
+			else
+				p->align = sysconf(_SC_PAGE_SIZE);
+		} else
+		/*
 		 * Use the seed namespace alignment as the default if we need
 		 * one. If we don't then use PAGE_SIZE so the size_align
 		 * checking works.
