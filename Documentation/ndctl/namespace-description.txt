@@ -18,6 +18,15 @@ the kernel's 'memmap=ss!nn' command line option (see the nvdimm wiki on
 kernel.org), or NVDIMMs without a valid 'namespace index' in their label
 area.
 
+NOTE: Label-less namespaces lack many of the features of their label-rich
+cousins. For example, their size cannot be modified, or they cannot be
+fully 'destroyed' (i.e. the space reclaimed). A destroy operation will
+zero any mode-specific metadata. Finally, for create-namespace operations
+on label-less namespaces, ndctl bypasses the region capacity availability
+checks, and always satisfies the request using the full region capacity.
+The only reconfiguration operation supported on a label-less namespace
+is changing its 'mode'.
+
 A namespace can be provisioned to operate in one of 4 modes, 'fsdax',
 'devdax', 'sector', and 'raw'. Here are the expected usage models for
 these modes:
