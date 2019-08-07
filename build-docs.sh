@@ -75,17 +75,24 @@ man_to_md()
 	EOF
 	# sed replacements key:
 	# 1. replace ndctl-<>1 with url to that page in markdown format
-	# 2. enclose the option names in literal `` blocks
-	# 3. same as 2, but for non option arguments (e.g. <dimm>)
+	# 2. replace 'ndctl-<>\[1\]' special case in daxctl*.md pages
+	# 3. remove 'linkdaxctl:'
+	# 4. replace daxctl-<>1 with url to that page in markdown format
+	# 5. enclose the option names in literal `` blocks
+	# 6. same as 2, but for non option arguments (e.g. <dimm>)
 	asciidoctor -b docbook5 \
 			-I $ndir/Documentation/ndctl \
+			-I $ndir/Documentation/daxctl \
 			-r asciidoctor-extensions \
 			-amansource=ndctl \
 			-amanmanual="ndctl Manual" \
 			-andctl_version=$build_ver \
 			-o- $file | \
 		pandoc -f docbook -t markdown_github | \
-		sed -e "s/\(ndctl-[^1]*\)1/[\1](\1.md)/g" | \
+		sed -e 's/\(ndctl-[a-z-]*\)1/[\1](\1.md)/g' | \
+		sed -e 's/\(ndctl-[a-z-]*\)\\\[1\\\]/[\1](\1.md)/g' | \
+		sed -e "s/linkdaxctl://g" | \
+		sed -e 's/\(daxctl[a-z-]*\)\\\[1\\\]/[\1](\1.md)/g' | \
 		sed -e 's/^\([-]\{1,2\}.*\)  $/`\1`  /g' | \
 		sed -e 's/^&lt;/`</g' -e 's/&gt;  $/>`  /g' \
 			>> $out
