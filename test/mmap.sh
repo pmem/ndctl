@@ -70,7 +70,7 @@ fallocate -l 1GiB $MNT/$FILE
 test_mmap
 umount $MNT
 
-mkfs.xfs -f $DEV
+mkfs.xfs -f $DEV -m reflink=0
 mount $DEV $MNT -o dax
 fallocate -l 1GiB $MNT/$FILE
 test_mmap
