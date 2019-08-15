@@ -704,6 +704,31 @@ NDCTL_EXPORT enum ndctl_security_state ndctl_dimm_get_security(
 	return NDCTL_SECURITY_INVALID;
 }
 
+NDCTL_EXPORT bool ndctl_dimm_security_is_frozen(struct ndctl_dimm *dimm)
+{
+	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
+	char *path = dimm->dimm_buf;
+	char buf[SYSFS_ATTR_SIZE];
+	int len = dimm->buf_len;
+	int rc;
+
+
+	if (ndctl_dimm_get_security(dimm) == NDCTL_SECURITY_FROZEN)
+		return true;
+
+	if (snprintf(path, len, "%s/frozen", dimm->dimm_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_dimm_get_devname(dimm));
+		return false;
+	}
+
+	rc = sysfs_read_attr(ctx, path, buf);
+	if (rc < 0)
+		return false;
+
+	return !!strtoul(buf, NULL, 0);
+}
+
 static int write_security(struct ndctl_dimm *dimm, const char *cmd)
 {
 	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);

@@ -419,3 +419,7 @@ LIBNDCTL_21 {
 	ndctl_dimm_read_label_extent;
 	ndctl_dimm_zero_label_extent;
 } LIBNDCTL_20;
+
+LIBNDCTL_22 {
+	ndctl_dimm_security_is_frozen;
+} LIBNDCTL_21;

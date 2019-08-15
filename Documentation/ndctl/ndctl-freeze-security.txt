@@ -35,7 +35,7 @@ $ ndctl list -d nmem0
 ]
 
 $ ndctl freeze-security  nmem0
-security freezed 1 nmem.
+security froze 1 nmem.
 
 $ ndctl list -d nmem0
 [
@@ -44,9 +44,11 @@ $ ndctl list -d nmem0
     "id":"cdab-0a-07e0-ffffffff",
     "handle":0,
     "phys_id":0,
-    "security":"frozen"
-  }
+    "security":"unlocked",
+    "security_frozen":true
+  },
 ]
+
 ----
 
 OPTIONS

@@ -260,6 +260,12 @@ struct json_object *util_dimm_to_json(struct ndctl_dimm *dimm,
 	if (jobj)
 		json_object_object_add(jdimm, "security", jobj);
 
+	if (ndctl_dimm_security_is_frozen(dimm)) {
+		jobj = json_object_new_boolean(true);
+		if (jobj)
+			json_object_object_add(jdimm, "security_frozen", jobj);
+	}
+
 	return jdimm;
  err:
 	json_object_put(jdimm);

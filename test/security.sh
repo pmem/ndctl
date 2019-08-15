@@ -105,6 +105,11 @@ lock_dimm()
 	fi
 }
 
+get_frozen_state()
+{
+	$NDCTL list -i -b "$NFIT_TEST_BUS0" -d "$dev" | jq -r .[].dimms[0].security_frozen
+}
+
 get_security_state()
 {
 	$NDCTL list -i -b "$NFIT_TEST_BUS0" -d "$dev" | jq -r .[].dimms[0].security
@@ -195,15 +200,15 @@ test_5_security_freeze()
 	setup_passphrase
 	freeze_security
 	sstate="$(get_security_state)"
-	if [ "$sstate" != "frozen" ]; then
-		echo "Incorrect security state: $sstate expected: frozen"
+	fstate="$(get_frozen_state)"
+	if [ "$fstate" != "true" ]; then
+		echo "Incorrect security state: expected: frozen"
 		err "$LINENO"
 	fi
 	$NDCTL remove-passphrase "$dev" && { echo "remove succeed after frozen"; }
-	sstate="$(get_security_state)"
-	echo "$sstate"
-	if [ "$sstate" != "frozen" ]; then
-		echo "Incorrect security state: $sstate expected: frozen"
+	sstate2="$(get_security_state)"
+	if [ "$sstate" != "$sstate2" ]; then
+		echo "Incorrect security state: $sstate2 expected: $sstate"
 		err "$LINENO"
 	fi
 }

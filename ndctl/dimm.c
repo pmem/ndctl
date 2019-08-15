@@ -1426,7 +1426,7 @@ int cmd_freeze_security(int argc, const char **argv, void *ctx)
 	int count = dimm_action(argc, argv, ctx, action_security_freeze, base_options,
 			"ndctl freeze-security <nmem0> [<nmem1>..<nmemN>] [<options>]");
 
-	fprintf(stderr, "security freezed %d nmem%s.\n", count >= 0 ? count : 0,
+	fprintf(stderr, "security froze %d nmem%s.\n", count >= 0 ? count : 0,
 			count > 1 ? "s" : "");
 	return count >= 0 ? 0 : EXIT_FAILURE;
 }
