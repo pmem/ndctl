@@ -1322,6 +1322,8 @@ int namespace_check(struct ndctl_namespace *ndns, bool verbose, bool force,
 			rc = btt_recover_first_sb(bttc);
 			if (rc) {
 				err(bttc, "Unable to recover any BTT info blocks\n");
+				err(bttc,
+					"This may not be a sector mode namespace\n");
 				goto out_close;
 			}
 			/*
