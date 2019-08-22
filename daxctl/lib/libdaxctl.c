@@ -917,6 +917,7 @@ static int daxctl_dev_enable(struct daxctl_dev *dev, enum daxctl_dev_mode mode)
 
 	if (!device_model_is_dax_bus(dev)) {
 		err(ctx, "%s: error: device model is dax-class\n", devname);
+		err(ctx, "%s: see man daxctl-migrate-device-model\n", devname);
 		return -EOPNOTSUPP;
 	}
 
@@ -962,6 +963,7 @@ DAXCTL_EXPORT int daxctl_dev_disable(struct daxctl_dev *dev)
 
 	if (!device_model_is_dax_bus(dev)) {
 		err(ctx, "%s: error: device model is dax-class\n", devname);
+		err(ctx, "%s: see man daxctl-migrate-device-model\n", devname);
 		return -EOPNOTSUPP;
 	}
 
