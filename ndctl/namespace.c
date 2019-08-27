@@ -1244,7 +1244,7 @@ static int raw_clear_badblocks(struct ndctl_namespace *ndns)
 	return nstype_clear_badblocks(ndns, devname, begin, size);
 }
 
-static int namespace_wait_scrub(struct ndctl_namespace *ndns)
+static int namespace_wait_scrub(struct ndctl_namespace *ndns, bool do_scrub)
 {
 	const char *devname = ndctl_namespace_get_devname(ndns);
 	struct ndctl_bus *bus = ndctl_namespace_get_bus(ndns);
@@ -1258,7 +1258,7 @@ static int namespace_wait_scrub(struct ndctl_namespace *ndns)
 	}
 
 	/* start a scrub if asked and if one isn't in progress */
-	if (scrub && (!in_progress)) {
+	if (do_scrub && (!in_progress)) {
 		rc = ndctl_bus_start_scrub(bus);
 		if (rc) {
 			error("%s: Unable to start scrub: %s\n", devname,
@@ -1281,7 +1281,7 @@ static int namespace_wait_scrub(struct ndctl_namespace *ndns)
 	return 0;
 }
 
-static int namespace_clear_bb(struct ndctl_namespace *ndns)
+static int namespace_clear_bb(struct ndctl_namespace *ndns, bool do_scrub)
 {
 	struct ndctl_pfn *pfn = ndctl_namespace_get_pfn(ndns);
 	struct ndctl_dax *dax = ndctl_namespace_get_dax(ndns);
@@ -1296,7 +1296,7 @@ static int namespace_clear_bb(struct ndctl_namespace *ndns)
 		return 1;
 	}
 
-	rc = namespace_wait_scrub(ndns);
+	rc = namespace_wait_scrub(ndns, do_scrub);
 	if (rc)
 		return rc;
 
@@ -1336,8 +1336,13 @@ static int do_xaction_namespace(const char *namespace,
 		ndctl_set_log_priority(ctx, LOG_DEBUG);
 
         ndctl_bus_foreach(ctx, bus) {
+		bool do_scrub;
+
 		if (!util_bus_filter(bus, param.bus))
 			continue;
+
+		/* only request scrubbing once per bus */
+		do_scrub = scrub;
 
 		ndctl_region_foreach(bus, region) {
 			if (!util_region_filter(region, param.region))
@@ -1398,7 +1403,10 @@ static int do_xaction_namespace(const char *namespace,
 						(*processed)++;
 					break;
 				case ACTION_CLEAR:
-					rc = namespace_clear_bb(ndns);
+					rc = namespace_clear_bb(ndns, do_scrub);
+
+					/* one scrub per bus is sufficient */
+					do_scrub = false;
 					if (rc == 0)
 						(*processed)++;
 					break;
