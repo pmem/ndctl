@@ -24,6 +24,10 @@ OPTIONS
 <dimm>::
 include::xable-dimm-options.txt[]
 
+-b::
+--bus=::
+include::xable-bus-options.txt[]
+
 -f::
 --firmware::
 	firmware file used to perform the update

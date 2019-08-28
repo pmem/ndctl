@@ -31,6 +31,10 @@ OPTIONS
 <dimm>::
 include::xable-dimm-options.txt[]
 
+-b::
+--bus=::
+include::xable-bus-options.txt[]
+
 -k::
 --key_handle=::
 	Handle for the master 'kek' (key-encryption-key) that will be used for

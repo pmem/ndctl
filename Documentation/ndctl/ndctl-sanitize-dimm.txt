@@ -38,6 +38,10 @@ OPTIONS
 <dimm>::
 include::xable-dimm-options.txt[]
 
+-b::
+--bus=::
+include::xable-bus-options.txt[]
+
 -c::
 --crypto-erase::
 	Replace the media encryption key on the NVDIMM causing all existing

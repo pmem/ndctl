@@ -62,6 +62,10 @@ OPTIONS
 --region=::
 include::xable-region-options.txt[]
 
+-b::
+--bus=::
+include::xable-bus-options.txt[]
+
 -d::
 --dimm=::
 	An 'nmemX' device name, or dimm id number. The dimm id number

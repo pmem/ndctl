@@ -23,6 +23,10 @@ OPTIONS
 <dimm>::
 include::xable-dimm-options.txt[]
 
+-b::
+--bus=::
+include::xable-bus-options.txt[]
+
 -v::
 --verbose::
 	Emit debug messages.

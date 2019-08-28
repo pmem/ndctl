@@ -19,6 +19,10 @@ OPTIONS
 <dimm>::
 include::xable-dimm-options.txt[]
 
+-b::
+--bus=::
+include::xable-bus-options.txt[]
+
 include::../copyright.txt[]
 
 SEE ALSO

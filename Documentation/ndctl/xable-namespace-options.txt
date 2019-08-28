@@ -9,6 +9,10 @@ the operation on every namespace in the system, optionally filtered by region
 --region=::
 include::xable-region-options.txt[]
 
+-b::
+--bus=::
+include::xable-bus-options.txt[]
+
 -v::
 --verbose::
 	Emit debug messages for the namespace operation

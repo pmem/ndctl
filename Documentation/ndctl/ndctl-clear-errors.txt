@@ -98,6 +98,10 @@ can potentially be a very long-running operation.
 --region=::
 include::xable-region-options.txt[]
 
+-b::
+--bus=::
+include::xable-bus-options.txt[]
+
 include::../copyright.txt[]
 
 SEE ALSO
