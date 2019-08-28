@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-A 'regionX' device name, or a region id number. The keyword 'all' can
-be specified to carry out the operation on every region in the system,
-optionally filtered by bus id (see --bus= option).
+A 'regionX' device name, or a region id number. Restrict the operation to
+the specified region(s). The keyword 'all' can be specified to indicate
+the lack of any restriction, however this is the same as not supplying a
+--region option at all.

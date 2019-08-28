@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-Enforce that the operation only be carried on devices that are
-attached to the given bus. Where 'bus' can be a provider name or a bus
-id number.
+A bus id number, or a provider string (e.g. "ACPI.NFIT"). Restrict the
+operation to the specified bus(es). The keyword 'all' can be specified
+to indicate the lack of any restriction, however this is the same as
+not supplying a --bus option at all.
