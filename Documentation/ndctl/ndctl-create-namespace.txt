@@ -152,6 +152,13 @@ OPTIONS
 	namespace directly ("--map=dev"). The overhead is 64-bytes per
 	4K (16GB per 1TB) on x86.
 
+-c::
+--continue::
+	Do not stop after creating one namespace. Instead, greedily create as
+	many namespaces as possible within the given --bus and --region filter
+	restrictions. This will abort if any creation attempt results in an
+	error unless --force is also supplied.
+
 -f::
 --force::
 	Unless this option is specified the 'reconfigure namespace'
@@ -160,7 +167,9 @@ OPTIONS
 	the operation is attempted. However, if the namespace is
 	mounted then the 'disable namespace' and 'reconfigure
 	namespace' operations will be aborted.  The namespace must be
-	unmounted before being reconfigured.
+	unmounted before being reconfigured. When used in conjunction
+	with --continue, continue the namespace creation loop even
+	if an error is encountered for intermediate namespaces.
 
 -L::
 --autolabel::
