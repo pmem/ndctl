@@ -406,7 +406,7 @@ static int dev_is_system_ram_capable(struct daxctl_dev *dev)
 	if (!daxctl_dev_is_enabled(dev))
 		return false;
 
-	if (snprintf(path, len, "%s/driver/module", dev->dev_path) >= len) {
+	if (snprintf(path, len, "%s/driver", dev->dev_path) >= len) {
 		err(ctx, "%s: buffer too small!\n", devname);
 		return false;
 	}
