@@ -75,7 +75,6 @@ struct daxctl_dev {
 	unsigned long long resource;
 	unsigned long long size;
 	struct kmod_module *module;
-	struct kmod_list *kmod_list;
 	struct daxctl_region *region;
 	struct daxctl_memory *mem;
 	int target_node;

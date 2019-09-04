@@ -215,7 +215,7 @@ static void free_dev(struct daxctl_dev *dev, struct list_head *head)
 {
 	if (head)
 		list_del_from(head, &dev->list);
-	kmod_module_unref_list(dev->kmod_list);
+	kmod_module_unref(dev->module);
 	free(dev->dev_buf);
 	free(dev->dev_path);
 	free_mem(dev);
@@ -371,27 +371,6 @@ static bool device_model_is_dax_bus(struct daxctl_dev *dev)
 	return false;
 }
 
-static struct kmod_list *to_module_list(struct daxctl_ctx *ctx,
-		const char *alias)
-{
-	struct kmod_list *list = NULL;
-	int rc;
-
-	if (!ctx->kmod_ctx || !alias)
-		return NULL;
-	if (alias[0] == 0)
-		return NULL;
-
-	rc = kmod_module_new_from_lookup(ctx->kmod_ctx, alias, &list);
-	if (rc < 0 || !list) {
-		dbg(ctx, "failed to find modules for alias: %s %d list: %s\n",
-				alias, rc, list ? "populated" : "empty");
-		return NULL;
-	}
-
-	return list;
-}
-
 static int dev_is_system_ram_capable(struct daxctl_dev *dev)
 {
 	const char *devname = daxctl_dev_get_devname(dev);
@@ -489,7 +468,6 @@ static void *add_dax_dev(void *parent, int id, const char *daxdev_base)
 	struct daxctl_dev *dev, *dev_dup;
 	char buf[SYSFS_ATTR_SIZE];
 	struct stat st;
-	int rc;
 
 	if (!path)
 		return NULL;
@@ -526,14 +504,6 @@ static void *add_dax_dev(void *parent, int id, const char *daxdev_base)
 	if (!dev->dev_buf)
 		goto err_read;
 	dev->buf_len = strlen(daxdev_base) + 50;
-
-	sprintf(path, "%s/modalias", daxdev_base);
-	rc = sysfs_read_attr(ctx, path, buf);
-	/* older kernels may be lack the modalias attribute */
-	if (rc < 0 && rc != -ENOENT)
-		goto err_read;
-	if (rc == 0)
-		dev->kmod_list = to_module_list(ctx, buf);
 
 	sprintf(path, "%s/target_node", daxdev_base);
 	if (sysfs_read_attr(ctx, path, buf) == 0)
@@ -873,38 +843,29 @@ static int daxctl_insert_kmod_for_mode(struct daxctl_dev *dev,
 {
 	const char *devname = daxctl_dev_get_devname(dev);
 	struct daxctl_ctx *ctx = daxctl_dev_get_ctx(dev);
-	struct kmod_list *iter;
-	int rc = -ENXIO;
+	struct kmod_module *kmod;
+	int rc;
 
-	if (dev->kmod_list == NULL) {
-		err(ctx, "%s: a modalias lookup list was not created\n",
-				devname);
+	rc = kmod_module_new_from_name(ctx->kmod_ctx, mod_name, &kmod);
+	if (rc < 0) {
+		err(ctx, "%s: failed getting module for: %s: %s\n",
+			devname, mod_name, strerror(-rc));
 		return rc;
 	}
 
-	kmod_list_foreach(iter, dev->kmod_list) {
-		struct kmod_module *mod = kmod_module_get_module(iter);
-		const char *name = kmod_module_get_name(mod);
-
-		if (strcmp(name, mod_name) != 0) {
-			kmod_module_unref(mod);
-			continue;
-		}
-		dbg(ctx, "%s inserting module: %s\n", devname, name);
-		rc = kmod_module_probe_insert_module(mod,
-				KMOD_PROBE_APPLY_BLACKLIST, NULL, NULL, NULL,
-				NULL);
-		if (rc < 0) {
-			err(ctx, "%s: insert failure: %d\n", devname, rc);
-			return rc;
-		}
-		dev->module = mod;
+	/* if the driver is builtin, this Just Works */
+	dbg(ctx, "%s inserting module: %s\n", devname,
+		kmod_module_get_name(kmod));
+	rc = kmod_module_probe_insert_module(kmod,
+			KMOD_PROBE_APPLY_BLACKLIST,
+			NULL, NULL, NULL, NULL);
+	if (rc < 0) {
+		err(ctx, "%s: insert failure: %d\n", devname, rc);
+		return rc;
 	}
+	dev->module = kmod;
 
-	if (rc == -ENXIO)
-		err(ctx, "%s: Unable to find module: %s in alias list\n",
-				devname, mod_name);
-	return rc;
+	return 0;
 }
 
 static int daxctl_dev_enable(struct daxctl_dev *dev, enum daxctl_dev_mode mode)
