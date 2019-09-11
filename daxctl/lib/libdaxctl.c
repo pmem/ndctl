@@ -1047,13 +1047,24 @@ DAXCTL_EXPORT unsigned long daxctl_memory_get_block_size(struct daxctl_memory *m
 	return mem->block_size;
 }
 
-static int online_one_memblock(struct daxctl_dev *dev, char *path)
+static int online_one_memblock(struct daxctl_memory *mem, char *memblock)
 {
+	struct daxctl_dev *dev = daxctl_memory_get_dev(mem);
 	const char *devname = daxctl_dev_get_devname(dev);
 	struct daxctl_ctx *ctx = daxctl_dev_get_ctx(dev);
 	const char *mode = "online_movable";
+	int len = mem->buf_len, rc;
 	char buf[SYSFS_ATTR_SIZE];
-	int rc;
+	char *path = mem->mem_buf;
+	const char *node_path;
+
+	node_path = daxctl_memory_get_node_path(mem);
+	if (!node_path)
+		return -ENXIO;
+
+	rc = snprintf(path, len, "%s/%s/state", node_path, memblock);
+	if (rc < 0)
+		return -ENOMEM;
 
 	rc = sysfs_read_attr(ctx, path, buf);
 	if (rc) {
@@ -1089,13 +1100,24 @@ static int online_one_memblock(struct daxctl_dev *dev, char *path)
 	return rc;
 }
 
-static int offline_one_memblock(struct daxctl_dev *dev, char *path)
+static int offline_one_memblock(struct daxctl_memory *mem, char *memblock)
 {
+	struct daxctl_dev *dev = daxctl_memory_get_dev(mem);
 	const char *devname = daxctl_dev_get_devname(dev);
 	struct daxctl_ctx *ctx = daxctl_dev_get_ctx(dev);
 	const char *mode = "offline";
+	int len = mem->buf_len, rc;
 	char buf[SYSFS_ATTR_SIZE];
-	int rc;
+	char *path = mem->mem_buf;
+	const char *node_path;
+
+	node_path = daxctl_memory_get_node_path(mem);
+	if (!node_path)
+		return -ENXIO;
+
+	rc = snprintf(path, len, "%s/%s/state", node_path, memblock);
+	if (rc < 0)
+		return -ENOMEM;
 
 	rc = sysfs_read_attr(ctx, path, buf);
 	if (rc) {
@@ -1121,12 +1143,23 @@ static int offline_one_memblock(struct daxctl_dev *dev, char *path)
 	return rc;
 }
 
-static int memblock_is_online(struct daxctl_dev *dev, char *path)
+static int memblock_is_online(struct daxctl_memory *mem, char *memblock)
 {
+	struct daxctl_dev *dev = daxctl_memory_get_dev(mem);
 	const char *devname = daxctl_dev_get_devname(dev);
 	struct daxctl_ctx *ctx = daxctl_dev_get_ctx(dev);
+	int len = mem->buf_len, rc;
 	char buf[SYSFS_ATTR_SIZE];
-	int rc;
+	char *path = mem->mem_buf;
+	const char *node_path;
+
+	node_path = daxctl_memory_get_node_path(mem);
+	if (!node_path)
+		return -ENXIO;
+
+	rc = snprintf(path, len, "%s/%s/state", node_path, memblock);
+	if (rc < 0)
+		return -ENOMEM;
 
 	rc = sysfs_read_attr(ctx, path, buf);
 	if (rc) {
@@ -1193,7 +1226,7 @@ static bool memblock_in_dev(struct daxctl_memory *mem, const char *memblock)
 	return false;
 }
 
-static int op_for_one_memblock(struct daxctl_memory *mem, char *path,
+static int op_for_one_memblock(struct daxctl_memory *mem, char *memblock,
 		enum memory_op op)
 {
 	struct daxctl_dev *dev = daxctl_memory_get_dev(mem);
@@ -1203,11 +1236,11 @@ static int op_for_one_memblock(struct daxctl_memory *mem, char *path,
 
 	switch (op) {
 	case MEM_SET_ONLINE:
-		return online_one_memblock(dev, path);
+		return online_one_memblock(mem, memblock);
 	case MEM_SET_OFFLINE:
-		return offline_one_memblock(dev, path);
+		return offline_one_memblock(mem, memblock);
 	case MEM_IS_ONLINE:
-		rc = memblock_is_online(dev, path);
+		rc = memblock_is_online(mem, memblock);
 		if (rc < 0)
 			return rc;
 		/*
@@ -1245,19 +1278,10 @@ static int daxctl_memory_op(struct daxctl_memory *mem, enum memory_op op)
 
 	errno = 0;
 	while ((de = readdir(node_dir)) != NULL) {
-		char *path = mem->mem_buf;
-		int len = mem->buf_len;
-
 		if (strncmp(de->d_name, "memory", 6) == 0) {
 			if (!memblock_in_dev(mem, de->d_name))
 				continue;
-			rc = snprintf(path, len, "%s/%s/state",
-				node_path, de->d_name);
-			if (rc < 0) {
-				rc = -ENOMEM;
-				goto out_dir;
-			}
-			rc = op_for_one_memblock(mem, path, op);
+			rc = op_for_one_memblock(mem, de->d_name, op);
 			if (rc < 0)
 				goto out_dir;
 			if (rc == 0)
