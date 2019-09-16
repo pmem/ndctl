@@ -398,7 +398,7 @@ static int do_reconfig(struct daxctl_dev *dev, enum dev_mode mode,
 		rc = -EINVAL;
 	}
 
-	if (rc)
+	if (rc < 0)
 		return rc;
 
 	*jdevs = json_object_new_array();
