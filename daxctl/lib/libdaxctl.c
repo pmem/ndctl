@@ -1047,102 +1047,6 @@ DAXCTL_EXPORT unsigned long daxctl_memory_get_block_size(struct daxctl_memory *m
 	return mem->block_size;
 }
 
-static int online_one_memblock(struct daxctl_memory *mem, char *memblock)
-{
-	struct daxctl_dev *dev = daxctl_memory_get_dev(mem);
-	const char *devname = daxctl_dev_get_devname(dev);
-	struct daxctl_ctx *ctx = daxctl_dev_get_ctx(dev);
-	const char *mode = "online_movable";
-	int len = mem->buf_len, rc;
-	char buf[SYSFS_ATTR_SIZE];
-	char *path = mem->mem_buf;
-	const char *node_path;
-
-	node_path = daxctl_memory_get_node_path(mem);
-	if (!node_path)
-		return -ENXIO;
-
-	rc = snprintf(path, len, "%s/%s/state", node_path, memblock);
-	if (rc < 0)
-		return -ENOMEM;
-
-	rc = sysfs_read_attr(ctx, path, buf);
-	if (rc) {
-		err(ctx, "%s: Failed to read %s: %s\n",
-			devname, path, strerror(-rc));
-		return rc;
-	}
-
-	/*
-	 * if already online, possibly due to kernel config or a udev rule,
-	 * there is nothing to do and we can skip over the memblock
-	 */
-	if (strncmp(buf, "online", 6) == 0)
-		return 1;
-
-	rc = sysfs_write_attr_quiet(ctx, path, mode);
-	if (rc) {
-		/*
-		 * While we performed an already-online check above, there
-		 * is still a TOCTOU hole where someone (such as a udev rule)
-		 * may have raced to online the memory. In such a case,
-		 * the sysfs store will fail, however we can check for this
-		 * by simply reading the state again. If it changed to the
-		 * desired state, then we don't have to error out.
-		 */
-		if (sysfs_read_attr(ctx, path, buf) == 0) {
-			if (strncmp(buf, "online", 6) == 0)
-				return 1;
-		}
-		err(ctx, "%s: Failed to online %s: %s\n",
-			devname, path, strerror(-rc));
-	}
-	return rc;
-}
-
-static int offline_one_memblock(struct daxctl_memory *mem, char *memblock)
-{
-	struct daxctl_dev *dev = daxctl_memory_get_dev(mem);
-	const char *devname = daxctl_dev_get_devname(dev);
-	struct daxctl_ctx *ctx = daxctl_dev_get_ctx(dev);
-	const char *mode = "offline";
-	int len = mem->buf_len, rc;
-	char buf[SYSFS_ATTR_SIZE];
-	char *path = mem->mem_buf;
-	const char *node_path;
-
-	node_path = daxctl_memory_get_node_path(mem);
-	if (!node_path)
-		return -ENXIO;
-
-	rc = snprintf(path, len, "%s/%s/state", node_path, memblock);
-	if (rc < 0)
-		return -ENOMEM;
-
-	rc = sysfs_read_attr(ctx, path, buf);
-	if (rc) {
-		err(ctx, "%s: Failed to read %s: %s\n",
-			devname, path, strerror(-rc));
-		return rc;
-	}
-
-	/* if already offline, there is nothing to do */
-	if (strncmp(buf, "offline", 7) == 0)
-		return 1;
-
-	rc = sysfs_write_attr_quiet(ctx, path, mode);
-	if (rc) {
-		/* Close the TOCTOU hole like in online_one_memblock() above */
-		if (sysfs_read_attr(ctx, path, buf) == 0) {
-			if (strncmp(buf, "offline", 7) == 0)
-				return 1;
-		}
-		err(ctx, "%s: Failed to offline %s: %s\n",
-			devname, path, strerror(-rc));
-	}
-	return rc;
-}
-
 static int memblock_is_online(struct daxctl_memory *mem, char *memblock)
 {
 	struct daxctl_dev *dev = daxctl_memory_get_dev(mem);
@@ -1173,6 +1077,86 @@ static int memblock_is_online(struct daxctl_memory *mem, char *memblock)
 
 	/* offline */
 	return 0;
+}
+
+static int online_one_memblock(struct daxctl_memory *mem, char *memblock)
+{
+	struct daxctl_dev *dev = daxctl_memory_get_dev(mem);
+	const char *devname = daxctl_dev_get_devname(dev);
+	struct daxctl_ctx *ctx = daxctl_dev_get_ctx(dev);
+	const char *mode = "online_movable";
+	int len = mem->buf_len, rc;
+	char *path = mem->mem_buf;
+	const char *node_path;
+
+	node_path = daxctl_memory_get_node_path(mem);
+	if (!node_path)
+		return -ENXIO;
+
+	rc = snprintf(path, len, "%s/%s/state", node_path, memblock);
+	if (rc < 0)
+		return -ENOMEM;
+
+	/*
+	 * if already online, possibly due to kernel config or a udev rule,
+	 * there is nothing to do and we can skip over the memblock
+	 */
+	rc = memblock_is_online(mem, memblock);
+	if (rc)
+		return rc;
+
+	rc = sysfs_write_attr_quiet(ctx, path, mode);
+	if (rc) {
+		/*
+		 * While we performed an already-online check above, there
+		 * is still a TOCTOU hole where someone (such as a udev rule)
+		 * may have raced to online the memory. In such a case,
+		 * the sysfs store will fail, however we can check for this
+		 * by simply reading the state again. If it changed to the
+		 * desired state, then we don't have to error out.
+		 */
+		if (memblock_is_online(mem, memblock))
+			return 1;
+		err(ctx, "%s: Failed to online %s: %s\n",
+			devname, path, strerror(-rc));
+	}
+	return rc;
+}
+
+static int offline_one_memblock(struct daxctl_memory *mem, char *memblock)
+{
+	struct daxctl_dev *dev = daxctl_memory_get_dev(mem);
+	const char *devname = daxctl_dev_get_devname(dev);
+	struct daxctl_ctx *ctx = daxctl_dev_get_ctx(dev);
+	const char *mode = "offline";
+	int len = mem->buf_len, rc;
+	char *path = mem->mem_buf;
+	const char *node_path;
+
+	node_path = daxctl_memory_get_node_path(mem);
+	if (!node_path)
+		return -ENXIO;
+
+	rc = snprintf(path, len, "%s/%s/state", node_path, memblock);
+	if (rc < 0)
+		return -ENOMEM;
+
+	/* if already offline, there is nothing to do */
+	rc = memblock_is_online(mem, memblock);
+	if (rc < 0)
+		return rc;
+	if (!rc)
+		return 1;
+
+	rc = sysfs_write_attr_quiet(ctx, path, mode);
+	if (rc) {
+		/* Close the TOCTOU hole like in online_one_memblock() above */
+		if (!memblock_is_online(mem, memblock))
+			return 1;
+		err(ctx, "%s: Failed to offline %s: %s\n",
+			devname, path, strerror(-rc));
+	}
+	return rc;
 }
 
 static bool memblock_in_dev(struct daxctl_memory *mem, const char *memblock)
