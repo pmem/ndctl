@@ -1159,6 +1159,58 @@ static int offline_one_memblock(struct daxctl_memory *mem, char *memblock)
 	return rc;
 }
 
+static int memblock_find_zone(struct daxctl_memory *mem, char *memblock,
+		int *status)
+{
+	struct daxctl_dev *dev = daxctl_memory_get_dev(mem);
+	const char *devname = daxctl_dev_get_devname(dev);
+	struct daxctl_ctx *ctx = daxctl_dev_get_ctx(dev);
+	enum memory_zones cur_zone;
+	int len = mem->buf_len, rc;
+	char buf[SYSFS_ATTR_SIZE];
+	char *path = mem->mem_buf;
+	const char *node_path;
+
+	rc = memblock_is_online(mem, memblock);
+	if (rc < 0)
+		return rc;
+	if (rc == 0)
+		return -ENXIO;
+
+	node_path = daxctl_memory_get_node_path(mem);
+	if (!node_path)
+		return -ENXIO;
+
+	rc = snprintf(path, len, "%s/%s/valid_zones", node_path, memblock);
+	if (rc < 0)
+		return -ENOMEM;
+
+	rc = sysfs_read_attr(ctx, path, buf);
+	if (rc) {
+		err(ctx, "%s: Failed to read %s: %s\n",
+			devname, path, strerror(-rc));
+		return rc;
+	}
+
+	if (strcmp(buf, zone_strings[MEM_ZONE_MOVABLE]) == 0)
+		cur_zone = MEM_ZONE_MOVABLE;
+	else if (strcmp(buf, zone_strings[MEM_ZONE_NORMAL]) == 0)
+		cur_zone = MEM_ZONE_NORMAL;
+	else
+		cur_zone = MEM_ZONE_UNKNOWN;
+
+	if (mem->zone) {
+		if (mem->zone == cur_zone)
+			return 0;
+		else
+			*status |= MEM_ST_ZONE_INCONSISTENT;
+	} else {
+		mem->zone = cur_zone;
+	}
+
+	return 0;
+}
+
 static bool memblock_in_dev(struct daxctl_memory *mem, const char *memblock)
 {
 	const char *mem_base = "/sys/devices/system/memory/";
@@ -1211,7 +1263,7 @@ static bool memblock_in_dev(struct daxctl_memory *mem, const char *memblock)
 }
 
 static int op_for_one_memblock(struct daxctl_memory *mem, char *memblock,
-		enum memory_op op)
+		enum memory_op op, int *status)
 {
 	struct daxctl_dev *dev = daxctl_memory_get_dev(mem);
 	const char *devname = daxctl_dev_get_devname(dev);
@@ -1234,6 +1286,8 @@ static int op_for_one_memblock(struct daxctl_memory *mem, char *memblock,
 		return !rc;
 	case MEM_COUNT:
 		return 0;
+	case MEM_GET_ZONE:
+		return memblock_find_zone(mem, memblock, status);
 	}
 
 	err(ctx, "%s: BUG: unknown op: %d\n", devname, op);
@@ -1245,8 +1299,8 @@ static int daxctl_memory_op(struct daxctl_memory *mem, enum memory_op op)
 	struct daxctl_dev *dev = daxctl_memory_get_dev(mem);
 	const char *devname = daxctl_dev_get_devname(dev);
 	struct daxctl_ctx *ctx = daxctl_dev_get_ctx(dev);
+	int rc, count = 0, status_flags = 0;
 	const char *node_path;
-	int rc, count = 0;
 	struct dirent *de;
 	DIR *node_dir;
 
@@ -1265,7 +1319,8 @@ static int daxctl_memory_op(struct daxctl_memory *mem, enum memory_op op)
 		if (strncmp(de->d_name, "memory", 6) == 0) {
 			if (!memblock_in_dev(mem, de->d_name))
 				continue;
-			rc = op_for_one_memblock(mem, de->d_name, op);
+			rc = op_for_one_memblock(mem, de->d_name, op,
+					&status_flags);
 			if (rc < 0)
 				goto out_dir;
 			if (rc == 0)
@@ -1273,6 +1328,10 @@ static int daxctl_memory_op(struct daxctl_memory *mem, enum memory_op op)
 		}
 		errno = 0;
 	}
+
+	if (status_flags & MEM_ST_ZONE_INCONSISTENT)
+		mem->zone = MEM_ZONE_UNKNOWN;
+
 	if (errno) {
 		rc = -errno;
 		goto out_dir;
@@ -1302,4 +1361,16 @@ DAXCTL_EXPORT int daxctl_memory_is_online(struct daxctl_memory *mem)
 DAXCTL_EXPORT int daxctl_memory_num_sections(struct daxctl_memory *mem)
 {
 	return daxctl_memory_op(mem, MEM_COUNT);
+}
+
+DAXCTL_EXPORT int daxctl_memory_is_movable(struct daxctl_memory *mem)
+{
+	int rc;
+
+	/* Start a fresh zone scan, clear any previous info */
+	mem->zone = 0;
+	rc = daxctl_memory_op(mem, MEM_GET_ZONE);
+	if (rc < 0)
+		return rc;
+	return (mem->zone == MEM_ZONE_MOVABLE) ? 1 : 0;
 }

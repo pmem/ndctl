@@ -69,3 +69,8 @@ global:
 	daxctl_memory_is_online;
 	daxctl_memory_num_sections;
 } LIBDAXCTL_5;
+
+LIBDAXCTL_7 {
+global:
+	daxctl_memory_is_movable;
+} LIBDAXCTL_6;

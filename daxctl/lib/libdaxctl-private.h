@@ -44,6 +44,25 @@ enum memory_op {
 	MEM_SET_ONLINE,
 	MEM_IS_ONLINE,
 	MEM_COUNT,
+	MEM_GET_ZONE,
+};
+
+/* OR-able flags, 1, 2, 4, 8 etc */
+enum memory_op_status {
+	MEM_ST_OK = 0,
+	MEM_ST_ZONE_INCONSISTENT = 1,
+};
+
+enum memory_zones {
+	MEM_ZONE_UNKNOWN = 1,
+	MEM_ZONE_MOVABLE,
+	MEM_ZONE_NORMAL,
+};
+
+static const char *zone_strings[] = {
+	[MEM_ZONE_UNKNOWN] = "mixed",
+	[MEM_ZONE_NORMAL] = "Normal",
+	[MEM_ZONE_MOVABLE] = "Movable",
 };
 
 /**
@@ -86,6 +105,7 @@ struct daxctl_memory {
 	size_t buf_len;
 	char *node_path;
 	unsigned long block_size;
+	enum memory_zones zone;
 };
 
 
