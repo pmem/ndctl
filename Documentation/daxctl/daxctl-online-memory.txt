@@ -62,6 +62,8 @@ OPTIONS
 	more /dev/daxX.Y devices, where X is the region id and Y is the device
 	instance id.
 
+include::movable-options.txt[]
+
 -u::
 --human::
 	By default the command will output machine-friendly raw-integer

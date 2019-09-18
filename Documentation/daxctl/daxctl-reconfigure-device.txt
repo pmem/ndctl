@@ -135,6 +135,8 @@ OPTIONS
 	brought online automatically and immediately with the 'online_movable'
 	policy. Use this option to disable the automatic onlining behavior.
 
+include::movable-options.txt[]
+
 -f::
 --force::
 	When converting from "system-ram" mode to "devdax", it is expected

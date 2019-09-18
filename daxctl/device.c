@@ -21,6 +21,7 @@ static struct {
 	const char *mode;
 	int region_id;
 	bool no_online;
+	bool no_movable;
 	bool force;
 	bool human;
 	bool verbose;
@@ -36,6 +37,12 @@ enum dev_mode {
 
 static enum dev_mode reconfig_mode = DAXCTL_DEV_MODE_UNKNOWN;
 static unsigned long flags;
+
+enum memory_zone {
+	MEM_ZONE_MOVABLE,
+	MEM_ZONE_NORMAL,
+};
+static enum memory_zone mem_zone = MEM_ZONE_MOVABLE;
 
 enum device_action {
 	ACTION_RECONFIG,
@@ -55,13 +62,24 @@ OPT_BOOLEAN('N', "no-online", &param.no_online, \
 OPT_BOOLEAN('f', "force", &param.force, \
 		"attempt to offline memory sections before reconfiguration")
 
+#define ZONE_OPTIONS() \
+OPT_BOOLEAN('\0', "no-movable", &param.no_movable, \
+		"online memory in ZONE_NORMAL")
+
 static const struct option reconfig_options[] = {
 	BASE_OPTIONS(),
 	RECONFIG_OPTIONS(),
+	ZONE_OPTIONS(),
 	OPT_END(),
 };
 
-static const struct option memory_options[] = {
+static const struct option online_options[] = {
+	BASE_OPTIONS(),
+	ZONE_OPTIONS(),
+	OPT_END(),
+};
+
+static const struct option offline_options[] = {
 	BASE_OPTIONS(),
 	OPT_END(),
 };
@@ -126,6 +144,8 @@ static const char *parse_device_options(int argc, const char **argv,
 		}
 		if (strcmp(param.mode, "system-ram") == 0) {
 			reconfig_mode = DAXCTL_DEV_MODE_RAM;
+			if (param.no_movable)
+				mem_zone = MEM_ZONE_NORMAL;
 		} else if (strcmp(param.mode, "devdax") == 0) {
 			reconfig_mode = DAXCTL_DEV_MODE_DEVDAX;
 			if (param.no_online) {
@@ -136,6 +156,9 @@ static const char *parse_device_options(int argc, const char **argv,
 		}
 		break;
 	case ACTION_ONLINE:
+		if (param.no_movable)
+			mem_zone = MEM_ZONE_NORMAL;
+		/* fall through */
 	case ACTION_OFFLINE:
 		/* nothing special */
 		break;
@@ -194,7 +217,10 @@ static int dev_online_memory(struct daxctl_dev *dev)
 			num_on == 1 ? "" : "s");
 
 	/* online the remaining sections */
-	rc = daxctl_memory_online(mem);
+	if (param.no_movable)
+		rc = daxctl_memory_online_no_movable(mem);
+	else
+		rc = daxctl_memory_online(mem);
 	if (rc < 0) {
 		fprintf(stderr, "%s: failed to online memory: %s\n",
 			devname, strerror(-rc));
@@ -521,7 +547,7 @@ int cmd_online_memory(int argc, const char **argv, struct daxctl_ctx *ctx)
 {
 	char *usage = "daxctl online-memory <device> [<options>]";
 	const char *device = parse_device_options(argc, argv, ACTION_ONLINE,
-			memory_options, usage, ctx);
+			online_options, usage, ctx);
 	int processed, rc;
 
 	rc = do_xaction_device(device, ACTION_ONLINE, ctx, &processed);
@@ -538,7 +564,7 @@ int cmd_offline_memory(int argc, const char **argv, struct daxctl_ctx *ctx)
 {
 	char *usage = "daxctl offline-memory <device> [<options>]";
 	const char *device = parse_device_options(argc, argv, ACTION_OFFLINE,
-			memory_options, usage, ctx);
+			offline_options, usage, ctx);
 	int processed, rc;
 
 	rc = do_xaction_device(device, ACTION_OFFLINE, ctx, &processed);
