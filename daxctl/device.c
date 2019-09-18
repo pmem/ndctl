@@ -174,6 +174,15 @@ static int dev_online_memory(struct daxctl_dev *dev)
 			devname, strerror(-num_on));
 		return num_on;
 	}
+	if (num_on)
+		fprintf(stderr,
+		    "%s:\n  WARNING: detected a race while onlining memory\n"
+		    "  Some memory may not be in the expected zone. It is\n"
+		    "  recommended to disable any other onlining mechanisms,\n"
+		    "  and retry. If onlining is to be left to other agents,\n"
+		    "  use the --no-online option to suppress this warning\n",
+		    devname);
+
 	if (num_on == num_sections) {
 		fprintf(stderr, "%s: all memory sections (%d) already online\n",
 			devname, num_on);

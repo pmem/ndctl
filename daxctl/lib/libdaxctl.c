@@ -1079,10 +1079,10 @@ static int memblock_is_online(struct daxctl_memory *mem, char *memblock)
 	return 0;
 }
 
-static int online_one_memblock(struct daxctl_memory *mem, char *memblock)
+static int online_one_memblock(struct daxctl_memory *mem, char *memblock,
+		int *status)
 {
 	struct daxctl_dev *dev = daxctl_memory_get_dev(mem);
-	const char *devname = daxctl_dev_get_devname(dev);
 	struct daxctl_ctx *ctx = daxctl_dev_get_ctx(dev);
 	const char *mode = "online_movable";
 	int len = mem->buf_len, rc;
@@ -1097,10 +1097,6 @@ static int online_one_memblock(struct daxctl_memory *mem, char *memblock)
 	if (rc < 0)
 		return -ENOMEM;
 
-	/*
-	 * if already online, possibly due to kernel config or a udev rule,
-	 * there is nothing to do and we can skip over the memblock
-	 */
 	rc = memblock_is_online(mem, memblock);
 	if (rc)
 		return rc;
@@ -1108,18 +1104,14 @@ static int online_one_memblock(struct daxctl_memory *mem, char *memblock)
 	rc = sysfs_write_attr_quiet(ctx, path, mode);
 	if (rc) {
 		/*
-		 * While we performed an already-online check above, there
-		 * is still a TOCTOU hole where someone (such as a udev rule)
-		 * may have raced to online the memory. In such a case,
-		 * the sysfs store will fail, however we can check for this
-		 * by simply reading the state again. If it changed to the
-		 * desired state, then we don't have to error out.
+		 * If the block got onlined, potentially by some other agent,
+		 * do nothing for now. There will be a full scan for zone
+		 * correctness later.
 		 */
-		if (memblock_is_online(mem, memblock))
-			return 1;
-		err(ctx, "%s: Failed to online %s: %s\n",
-			devname, path, strerror(-rc));
+		if (memblock_is_online(mem, memblock) == 1)
+			return 0;
 	}
+
 	return rc;
 }
 
@@ -1150,7 +1142,7 @@ static int offline_one_memblock(struct daxctl_memory *mem, char *memblock)
 
 	rc = sysfs_write_attr_quiet(ctx, path, mode);
 	if (rc) {
-		/* Close the TOCTOU hole like in online_one_memblock() above */
+		/* check if something raced us to offline (unlikely) */
 		if (!memblock_is_online(mem, memblock))
 			return 1;
 		err(ctx, "%s: Failed to offline %s: %s\n",
@@ -1274,7 +1266,7 @@ static int op_for_one_memblock(struct daxctl_memory *mem, char *memblock,
 
 	switch (op) {
 	case MEM_SET_ONLINE:
-		return online_one_memblock(mem, memblock);
+		return online_one_memblock(mem, memblock, status);
 	case MEM_SET_OFFLINE:
 		return offline_one_memblock(mem, memblock);
 	case MEM_IS_ONLINE:
@@ -1349,9 +1341,38 @@ out_dir:
 	return rc;
 }
 
+/*
+ * daxctl_memory_online() will online to ZONE_MOVABLE by default
+ */
 DAXCTL_EXPORT int daxctl_memory_online(struct daxctl_memory *mem)
 {
-	return daxctl_memory_op(mem, MEM_SET_ONLINE);
+	struct daxctl_dev *dev = daxctl_memory_get_dev(mem);
+	const char *devname = daxctl_dev_get_devname(dev);
+	struct daxctl_ctx *ctx = daxctl_dev_get_ctx(dev);
+	int rc;
+
+	rc = daxctl_memory_op(mem, MEM_SET_ONLINE);
+	if (rc)
+		return rc;
+
+	/*
+	 * Detect any potential races when blocks were being brought online by
+	 * checking the zone in which the memory blocks are at this point. If
+	 * any of the blocks are not in ZONE_MOVABLE, emit a warning.
+	 */
+	mem->zone = 0;
+	rc = daxctl_memory_op(mem, MEM_FIND_ZONE);
+	if (rc)
+		return rc;
+	if (mem->zone != MEM_ZONE_MOVABLE) {
+		err(ctx,
+		    "%s:\n  WARNING: detected a race while onlining memory\n"
+		    "  See 'man daxctl-reconfigure-device' for more details\n",
+		    devname);
+		return -EBUSY;
+	}
+
+	return rc;
 }
 
 DAXCTL_EXPORT int daxctl_memory_offline(struct daxctl_memory *mem)
