@@ -42,7 +42,7 @@ question will be lost, and replaced with content that is implementation
 WARNING: This is a DANGEROUS command, and should only be used after fully
 understanding its implications and consequences. This WILL erase your data.
 
-For namespaces in one of 'fsdax' or 'davdax' modes, this command will
+For namespaces in one of 'fsdax' or 'devdax' modes, this command will
 only consider the 'data' area for error clearing. Namespace metadata, such as
 info-blocks, will not be touched. For namespaces in 'raw' mode, the full
 available capacity of the namespace is considered for error clearing.
