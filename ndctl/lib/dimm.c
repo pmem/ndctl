@@ -825,7 +825,7 @@ NDCTL_EXPORT int ndctl_dimm_wait_overwrite(struct ndctl_dimm *dimm)
 			break;
 		}
 
-		if (strcmp(buf, "overwrite") == 0) {
+		if (strncmp(buf, "overwrite", 9) == 0) {
 			rc = poll(&fds, 1, -1);
 			if (rc < 0) {
 				rc = -errno;
@@ -839,7 +839,7 @@ NDCTL_EXPORT int ndctl_dimm_wait_overwrite(struct ndctl_dimm *dimm)
 			}
 			fds.revents = 0;
 		} else {
-			if (strcmp(buf, "disabled") == 0)
+			if (strncmp(buf, "disabled", 8) == 0)
 				rc = 1;
 			break;
 		}
