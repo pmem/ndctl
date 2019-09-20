@@ -278,7 +278,7 @@ struct json_object *util_daxctl_dev_to_json(struct daxctl_dev *dev,
 	struct daxctl_memory *mem = daxctl_dev_get_memory(dev);
 	const char *devname = daxctl_dev_get_devname(dev);
 	struct json_object *jdev, *jobj;
-	int node;
+	int node, movable;
 
 	jdev = json_object_new_object();
 	if (!devname || !jdev)
@@ -305,6 +305,18 @@ struct json_object *util_daxctl_dev_to_json(struct daxctl_dev *dev,
 		jobj = json_object_new_string("devdax");
 	if (jobj)
 		json_object_object_add(jdev, "mode", jobj);
+
+	if (mem) {
+		movable = daxctl_memory_is_movable(mem);
+		if (movable == 1)
+			jobj = json_object_new_boolean(true);
+		else if (movable == 0)
+			jobj = json_object_new_boolean(false);
+		else
+			jobj = NULL;
+		if (jobj)
+			json_object_object_add(jdev, "movable", jobj);
+	}
 
 	if (!daxctl_dev_is_enabled(dev)) {
 		jobj = json_object_new_string("disabled");
