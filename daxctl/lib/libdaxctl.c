@@ -204,8 +204,9 @@ DAXCTL_EXPORT void daxctl_region_get_uuid(struct daxctl_region *region, uuid_t u
 
 static void free_mem(struct daxctl_dev *dev)
 {
-	if (dev && dev->mem) {
+	if (dev->mem) {
 		free(dev->mem->node_path);
+		free(dev->mem->mem_buf);
 		free(dev->mem);
 		dev->mem = NULL;
 	}
@@ -450,6 +451,7 @@ static struct daxctl_memory *daxctl_dev_alloc_mem(struct daxctl_dev *dev)
 		goto err_node;
 	mem->buf_len = strlen(node_base) + 256;
 
+	dev->mem = mem;
 	return mem;
 
 err_node:
