@@ -1211,40 +1211,42 @@ static int memblock_find_zone(struct daxctl_memory *mem, char *memblock,
 	return 0;
 }
 
-static bool memblock_in_dev(struct daxctl_memory *mem, const char *memblock)
+static int memblock_in_dev(struct daxctl_memory *mem, const char *memblock)
 {
 	const char *mem_base = "/sys/devices/system/memory/";
 	struct daxctl_dev *dev = daxctl_memory_get_dev(mem);
 	unsigned long long memblock_res, dev_start, dev_end;
 	const char *devname = daxctl_dev_get_devname(dev);
 	struct daxctl_ctx *ctx = daxctl_dev_get_ctx(dev);
+	int rc, path_len = mem->buf_len;
 	unsigned long memblock_size;
-	int path_len = mem->buf_len;
 	char buf[SYSFS_ATTR_SIZE];
 	unsigned long phys_index;
 	char *path = mem->mem_buf;
 
 	if (snprintf(path, path_len, "%s/%s/phys_index",
 			mem_base, memblock) < 0)
-		return false;
+		return -ENXIO;
 
-	if (sysfs_read_attr(ctx, path, buf) == 0) {
+	rc = sysfs_read_attr(ctx, path, buf);
+	if (rc == 0) {
 		phys_index = strtoul(buf, NULL, 16);
 		if (phys_index == 0 || phys_index == ULONG_MAX) {
+			rc = -errno;
 			err(ctx, "%s: %s: Unable to determine phys_index: %s\n",
-				devname, memblock, strerror(errno));
-			return false;
+				devname, memblock, strerror(-rc));
+			return rc;
 		}
 	} else {
 		err(ctx, "%s: %s: Unable to determine phys_index: %s\n",
-			devname, memblock, strerror(errno));
-		return false;
+			devname, memblock, strerror(-rc));
+		return rc;
 	}
 
 	dev_start = daxctl_dev_get_resource(dev);
 	if (!dev_start) {
 		err(ctx, "%s: Unable to determine resource\n", devname);
-		return false;
+		return -EACCES;
 	}
 	dev_end = dev_start + daxctl_dev_get_size(dev);
 
@@ -1252,14 +1254,14 @@ static bool memblock_in_dev(struct daxctl_memory *mem, const char *memblock)
 	if (!memblock_size) {
 		err(ctx, "%s: Unable to determine memory block size\n",
 			devname);
-		return false;
+		return -ENXIO;
 	}
 	memblock_res = phys_index * memblock_size;
 
 	if (memblock_res >= dev_start && memblock_res <= dev_end)
-		return true;
+		return 1;
 
-	return false;
+	return 0;
 }
 
 static int op_for_one_memblock(struct daxctl_memory *mem, char *memblock,
@@ -1317,8 +1319,12 @@ static int daxctl_memory_op(struct daxctl_memory *mem, enum memory_op op)
 	errno = 0;
 	while ((de = readdir(node_dir)) != NULL) {
 		if (strncmp(de->d_name, "memory", 6) == 0) {
-			if (!memblock_in_dev(mem, de->d_name))
+			rc = memblock_in_dev(mem, de->d_name);
+			if (rc < 0)
+				goto out_dir;
+			if (rc == 0) /* memblock not in dev */
 				continue;
+			/* memblock is in dev, perform op */
 			rc = op_for_one_memblock(mem, de->d_name, op,
 					&status_flags);
 			if (rc < 0)
