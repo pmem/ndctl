@@ -1080,11 +1080,10 @@ static int memblock_is_online(struct daxctl_memory *mem, char *memblock)
 }
 
 static int online_one_memblock(struct daxctl_memory *mem, char *memblock,
-		int *status)
+		enum memory_zones zone, int *status)
 {
 	struct daxctl_dev *dev = daxctl_memory_get_dev(mem);
 	struct daxctl_ctx *ctx = daxctl_dev_get_ctx(dev);
-	const char *mode = "online_movable";
 	int len = mem->buf_len, rc;
 	char *path = mem->mem_buf;
 	const char *node_path;
@@ -1101,7 +1100,14 @@ static int online_one_memblock(struct daxctl_memory *mem, char *memblock,
 	if (rc)
 		return rc;
 
-	rc = sysfs_write_attr_quiet(ctx, path, mode);
+	switch (zone) {
+	case MEM_ZONE_MOVABLE:
+	case MEM_ZONE_NORMAL:
+		rc = sysfs_write_attr_quiet(ctx, path, state_strings[zone]);
+		break;
+	default:
+		rc = -EINVAL;
+	}
 	if (rc) {
 		/*
 		 * If the block got onlined, potentially by some other agent,
@@ -1266,7 +1272,11 @@ static int op_for_one_memblock(struct daxctl_memory *mem, char *memblock,
 
 	switch (op) {
 	case MEM_SET_ONLINE:
-		return online_one_memblock(mem, memblock, status);
+		return online_one_memblock(mem, memblock, MEM_ZONE_MOVABLE,
+				status);
+	case MEM_SET_ONLINE_NO_MOVABLE:
+		return online_one_memblock(mem, memblock, MEM_ZONE_NORMAL,
+				status);
 	case MEM_SET_OFFLINE:
 		return offline_one_memblock(mem, memblock);
 	case MEM_IS_ONLINE:
@@ -1344,14 +1354,25 @@ out_dir:
 /*
  * daxctl_memory_online() will online to ZONE_MOVABLE by default
  */
-DAXCTL_EXPORT int daxctl_memory_online(struct daxctl_memory *mem)
+static int daxctl_memory_online_with_zone(struct daxctl_memory *mem,
+		enum memory_zones zone)
 {
 	struct daxctl_dev *dev = daxctl_memory_get_dev(mem);
 	const char *devname = daxctl_dev_get_devname(dev);
 	struct daxctl_ctx *ctx = daxctl_dev_get_ctx(dev);
 	int rc;
 
-	rc = daxctl_memory_op(mem, MEM_SET_ONLINE);
+	switch (zone) {
+	case MEM_ZONE_MOVABLE:
+		rc = daxctl_memory_op(mem, MEM_SET_ONLINE);
+		break;
+	case MEM_ZONE_NORMAL:
+		rc = daxctl_memory_op(mem, MEM_SET_ONLINE_NO_MOVABLE);
+		break;
+	default:
+		err(ctx, "%s: BUG: invalid zone for onlining\n", devname);
+		rc = -EINVAL;
+	}
 	if (rc)
 		return rc;
 
@@ -1361,10 +1382,10 @@ DAXCTL_EXPORT int daxctl_memory_online(struct daxctl_memory *mem)
 	 * any of the blocks are not in ZONE_MOVABLE, emit a warning.
 	 */
 	mem->zone = 0;
-	rc = daxctl_memory_op(mem, MEM_FIND_ZONE);
+	rc = daxctl_memory_op(mem, MEM_GET_ZONE);
 	if (rc)
 		return rc;
-	if (mem->zone != MEM_ZONE_MOVABLE) {
+	if (mem->zone != zone) {
 		err(ctx,
 		    "%s:\n  WARNING: detected a race while onlining memory\n"
 		    "  See 'man daxctl-reconfigure-device' for more details\n",
@@ -1373,6 +1394,16 @@ DAXCTL_EXPORT int daxctl_memory_online(struct daxctl_memory *mem)
 	}
 
 	return rc;
+}
+
+DAXCTL_EXPORT int daxctl_memory_online(struct daxctl_memory *mem)
+{
+	return daxctl_memory_online_with_zone(mem, MEM_ZONE_MOVABLE);
+}
+
+DAXCTL_EXPORT int daxctl_memory_online_no_movable(struct daxctl_memory *mem)
+{
+	return daxctl_memory_online_with_zone(mem, MEM_ZONE_NORMAL);
 }
 
 DAXCTL_EXPORT int daxctl_memory_offline(struct daxctl_memory *mem)

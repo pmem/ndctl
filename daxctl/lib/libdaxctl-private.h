@@ -42,6 +42,7 @@ static const char *dax_modules[] = {
 enum memory_op {
 	MEM_SET_OFFLINE,
 	MEM_SET_ONLINE,
+	MEM_SET_ONLINE_NO_MOVABLE,
 	MEM_IS_ONLINE,
 	MEM_COUNT,
 	MEM_GET_ZONE,
@@ -63,6 +64,11 @@ static const char *zone_strings[] = {
 	[MEM_ZONE_UNKNOWN] = "mixed",
 	[MEM_ZONE_NORMAL] = "Normal",
 	[MEM_ZONE_MOVABLE] = "Movable",
+};
+
+static const char *state_strings[] = {
+	[MEM_ZONE_NORMAL] = "online",
+	[MEM_ZONE_MOVABLE] = "online_movable",
 };
 
 /**

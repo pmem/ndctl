@@ -85,6 +85,7 @@ int daxctl_memory_offline(struct daxctl_memory *mem);
 int daxctl_memory_is_online(struct daxctl_memory *mem);
 int daxctl_memory_num_sections(struct daxctl_memory *mem);
 int daxctl_memory_is_movable(struct daxctl_memory *mem);
+int daxctl_memory_online_no_movable(struct daxctl_memory *mem);
 
 #define daxctl_dev_foreach(region, dev) \
         for (dev = daxctl_dev_get_first(region); \
