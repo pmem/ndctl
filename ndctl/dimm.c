@@ -682,7 +682,6 @@ static int query_fw_finish_status(struct ndctl_dimm *dimm,
 	struct ndctl_cmd *cmd;
 	int rc;
 	enum ND_FW_STATUS status;
-	bool done = false;
 	struct timespec now, before, after;
 	uint64_t ver;
 
@@ -716,8 +715,8 @@ static int query_fw_finish_status(struct ndctl_dimm *dimm,
 					ndctl_dimm_get_devname(dimm));
 			printf("Firmware version %#lx.\n", ver);
 			printf("Cold reboot to activate.\n");
-			done = true;
 			rc = 0;
+			goto out;
 			break;
 		case FW_EBUSY:
 			/* Still on going, continue */
@@ -753,7 +752,6 @@ static int query_fw_finish_status(struct ndctl_dimm *dimm,
 				ndctl_dimm_get_devname(dimm));
 		case FW_EINVAL_CTX:
 		case FW_ESEQUENCE:
-			done = true;
 			rc = -ENXIO;
 			goto out;
 		case FW_ENORES:
@@ -761,17 +759,15 @@ static int query_fw_finish_status(struct ndctl_dimm *dimm,
 				"Firmware update sequence timed out: %s\n",
 				ndctl_dimm_get_devname(dimm));
 			rc = -ETIMEDOUT;
-			done = true;
 			goto out;
 		default:
 			fprintf(stderr,
 				"Unknown update status: %#x on DIMM %s\n",
 				status, ndctl_dimm_get_devname(dimm));
 			rc = -EINVAL;
-			done = true;
 			goto out;
 		}
-	} while (!done);
+	} while (true);
 
 out:
 	ndctl_cmd_unref(cmd);
