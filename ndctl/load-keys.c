@@ -185,7 +185,6 @@ static int load_keys(struct loadkeys *lk_ctx, const char *keypath,
 
 	rc = chdir(keypath);
 	if (rc < 0) {
-		rc = -errno;
 		fprintf(stderr, "Change current work dir to %s failed: %s\n",
 				param.key_path, strerror(errno));
 		rc = -errno;
