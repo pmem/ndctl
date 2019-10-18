@@ -7,7 +7,7 @@ pkginclude_HEADERS = ../libndctl.h ../ndctl.h
 lib_LTLIBRARIES = libndctl.la
 
 libndctl_la_SOURCES =\
-	libndctl.h \
+	../libndctl.h \
 	private.h \
 	../../util/log.c \
 	../../util/log.h \
