@@ -30,11 +30,32 @@ cleanup() {
 
 run_test() {
 	rc=0
-	if ! ./dax-pmd $MNT/$FILE; then
+	if ! trace-cmd record -e fs_dax:dax_pmd_fault_done ./dax-pmd $MNT/$FILE; then
 		rc=$?
-		if [ $rc -ne 77 -a $rc -ne 0 ]; then
-			cleanup $1
+		if [ "$rc" -ne 77 ] && [ "$rc" -ne 0 ]; then
+			cleanup "$1"
 		fi
+	fi
+
+	# Fragile hack to double check the kernel services this test
+	# with successful pmd faults. If dax-pmd.c ever changes the
+	# number of times the dax_pmd_fault_done trace point fires the
+	# hack needs to be updated from 10 expected firings and the
+	# result of success (NOPAGE).
+	count=0
+	rc=1
+	while read -r p; do
+		[[ $p ]] || continue
+		if [ "$count" -lt 10 ]; then
+			if [ "$p" != "0x100" ] && [ "$p" != "NOPAGE" ]; then
+				cleanup "$1"
+			fi
+		fi
+		count=$((count + 1))
+	done < <(trace-cmd report | awk '{ print $21 }')
+
+	if [ $count -lt 10 ]; then
+		cleanup "$1"
 	fi
 }
 
@@ -91,4 +112,4 @@ json=$($NDCTL create-namespace -m raw -f -e $dev)
 eval $(json2var <<< "$json")
 [ $mode != "fsdax" ] && echo "fail: $LINENO" &&  exit 1
 
-exit $rc
+exit 0
