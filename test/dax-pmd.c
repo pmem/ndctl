@@ -234,10 +234,11 @@ static int test_pmd(struct ndctl_test *test, int fd)
 
 	for (i = 0; i < map->fm_mapped_extents; i++) {
 		ext = &map->fm_extents[i];
+		p_align = ALIGN(ext->fe_physical, HPAGE_SIZE) - ext->fe_physical;
 		fprintf(stderr, "[%ld]: l: %llx p: %llx len: %llx flags: %x\n",
 				i, ext->fe_logical, ext->fe_physical,
 				ext->fe_length, ext->fe_flags);
-		if (ext->fe_length > 2 * HPAGE_SIZE) {
+		if (ext->fe_length > 2 * HPAGE_SIZE && p_align == 0) {
 			fprintf(stderr, "found potential huge extent\n");
 			break;
 		}
