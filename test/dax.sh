@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 # Copyright(c) 2015-2017 Intel Corporation. All rights reserved.
 # 
@@ -33,7 +33,7 @@ run_test() {
 	if ! ./dax-pmd $MNT/$FILE; then
 		rc=$?
 		if [ $rc -ne 77 -a $rc -ne 0 ]; then
-			err
+			cleanup $1
 		fi
 	fi
 }
@@ -50,7 +50,7 @@ rc=1
 mkfs.ext4 /dev/$blockdev
 mount /dev/$blockdev $MNT -o dax
 fallocate -l 1GiB $MNT/$FILE
-run_test
+run_test $LINENO
 umount $MNT
 
 # convert pmem to put the memmap on the device
@@ -62,7 +62,7 @@ eval $(json2var <<< "$json")
 mkfs.ext4 /dev/$blockdev
 mount /dev/$blockdev $MNT -o dax
 fallocate -l 1GiB $MNT/$FILE
-run_test
+run_test $LINENO
 umount $MNT
 
 json=$($NDCTL create-namespace -m raw -f -e $dev)
@@ -72,7 +72,7 @@ eval $(json2var <<< "$json")
 mkfs.xfs -f /dev/$blockdev -m reflink=0
 mount /dev/$blockdev $MNT -o dax
 fallocate -l 1GiB $MNT/$FILE
-run_test
+run_test $LINENO
 umount $MNT
 
 # convert pmem to put the memmap on the device
@@ -83,7 +83,7 @@ eval $(json2var <<< "$json")
 mkfs.xfs -f /dev/$blockdev -m reflink=0
 mount /dev/$blockdev $MNT -o dax
 fallocate -l 1GiB $MNT/$FILE
-run_test
+run_test $LINENO
 umount $MNT
 
 # revert namespace to raw mode
