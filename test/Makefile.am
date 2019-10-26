@@ -46,7 +46,8 @@ TESTS +=\
 	blk-ns \
 	pmem-ns \
 	dax-dev \
-	dax.sh \
+	dax-ext4.sh \
+	dax-xfs.sh \
 	device-dax \
 	device-dax-fio.sh \
 	mmap.sh \

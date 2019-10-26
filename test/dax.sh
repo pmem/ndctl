@@ -59,6 +59,56 @@ run_test() {
 	fi
 }
 
+run_ext4() {
+	mkfs.ext4 -b 4096 /dev/$blockdev
+	mount /dev/$blockdev $MNT -o dax
+	fallocate -l 1GiB $MNT/$FILE
+	run_test $LINENO
+	umount $MNT
+
+	# convert pmem to put the memmap on the device
+	json=$($NDCTL create-namespace -m fsdax -M dev -f -e $dev)
+	eval $(json2var <<< "$json")
+	[ $mode != "fsdax" ] && echo "fail: $LINENO" &&  exit 1
+	#note the blockdev returned from ndctl create-namespace lacks the /dev prefix
+
+	mkfs.ext4 -b 4096 /dev/$blockdev
+	mount /dev/$blockdev $MNT -o dax
+	fallocate -l 1GiB $MNT/$FILE
+	run_test $LINENO
+	umount $MNT
+	json=$($NDCTL create-namespace -m raw -f -e $dev)
+
+	eval $(json2var <<< "$json")
+	[ $mode != "fsdax" ] && echo "fail: $LINENO" &&  exit 1
+	true
+}
+
+run_xfs() {
+	mkfs.xfs -f -d su=2m,sw=1,agcount=2 -m reflink=0 /dev/$blockdev
+	mount /dev/$blockdev $MNT -o dax
+	fallocate -l 1GiB $MNT/$FILE
+	run_test $LINENO
+	umount $MNT
+
+	# convert pmem to put the memmap on the device
+	json=$($NDCTL create-namespace -m fsdax -M dev -f -e $dev)
+	eval $(json2var <<< "$json")
+	[ $mode != "fsdax" ] && echo "fail: $LINENO" &&  exit 1
+	mkfs.xfs -f -d su=2m,sw=1,agcount=2 -m reflink=0 /dev/$blockdev
+
+	mount /dev/$blockdev $MNT -o dax
+	fallocate -l 1GiB $MNT/$FILE
+	run_test $LINENO
+	umount $MNT
+	# revert namespace to raw mode
+
+	json=$($NDCTL create-namespace -m raw -f -e $dev)
+	eval $(json2var <<< "$json")
+	[ $mode != "fsdax" ] && echo "fail: $LINENO" &&  exit 1
+	true
+}
+
 set -e
 mkdir -p $MNT
 trap 'err $LINENO cleanup' ERR
@@ -68,48 +118,13 @@ json=$($NDCTL list -N -n $dev)
 eval $(json2var <<< "$json")
 rc=1
 
-mkfs.ext4 -b 4096 /dev/$blockdev
-mount /dev/$blockdev $MNT -o dax
-fallocate -l 1GiB $MNT/$FILE
-run_test $LINENO
-umount $MNT
-
-# convert pmem to put the memmap on the device
-json=$($NDCTL create-namespace -m fsdax -M dev -f -e $dev)
-eval $(json2var <<< "$json")
-[ $mode != "fsdax" ] && echo "fail: $LINENO" &&  exit 1
-
-#note the blockdev returned from ndctl create-namespace lacks the /dev prefix
-mkfs.ext4 -b 4096 /dev/$blockdev
-mount /dev/$blockdev $MNT -o dax
-fallocate -l 1GiB $MNT/$FILE
-run_test $LINENO
-umount $MNT
-
-json=$($NDCTL create-namespace -m raw -f -e $dev)
-eval $(json2var <<< "$json")
-[ $mode != "fsdax" ] && echo "fail: $LINENO" &&  exit 1
-
-mkfs.xfs -f -d su=2m,sw=1,agcount=2 -m reflink=0 /dev/$blockdev
-mount /dev/$blockdev $MNT -o dax
-fallocate -l 1GiB $MNT/$FILE
-run_test $LINENO
-umount $MNT
-
-# convert pmem to put the memmap on the device
-json=$($NDCTL create-namespace -m fsdax -M dev -f -e $dev)
-eval $(json2var <<< "$json")
-[ $mode != "fsdax" ] && echo "fail: $LINENO" &&  exit 1
-
-mkfs.xfs -f -d su=2m,sw=1,agcount=2 -m reflink=0 /dev/$blockdev
-mount /dev/$blockdev $MNT -o dax
-fallocate -l 1GiB $MNT/$FILE
-run_test $LINENO
-umount $MNT
-
-# revert namespace to raw mode
-json=$($NDCTL create-namespace -m raw -f -e $dev)
-eval $(json2var <<< "$json")
-[ $mode != "fsdax" ] && echo "fail: $LINENO" &&  exit 1
+if [ $(basename $0) = "dax-ext4.sh" ]; then
+	run_ext4
+elif [ $(basename $0) = "dax-xfs.sh" ]; then
+	run_xfs
+else
+	run_ext4
+	run_xfs
+fi
 
 exit 0
