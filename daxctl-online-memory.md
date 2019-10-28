@@ -68,6 +68,15 @@ A device-dax region is a contiguous range of memory that hosts one or
 more /dev/daxX.Y devices, where X is the region id and Y is the device
 instance id.
 
+<!-- -->
+
+`--no-movable`  
+*--movable* is the default. This can be overridden to online new memory
+such that is is not *movable*. This allows any allocation to potentially
+be served from this memory. This may preclude subsequent removal. With
+the *--movable* behavior (which is default), kernel allocations will not
+consider this memory, and it will be reserved for application use.
+
 `-u; --human`  
 By default the command will output machine-friendly raw-integer data.
 Instead, with this flag, numbers representing storage size will be

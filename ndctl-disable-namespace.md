@@ -32,6 +32,17 @@ the kernel’s *memmap=ss!nn* command line option (see the nvdimm wiki on
 kernel.org), or NVDIMMs without a valid *namespace index* in their label
 area.
 
+> **Note**
+>
+> Label-less namespaces lack many of the features of their label-rich
+> cousins. For example, their size cannot be modified, or they cannot be
+> fully *destroyed* (i.e. the space reclaimed). A destroy operation will
+> zero any mode-specific metadata. Finally, for create-namespace
+> operations on label-less namespaces, ndctl bypasses the region
+> capacity availability checks, and always satisfies the request using
+> the full region capacity. The only reconfiguration operation supported
+> on a label-less namespace is changing its *mode*.
+
 A namespace can be provisioned to operate in one of 4 modes, *fsdax*,
 *devdax*, *sector*, and *raw*. Here are the expected usage models for
 these modes:
@@ -75,13 +86,16 @@ carry out the operation on every namespace in the system, optionally
 filtered by region (see --region=option)
 
 `-r; --region=`  
-    A 'regionX' device name, or a region id number. The keyword 'all' can
-    be specified to carry out the operation on every region in the system,
-    optionally filtered by bus id (see --bus= option).
+A *regionX* device name, or a region id number. Restrict the operation
+to the specified region(s). The keyword *all* can be specified to
+indicate the lack of any restriction, however this is the same as not
+supplying a --region option at all.
 
 `-b; --bus=`  
-Enforce that the operation only be carried on devices that are attached
-to the given bus. Where *bus* can be a provider name or a bus id number.
+A bus id number, or a provider string (e.g. "ACPI.NFIT"). Restrict the
+operation to the specified bus(es). The keyword *all* can be specified
+to indicate the lack of any restriction, however this is the same as not
+supplying a --bus option at all.
 
 `-v; --verbose`  
 Emit debug messages for the namespace operation

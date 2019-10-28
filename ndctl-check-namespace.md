@@ -63,13 +63,16 @@ namespace to be disabled before checking.
 Emit debug messages for the namespace check process.
 
 `-r; --region=`  
-    A 'regionX' device name, or a region id number. The keyword 'all' can
-    be specified to carry out the operation on every region in the system,
-    optionally filtered by bus id (see --bus= option).
+A *regionX* device name, or a region id number. Restrict the operation
+to the specified region(s). The keyword *all* can be specified to
+indicate the lack of any restriction, however this is the same as not
+supplying a --region option at all.
 
 `-b; --bus=`  
-Enforce that the operation only be carried on devices that are attached
-to the given bus. Where *bus* can be a provider name or a bus id number.
+A bus id number, or a provider string (e.g. "ACPI.NFIT"). Restrict the
+operation to the specified bus(es). The keyword *all* can be specified
+to indicate the lack of any restriction, however this is the same as not
+supplying a --bus option at all.
 
 COPYRIGHT
 =========

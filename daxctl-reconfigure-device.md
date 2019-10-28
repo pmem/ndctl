@@ -107,6 +107,21 @@ memory.
     error reconfiguring devices: Operation not supported
     reconfigured 0 devices
 
+*daxctl-reconfigure-device* nominally expects that it will online new
+memory blocks as *movable*, so that kernel data doesn’t make it into
+this memory. However, there are other potential agents that may be
+configured to automatically online new hot-plugged memory as it appears.
+Most notably, these are the
+*/sys/devices/system/memory/auto\_online\_blocks* configuration, or
+system udev rules. If such an agent races to online memory sections,
+daxctl checks if the blocks were onlined as *movable* memory. If this
+was not the case, and the memory blocks are found to be in a different
+zone, then a warning is displayed. If it is desired that a different
+agent control the onlining of memory blocks, and the associated memory
+zone, then it is recommended to use the --no-online option described
+below. This will abridge the device reconfiguration operation to just
+hotplugging the memory, and refrain from then onlining it.
+
 OPTIONS
 =======
 
@@ -130,15 +145,14 @@ By default, memory sections provided by system-ram devices will be
 brought online automatically and immediately with the *online\_movable*
 policy. Use this option to disable the automatic onlining behavior.
 
-    NOTE: While this option prevents daxctl from automatically onlining
-    the memory sections, there may be other agents, notably system udev
-    rules, that online new memory sections as they appear. Coordinating
-    with such rules is out of scope of this utility, and the system
-    administrator is expected to remove them if they are undesirable.
-    If such an agent races to online memory sections, daxctl is prepared
-    to lose the race, and not fail the onlining operation as it only
-    cares that the memory section was onlined, not that it was the one
-    to do so.
+<!-- -->
+
+`--no-movable`  
+*--movable* is the default. This can be overridden to online new memory
+such that is is not *movable*. This allows any allocation to potentially
+be served from this memory. This may preclude subsequent removal. With
+the *--movable* behavior (which is default), kernel allocations will not
+consider this memory, and it will be reserved for application use.
 
 `-f; --force`  
 When converting from "system-ram" mode to "devdax", it is expected that
