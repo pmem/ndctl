@@ -155,7 +155,7 @@ OPTIONS
 	per-page metadata.  The allocation can be drawn from either:
 	- "mem": typical system memory
 	- "dev": persistent memory reserved from the namespace
-
+::
 	Given relative capacities of "Persistent Memory" to "System
 	RAM" the allocation defaults to reserving space out of the
 	namespace directly ("--map=dev"). The overhead is 64-bytes per
