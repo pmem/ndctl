@@ -4182,6 +4182,27 @@ NDCTL_EXPORT int ndctl_namespace_is_configured(struct ndctl_namespace *ndns)
 	}
 }
 
+/*
+ * Check if a given 'seed' namespace is ok to configure.
+ * If a size or uuid is present, it is considered not configuration-idle,
+ * except in the case of legacy (ND_DEVICE_NAMESPACE_IO) namespaces. In
+ * that case, the size is never zero, but the namespace can still be
+ * reconfigured.
+ */
+NDCTL_EXPORT int ndctl_namespace_is_configuration_idle(
+		struct ndctl_namespace *ndns)
+{
+	if (ndctl_namespace_is_active(ndns))
+		return 0;
+	if (ndctl_namespace_is_configured(ndns)) {
+		if (ndctl_namespace_get_type(ndns) == ND_DEVICE_NAMESPACE_IO)
+			return 1;
+		return 0;
+	}
+	/* !active and !configured is configuration-idle */
+	return 1;
+}
+
 NDCTL_EXPORT void ndctl_namespace_get_uuid(struct ndctl_namespace *ndns, uuid_t uu)
 {
 	memcpy(uu, ndns->uuid, sizeof(uuid_t));

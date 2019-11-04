@@ -491,6 +491,7 @@ int ndctl_namespace_disable_safe(struct ndctl_namespace *ndns);
 bool ndctl_namespace_is_active(struct ndctl_namespace *ndns);
 int ndctl_namespace_is_valid(struct ndctl_namespace *ndns);
 int ndctl_namespace_is_configured(struct ndctl_namespace *ndns);
+int ndctl_namespace_is_configuration_idle(struct ndctl_namespace *ndns);
 int ndctl_namespace_delete(struct ndctl_namespace *ndns);
 int ndctl_namespace_set_uuid(struct ndctl_namespace *ndns, uuid_t uu);
 void ndctl_namespace_get_uuid(struct ndctl_namespace *ndns, uuid_t uu);

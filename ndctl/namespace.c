@@ -779,7 +779,7 @@ static struct ndctl_namespace *region_get_namespace(struct ndctl_region *region)
 	/* prefer the 0th namespace if it is idle */
 	ndctl_namespace_foreach(region, ndns)
 		if (ndctl_namespace_get_id(ndns) == 0
-				&& !ndctl_namespace_is_active(ndns))
+				&& ndctl_namespace_is_configuration_idle(ndns))
 			return ndns;
 	return ndctl_region_get_namespace_seed(region);
 }
@@ -819,7 +819,7 @@ static int namespace_create(struct ndctl_region *region)
 		p.size = available;
 
 	ndns = region_get_namespace(region);
-	if (!ndns || ndctl_namespace_is_active(ndns)) {
+	if (!ndns || !ndctl_namespace_is_configuration_idle(ndns)) {
 		debug("%s: no %s namespace seed\n", devname,
 				ndns ? "idle" : "available");
 		return -EAGAIN;
@@ -1066,7 +1066,7 @@ static int namespace_reconfig(struct ndctl_region *region,
 	}
 
 	ndns = region_get_namespace(region);
-	if (!ndns || ndctl_namespace_is_active(ndns)) {
+	if (!ndns || !ndctl_namespace_is_configuration_idle(ndns)) {
 		debug("%s: no %s namespace seed\n",
 				ndctl_region_get_devname(region),
 				ndns ? "idle" : "available");
