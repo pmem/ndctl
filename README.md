@@ -26,7 +26,7 @@ Documentation
 =============
 See the latest documentation for the NVDIMM kernel sub-system here:
   
-https://git.kernel.org/cgit/linux/kernel/git/nvdimm/nvdimm.git/tree/Documentation/nvdimm/nvdimm.txt?h=libnvdimm-for-next
+https://www.kernel.org/doc/html/latest/driver-api/nvdimm/index.html
 
 A getting started guide is also available on the kernel.org nvdimm wiki:
 
