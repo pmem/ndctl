@@ -116,12 +116,21 @@ OPTIONS
 
 -e::
 --reconfig=::
-	Reconfigure an existing namespace (change the mode, sector size,
-	etc...).  All namespace parameters, save uuid, default to the
-	current attributes of the specified namespace.  The namespace is
-	then re-created with the specified modifications.  The uuid is
-	refreshed to a new value by default whenever the data layout of
-	a namespace is changed, see --uuid= to set a specific uuid.
+	Reconfigure an existing namespace. This option is a shortcut for
+	the following sequence:
+
+	- Read all parameters from @victim_namespace
+	- Destroy @victim_namespace
+	- Create @new_namespace merging old parameters with new ones
+::
+	Note that the major implication of a destroy-create cycle is
+	that data from @victim_namespace is not preserved in
+	@new_namespace. The attributes transferred from
+	@victim_namespace are the geometry, mode, and name (not uuid
+	without --uuid=). No attempt is made to preserve the data and
+	any old data that is visible in @new_namespace is by coincidence
+	not convention. "Backup and restore" is the only reliable method
+	to populate @new_namespace with data from @victim_namespace.
 
 -u::
 --uuid=::
@@ -146,7 +155,7 @@ OPTIONS
 	per-page metadata.  The allocation can be drawn from either:
 	- "mem": typical system memory
 	- "dev": persistent memory reserved from the namespace
-
+::
 	Given relative capacities of "Persistent Memory" to "System
 	RAM" the allocation defaults to reserving space out of the
 	namespace directly ("--map=dev"). The overhead is 64-bytes per
