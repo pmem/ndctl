@@ -691,85 +691,87 @@ static int query_fw_finish_status(struct ndctl_dimm *dimm,
 
 	rc = clock_gettime(CLOCK_MONOTONIC, &before);
 	if (rc < 0)
-		goto out;
+		goto unref;
 
 	now.tv_nsec = fw->query_interval / 1000;
 	now.tv_sec = 0;
 
-	do {
-		rc = ndctl_cmd_submit(cmd);
-		if (rc < 0)
-			break;
+again:
+	rc = ndctl_cmd_submit(cmd);
+	if (rc < 0)
+		goto unref;
 
-		status = ndctl_cmd_fw_xlat_firmware_status(cmd);
-		switch (status) {
-		case FW_SUCCESS:
-			ver = ndctl_cmd_fw_fquery_get_fw_rev(cmd);
-			if (ver == 0) {
-				fprintf(stderr, "No firmware updated.\n");
-				rc = -ENXIO;
-				goto out;
-			}
-
-			printf("Image updated successfully to DIMM %s.\n",
-					ndctl_dimm_get_devname(dimm));
-			printf("Firmware version %#lx.\n", ver);
-			printf("Cold reboot to activate.\n");
-			rc = 0;
-			goto out;
-			break;
-		case FW_EBUSY:
-			/* Still on going, continue */
-			rc = clock_gettime(CLOCK_MONOTONIC, &after);
-			if (rc < 0) {
-				rc = -errno;
-				goto out;
-			}
-
-			/*
-			 * If we expire max query time,
-			 * we timed out
-			 */
-			if (after.tv_sec - before.tv_sec >
-					fw->max_query / 1000000) {
-				rc = -ETIMEDOUT;
-				goto out;
-			}
-
-			/*
-			 * Sleep the interval dictated by firmware
-			 * before query again.
-			 */
-			rc = nanosleep(&now, NULL);
-			if (rc < 0) {
-				rc = -errno;
-				goto out;
-			}
-			break;
-		case FW_EBADFW:
-			fprintf(stderr,
-				"Firmware failed to verify by DIMM %s.\n",
-				ndctl_dimm_get_devname(dimm));
-		case FW_EINVAL_CTX:
-		case FW_ESEQUENCE:
-			rc = -ENXIO;
-			goto out;
-		case FW_ENORES:
-			fprintf(stderr,
-				"Firmware update sequence timed out: %s\n",
-				ndctl_dimm_get_devname(dimm));
-			rc = -ETIMEDOUT;
-			goto out;
-		default:
-			fprintf(stderr,
-				"Unknown update status: %#x on DIMM %s\n",
-				status, ndctl_dimm_get_devname(dimm));
-			rc = -EINVAL;
-			goto out;
+	status = ndctl_cmd_fw_xlat_firmware_status(cmd);
+	if (status == FW_EBUSY) {
+		/* Still on going, continue */
+		rc = clock_gettime(CLOCK_MONOTONIC, &after);
+		if (rc < 0) {
+			rc = -errno;
+			goto unref;
 		}
-	} while (true);
 
-out:
+		/*
+		 * If we expire max query time,
+		 * we timed out
+		 */
+		if (after.tv_sec - before.tv_sec >
+				fw->max_query / 1000000) {
+			rc = -ETIMEDOUT;
+			goto unref;
+		}
+
+		/*
+		 * Sleep the interval dictated by firmware
+		 * before query again.
+		 */
+		rc = nanosleep(&now, NULL);
+		if (rc < 0) {
+			rc = -errno;
+			goto unref;
+		}
+		goto again;
+	}
+
+	/* We are done determine error code */
+	switch (status) {
+	case FW_SUCCESS:
+		ver = ndctl_cmd_fw_fquery_get_fw_rev(cmd);
+		if (ver == 0) {
+			fprintf(stderr, "No firmware updated.\n");
+			rc = -ENXIO;
+			goto unref;
+		}
+
+		fprintf(stderr, "Image updated successfully to DIMM %s.\n",
+			ndctl_dimm_get_devname(dimm));
+		fprintf(stderr, "Firmware version %#lx.\n", ver);
+		fprintf(stderr, "Cold reboot to activate.\n");
+		rc = 0;
+		break;
+	case FW_EBADFW:
+		fprintf(stderr,
+			"Firmware failed to verify by DIMM %s.\n",
+			ndctl_dimm_get_devname(dimm));
+		/* FALLTHROUGH */
+	case FW_EINVAL_CTX:
+	case FW_ESEQUENCE:
+		rc = -ENXIO;
+		break;
+	case FW_ENORES:
+		fprintf(stderr,
+			"Firmware update sequence timed out: %s\n",
+			ndctl_dimm_get_devname(dimm));
+		rc = -ETIMEDOUT;
+		break;
+	default:
+		fprintf(stderr,
+			"Unknown update status: %#x on DIMM %s\n",
+			status, ndctl_dimm_get_devname(dimm));
+		rc = -EINVAL;
+		break;
+	}
+
+unref:
 	ndctl_cmd_unref(cmd);
 	return rc;
 }
