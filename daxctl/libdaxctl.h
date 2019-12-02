@@ -93,11 +93,24 @@ int daxctl_memory_online_no_movable(struct daxctl_memory *mem);
              dev != NULL; \
              dev = daxctl_dev_get_next(dev))
 
+#define daxctl_dev_foreach_safe(region, dev, _dev) \
+        for (dev = daxctl_dev_get_first(region), \
+             _dev = dev ? daxctl_dev_get_next(dev) : NULL; \
+             dev != NULL; \
+             dev = _dev, \
+            _dev = _dev ? daxctl_dev_get_next(_dev) : NULL)
 
 #define daxctl_region_foreach(ctx, region) \
         for (region = daxctl_region_get_first(ctx); \
              region != NULL; \
              region = daxctl_region_get_next(region))
+
+#define daxctl_region_foreach_safe(ctx, region, _region) \
+        for (region = daxctl_region_get_first(ctx), \
+             _region = region ? daxctl_region_get_next(region) : NULL; \
+             region != NULL; \
+             region = _region, \
+            _region = _region ? daxctl_region_get_next(_region) : NULL)
 
 struct daxctl_mapping;
 struct daxctl_mapping *daxctl_mapping_get_first(struct daxctl_dev *dev);
