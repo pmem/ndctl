@@ -1380,11 +1380,9 @@ static int do_xaction_namespace(const char *namespace,
 					(*processed)++;
 					if (param.greedy)
 						continue;
-				}
-				if (force) {
-					if (rc)
+				} else if (param.greedy && force) {
 						saved_rc = rc;
-					continue;
+						continue;
 				}
 				return rc;
 			}
