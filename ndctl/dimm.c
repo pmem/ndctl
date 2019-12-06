@@ -80,6 +80,12 @@ static int action_enable(struct ndctl_dimm *dimm, struct action_context *actx)
 
 static int action_zero(struct ndctl_dimm *dimm, struct action_context *actx)
 {
+	if (ndctl_dimm_is_active(dimm)) {
+		fprintf(stderr, "%s: regions active, abort label write\n",
+			ndctl_dimm_get_devname(dimm));
+		return -EBUSY;
+	}
+
 	return ndctl_dimm_zero_label_extent(dimm, param.len, param.offset);
 }
 
