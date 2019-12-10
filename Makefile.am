@@ -13,6 +13,10 @@ version.m4: FORCE
 
 FORCE:
 
+EXTRA_DIST += ndctl.spec.in \
+		sles/header \
+		contrib/nvdimm-security.conf
+
 noinst_SCRIPTS = rhel/ndctl.spec sles/ndctl.spec
 CLEANFILES += $(noinst_SCRIPTS)
 
@@ -75,6 +79,12 @@ libutil_a_SOURCES = \
 	util/filter.c \
 	util/bitmap.c \
 	util/abspath.c \
-	util/iomem.c
+	util/iomem.c \
+	util/util.h \
+	util/strbuf.h \
+	util/size.h \
+	util/main.h \
+	util/filter.h \
+	util/bitmap.h
 
 nobase_include_HEADERS = daxctl/libdaxctl.h

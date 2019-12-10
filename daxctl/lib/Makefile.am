@@ -23,7 +23,7 @@ libdaxctl_la_LIBADD =\
 
 daxctl_modprobe_data_DATA = daxctl.conf
 
-EXTRA_DIST += libdaxctl.sym
+EXTRA_DIST += libdaxctl.sym daxctl.conf
 
 libdaxctl_la_LDFLAGS = $(AM_LDFLAGS) \
 	-version-info $(LIBDAXCTL_CURRENT):$(LIBDAXCTL_REVISION):$(LIBDAXCTL_AGE) \

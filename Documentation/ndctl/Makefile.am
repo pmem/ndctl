@@ -57,6 +57,8 @@ man1_MANS = \
 	ndctl-load-keys.1 \
 	ndctl-wait-overwrite.1
 
+EXTRA_DIST = $(man1_MANS)
+
 CLEANFILES = $(man1_MANS)
 
 .ONESHELL:

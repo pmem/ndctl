@@ -16,7 +16,8 @@ daxctl_SOURCES =\
 		list.c \
 		migrate.c \
 		device.c \
-		../util/json.c
+		../util/json.c \
+		builtin.h
 
 daxctl_LDADD =\
 	lib/libdaxctl.la \
