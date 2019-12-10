@@ -9,10 +9,12 @@ lib_LTLIBRARIES = libndctl.la
 libndctl_la_SOURCES =\
 	../libndctl.h \
 	private.h \
+	../../util/list.h \
 	../../util/log.c \
 	../../util/log.h \
 	../../util/sysfs.c \
 	../../util/sysfs.h \
+	../../util/fletcher.h \
 	dimm.c \
 	inject.c \
 	nfit.c \
@@ -23,7 +25,12 @@ libndctl_la_SOURCES =\
 	hyperv.c \
 	ars.c \
 	firmware.c \
-	libndctl.c
+	libndctl.c \
+	intel.h \
+	hpe1.h \
+	msft.h \
+	hyperv.h \
+	../../ndctl/libndctl-nfit.h
 
 libndctl_la_LIBADD =\
 	../../daxctl/lib/libdaxctl.la \

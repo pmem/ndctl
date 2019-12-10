@@ -11,6 +11,7 @@ config.h: $(srcdir)/Makefile.am
 	$(AM_V_GEN) echo '#define NDCTL_KEYS_DIR  "$(ndctl_keysdir)"' >>$@
 
 ndctl_SOURCES = ndctl.c \
+		builtin.h \
 		bus.c \
 		create-nfit.c \
 		namespace.c \
@@ -20,11 +21,18 @@ ndctl_SOURCES = ndctl.c \
 		 ../util/log.c \
 		list.c \
 		../util/json.c \
+		../util/json.h \
 		util/json-smart.c \
 		util/json-firmware.c \
+		util/keys.h \
 		inject-error.c \
 		inject-smart.c \
-		monitor.c
+		monitor.c \
+		namespace.h \
+		action.h \
+		../nfit.h \
+		../test.h \
+		firmware-update.h
 
 if ENABLE_KEYUTILS
 ndctl_SOURCES += util/keys.c \
@@ -32,6 +40,8 @@ ndctl_SOURCES += util/keys.c \
 keys_configdir = $(ndctl_keysdir)
 keys_config_DATA = $(ndctl_keysreadme)
 endif
+
+EXTRA_DIST += keys.readme monitor.conf ndctl-monitor.service
 
 if ENABLE_DESTRUCTIVE
 ndctl_SOURCES += ../test/blk_namespaces.c \

@@ -33,6 +33,8 @@ man1_MANS = \
 	daxctl-online-memory.1 \
 	daxctl-offline-memory.1
 
+EXTRA_DIST = $(man1_MANS)
+
 CLEANFILES = $(man1_MANS)
 
 XML_DEPS = \

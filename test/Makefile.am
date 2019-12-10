@@ -27,6 +27,8 @@ TESTS =\
 	max_available_extent_ns.sh \
 	pfn-meta-errors.sh
 
+EXTRA_DIST = $(TESTS)
+
 check_PROGRAMS =\
 	libndctl \
 	dsm-fail \
