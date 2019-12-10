@@ -38,7 +38,7 @@ do_sles_subst = sed -e 's,VERSION,$(VERSION),g' \
 rhel/ndctl.spec: ndctl.spec.in Makefile.am version.m4
 	$(AM_V_GEN)$(MKDIR_P) rhel; $(do_rhel_subst) < $< > $@
 
-sles/ndctl.spec: ndctl.spec.in Makefile.am version.m4
+sles/ndctl.spec: sles/header ndctl.spec.in Makefile.am version.m4
 	$(AM_V_GEN)$(MKDIR_P) sles; cat sles/header $< | $(do_sles_subst) > $@
 
 if ENABLE_BASH_COMPLETION
