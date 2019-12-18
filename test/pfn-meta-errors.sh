@@ -61,7 +61,7 @@ mblk="$((metaoff/512))"
 # inject in the middle of the struct page area
 bb_inj=$(((dblk - mblk)/2))
 $NDCTL inject-error --block="$bb_inj" --count=32 $dev
-$NDCTL start-scrub && $NDCTL wait-scrub
+$NDCTL start-scrub $NFIT_TEST_BUS0 && $NDCTL wait-scrub $NFIT_TEST_BUS0
 
 # after probe from the enable-namespace, the error should've been cleared
 force_raw 0

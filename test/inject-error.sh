@@ -77,7 +77,7 @@ do_tests()
 
 	# inject normally
 	$NDCTL inject-error --block=$err_block --count=$err_count $dev
-	$NDCTL start-scrub && $NDCTL wait-scrub
+	$NDCTL start-scrub $NFIT_TEST_BUS0 && $NDCTL wait-scrub $NFIT_TEST_BUS0
 	check_status "$err_block" "$err_count"
 	if read -r sector len < /sys/block/$blockdev/badblocks; then
 		test "$sector" -eq "$err_block"

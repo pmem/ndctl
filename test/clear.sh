@@ -41,7 +41,7 @@ err_sector="$(((size/512) / 2))"
 err_count=8
 if ! read sector len < /sys/block/$blockdev/badblocks; then
 	$NDCTL inject-error --block="$err_sector" --count=$err_count $dev
-	$NDCTL start-scrub && $NDCTL wait-scrub
+	$NDCTL start-scrub $NFIT_TEST_BUS0 && $NDCTL wait-scrub $NFIT_TEST_BUS0
 fi
 read sector len < /sys/block/$blockdev/badblocks
 [ $((sector * 2)) -ne $((size /512)) ] && echo "fail: $LINENO" && exit 1
