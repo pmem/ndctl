@@ -100,10 +100,10 @@ ack_shutdown_count_set_SOURCES =\
 ack_shutdown_count_set_LDADD = $(LIBNDCTL_LIB) $(KMOD_LIBS)
 
 blk_ns_SOURCES = blk_namespaces.c $(testcore)
-blk_ns_LDADD = $(LIBNDCTL_LIB) $(KMOD_LIBS)
+blk_ns_LDADD = $(LIBNDCTL_LIB) $(KMOD_LIBS) $(UUID_LIBS)
 
 pmem_ns_SOURCES = pmem_namespaces.c $(testcore)
-pmem_ns_LDADD = $(LIBNDCTL_LIB) $(KMOD_LIBS)
+pmem_ns_LDADD = $(LIBNDCTL_LIB) $(KMOD_LIBS) $(UUID_LIBS)
 
 dpa_alloc_SOURCES = dpa-alloc.c $(testcore)
 dpa_alloc_LDADD = $(LIBNDCTL_LIB) $(UUID_LIBS) $(KMOD_LIBS)
@@ -145,6 +145,7 @@ device_dax_LDADD = \
 		$(LIBNDCTL_LIB) \
 		$(KMOD_LIBS) \
 		$(JSON_LIBS) \
+                $(UUID_LIBS) \
 		../libutil.a
 
 smart_notify_SOURCES = smart-notify.c
