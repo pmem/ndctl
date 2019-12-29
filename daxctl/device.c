@@ -19,15 +19,13 @@
 static struct {
 	const char *dev;
 	const char *mode;
-	int region_id;
+	const char *region;
 	bool no_online;
 	bool no_movable;
 	bool force;
 	bool human;
 	bool verbose;
-} param = {
-	.region_id = -1,
-};
+} param;
 
 enum dev_mode {
 	DAXCTL_DEV_MODE_UNKNOWN,
@@ -51,7 +49,7 @@ enum device_action {
 };
 
 #define BASE_OPTIONS() \
-OPT_INTEGER('r', "region", &param.region_id, "restrict to the given region"), \
+OPT_STRING('r', "region", &param.region, "region-id", "filter by region"), \
 OPT_BOOLEAN('u', "human", &param.human, "use human friendly number formats"), \
 OPT_BOOLEAN('v', "verbose", &param.verbose, "emit more debug messages")
 
@@ -484,8 +482,7 @@ static int do_xaction_device(const char *device, enum device_action action,
 	*processed = 0;
 
 	daxctl_region_foreach(ctx, region) {
-		if (param.region_id >= 0 && param.region_id
-				!= daxctl_region_get_id(region))
+		if (!util_daxctl_region_filter(region, param.region))
 			continue;
 
 		daxctl_dev_foreach(region, dev) {

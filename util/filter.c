@@ -335,6 +335,22 @@ struct daxctl_dev *util_daxctl_dev_filter(struct daxctl_dev *dev,
 	return NULL;
 }
 
+struct daxctl_region *util_daxctl_region_filter(struct daxctl_region *region,
+		const char *ident)
+{
+	int region_id;
+
+	if (!ident || strcmp(ident, "all") == 0)
+		return region;
+
+	if ((sscanf(ident, "%d", &region_id) == 1
+       || sscanf(ident, "region%d", &region_id) == 1)
+			&& daxctl_region_get_id(region) == region_id)
+		return region;
+
+	return NULL;
+}
+
 static enum ndctl_namespace_mode mode_to_type(const char *mode)
 {
 	if (!mode)

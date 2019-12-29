@@ -44,10 +44,8 @@ static unsigned long listopts_to_flags(void)
 
 static struct {
 	const char *dev;
-	int region_id;
-} param = {
-	.region_id = -1,
-};
+	const char *region;
+} param;
 
 static int did_fail;
 
@@ -66,7 +64,8 @@ static int num_list_flags(void)
 int cmd_list(int argc, const char **argv, struct daxctl_ctx *ctx)
 {
 	const struct option options[] = {
-		OPT_INTEGER('r', "region", &param.region_id, "filter by region"),
+		OPT_STRING('r', "region", &param.region, "region-id",
+				"filter by region"),
 		OPT_STRING('d', "dev", &param.dev, "dev-id",
 				"filter by dax device instance name"),
 		OPT_BOOLEAN('D', "devices", &list.devs, "include dax device info"),
@@ -94,7 +93,7 @@ int cmd_list(int argc, const char **argv, struct daxctl_ctx *ctx)
 		usage_with_options(u, options);
 
 	if (num_list_flags() == 0) {
-		list.regions = param.region_id >= 0;
+		list.regions = !!param.region;
 		list.devs = !!param.dev;
 	}
 
@@ -106,8 +105,7 @@ int cmd_list(int argc, const char **argv, struct daxctl_ctx *ctx)
 	daxctl_region_foreach(ctx, region) {
 		struct json_object *jregion = NULL;
 
-		if (param.region_id >= 0 && param.region_id
-				!= daxctl_region_get_id(region))
+		if (!util_daxctl_region_filter(region, param.region))
 			continue;
 
 		if (list.regions) {
