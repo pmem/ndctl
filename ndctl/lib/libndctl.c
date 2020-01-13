@@ -4010,10 +4010,15 @@ NDCTL_EXPORT int ndctl_namespace_enable(struct ndctl_namespace *ndns)
 	const char *devname = ndctl_namespace_get_devname(ndns);
 	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
 	struct ndctl_region *region = ndns->region;
+	unsigned long long size = ndctl_namespace_get_size(ndns);
 	int rc;
 
 	if (ndctl_namespace_is_enabled(ndns))
 		return 0;
+
+	/* Don't try to enable idle namespace (no capacity allocated) */
+	if (size == 0)
+		return -ENXIO;
 
 	rc = ndctl_bind(ctx, ndns->module, devname);
 
