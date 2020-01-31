@@ -59,7 +59,7 @@ static unsigned long listopts_to_flags(void)
 	return flags;
 }
 
-struct util_filter_params param;
+static struct util_filter_params param;
 
 static int did_fail;
 

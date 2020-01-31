@@ -45,7 +45,7 @@ struct monitor_dimm {
 	struct list_node list;
 };
 
-struct util_filter_params param;
+static struct util_filter_params param;
 
 static int did_fail;
 
