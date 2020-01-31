@@ -17,7 +17,9 @@ ndctl_SOURCES = ndctl.c \
 		check.c \
 		region.c \
 		dimm.c \
-		 ../util/log.c \
+		../util/log.c \
+		../util/filter.c \
+		../util/filter.h \
 		list.c \
 		../util/json.c \
 		util/json-smart.c \
