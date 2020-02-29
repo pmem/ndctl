@@ -652,6 +652,14 @@ static int validate_namespace_options(struct ndctl_region *region,
 		}
 	}
 
+	region_align = ndctl_region_get_align(region);
+	if (region_align < ULONG_MAX && p->size % region_align) {
+		err("%s: align setting is %#lx size %#llx is misaligned\n",
+				ndctl_region_get_devname(region), region_align,
+				p->size);
+		return -EINVAL;
+	}
+
 	size_align = p->align;
 
 	/* (re-)validate that the size satisfies the alignment */
