@@ -481,6 +481,7 @@ int cmd_list(int argc, const char **argv, struct ndctl_ctx *ctx)
 		"ndctl list [<options>]",
 		NULL
 	};
+	bool lint = !!secure_getenv("NDCTL_LIST_LINT");
 	struct util_filter_ctx fctx = { 0 };
 	struct list_filter_arg lfa = { 0 };
 	int i, rc;
@@ -507,12 +508,20 @@ int cmd_list(int argc, const char **argv, struct ndctl_ctx *ctx)
 		list.health = true;
 		list.capabilities = true;
 	case 2:
-		list.dimms = true;
-		list.buses = true;
-		list.regions = true;
+		if (!lint) {
+			list.dimms = true;
+			list.buses = true;
+			list.regions = true;
+		} else if (num_list_flags() == 0) {
+			list.dimms = true;
+			list.buses = true;
+			list.regions = true;
+			list.namespaces = true;
+		}
 	case 1:
 		list.media_errors = true;
-		list.namespaces = true;
+		if (!lint)
+			list.namespaces = true;
 		list.dax = true;
 	case 0:
 		break;
