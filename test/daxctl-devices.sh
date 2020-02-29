@@ -3,7 +3,7 @@
 # Copyright(c) 2019 Intel Corporation. All rights reserved.
 
 rc=77
-. ./common
+. $(dirname $0)/common
 
 trap 'cleanup $LINENO' ERR
 

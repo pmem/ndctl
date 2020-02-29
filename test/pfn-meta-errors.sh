@@ -6,7 +6,7 @@
 blockdev=""
 rc=77
 
-. ./common
+. $(dirname $0)/common
 
 force_raw()
 {

@@ -16,7 +16,7 @@ set -e
 SECTOR_SIZE="4096"
 rc=77
 
-. ./common
+. $(dirname $0)/common
 
 check_min_kver "4.5" || do_skip "may lack namespace mode attribute"
 

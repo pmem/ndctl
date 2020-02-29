@@ -16,14 +16,14 @@ FILE=image
 blockdev=""
 rc=77
 
-. ./common
+. $(dirname $0)/common
 
 cleanup()
 {
 	rm -f $FILE
 	rm -f $MNT/$FILE
-	if [ -n "$blockdev" ]; then
-		umount "/dev/$blockdev"
+	if grep -q "$MNT" /proc/mounts; then
+		umount $MNT
 	else
 		rc=77
 	fi
@@ -160,5 +160,6 @@ dd if=/dev/$blockdev of=/dev/null iflag=direct bs=4096 count=1 && err $LINENO ||
 $NDCTL disable-region -b $NFIT_TEST_BUS0 all
 $NDCTL zero-labels -b $NFIT_TEST_BUS0 all
 $NDCTL enable-region -b $NFIT_TEST_BUS0 all
+cleanup
 _cleanup
 exit 0

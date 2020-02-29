@@ -16,7 +16,8 @@ size=""
 blockdev=""
 rc=77
 
-. ./common
+BASE=$(dirname $0)
+. $BASE/common
 
 trap 'err $LINENO' ERR
 
@@ -107,7 +108,7 @@ force_raw()
 copy_xxd_img()
 {
 	local bdev="$1"
-	local xxd_patch="btt-pad-compat.xxd"
+	local xxd_patch="$BASE/btt-pad-compat.xxd"
 
 	test -s "$xxd_patch"
 	test -b "$bdev"

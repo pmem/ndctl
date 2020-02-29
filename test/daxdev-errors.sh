@@ -15,7 +15,7 @@ set -e
 
 rc=77
 
-. ./common
+. $(dirname $0)/common
 
 check_min_kver "4.12" || do_skip "lacks dax dev error handling"
 

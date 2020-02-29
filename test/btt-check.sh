@@ -19,7 +19,7 @@ blockdev=""
 bs=4096
 rc=77
 
-. ./common
+. $(dirname $0)/common
 
 trap 'err $LINENO' ERR
 

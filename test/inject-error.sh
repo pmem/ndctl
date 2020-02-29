@@ -18,7 +18,7 @@ rc=77
 err_block=42
 err_count=8
 
-. ./common
+. $(dirname $0)/common
 
 trap 'err $LINENO' ERR
 

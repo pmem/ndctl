@@ -12,7 +12,7 @@ monitor_regions=""
 monitor_namespace=""
 smart_supported_bus=""
 
-. ./common
+. $(dirname $0)/common
 
 trap 'err $LINENO' ERR
 

@@ -3,7 +3,7 @@
 # Copyright(c) 2018 Intel Corporation. All rights reserved.
 
 rc=77
-. ./common
+. $(dirname $0)/common
 bus="$NFIT_TEST_BUS0"
 inj_val="42"
 

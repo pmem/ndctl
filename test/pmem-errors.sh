@@ -6,7 +6,7 @@ MNT=test_dax_mnt
 FILE=image
 rc=77
 
-. ./common
+. $(dirname $0)/common
 
 cleanup()
 {
@@ -113,14 +113,7 @@ echo $((start_sect + 1)) 1 > /sys/block/$blockdev/badblocks
 : The following 'dd' is expected to hit an I/O Error
 dd if=$MNT/$FILE of=/dev/null iflag=direct bs=4096 count=1 && err $LINENO || true
 
-# cleanup
-rm -f $FILE
-rm -f $MNT/$FILE
-if [ -n "$blockdev" ]; then
-	umount /dev/$blockdev
-fi
-rmdir $MNT
-
+cleanup
 _cleanup
 
 exit 0

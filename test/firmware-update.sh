@@ -6,7 +6,7 @@ rc=77
 dev=""
 image="update-fw.img"
 
-. ./common
+. $(dirname $0)/common
 
 trap 'err $LINENO' ERR
 

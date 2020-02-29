@@ -11,7 +11,7 @@ masterpath="$keypath/$masterkey.blob"
 backup_key=0
 backup_handle=0
 
-. ./common
+. $(dirname $0)/common
 
 trap 'err $LINENO' ERR
 

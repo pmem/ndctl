@@ -27,7 +27,9 @@ TESTS =\
 	max_available_extent_ns.sh \
 	pfn-meta-errors.sh
 
-EXTRA_DIST = $(TESTS)
+EXTRA_DIST = $(TESTS) common \
+		btt-pad-compat.xxd \
+		nmem1.bin nmem2.bin nmem3.bin nmem4.bin
 
 check_PROGRAMS =\
 	libndctl \

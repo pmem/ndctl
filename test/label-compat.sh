@@ -15,7 +15,8 @@ set -e
 
 rc=77
 
-. ./common
+BASE=$(dirname $0)
+. $BASE/common
 
 check_min_kver "4.11" || do_skip "may not provide reliable isetcookie values"
 
@@ -36,7 +37,7 @@ dimms=$($NDCTL list -DRi -r $region | jq -r "$query" | xargs)
 i=1
 for d in $dimms
 do
-	$NDCTL write-labels $d -i nmem${i}.bin
+	$NDCTL write-labels $d -i $BASE/nmem${i}.bin
 	i=$((i+1))
 done
 
