@@ -37,6 +37,7 @@ static struct {
 	bool human;
 	bool firmware;
 	bool capabilities;
+	bool configured;
 	int verbose;
 } list;
 
@@ -46,6 +47,8 @@ static unsigned long listopts_to_flags(void)
 
 	if (list.idle)
 		flags |= UTIL_JSON_IDLE;
+	if (list.configured)
+		flags |= UTIL_JSON_CONFIGURED;
 	if (list.media_errors)
 		flags |= UTIL_JSON_MEDIA_ERRORS;
 	if (list.dax)
@@ -165,7 +168,8 @@ static struct json_object *region_to_json(struct ndctl_region *region,
 		if (!util_dimm_filter(dimm, param.dimm))
 			continue;
 
-		if (!list.idle && !ndctl_dimm_is_enabled(dimm))
+		if (!list.configured && !list.idle
+				&& !ndctl_dimm_is_enabled(dimm))
 			continue;
 
 		if (!jmappings) {
@@ -242,8 +246,15 @@ static void filter_namespace(struct ndctl_namespace *ndns,
 	struct json_object *jndns;
 	struct list_filter_arg *lfa = ctx->list;
 	struct json_object *container = lfa->jregion ? lfa->jregion : lfa->jbus;
+	unsigned long long size = ndctl_namespace_get_size(ndns);
 
-	if (!list.idle && !ndctl_namespace_is_active(ndns))
+	if (ndctl_namespace_is_active(ndns))
+		/* pass */;
+	else if (list.idle)
+		/* pass */;
+	else if (list.configured && (size > 0 && size < ULLONG_MAX))
+		/* pass */;
+	else
 		return;
 
 	if (!lfa->jnamespaces) {
@@ -277,7 +288,7 @@ static bool filter_region(struct ndctl_region *region,
 	if (!list.regions)
 		return true;
 
-	if (!list.idle && !ndctl_region_is_enabled(region))
+	if (!list.configured && !list.idle && !ndctl_region_is_enabled(region))
 		return true;
 
 	if (!lfa->jregions) {
@@ -319,7 +330,7 @@ static void filter_dimm(struct ndctl_dimm *dimm, struct util_filter_ctx *ctx)
 	struct list_filter_arg *lfa = ctx->list;
 	struct json_object *jdimm;
 
-	if (!list.idle && !ndctl_dimm_is_enabled(dimm))
+	if (!list.configured && !list.idle && !ndctl_dimm_is_enabled(dimm))
 		return;
 
 	if (!lfa->jdimms) {
@@ -477,6 +488,8 @@ int cmd_list(int argc, const char **argv, struct ndctl_ctx *ctx)
 		OPT_BOOLEAN('C', "capabilities", &list.capabilities,
 				"include region capability info"),
 		OPT_BOOLEAN('i', "idle", &list.idle, "include idle devices"),
+		OPT_BOOLEAN('c', "configured", &list.configured,
+				"include configured namespaces, disabled or not"),
 		OPT_BOOLEAN('M', "media-errors", &list.media_errors,
 				"include media errors"),
 		OPT_BOOLEAN('u', "human", &list.human,

@@ -25,6 +25,7 @@ enum util_json_flags {
 	UTIL_JSON_HUMAN = (1 << 4),
 	UTIL_JSON_VERBOSE = (1 << 5),
 	UTIL_JSON_CAPABILITIES = (1 << 6),
+	UTIL_JSON_CONFIGURED = (1 << 7),
 };
 
 struct json_object;

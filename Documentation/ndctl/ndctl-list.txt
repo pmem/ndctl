@@ -179,6 +179,12 @@ include::xable-bus-options.txt[]
 --idle::
 	Include idle (not enabled) devices in the listing
 
+-c::
+--configured::
+	Include configured devices (non-zero sized namespaces)
+	regardless of whether they are enabled, or not. Other devices
+	besides namespaces are always considered "configured".
+
 -C::
 --capabilities::
 	Include region capabilities in the listing, i.e. supported

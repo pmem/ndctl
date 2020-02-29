@@ -339,7 +339,8 @@ struct json_object *util_daxctl_devs_to_list(struct daxctl_region *region,
 		if (!util_daxctl_dev_filter(dev, ident))
 			continue;
 
-		if (!(flags & UTIL_JSON_IDLE) && !daxctl_dev_get_size(dev))
+		if (!(flags & (UTIL_JSON_IDLE|UTIL_JSON_CONFIGURED))
+				&& !daxctl_dev_get_size(dev))
 			continue;
 
 		if (!jdevs) {
