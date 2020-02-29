@@ -252,10 +252,12 @@ struct ndctl_cmd {
 	int size;
 	int status;
 	u32 (*get_firmware_status)(struct ndctl_cmd *cmd);
+	u32 (*get_xfer)(struct ndctl_cmd *cmd);
+	u32 (*get_offset)(struct ndctl_cmd *cmd);
+	void (*set_xfer)(struct ndctl_cmd *cmd, u32 xfer);
+	void (*set_offset)(struct ndctl_cmd *cmd, u32 offset);
 	struct ndctl_cmd_iter {
 		u32 init_offset;
-		u32 *offset;
-		u32 *xfer; /* pointer to xfer length in cmd */
 		u8 *data; /* pointer to the data buffer location in cmd */
 		u32 max_xfer;
 		char *total_buf;
