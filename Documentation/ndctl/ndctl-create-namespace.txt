@@ -88,6 +88,14 @@ OPTIONS
 	    fault scenarios are supported. I.e. if a device is
 	    configured with a 2M alignment an attempt to fault a 4K
 	    aligned offset will result in SIGBUS.
+::
+	Note both 'fsdax' and 'devdax' mode require 16MiB physical
+	alignment to be cross-arch compatible. By default ndctl will
+	block attempts to create namespaces in these modes when the
+	physical starting address of the namespace is not 16MiB aligned.
+	The --force option tries to override this constraint if the
+	platform supports a smaller alignment, but this is not
+	recommended.
 
 -s::
 --size=::

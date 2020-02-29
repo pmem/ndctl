@@ -356,6 +356,24 @@ static bool do_setup_pfn(struct ndctl_namespace *ndns,
 	return false;
 }
 
+static int check_dax_align(struct ndctl_namespace *ndns)
+{
+	unsigned long long resource = ndctl_namespace_get_resource(ndns);
+	const char *devname = ndctl_namespace_get_devname(ndns);
+
+	if (resource == ULLONG_MAX) {
+		warning("%s unable to validate alignment\n", devname);
+		return 0;
+	}
+
+	if (IS_ALIGNED(resource, SZ_16M) || force)
+		return 0;
+
+	error("%s misaligned to 16M, adjust region alignment and retry\n",
+			devname);
+	return -EINVAL;
+}
+
 static int setup_namespace(struct ndctl_region *region,
 		struct ndctl_namespace *ndns, struct parsed_parameters *p)
 {
@@ -406,6 +424,9 @@ static int setup_namespace(struct ndctl_region *region,
 	if (do_setup_pfn(ndns, p)) {
 		struct ndctl_pfn *pfn = ndctl_region_get_pfn_seed(region);
 
+		rc = check_dax_align(ndns);
+		if (rc)
+			return rc;
 		try(ndctl_pfn, set_uuid, pfn, uuid);
 		try(ndctl_pfn, set_location, pfn, p->loc);
 		if (ndctl_pfn_has_align(pfn))
@@ -417,6 +438,9 @@ static int setup_namespace(struct ndctl_region *region,
 	} else if (p->mode == NDCTL_NS_MODE_DAX) {
 		struct ndctl_dax *dax = ndctl_region_get_dax_seed(region);
 
+		rc = check_dax_align(ndns);
+		if (rc)
+			return rc;
 		try(ndctl_dax, set_uuid, dax, uuid);
 		try(ndctl_dax, set_location, dax, p->loc);
 		/* device-dax assumes 'align' attribute present */
