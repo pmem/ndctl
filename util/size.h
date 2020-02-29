@@ -17,6 +17,7 @@
 
 #define SZ_1K     0x00000400
 #define SZ_4K     0x00001000
+#define SZ_8K     0x00002000
 #define SZ_1M     0x00100000
 #define SZ_2M     0x00200000
 #define SZ_4M     0x00400000

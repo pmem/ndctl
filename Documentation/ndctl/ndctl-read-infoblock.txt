@@ -1,0 +1,94 @@
+// SPDX-License-Identifier: GPL-2.0
+
+ndctl-read-infoblock(1)
+=======================
+
+NAME
+----
+ndctl-read-infoblock - read and optionally parse the info-block a namespace
+
+SYNOPSIS
+--------
+[verse]
+'ndctl read-infoblock' <namespace0.0> [<namespace1.0>..<namespaceN.Y>] [<options>]
+
+DESCRIPTION
+-----------
+As described in the theory of operation section of
+linkndctl:ndctl-create-namespace[1], the raw capacity of a namespace may
+encapsulate a personality, or mode of operation. Specifically, the mode
+may be set to one of "sector", "fsdax", and "devdax". Each of those
+modes is defined by an info-block format that uniquely identifies the
+mode of operation. The read-infoblock command knows the location
+(relative to the start of the namespace) and field definition of those
+data structures.
+
+Note that unlike a partition table info-block is not exposed by default,
+so the namespace needs to be disabled before the info-block can be
+accessed.
+
+EXAMPLE
+-------
+
+[verse]
+ndctl disable-namespace namespace0.0
+disabled 1 namespace
+ndctl read-infoblock -j namespace0.0
+[
+  {
+    "dev":"namespace0.0",
+    "signature":"NVDIMM_PFN_INFO",
+    "uuid":"56b11990-66b1-4d91-9cac-ca084c051259",
+    "parent_uuid":"00000000-0000-0000-0000-000000000000",
+    "flags":0,
+    "version":"1.3",
+    "dataoff":69206016,
+    "npfns":1031680,
+    "mode":2,
+    "start_pad":0,
+    "end_trunc":0,
+    "align":2097152
+  }
+]
+
+
+OPTIONS
+-------
+<namespace(s)>::
+	One or more 'namespaceX.Y' device names. The keyword 'all' can be specified to
+	operate on every namespace in the system, optionally filtered by bus id (see
+        --bus= option), or region id (see --region= option).
+
+-V::
+--verify::
+	Attempt to validate that the info-block is self consistent by
+	validating the embedded checksum, and that info-block formats
+	that contain a 'parent-uuid' attribute also match the base-uuid
+	of the namespace.
+
+-o::
+--output::
+	Output file
+
+-j::
+--json::
+	Parse the info-block data into json.
+-u::
+--human::
+	Enable json output and convert number formats to human readable
+	strings, for example show the size in terms of "KB", "MB", "GB", etc
+	instead of a signed 64-bit numbers per the JSON interchange
+	format (implies --json).
+
+-r::
+--region=::
+include::xable-region-options.txt[]
+
+
+include::../copyright.txt[]
+
+SEE ALSO
+--------
+linkndctl:ndctl-create-namespace[1],
+http://www.uefi.org/sites/default/files/resources/UEFI_Spec_2_7.pdf[UEFI NVDIMM Label Protocol]
+

@@ -1,6 +1,7 @@
 #ifndef _NDCTL_FLETCHER_H_
 #define _NDCTL_FLETCHER_H_
 
+#include <stdbool.h>
 #include <ccan/endian/endian.h>
 #include <ccan/short_types/short_types.h>
 

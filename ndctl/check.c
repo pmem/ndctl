@@ -297,24 +297,6 @@ static int btt_log_read(struct arena_info *a, u32 lane, struct log_entry *ent)
 	return 0;
 }
 
-static int btt_checksum_verify(struct btt_sb *btt_sb)
-{
-	uint64_t sum;
-	le64 sum_save;
-
-	BUILD_BUG_ON(sizeof(struct btt_sb) != SZ_4K);
-
-	sum_save = btt_sb->checksum;
-	btt_sb->checksum = 0;
-	sum = fletcher64(btt_sb, sizeof(*btt_sb), 1);
-	if (sum != sum_save)
-		return 1;
-	/* restore the checksum in the buffer */
-	btt_sb->checksum = sum_save;
-
-	return 0;
-}
-
 /*
  * Never pass a mmapped buffer to this as it will attempt to write to
  * the buffer, and we want writes to only happened in a controlled fashion.
@@ -330,7 +312,7 @@ static int btt_info_verify(struct btt_chk *bttc, struct btt_sb *btt_sb)
 		if (uuid_compare(bttc->parent_uuid, btt_sb->parent_uuid) != 0)
 			return -ENXIO;
 
-	if (btt_checksum_verify(btt_sb))
+	if (!verify_infoblock_checksum((union info_block *) btt_sb))
 		return -ENXIO;
 
 	return 0;

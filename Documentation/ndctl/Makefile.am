@@ -55,7 +55,8 @@ man1_MANS = \
 	ndctl-freeze-security.1 \
 	ndctl-sanitize-dimm.1 \
 	ndctl-load-keys.1 \
-	ndctl-wait-overwrite.1
+	ndctl-wait-overwrite.1 \
+	ndctl-read-infoblock.1
 
 EXTRA_DIST = $(man1_MANS)
 
