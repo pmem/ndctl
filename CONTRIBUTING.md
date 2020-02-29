@@ -6,7 +6,7 @@ The following is a set of guidelines that we adhere to, and request that
 contributors follow.
 
 1. The libnvdimm (kernel subsystem) and ndctl developers primarily use
-   the [linux-nvdimm](https://lists.01.org/mailman/listinfo/linux-nvdimm)
+   the [linux-nvdimm](https://lists.01.org/postorius/lists/linux-nvdimm.lists.01.org/)
    mailing list for everything. It is recommended to send patches to
    **```linux-nvdimm@lists.01.org```**
 
