@@ -201,6 +201,7 @@ struct badblocks_iter {
  * @bdev: associated block_device of a namespace
  * @size: unsigned
  * @numa_node: numa node attribute
+ * @target_node: target node were this region to be onlined
  *
  * A 'namespace' is the resulting device after region-aliasing and
  * label-parsing is resolved.
@@ -220,7 +221,7 @@ struct ndctl_namespace {
 	char *alt_name;
 	uuid_t uuid;
 	struct ndctl_lbasize lbasize;
-	int numa_node;
+	int numa_node, target_node;
 	struct list_head injected_bb;
 };
 

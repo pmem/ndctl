@@ -135,6 +135,7 @@ struct ndctl_mapping {
  * @generation: incremented everytime the region is disabled
  * @nstype: the resulting type of namespace this region produces
  * @numa_node: numa node attribute
+ * @target_node: target node were this region to be onlined
  *
  * A region may alias between pmem and block-window access methods.  The
  * region driver is tasked with parsing the label (if their is one) and
@@ -160,7 +161,7 @@ struct ndctl_region {
 	char *region_buf;
 	int buf_len;
 	int generation;
-	int numa_node;
+	int numa_node, target_node;
 	struct list_head btts;
 	struct list_head pfns;
 	struct list_head daxs;
@@ -2151,6 +2152,12 @@ static void *add_region(void *parent, int id, const char *region_base)
 	else
 		region->numa_node = -1;
 
+	sprintf(path, "%s/target_node", region_base);
+	if (sysfs_read_attr(ctx, path, buf) == 0)
+		region->target_node = strtol(buf, NULL, 0);
+	else
+		region->target_node = -1;
+
 	if (region_set_type(region, path) < 0)
 		goto err_read;
 
@@ -2422,6 +2429,11 @@ NDCTL_EXPORT struct ndctl_dimm *ndctl_region_get_next_dimm(struct ndctl_region *
 NDCTL_EXPORT int ndctl_region_get_numa_node(struct ndctl_region *region)
 {
 	return region->numa_node;
+}
+
+NDCTL_EXPORT int ndctl_region_get_target_node(struct ndctl_region *region)
+{
+	return region->target_node;
 }
 
 NDCTL_EXPORT struct badblock *ndctl_region_get_next_badblock(struct ndctl_region *region)
@@ -3477,6 +3489,12 @@ static void *add_namespace(void *parent, int id, const char *ndns_base)
 	else
 		ndns->numa_node = -1;
 
+	sprintf(path, "%s/target_node", ndns_base);
+	if (sysfs_read_attr(ctx, path, buf) == 0)
+		ndns->target_node = strtol(buf, NULL, 0);
+	else
+		ndns->target_node = -1;
+
 	sprintf(path, "%s/holder_class", ndns_base);
 	if (sysfs_read_attr(ctx, path, buf) == 0)
 		ndns->enforce_mode = enforce_name_to_id(buf);
@@ -4396,6 +4414,11 @@ NDCTL_EXPORT int ndctl_namespace_set_size(struct ndctl_namespace *ndns,
 NDCTL_EXPORT int ndctl_namespace_get_numa_node(struct ndctl_namespace *ndns)
 {
     return ndns->numa_node;
+}
+
+NDCTL_EXPORT int ndctl_namespace_get_target_node(struct ndctl_namespace *ndns)
+{
+	return ndns->target_node;
 }
 
 static int __ndctl_namespace_set_write_cache(struct ndctl_namespace *ndns,

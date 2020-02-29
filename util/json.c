@@ -912,7 +912,7 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 	unsigned long align = 0;
 	char buf[40];
 	uuid_t uuid;
-	int numa;
+	int numa, target;
 
 	if (!jndns)
 		return NULL;
@@ -1090,6 +1090,13 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 		jobj = json_object_new_int(numa);
 		if (jobj)
 			json_object_object_add(jndns, "numa_node", jobj);
+	}
+
+	target = ndctl_namespace_get_target_node(ndns);
+	if (target >= 0 && flags & UTIL_JSON_VERBOSE) {
+		jobj = json_object_new_int(target);
+		if (jobj)
+			json_object_object_add(jndns, "target_node", jobj);
 	}
 
 	if (pfn)

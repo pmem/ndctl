@@ -426,4 +426,6 @@ LIBNDCTL_22 {
 
 LIBNDCTL_23 {
 	ndctl_namespace_is_configuration_idle;
+	ndctl_namespace_get_target_node;
+	ndctl_region_get_target_node;
 } LIBNDCTL_22;

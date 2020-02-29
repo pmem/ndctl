@@ -383,6 +383,7 @@ struct ndctl_dimm *ndctl_region_get_first_dimm(struct ndctl_region *region);
 struct ndctl_dimm *ndctl_region_get_next_dimm(struct ndctl_region *region,
 		struct ndctl_dimm *dimm);
 int ndctl_region_get_numa_node(struct ndctl_region *region);
+int ndctl_region_get_target_node(struct ndctl_region *region);
 struct ndctl_region *ndctl_bus_get_region_by_physical_address(struct ndctl_bus *bus,
 		unsigned long long address);
 #define ndctl_dimm_foreach_in_region(region, dimm) \
@@ -511,6 +512,7 @@ int ndctl_namespace_set_sector_size(struct ndctl_namespace *ndns,
 int ndctl_namespace_get_raw_mode(struct ndctl_namespace *ndns);
 int ndctl_namespace_set_raw_mode(struct ndctl_namespace *ndns, int raw_mode);
 int ndctl_namespace_get_numa_node(struct ndctl_namespace *ndns);
+int ndctl_namespace_get_target_node(struct ndctl_namespace *ndns);
 int ndctl_namespace_inject_error(struct ndctl_namespace *ndns,
 		unsigned long long block, unsigned long long count,
 		bool notify);

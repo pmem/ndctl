@@ -80,7 +80,7 @@ static struct json_object *region_to_json(struct ndctl_region *region,
 	unsigned int bb_count = 0;
 	unsigned long long extent;
 	enum ndctl_persistence_domain pd;
-	int numa;
+	int numa, target;
 
 	if (!jregion)
 		return NULL;
@@ -128,6 +128,13 @@ static struct json_object *region_to_json(struct ndctl_region *region,
 		jobj = json_object_new_int(numa);
 		if (jobj)
 			json_object_object_add(jregion, "numa_node", jobj);
+	}
+
+	target = ndctl_region_get_target_node(region);
+	if (target >= 0 && flags & UTIL_JSON_VERBOSE) {
+		jobj = json_object_new_int(target);
+		if (jobj)
+			json_object_object_add(jregion, "target_node", jobj);
 	}
 
 	iset = ndctl_region_get_interleave_set(region);
