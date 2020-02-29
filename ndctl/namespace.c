@@ -984,9 +984,6 @@ static int namespace_destroy(struct ndctl_region *region,
 		struct ndctl_namespace *ndns)
 {
 	const char *devname = ndctl_namespace_get_devname(ndns);
-	struct ndctl_pfn *pfn = ndctl_namespace_get_pfn(ndns);
-	struct ndctl_dax *dax = ndctl_namespace_get_dax(ndns);
-	struct ndctl_btt *btt = ndctl_namespace_get_btt(ndns);
 	unsigned long long size;
 	bool did_zero = false;
 	int rc;
@@ -1009,13 +1006,11 @@ static int namespace_destroy(struct ndctl_region *region,
 
 	ndctl_namespace_set_enforce_mode(ndns, NDCTL_NS_MODE_RAW);
 
-	if (pfn || btt || dax) {
-		rc = zero_info_block(ndns);
-		if (rc < 0)
-			return rc;
-		if (rc == 0)
-			did_zero = true;
-	}
+	rc = zero_info_block(ndns);
+	if (rc < 0)
+		return rc;
+	if (rc == 0)
+		did_zero = true;
 
 	switch (ndctl_namespace_get_type(ndns)) {
         case ND_DEVICE_NAMESPACE_PMEM:
