@@ -54,6 +54,7 @@ TESTS +=\
 	dax-dev \
 	dax-ext4.sh \
 	dax-xfs.sh \
+	align.sh \
 	device-dax \
 	device-dax-fio.sh \
 	daxctl-devices.sh \
