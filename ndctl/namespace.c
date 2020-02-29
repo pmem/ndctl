@@ -1612,6 +1612,8 @@ static json_object *pfn_parse(struct pfn_sb *pfn_sb, struct ndctl_namespace *ndn
 	parse_hex(pfn_sb, start_pad, 32);
 	parse_hex(pfn_sb, end_trunc, 32);
 	parse_hex(pfn_sb, align, 32);
+	parse_hex(pfn_sb, page_size, 32);
+	parse_hex(pfn_sb, page_struct_size, 16);
 
 	return jblock;
 err:

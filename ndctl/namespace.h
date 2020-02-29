@@ -209,6 +209,12 @@ struct arena_map {
 #define PFN_SIG "NVDIMM_PFN_INFO\0"
 #define DAX_SIG "NVDIMM_DAX_INFO\0"
 
+enum pfn_mode {
+	PFN_MODE_NONE,
+	PFN_MODE_RAM,
+	PFN_MODE_PMEM,
+};
+
 struct pfn_sb {
 	u8 signature[PFN_SIG_LEN];
 	u8 uuid[16];
@@ -224,7 +230,11 @@ struct pfn_sb {
 	le32 end_trunc;
 	/* minor-version-2 record the base alignment of the mapping */
 	le32 align;
-	u8 padding[4000];
+	/* minor-version-3 guarantee the padding and flags are zero */
+	/* minor-version-4 record the page size and struct page size */
+	le32 page_size;
+	le16 page_struct_size;
+	u8 padding[3994];
 	le64 checksum;
 };
 
