@@ -907,6 +907,7 @@ static int namespace_destroy(struct ndctl_region *region,
 	struct ndctl_pfn *pfn = ndctl_namespace_get_pfn(ndns);
 	struct ndctl_dax *dax = ndctl_namespace_get_dax(ndns);
 	struct ndctl_btt *btt = ndctl_namespace_get_btt(ndns);
+	unsigned long long size;
 	bool did_zero = false;
 	int rc;
 
@@ -953,9 +954,18 @@ static int namespace_destroy(struct ndctl_region *region,
 		goto out;
 	}
 
+	size = ndctl_namespace_get_size(ndns);
+
 	rc = ndctl_namespace_delete(ndns);
 	if (rc)
 		debug("%s: failed to reclaim\n", devname);
+
+	/*
+	 * Don't report a destroyed namespace when no capacity was
+	 * allocated.
+	 */
+	if (size == 0 && rc == 0)
+		rc = 1;
 
 out:
 	return rc;
