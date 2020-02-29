@@ -514,6 +514,29 @@ static int setup_namespace(struct ndctl_region *region,
 	return rc;
 }
 
+static int validate_available_capacity(struct ndctl_region *region,
+		struct parsed_parameters *p)
+{
+	unsigned long long available;
+
+	if (ndctl_region_get_nstype(region) == ND_DEVICE_NAMESPACE_IO)
+		available = ndctl_region_get_size(region);
+	else {
+		available = ndctl_region_get_max_available_extent(region);
+		if (available == ULLONG_MAX)
+			available = ndctl_region_get_available_size(region);
+	}
+	if (!available || p->size > available) {
+		debug("%s: insufficient capacity size: %llx avail: %llx\n",
+			ndctl_region_get_devname(region), p->size, available);
+		return -EAGAIN;
+	}
+
+	if (p->size == 0)
+		p->size = available;
+	return 0;
+}
+
 /*
  * validate_namespace_options - init parameters for setup_namespace
  * @region: parent of the namespace to create / reconfigure
@@ -551,6 +574,16 @@ static int validate_namespace_options(struct ndctl_region *region,
 		p->size = __parse_size64(param.size, &units);
 	else if (ndns)
 		p->size = ndctl_namespace_get_size(ndns);
+
+	/*
+	 * Validate available capacity in the create case, in the
+	 * reconfigure case the capacity is already allocated.
+	 */
+	if (!ndns) {
+		rc = validate_available_capacity(region, p);
+		if (rc)
+			return rc;
+	}
 
 	if (param.uuid) {
 		if (uuid_parse(param.uuid, p->uuid) != 0) {
@@ -847,7 +880,6 @@ static struct ndctl_namespace *region_get_namespace(struct ndctl_region *region)
 static int namespace_create(struct ndctl_region *region)
 {
 	const char *devname = ndctl_region_get_devname(region);
-	unsigned long long available;
 	struct ndctl_namespace *ndns;
 	struct parsed_parameters p;
 	int rc;
@@ -861,22 +893,6 @@ static int namespace_create(struct ndctl_region *region)
 			devname);
 		return -EAGAIN;
 	}
-
-	if (ndctl_region_get_nstype(region) == ND_DEVICE_NAMESPACE_IO)
-		available = ndctl_region_get_size(region);
-	else {
-		available = ndctl_region_get_max_available_extent(region);
-		if (available == ULLONG_MAX)
-			available = ndctl_region_get_available_size(region);
-	}
-	if (!available || p.size > available) {
-		debug("%s: insufficient capacity size: %llx avail: %llx\n",
-			devname, p.size, available);
-		return -EAGAIN;
-	}
-
-	if (p.size == 0)
-		p.size = available;
 
 	ndns = region_get_namespace(region);
 	if (!ndns || !ndctl_namespace_is_configuration_idle(ndns)) {
