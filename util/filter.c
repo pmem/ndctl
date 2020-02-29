@@ -351,27 +351,39 @@ struct daxctl_region *util_daxctl_region_filter(struct daxctl_region *region,
 	return NULL;
 }
 
-static enum ndctl_namespace_mode mode_to_type(const char *mode)
+enum ndctl_namespace_mode util_nsmode(const char *mode)
 {
 	if (!mode)
-		return -ENXIO;
-
+		return NDCTL_NS_MODE_UNKNOWN;
 	if (strcasecmp(mode, "memory") == 0)
-		return NDCTL_NS_MODE_MEMORY;
-	else if (strcasecmp(mode, "fsdax") == 0)
-		return NDCTL_NS_MODE_MEMORY;
-	else if (strcasecmp(mode, "sector") == 0)
+		return NDCTL_NS_MODE_FSDAX;
+	if (strcasecmp(mode, "fsdax") == 0)
+		return NDCTL_NS_MODE_FSDAX;
+	if (strcasecmp(mode, "sector") == 0)
 		return NDCTL_NS_MODE_SECTOR;
-	else if (strcasecmp(mode, "safe") == 0)
+	if (strcasecmp(mode, "safe") == 0)
 		return NDCTL_NS_MODE_SECTOR;
-	else if (strcasecmp(mode, "dax") == 0)
-		return NDCTL_NS_MODE_DAX;
-	else if (strcasecmp(mode, "devdax") == 0)
-		return NDCTL_NS_MODE_DAX;
-	else if (strcasecmp(mode, "raw") == 0)
+	if (strcasecmp(mode, "dax") == 0)
+		return NDCTL_NS_MODE_DEVDAX;
+	if (strcasecmp(mode, "devdax") == 0)
+		return NDCTL_NS_MODE_DEVDAX;
+	if (strcasecmp(mode, "raw") == 0)
 		return NDCTL_NS_MODE_RAW;
 
 	return NDCTL_NS_MODE_UNKNOWN;
+}
+
+const char *util_nsmode_name(enum ndctl_namespace_mode mode)
+{
+	static const char * const modes[] = {
+		[NDCTL_NS_MODE_FSDAX] = "fsdax",
+		[NDCTL_NS_MODE_DEVDAX] = "devdax",
+		[NDCTL_NS_MODE_RAW] = "raw",
+		[NDCTL_NS_MODE_SECTOR] = "sector",
+		[NDCTL_NS_MODE_UNKNOWN] = "unknown",
+	};
+
+	return modes[mode];
 }
 
 int util_filter_walk(struct ndctl_ctx *ctx, struct util_filter_ctx *fctx,
@@ -396,7 +408,7 @@ int util_filter_walk(struct ndctl_ctx *ctx, struct util_filter_ctx *fctx,
 			type = ND_DEVICE_REGION_BLK;
 	}
 
-	if (mode_to_type(param->mode) == NDCTL_NS_MODE_UNKNOWN) {
+	if (param->mode && util_nsmode(param->mode) == NDCTL_NS_MODE_UNKNOWN) {
 		error("invalid mode: '%s'\n", param->mode);
 		return -EINVAL;
 	}
@@ -474,7 +486,7 @@ int util_filter_walk(struct ndctl_ctx *ctx, struct util_filter_ctx *fctx,
 					continue;
 
 				mode = ndctl_namespace_get_mode(ndns);
-				if (param->mode && mode_to_type(param->mode) != mode)
+				if (param->mode && util_nsmode(param->mode) != mode)
 					continue;
 
 				fctx->filter_namespace(ndns, fctx);

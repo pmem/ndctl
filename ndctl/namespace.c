@@ -214,21 +214,7 @@ static int set_defaults(enum device_action mode)
 		param.type = "pmem";
 
 	if (param.mode) {
-		if (strcmp(param.mode, "safe") == 0)
-			/* pass */;
-		else if (strcmp(param.mode, "sector") == 0)
-		      param.mode = "safe"; /* pass */
-		else if (strcmp(param.mode, "memory") == 0)
-		      /* pass */;
-		else if (strcmp(param.mode, "fsdax") == 0)
-			param.mode = "memory"; /* pass */
-		else if (strcmp(param.mode, "raw") == 0)
-		      /* pass */;
-		else if (strcmp(param.mode, "dax") == 0)
-		      /* pass */;
-		else if (strcmp(param.mode, "devdax") == 0)
-			param.mode = "dax"; /* pass */
-		else {
+		if (util_nsmode(param.mode) == NDCTL_NS_MODE_UNKNOWN) {
 			error("invalid mode '%s'\n", param.mode);
 			rc = -EINVAL;
 		}
@@ -294,7 +280,7 @@ static int set_defaults(enum device_action mode)
 			rc = -EINVAL;
 		}
 	} else if (((param.type && strcmp(param.type, "blk") == 0)
-			|| (param.mode && strcmp(param.mode, "safe") == 0))) {
+			|| util_nsmode(param.mode) == NDCTL_NS_MODE_SECTOR)) {
 		/* default sector size for blk-type or safe-mode */
 		param.sector_size = "4096";
 	}
@@ -585,23 +571,12 @@ static int validate_namespace_options(struct ndctl_region *region,
 	}
 
 	if (param.mode) {
-		if (strcmp(param.mode, "memory") == 0)
-			p->mode = NDCTL_NS_MODE_FSDAX;
-		else if (strcmp(param.mode, "sector") == 0)
-			p->mode = NDCTL_NS_MODE_SECTOR;
-		else if (strcmp(param.mode, "safe") == 0)
-			p->mode = NDCTL_NS_MODE_SECTOR;
-		else if (strcmp(param.mode, "dax") == 0)
-			p->mode = NDCTL_NS_MODE_DEVDAX;
-		else
-			p->mode = NDCTL_NS_MODE_RAW;
-
+		p->mode = util_nsmode(param.mode);
 		if (ndctl_region_get_type(region) != ND_DEVICE_REGION_PMEM
 				&& (p->mode == NDCTL_NS_MODE_FSDAX
 					|| p->mode == NDCTL_NS_MODE_DEVDAX)) {
 			err("blk %s does not support %s mode\n", region_name,
-					p->mode == NDCTL_NS_MODE_FSDAX
-					? "fsdax" : "devdax");
+					util_nsmode_name(p->mode));
 			return -EAGAIN;
 		}
 	} else if (ndns)
@@ -619,7 +594,8 @@ static int validate_namespace_options(struct ndctl_region *region,
 	} else if (p->mode == NDCTL_NS_MODE_DEVDAX) {
 		dax = ndctl_region_get_dax_seed(region);
 		if (!dax) {
-			error("Kernel does not support devdax mode\n");
+			error("Kernel does not support %s mode\n",
+					util_nsmode_name(p->mode));
 			return -ENODEV;
 		}
 	}
@@ -643,8 +619,7 @@ static int validate_namespace_options(struct ndctl_region *region,
 
 		default:
 			error("%s mode does not support setting an alignment\n",
-					p->mode == NDCTL_NS_MODE_SECTOR
-					? "sector" : "raw");
+					util_nsmode_name(p->mode));
 			return -ENXIO;
 		}
 

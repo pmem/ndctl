@@ -40,6 +40,9 @@ struct daxctl_dev *util_daxctl_dev_filter(struct daxctl_dev *dev,
 struct daxctl_region *util_daxctl_region_filter(struct daxctl_region *region,
 		const char *ident);
 
+enum ndctl_namespace_mode util_nsmode(const char *mode);
+const char *util_nsmode_name(enum ndctl_namespace_mode mode);
+
 struct json_object;
 
 /* json object hierarchy for the util_filter_walk() performed by cmd_list() */
