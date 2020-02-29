@@ -229,6 +229,15 @@ OPTIONS
 	ndctl init-labels all
 	ndctl enable-region all
 
+-R::
+--autorecover::
+--no-autorecover::
+	By default, if a namespace creation attempt fails, ndctl will
+	cleanup the partially initialized namespace. Use
+	--no-autorecover to disable this behavior for debug and
+	development scenarios where it useful to have the label and
+	info-block state preserved after a failure.
+
 -v::
 --verbose::
 	Emit debug messages for the namespace creation process
