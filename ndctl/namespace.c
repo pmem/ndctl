@@ -152,11 +152,11 @@ OPT_BOOLEAN('s', "scrub", &scrub, "run a scrub to find latent errors")
 
 #define READ_INFOBLOCK_OPTIONS() \
 OPT_FILENAME('o', "output", &param.outfile, "output-file", \
-	"filename to write info-block contents"), \
+	"filename to write infoblock contents"), \
 OPT_FILENAME('i', "input", &param.infile, "input-file", \
-	"filename to read info-block instead of a namespace"), \
+	"filename to read infoblock instead of a namespace"), \
 OPT_BOOLEAN('V', "verify", &param.verify, \
-	"validate parent uuid, and info-block checksum"), \
+	"validate parent uuid, and infoblock checksum"), \
 OPT_BOOLEAN('j', "json", &param.json, "parse label data into json"), \
 OPT_BOOLEAN('u', "human", &param.human, "use human friendly number formats (implies --json)")
 
@@ -1455,7 +1455,7 @@ static json_object *btt_parse(struct btt_sb *btt_sb, struct ndctl_namespace *ndn
 	uuid_t uuid;
 	char str[40];
 	struct json_object *jblock, *jobj;
-	const char *cmd = "read-info-block";
+	const char *cmd = "read-infoblock";
 	const bool verify = param.verify;
 
 	if (verify && !verify_infoblock_checksum((union info_block *) btt_sb)) {
@@ -1543,7 +1543,7 @@ static json_object *pfn_parse(struct pfn_sb *pfn_sb, struct ndctl_namespace *ndn
 	uuid_t uuid;
 	char str[40];
 	struct json_object *jblock, *jobj;
-	const char *cmd = "read-info-block";
+	const char *cmd = "read-infoblock";
 	const bool verify = param.verify;
 
 	if (verify && !verify_infoblock_checksum((union info_block *) pfn_sb)) {
@@ -1680,7 +1680,7 @@ static int file_read_infoblock(const char *path, struct ndctl_namespace *ndns,
 		struct read_infoblock_ctx *ri_ctx)
 {
 	const char *devname = ndns ? ndctl_namespace_get_devname(ndns) : "";
-	const char *cmd = "read-info-block";
+	const char *cmd = "read-infoblock";
 	void *buf = NULL;
 	int fd = -1, rc;
 
@@ -1717,7 +1717,7 @@ static int namespace_read_infoblock(struct ndctl_namespace *ndns,
 {
 	int rc;
 	char path[50];
-	const char *cmd = "read-info-block";
+	const char *cmd = "read-infoblock";
 	const char *devname = ndctl_namespace_get_devname(ndns);
 
 	if (ndctl_namespace_is_active(ndns)) {
@@ -2033,7 +2033,7 @@ int cmd_clear_errors(int argc , const char **argv, struct ndctl_ctx *ctx)
 
 int cmd_read_infoblock(int argc, const char **argv, struct ndctl_ctx *ctx)
 {
-	char *xable_usage = "ndctl read-info-block <namespace> [<options>]";
+	char *xable_usage = "ndctl read-infoblock <namespace> [<options>]";
 	const char *namespace = parse_namespace_options(argc, argv,
 			ACTION_READ_INFOBLOCK, read_infoblock_options,
 			xable_usage);
@@ -2041,8 +2041,8 @@ int cmd_read_infoblock(int argc, const char **argv, struct ndctl_ctx *ctx)
 
 	rc = do_xaction_namespace(namespace, ACTION_READ_INFOBLOCK, ctx, &read);
 	if (rc < 0)
-		fprintf(stderr, "error checking namespaces: %s\n",
+		fprintf(stderr, "error reading infoblock data: %s\n",
 				strerror(-rc));
-	fprintf(stderr, "read %d namespace%s\n", read, read == 1 ? "" : "s");
+	fprintf(stderr, "read %d infoblock%s\n", read, read == 1 ? "" : "s");
 	return rc;
 }
