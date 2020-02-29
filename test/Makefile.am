@@ -54,8 +54,9 @@ TESTS +=\
 	dax-xfs.sh \
 	device-dax \
 	device-dax-fio.sh \
-	mmap.sh \
-	daxctl-devices.sh
+	daxctl-devices.sh \
+	dm.sh \
+	mmap.sh
 
 if ENABLE_KEYUTILS
 TESTS += security.sh
