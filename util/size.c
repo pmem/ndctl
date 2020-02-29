@@ -65,5 +65,7 @@ unsigned long long __parse_size64(const char *str, unsigned long long *units)
 
 unsigned long long parse_size64(const char *str)
 {
+	if (!str)
+		return 0;
 	return __parse_size64(str, NULL);
 }
