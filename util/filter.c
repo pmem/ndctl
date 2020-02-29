@@ -361,9 +361,9 @@ static enum ndctl_namespace_mode mode_to_type(const char *mode)
 	else if (strcasecmp(mode, "fsdax") == 0)
 		return NDCTL_NS_MODE_MEMORY;
 	else if (strcasecmp(mode, "sector") == 0)
-		return NDCTL_NS_MODE_SAFE;
+		return NDCTL_NS_MODE_SECTOR;
 	else if (strcasecmp(mode, "safe") == 0)
-		return NDCTL_NS_MODE_SAFE;
+		return NDCTL_NS_MODE_SECTOR;
 	else if (strcasecmp(mode, "dax") == 0)
 		return NDCTL_NS_MODE_DAX;
 	else if (strcasecmp(mode, "devdax") == 0)

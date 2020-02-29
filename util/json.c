@@ -944,7 +944,7 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 		jobj = json_object_new_string("devdax");
 		loc = ndctl_dax_get_location(dax);
 		break;
-	case NDCTL_NS_MODE_SAFE:
+	case NDCTL_NS_MODE_SECTOR:
 		if (!btt)
 			goto err;
 		jobj = json_object_new_string("sector");
@@ -960,7 +960,7 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 	if (jobj)
 		json_object_object_add(jndns, "mode", jobj);
 
-	if ((mode != NDCTL_NS_MODE_SAFE) && (mode != NDCTL_NS_MODE_RAW)) {
+	if ((mode != NDCTL_NS_MODE_SECTOR) && (mode != NDCTL_NS_MODE_RAW)) {
 		jobj = json_object_new_string(locations[loc]);
 		if (jobj)
 			json_object_object_add(jndns, "map", jobj);

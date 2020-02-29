@@ -1080,7 +1080,7 @@ static int check_btt_create(struct ndctl_region *region, struct ndctl_namespace 
 		devname = ndctl_btt_get_devname(btt);
 		ndctl_btt_set_uuid(btt, btt_s->uuid);
 		ndctl_btt_set_sector_size(btt, btt_s->sector_sizes[i]);
-		rc = ndctl_namespace_set_enforce_mode(ndns, NDCTL_NS_MODE_SAFE);
+		rc = ndctl_namespace_set_enforce_mode(ndns, NDCTL_NS_MODE_SECTOR);
 		if (ndctl_test_attempt(test, KERNEL_VERSION(4, 13, 0)) && rc < 0) {
 			fprintf(stderr, "%s: failed to enforce btt mode\n", devname);
 			goto err;
@@ -1100,7 +1100,7 @@ static int check_btt_create(struct ndctl_region *region, struct ndctl_namespace 
 		/* prior to v4.5 the mode attribute did not exist */
 		if (ndctl_test_attempt(test, KERNEL_VERSION(4, 5, 0))) {
 			mode = ndctl_namespace_get_mode(ndns);
-			if (mode >= 0 && mode != NDCTL_NS_MODE_SAFE)
+			if (mode >= 0 && mode != NDCTL_NS_MODE_SECTOR)
 				fprintf(stderr, "%s: expected safe mode got: %d\n",
 						devname, mode);
 		}
@@ -1474,7 +1474,7 @@ static int check_btt_autodetect(struct ndctl_bus *bus,
 
 	mode = ndctl_namespace_get_enforce_mode(ndns);
 	if (ndctl_test_attempt(test, KERNEL_VERSION(4, 13, 0))
-			&& mode != NDCTL_NS_MODE_SAFE) {
+			&& mode != NDCTL_NS_MODE_SECTOR) {
 		fprintf(stderr, "%s expected enforce_mode btt\n", devname);
 		return -ENXIO;
 	}

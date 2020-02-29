@@ -234,9 +234,9 @@ static int set_defaults(enum device_action mode)
 		}
 	} else if (!param.reconfig && param.type) {
 		if (strcmp(param.type, "pmem") == 0)
-			param.mode = "memory";
+			param.mode = "fsdax";
 		else
-			param.mode = "safe";
+			param.mode = "sector";
 		param.mode_default = true;
 	}
 
@@ -251,9 +251,9 @@ static int set_defaults(enum device_action mode)
 		}
 
 		if (!param.reconfig && param.mode
-				&& strcmp(param.mode, "memory") != 0
-				&& strcmp(param.mode, "dax") != 0) {
-			error("--map only valid for an dax mode pmem namespace\n");
+				&& strcmp(param.mode, "fsdax") != 0
+				&& strcmp(param.mode, "devdax") != 0) {
+			error("--map only valid for an devdax mode pmem namespace\n");
 			rc = -EINVAL;
 		}
 	} else if (!param.reconfig)
@@ -261,8 +261,8 @@ static int set_defaults(enum device_action mode)
 
 	/* check for incompatible mode and type combinations */
 	if (param.type && param.mode && strcmp(param.type, "blk") == 0
-			&& (strcmp(param.mode, "memory") == 0
-				|| strcmp(param.mode, "dax") == 0)) {
+			&& (strcmp(param.mode, "fsdax") == 0
+				|| strcmp(param.mode, "devdax") == 0)) {
 		error("only 'pmem' namespaces support dax operation\n");
 		rc = -ENXIO;
 	}
@@ -386,7 +386,7 @@ do { \
 static bool do_setup_pfn(struct ndctl_namespace *ndns,
 		struct parsed_parameters *p)
 {
-	if (p->mode != NDCTL_NS_MODE_MEMORY)
+	if (p->mode != NDCTL_NS_MODE_FSDAX)
 		return false;
 
 	/*
@@ -394,7 +394,7 @@ static bool do_setup_pfn(struct ndctl_namespace *ndns,
 	 * instance, and a pfn device is required to place the memmap
 	 * array in device memory.
 	 */
-	if (!ndns || ndctl_namespace_get_mode(ndns) != NDCTL_NS_MODE_MEMORY
+	if (!ndns || ndctl_namespace_get_mode(ndns) != NDCTL_NS_MODE_FSDAX
 			|| p->loc == NDCTL_PFN_LOC_PMEM)
 		return true;
 
@@ -446,7 +446,7 @@ static int setup_namespace(struct ndctl_region *region,
 		if (i < num)
 			try(ndctl_namespace, set_sector_size, ndns,
 					p->sector_size);
-		else if (p->mode == NDCTL_NS_MODE_SAFE)
+		else if (p->mode == NDCTL_NS_MODE_SECTOR)
 			/* pass, the btt sector_size will override */;
 		else if (p->sector_size != 512) {
 			error("%s: sector_size: %ld not supported\n",
@@ -480,7 +480,7 @@ static int setup_namespace(struct ndctl_region *region,
 		rc = ndctl_pfn_enable(pfn);
 		if (rc && p->autorecover)
 			ndctl_pfn_set_namespace(pfn, NULL);
-	} else if (p->mode == NDCTL_NS_MODE_DAX) {
+	} else if (p->mode == NDCTL_NS_MODE_DEVDAX) {
 		struct ndctl_dax *dax = ndctl_region_get_dax_seed(region);
 
 		rc = check_dax_align(ndns);
@@ -494,7 +494,7 @@ static int setup_namespace(struct ndctl_region *region,
 		rc = ndctl_dax_enable(dax);
 		if (rc && p->autorecover)
 			ndctl_dax_set_namespace(dax, NULL);
-	} else if (p->mode == NDCTL_NS_MODE_SAFE) {
+	} else if (p->mode == NDCTL_NS_MODE_SECTOR) {
 		struct ndctl_btt *btt = ndctl_region_get_btt_seed(region);
 
 		/*
@@ -586,28 +586,28 @@ static int validate_namespace_options(struct ndctl_region *region,
 
 	if (param.mode) {
 		if (strcmp(param.mode, "memory") == 0)
-			p->mode = NDCTL_NS_MODE_MEMORY;
+			p->mode = NDCTL_NS_MODE_FSDAX;
 		else if (strcmp(param.mode, "sector") == 0)
-			p->mode = NDCTL_NS_MODE_SAFE;
+			p->mode = NDCTL_NS_MODE_SECTOR;
 		else if (strcmp(param.mode, "safe") == 0)
-			p->mode = NDCTL_NS_MODE_SAFE;
+			p->mode = NDCTL_NS_MODE_SECTOR;
 		else if (strcmp(param.mode, "dax") == 0)
-			p->mode = NDCTL_NS_MODE_DAX;
+			p->mode = NDCTL_NS_MODE_DEVDAX;
 		else
 			p->mode = NDCTL_NS_MODE_RAW;
 
 		if (ndctl_region_get_type(region) != ND_DEVICE_REGION_PMEM
-				&& (p->mode == NDCTL_NS_MODE_MEMORY
-					|| p->mode == NDCTL_NS_MODE_DAX)) {
+				&& (p->mode == NDCTL_NS_MODE_FSDAX
+					|| p->mode == NDCTL_NS_MODE_DEVDAX)) {
 			err("blk %s does not support %s mode\n", region_name,
-					p->mode == NDCTL_NS_MODE_MEMORY
+					p->mode == NDCTL_NS_MODE_FSDAX
 					? "fsdax" : "devdax");
 			return -EAGAIN;
 		}
 	} else if (ndns)
 		p->mode = ndctl_namespace_get_mode(ndns);
 
-	if (p->mode == NDCTL_NS_MODE_MEMORY) {
+	if (p->mode == NDCTL_NS_MODE_FSDAX) {
 		pfn = ndctl_region_get_pfn_seed(region);
 		if (!pfn && param.mode_default) {
 			err("%s fsdax mode not available\n", region_name);
@@ -616,7 +616,7 @@ static int validate_namespace_options(struct ndctl_region *region,
 		/*
 		 * NB: We only fail validation if a pfn-specific option is used
 		 */
-	} else if (p->mode == NDCTL_NS_MODE_DAX) {
+	} else if (p->mode == NDCTL_NS_MODE_DEVDAX) {
 		dax = ndctl_region_get_dax_seed(region);
 		if (!dax) {
 			error("Kernel does not support devdax mode\n");
@@ -628,7 +628,7 @@ static int validate_namespace_options(struct ndctl_region *region,
 		int i, alignments;
 
 		switch (p->mode) {
-		case NDCTL_NS_MODE_MEMORY:
+		case NDCTL_NS_MODE_FSDAX:
 			if (!pfn) {
 				error("Kernel does not support setting an alignment in fsdax mode\n");
 				return -EINVAL;
@@ -637,13 +637,13 @@ static int validate_namespace_options(struct ndctl_region *region,
 			alignments = ndctl_pfn_get_num_alignments(pfn);
 			break;
 
-		case NDCTL_NS_MODE_DAX:
+		case NDCTL_NS_MODE_DEVDAX:
 			alignments = ndctl_dax_get_num_alignments(dax);
 			break;
 
 		default:
 			error("%s mode does not support setting an alignment\n",
-					p->mode == NDCTL_NS_MODE_SAFE
+					p->mode == NDCTL_NS_MODE_SECTOR
 					? "sector" : "raw");
 			return -ENXIO;
 		}
@@ -652,7 +652,7 @@ static int validate_namespace_options(struct ndctl_region *region,
 		for (i = 0; i < alignments; i++) {
 			uint64_t a;
 
-			if (p->mode == NDCTL_NS_MODE_MEMORY)
+			if (p->mode == NDCTL_NS_MODE_FSDAX)
 				a = ndctl_pfn_get_supported_alignment(pfn, i);
 			else
 				a = ndctl_dax_get_supported_alignment(dax, i);
@@ -687,7 +687,7 @@ static int validate_namespace_options(struct ndctl_region *region,
 		 * one. If we don't then use PAGE_SIZE so the size_align
 		 * checking works.
 		 */
-		if (p->mode == NDCTL_NS_MODE_MEMORY) {
+		if (p->mode == NDCTL_NS_MODE_FSDAX) {
 			/*
 			 * The initial pfn device support in the kernel didn't
 			 * have the 'align' sysfs attribute and assumed a 2MB
@@ -698,7 +698,7 @@ static int validate_namespace_options(struct ndctl_region *region,
 				p->align = ndctl_pfn_get_align(pfn);
 			else
 				p->align = SZ_2M;
-		} else if (p->mode == NDCTL_NS_MODE_DAX) {
+		} else if (p->mode == NDCTL_NS_MODE_DEVDAX) {
 			/*
 			 * device dax mode was added after the align attribute
 			 * so checking for it is unnecessary.
@@ -767,7 +767,7 @@ static int validate_namespace_options(struct ndctl_region *region,
 
 		p->sector_size = parse_size64(param.sector_size);
 		btt = ndctl_region_get_btt_seed(region);
-		if (p->mode == NDCTL_NS_MODE_SAFE) {
+		if (p->mode == NDCTL_NS_MODE_SECTOR) {
 			if (!btt) {
 				err("%s: does not support 'sector' mode\n",
 						region_name);
@@ -807,7 +807,7 @@ static int validate_namespace_options(struct ndctl_region *region,
 		 * sector size, otherwise fall back to what the
 		 * namespace supports.
 		 */
-		if (btt && p->mode == NDCTL_NS_MODE_SAFE)
+		if (btt && p->mode == NDCTL_NS_MODE_SECTOR)
 			p->sector_size = ndctl_btt_get_sector_size(btt);
 		else
 			p->sector_size = ndctl_namespace_get_sector_size(ndns);
@@ -834,14 +834,14 @@ static int validate_namespace_options(struct ndctl_region *region,
 		else
 			p->loc = NDCTL_PFN_LOC_PMEM;
 
-		if (ndns && p->mode != NDCTL_NS_MODE_MEMORY
-			&& p->mode != NDCTL_NS_MODE_DAX) {
+		if (ndns && p->mode != NDCTL_NS_MODE_FSDAX
+			&& p->mode != NDCTL_NS_MODE_DEVDAX) {
 			err("%s: --map= only valid for fsdax mode namespace\n",
 				ndctl_namespace_get_devname(ndns));
 			return -EINVAL;
 		}
-	} else if (p->mode == NDCTL_NS_MODE_MEMORY
-			|| p->mode == NDCTL_NS_MODE_DAX)
+	} else if (p->mode == NDCTL_NS_MODE_FSDAX
+			|| p->mode == NDCTL_NS_MODE_DEVDAX)
 		p->loc = NDCTL_PFN_LOC_PMEM;
 
 	if (!pfn && do_setup_pfn(ndns, p)) {

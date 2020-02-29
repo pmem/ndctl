@@ -3465,7 +3465,7 @@ static const char *enforce_id_to_name(enum ndctl_namespace_mode mode)
 {
 	static const char *id_to_name[] = {
 		[NDCTL_NS_MODE_MEMORY] = "pfn",
-		[NDCTL_NS_MODE_SAFE] = "btt", /* TODO: convert to btt2 */
+		[NDCTL_NS_MODE_SECTOR] = "btt", /* TODO: convert to btt2 */
 		[NDCTL_NS_MODE_RAW] = "",
 		[NDCTL_NS_MODE_DAX] = "dax",
 		[NDCTL_NS_MODE_UNKNOWN] = "<unknown>",
@@ -3794,7 +3794,7 @@ NDCTL_EXPORT enum ndctl_namespace_mode ndctl_namespace_get_mode(
 	if (strcmp("raw", buf) == 0)
 		return NDCTL_NS_MODE_RAW;
 	if (strcmp("safe", buf) == 0)
-		return NDCTL_NS_MODE_SAFE;
+		return NDCTL_NS_MODE_SECTOR;
 	return -ENXIO;
 }
 
