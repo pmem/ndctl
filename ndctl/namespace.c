@@ -196,7 +196,7 @@ static const struct option read_infoblock_options[] = {
 	OPT_END(),
 };
 
-static int set_defaults(enum device_action mode)
+static int set_defaults(enum device_action action)
 {
 	int rc = 0;
 
@@ -210,7 +210,7 @@ static int set_defaults(enum device_action mode)
 				param.type);
 			rc = -EINVAL;
 		}
-	} else if (!param.reconfig && mode == ACTION_CREATE)
+	} else if (!param.reconfig && action == ACTION_CREATE)
 		param.type = "pmem";
 
 	if (param.mode) {
@@ -293,7 +293,7 @@ static int set_defaults(enum device_action mode)
  * looking at actual namespace devices and available resources.
  */
 static const char *parse_namespace_options(int argc, const char **argv,
-		enum device_action mode, const struct option *options,
+		enum device_action action, const struct option *options,
 		char *xable_usage)
 {
 	const char * const u[] = {
@@ -305,12 +305,12 @@ static const char *parse_namespace_options(int argc, const char **argv,
 	param.do_scan = argc == 1;
         argc = parse_options(argc, argv, options, u, 0);
 
-	rc = set_defaults(mode);
+	rc = set_defaults(action);
 
-	if (argc == 0 && mode != ACTION_CREATE) {
+	if (argc == 0 && action != ACTION_CREATE) {
 		char *action_string;
 
-		switch (mode) {
+		switch (action) {
 			case ACTION_ENABLE:
 				action_string = "enable";
 				break;
@@ -334,18 +334,18 @@ static const char *parse_namespace_options(int argc, const char **argv,
 				break;
 		}
 
-		if ((mode == ACTION_READ_INFOBLOCK && !param.infile)
-				|| mode != ACTION_READ_INFOBLOCK) {
+		if ((action == ACTION_READ_INFOBLOCK && !param.infile)
+				|| action != ACTION_READ_INFOBLOCK) {
 			error("specify a namespace to %s, or \"all\"\n", action_string);
 			rc = -EINVAL;
 		}
 	}
-	for (i = mode == ACTION_CREATE ? 0 : 1; i < argc; i++) {
+	for (i = action == ACTION_CREATE ? 0 : 1; i < argc; i++) {
 		error("unknown extra parameter \"%s\"\n", argv[i]);
 		rc = -EINVAL;
 	}
 
-	if (mode == ACTION_READ_INFOBLOCK && param.infile && argc) {
+	if (action == ACTION_READ_INFOBLOCK && param.infile && argc) {
 		error("specify a namespace, or --input, not both\n");
 		rc = -EINVAL;
 	}
@@ -355,7 +355,7 @@ static const char *parse_namespace_options(int argc, const char **argv,
 		return NULL; /* we won't return from usage_with_options() */
 	}
 
-	return mode == ACTION_CREATE ? param.reconfig : argv[0];
+	return action == ACTION_CREATE ? param.reconfig : argv[0];
 }
 
 #define try(prefix, op, dev, p) \
