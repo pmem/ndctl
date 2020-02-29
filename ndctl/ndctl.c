@@ -74,6 +74,7 @@ static struct cmd_struct commands[] = {
 	{ "create-namespace", { cmd_create_namespace } },
 	{ "destroy-namespace", { cmd_destroy_namespace } },
 	{ "read-infoblock",  { cmd_read_infoblock } },
+	{ "write-infoblock",  { cmd_write_infoblock } },
 	{ "check-namespace", { cmd_check_namespace } },
 	{ "clear-errors", { cmd_clear_errors } },
 	{ "enable-region", { cmd_enable_region } },

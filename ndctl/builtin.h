@@ -9,6 +9,7 @@ int cmd_enable_namespace(int argc, const char **argv, struct ndctl_ctx *ctx);
 int cmd_create_namespace(int argc, const char **argv, struct ndctl_ctx *ctx);
 int cmd_destroy_namespace(int argc, const char **argv, struct ndctl_ctx *ctx);
 int cmd_read_infoblock(int argc, const char **argv, struct ndctl_ctx *ctx);
+int cmd_write_infoblock(int argc, const char **argv, struct ndctl_ctx *ctx);
 int cmd_disable_namespace(int argc, const char **argv, struct ndctl_ctx *ctx);
 int cmd_check_namespace(int argc, const char **argv, struct ndctl_ctx *ctx);
 int cmd_clear_errors(int argc, const char **argv, struct ndctl_ctx *ctx);

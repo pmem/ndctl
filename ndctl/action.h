@@ -15,5 +15,6 @@ enum device_action {
 	ACTION_START,
 	ACTION_CLEAR,
 	ACTION_READ_INFOBLOCK,
+	ACTION_WRITE_INFOBLOCK,
 };
 #endif /* __NDCTL_ACTION_H__ */
