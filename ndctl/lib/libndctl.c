@@ -4484,6 +4484,24 @@ static int namespace_set_size(struct ndctl_namespace *ndns,
 		return rc;
 
 	ndns->size = size;
+
+	/*
+	 * A size change event invalidates / establishes 'resource', try
+	 * to refresh it.
+	 */
+	if (snprintf(path, len, "%s/resource", ndns->ndns_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_namespace_get_devname(ndns));
+		ndns->resource = ULLONG_MAX;
+		return 0;
+	}
+
+	if (sysfs_read_attr(ctx, path, buf) < 0) {
+		ndns->resource = ULLONG_MAX;
+		return 0;
+	}
+
+	ndns->resource = strtoull(buf, NULL, 0);
 	return 0;
 }
 
