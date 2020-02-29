@@ -25,7 +25,8 @@ TESTS =\
 	inject-smart.sh \
 	monitor.sh \
 	max_available_extent_ns.sh \
-	pfn-meta-errors.sh
+	pfn-meta-errors.sh \
+	track-uuid.sh
 
 EXTRA_DIST += $(TESTS) common \
 		btt-pad-compat.xxd \
