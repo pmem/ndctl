@@ -39,7 +39,7 @@ setup_keys()
 		backup_key=1
 	fi
 	if [ -f "$keypath/tpm.handle" ]; then
-		mv "$keypath/tpm.handle" "$keypath/tmp.handle.bak"
+		mv "$keypath/tpm.handle" "$keypath/tpm.handle.bak"
 		backup_handle=1
 	fi
 
@@ -71,7 +71,7 @@ post_cleanup()
 		mv "$masterpath.bak" "$masterpath"
 	fi
 	if [ "$backup_handle" -eq 1 ]; then
-		mv "$keypath/tpm.handle.bak" "$keypath/tmp.handle"
+		mv "$keypath/tpm.handle.bak" "$keypath/tpm.handle"
 	fi
 }
 
