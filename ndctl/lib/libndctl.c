@@ -150,6 +150,7 @@ struct ndctl_region {
 	struct kmod_module *module;
 	struct ndctl_bus *bus;
 	int id, num_mappings, nstype, range_index, ro;
+	unsigned long align;
 	int mappings_init;
 	int namespaces_init;
 	int btts_init;
@@ -1107,6 +1108,44 @@ NDCTL_EXPORT int ndctl_region_set_ro(struct ndctl_region *region, int ro)
 
 	region->ro = ro;
 	return ro;
+}
+
+NDCTL_EXPORT unsigned long ndctl_region_get_align(struct ndctl_region *region)
+{
+	return region->align;
+}
+
+/**
+ * ndctl_region_set_align() - Align namespace dpa allocations to @align
+ * @region: region to modify
+ * @align: alignment that must be a power-of-2 and >= the platform minimum
+ *
+ * WARNING: setting the region align value to anything less than the
+ * kernel default (16M) may result in namespaces that are not cross-arch
+ * (PowerPC) compatible. The minimum alignment for raw mode namespaces
+ * is PAGE_SIZE.
+ */
+NDCTL_EXPORT int ndctl_region_set_align(struct ndctl_region *region,
+		unsigned long align)
+{
+	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
+	char *path = region->region_buf;
+	int len = region->buf_len, rc;
+	char buf[SYSFS_ATTR_SIZE];
+
+	if (snprintf(path, len, "%s/align", region->region_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_region_get_devname(region));
+		return -ENXIO;
+	}
+
+	sprintf(buf, "%#lx\n", align);
+	rc = sysfs_write_attr(ctx, path, buf);
+	if (rc < 0)
+		return rc;
+
+	region->align = align;
+	return 0;
 }
 
 NDCTL_EXPORT unsigned long long ndctl_region_get_resource(struct ndctl_region *region)
@@ -2157,6 +2196,12 @@ static void *add_region(void *parent, int id, const char *region_base)
 		region->target_node = strtol(buf, NULL, 0);
 	else
 		region->target_node = -1;
+
+	sprintf(path, "%s/align", region_base);
+	if (sysfs_read_attr(ctx, path, buf) == 0)
+		region->align = strtoul(buf, NULL, 0);
+	else
+		region->align = ULONG_MAX;
 
 	if (region_set_type(region, path) < 0)
 		goto err_read;

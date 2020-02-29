@@ -58,15 +58,21 @@ static int do_test(struct ndctl_ctx *ctx, struct ndctl_test *test)
 	bus = ndctl_bus_get_by_provider(ctx, NFIT_PROVIDER1);
 	if (!bus)
 		return -ENXIO;
-	ndctl_region_foreach(bus, region)
+	ndctl_region_foreach(bus, region) {
 		ndctl_region_disable_invalidate(region);
+		ndctl_region_set_align(region, sysconf(_SC_PAGESIZE)
+				* ndctl_region_get_interleave_ways(region));
+	}
 
 	/* init nfit_test.0 */
 	bus = ndctl_bus_get_by_provider(ctx, NFIT_PROVIDER0);
 	if (!bus)
 		return -ENXIO;
-	ndctl_region_foreach(bus, region)
+	ndctl_region_foreach(bus, region) {
 		ndctl_region_disable_invalidate(region);
+		ndctl_region_set_align(region, sysconf(_SC_PAGESIZE)
+				* ndctl_region_get_interleave_ways(region));
+	}
 
 	ndctl_dimm_foreach(bus, dimm) {
 		rc = ndctl_dimm_zero_labels(dimm);

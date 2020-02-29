@@ -78,7 +78,7 @@ static struct json_object *region_to_json(struct ndctl_region *region,
 	struct ndctl_interleave_set *iset;
 	struct ndctl_mapping *mapping;
 	unsigned int bb_count = 0;
-	unsigned long long extent;
+	unsigned long long extent, align;
 	enum ndctl_persistence_domain pd;
 	int numa, target;
 
@@ -94,6 +94,14 @@ static struct json_object *region_to_json(struct ndctl_region *region,
 	if (!jobj)
 		goto err;
 	json_object_object_add(jregion, "size", jobj);
+
+	align = ndctl_region_get_align(region);
+	if (align < ULLONG_MAX) {
+		jobj = util_json_object_size(align, flags);
+		if (!jobj)
+			goto err;
+		json_object_object_add(jregion, "align", jobj);
+	}
 
 	jobj = util_json_object_size(ndctl_region_get_available_size(region),
 			flags);

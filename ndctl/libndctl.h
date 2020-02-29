@@ -372,6 +372,8 @@ struct ndctl_namespace *ndctl_region_get_namespace_seed(
 		struct ndctl_region *region);
 int ndctl_region_get_ro(struct ndctl_region *region);
 int ndctl_region_set_ro(struct ndctl_region *region, int ro);
+unsigned long ndctl_region_get_align(struct ndctl_region *region);
+int ndctl_region_set_align(struct ndctl_region *region, unsigned long align);
 unsigned long long ndctl_region_get_resource(struct ndctl_region *region);
 struct ndctl_btt *ndctl_region_get_btt_seed(struct ndctl_region *region);
 struct ndctl_pfn *ndctl_region_get_pfn_seed(struct ndctl_region *region);

@@ -48,8 +48,11 @@ static int reset_bus(struct ndctl_bus *bus)
 	}
 
 	/* set regions back to their default state */
-	ndctl_region_foreach(bus, region)
+	ndctl_region_foreach(bus, region) {
 		ndctl_region_enable(region);
+		ndctl_region_set_align(region, sysconf(_SC_PAGESIZE)
+				* ndctl_region_get_interleave_ways(region));
+	}
 	return 0;
 }
 

@@ -2622,9 +2622,15 @@ static int do_test0(struct ndctl_ctx *ctx, struct ndctl_test *test)
 		}
 	}
 
-	/* set regions back to their default state */
-	ndctl_region_foreach(bus, region)
+	/*
+	 * Enable regions and adjust the space-align to drop the default
+	 * alignment constraints
+	 */
+	ndctl_region_foreach(bus, region) {
 		ndctl_region_enable(region);
+		ndctl_region_set_align(region, sysconf(_SC_PAGESIZE)
+				* ndctl_region_get_interleave_ways(region));
+	}
 
 	/* pfn and dax tests require vmalloc-enabled nfit_test */
 	if (ndctl_test_attempt(test, KERNEL_VERSION(4, 8, 0))) {

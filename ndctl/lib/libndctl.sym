@@ -428,4 +428,6 @@ LIBNDCTL_23 {
 	ndctl_namespace_is_configuration_idle;
 	ndctl_namespace_get_target_node;
 	ndctl_region_get_target_node;
+	ndctl_region_get_align;
+	ndctl_region_set_align;
 } LIBNDCTL_22;

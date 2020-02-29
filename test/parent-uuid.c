@@ -61,6 +61,7 @@ static struct ndctl_namespace *create_blk_namespace(int region_fraction,
 	struct ndctl_namespace *ndns, *seed_ns = NULL;
 	unsigned long long size;
 
+	ndctl_region_set_align(region, sysconf(_SC_PAGESIZE));
 	ndctl_namespace_foreach(region, ndns)
 		if (ndctl_namespace_get_size(ndns) == 0) {
 			seed_ns = ndns;
