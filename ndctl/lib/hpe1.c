@@ -23,6 +23,17 @@
 #define CMD_HPE1_SMART(_c) (CMD_HPE1(_c)->u.smart.data)
 #define CMD_HPE1_SMART_THRESH(_c) (CMD_HPE1(_c)->u.thresh.data)
 
+static u32 hpe1_get_firmware_status(struct ndctl_cmd *cmd)
+{
+	switch (cmd->hpe1->gen.nd_command) {
+	case NDN_HPE1_CMD_SMART:
+		return cmd->hpe1->u.smart.status;
+	case NDN_HPE1_CMD_SMART_THRESHOLD:
+		return cmd->hpe1->u.thresh.status;
+	}
+	return -1U;
+}
+
 static struct ndctl_cmd *hpe1_dimm_cmd_new_smart(struct ndctl_dimm *dimm)
 {
 	struct ndctl_bus *bus = ndctl_dimm_get_bus(dimm);
@@ -60,6 +71,7 @@ static struct ndctl_cmd *hpe1_dimm_cmd_new_smart(struct ndctl_dimm *dimm)
 	hpe1->gen.nd_size_in = offsetof(struct ndn_hpe1_smart, status);
 	hpe1->gen.nd_size_out = sizeof(hpe1->u.smart);
 	hpe1->u.smart.status = 3;
+	cmd->get_firmware_status = hpe1_get_firmware_status;
 
 	hpe1->u.smart.in_valid_flags = 0;
 	hpe1->u.smart.in_valid_flags |= NDN_HPE1_SMART_HEALTH_VALID;
@@ -69,8 +81,6 @@ static struct ndctl_cmd *hpe1_dimm_cmd_new_smart(struct ndctl_dimm *dimm)
 	hpe1->u.smart.in_valid_flags |= NDN_HPE1_SMART_USED_VALID;
 	hpe1->u.smart.in_valid_flags |= NDN_HPE1_SMART_SHUTDOWN_VALID;
 	hpe1->u.smart.in_valid_flags |= NDN_HPE1_SMART_VENDOR_VALID;
-
-	cmd->firmware_status = &hpe1->u.smart.status;
 
 	return cmd;
 }
@@ -285,8 +295,7 @@ static struct ndctl_cmd *hpe1_dimm_cmd_new_smart_threshold(struct ndctl_dimm *di
 	hpe1->gen.nd_size_in = offsetof(struct ndn_hpe1_smart_threshold, status);
 	hpe1->gen.nd_size_out = sizeof(hpe1->u.smart);
 	hpe1->u.thresh.status = 3;
-
-	cmd->firmware_status = &hpe1->u.thresh.status;
+	cmd->get_firmware_status = hpe1_get_firmware_status;
 
 	return cmd;
 }

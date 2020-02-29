@@ -22,6 +22,11 @@
 #define CMD_MSFT(_c) ((_c)->msft)
 #define CMD_MSFT_SMART(_c) (CMD_MSFT(_c)->u.smart.data)
 
+static u32 msft_get_firmware_status(struct ndctl_cmd *cmd)
+{
+	return cmd->msft->u.smart.status;
+}
+
 static struct ndctl_cmd *msft_dimm_cmd_new_smart(struct ndctl_dimm *dimm)
 {
 	struct ndctl_bus *bus = ndctl_dimm_get_bus(dimm);
@@ -58,8 +63,7 @@ static struct ndctl_cmd *msft_dimm_cmd_new_smart(struct ndctl_dimm *dimm)
 	msft->gen.nd_size_in = offsetof(struct ndn_msft_smart, status);
 	msft->gen.nd_size_out = sizeof(msft->u.smart);
 	msft->u.smart.status = 0;
-
-	cmd->firmware_status = &msft->u.smart.status;
+	cmd->get_firmware_status = msft_get_firmware_status;
 
 	return cmd;
 }

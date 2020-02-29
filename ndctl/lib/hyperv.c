@@ -9,6 +9,11 @@
 #include "private.h"
 #include "hyperv.h"
 
+static u32 hyperv_get_firmware_status(struct ndctl_cmd *cmd)
+{
+	return cmd->hyperv->u.status;
+}
+
 static bool hyperv_cmd_is_supported(struct ndctl_dimm *dimm, int cmd)
 {
 	/*
@@ -50,6 +55,7 @@ static struct ndctl_cmd *alloc_hyperv_cmd(struct ndctl_dimm *dimm,
 
 	cmd->dimm = dimm;
 	cmd->type = ND_CMD_CALL;
+	cmd->get_firmware_status = hyperv_get_firmware_status;
 	cmd->size = size;
 	cmd->status = 1;
 
@@ -58,7 +64,6 @@ static struct ndctl_cmd *alloc_hyperv_cmd(struct ndctl_dimm *dimm,
 	hyperv->gen.nd_command = command;
 	hyperv->gen.nd_size_out = sizeof(hyperv->u.health_info);
 
-	cmd->firmware_status = &hyperv->u.health_info.status;
 	return cmd;
 }
 

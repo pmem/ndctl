@@ -15,6 +15,24 @@
 #include "private.h"
 #include <ndctl/libndctl-nfit.h>
 
+static u32 bus_get_firmware_status(struct ndctl_cmd *cmd)
+{
+	struct nd_cmd_bus *cmd_bus = cmd->cmd_bus;
+
+	switch (cmd_bus->gen.nd_command) {
+	case NFIT_CMD_TRANSLATE_SPA:
+		return cmd_bus->xlat_spa.status;
+	case NFIT_CMD_ARS_INJECT_SET:
+		return cmd_bus->err_inj.status;
+	case NFIT_CMD_ARS_INJECT_CLEAR:
+		return cmd_bus->err_inj_clr.status;
+	case NFIT_CMD_ARS_INJECT_GET:
+		return cmd_bus->err_inj_stat.status;
+	}
+
+	return -1U;
+}
+
 /**
  * ndctl_bus_is_nfit_cmd_supported - ask nfit command is supported on @bus.
  * @bus: ndctl_bus instance
@@ -54,15 +72,15 @@ static struct ndctl_cmd *ndctl_bus_cmd_new_translate_spa(struct ndctl_bus *bus)
 	cmd->bus = bus;
 	ndctl_cmd_ref(cmd);
 	cmd->type = ND_CMD_CALL;
+	cmd->get_firmware_status = bus_get_firmware_status;
 	cmd->size = size;
 	cmd->status = 1;
-	pkg = (struct nd_cmd_pkg *)&cmd->cmd_buf[0];
+	pkg = &cmd->cmd_bus->gen;
 	pkg->nd_command = NFIT_CMD_TRANSLATE_SPA;
 	pkg->nd_size_in = sizeof(unsigned long long);
 	pkg->nd_size_out = spa_length;
 	pkg->nd_fw_size = spa_length;
-	translate_spa = (struct nd_cmd_translate_spa *)&pkg->nd_payload[0];
-	cmd->firmware_status = &translate_spa->status;
+	translate_spa = &cmd->cmd_bus->xlat_spa;
 	translate_spa->translate_length = spa_length;
 
 	return cmd;
@@ -146,7 +164,6 @@ int ndctl_bus_nfit_translate_spa(struct ndctl_bus *bus,
 
 struct ndctl_cmd *ndctl_bus_cmd_new_err_inj(struct ndctl_bus *bus)
 {
-	struct nd_cmd_ars_err_inj *err_inj;
 	size_t size, cmd_length;
 	struct nd_cmd_pkg *pkg;
 	struct ndctl_cmd *cmd;
@@ -160,6 +177,7 @@ struct ndctl_cmd *ndctl_bus_cmd_new_err_inj(struct ndctl_bus *bus)
 	cmd->bus = bus;
 	ndctl_cmd_ref(cmd);
 	cmd->type = ND_CMD_CALL;
+	cmd->get_firmware_status = bus_get_firmware_status;
 	cmd->size = size;
 	cmd->status = 1;
 	pkg = (struct nd_cmd_pkg *)&cmd->cmd_buf[0];
@@ -167,15 +185,12 @@ struct ndctl_cmd *ndctl_bus_cmd_new_err_inj(struct ndctl_bus *bus)
 	pkg->nd_size_in = offsetof(struct nd_cmd_ars_err_inj, status);
 	pkg->nd_size_out = cmd_length - pkg->nd_size_in;
 	pkg->nd_fw_size = pkg->nd_size_out;
-	err_inj = (struct nd_cmd_ars_err_inj *)&pkg->nd_payload[0];
-	cmd->firmware_status = &err_inj->status;
 
 	return cmd;
 }
 
 struct ndctl_cmd *ndctl_bus_cmd_new_err_inj_clr(struct ndctl_bus *bus)
 {
-	struct nd_cmd_ars_err_inj_clr *err_inj_clr;
 	size_t size, cmd_length;
 	struct nd_cmd_pkg *pkg;
 	struct ndctl_cmd *cmd;
@@ -189,6 +204,7 @@ struct ndctl_cmd *ndctl_bus_cmd_new_err_inj_clr(struct ndctl_bus *bus)
 	cmd->bus = bus;
 	ndctl_cmd_ref(cmd);
 	cmd->type = ND_CMD_CALL;
+	cmd->get_firmware_status = bus_get_firmware_status;
 	cmd->size = size;
 	cmd->status = 1;
 	pkg = (struct nd_cmd_pkg *)&cmd->cmd_buf[0];
@@ -196,8 +212,6 @@ struct ndctl_cmd *ndctl_bus_cmd_new_err_inj_clr(struct ndctl_bus *bus)
 	pkg->nd_size_in = offsetof(struct nd_cmd_ars_err_inj_clr, status);
 	pkg->nd_size_out = cmd_length - pkg->nd_size_in;
 	pkg->nd_fw_size = pkg->nd_size_out;
-	err_inj_clr = (struct nd_cmd_ars_err_inj_clr *)&pkg->nd_payload[0];
-	cmd->firmware_status = &err_inj_clr->status;
 
 	return cmd;
 }
@@ -205,7 +219,6 @@ struct ndctl_cmd *ndctl_bus_cmd_new_err_inj_clr(struct ndctl_bus *bus)
 struct ndctl_cmd *ndctl_bus_cmd_new_err_inj_stat(struct ndctl_bus *bus,
 	u32 buf_size)
 {
-	struct nd_cmd_ars_err_inj_stat *err_inj_stat;
 	size_t size, cmd_length;
 	struct nd_cmd_pkg *pkg;
 	struct ndctl_cmd *cmd;
@@ -220,6 +233,7 @@ struct ndctl_cmd *ndctl_bus_cmd_new_err_inj_stat(struct ndctl_bus *bus,
 	cmd->bus = bus;
 	ndctl_cmd_ref(cmd);
 	cmd->type = ND_CMD_CALL;
+	cmd->get_firmware_status = bus_get_firmware_status;
 	cmd->size = size;
 	cmd->status = 1;
 	pkg = (struct nd_cmd_pkg *)&cmd->cmd_buf[0];
@@ -227,8 +241,6 @@ struct ndctl_cmd *ndctl_bus_cmd_new_err_inj_stat(struct ndctl_bus *bus,
 	pkg->nd_size_in = 0;
 	pkg->nd_size_out = cmd_length + buf_size;
 	pkg->nd_fw_size = pkg->nd_size_out;
-	err_inj_stat = (struct nd_cmd_ars_err_inj_stat *)&pkg->nd_payload[0];
-	cmd->firmware_status = &err_inj_stat->status;
 
 	return cmd;
 }

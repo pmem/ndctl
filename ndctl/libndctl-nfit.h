@@ -17,6 +17,7 @@
 #define __LIBNDCTL_NFIT_H__
 
 #include <linux/types.h>
+#include <ndctl/ndctl.h>
 
 /*
  * libndctl-nfit.h : definitions for NFIT related commands/functions.
@@ -86,6 +87,16 @@ struct nd_cmd_ars_err_inj_stat {
 		__u64 err_inj_stat_spa_range_length;
 	} __attribute__((packed)) record[0];
 } __attribute__((packed));
+
+struct nd_cmd_bus {
+	struct nd_cmd_pkg gen;
+	union {
+		struct nd_cmd_ars_err_inj_stat err_inj_stat;
+		struct nd_cmd_ars_err_inj_clr err_inj_clr;
+		struct nd_cmd_ars_err_inj err_inj;
+		struct nd_cmd_translate_spa xlat_spa;
+	};
+};
 
 int ndctl_bus_is_nfit_cmd_supported(struct ndctl_bus *bus, int cmd);
 

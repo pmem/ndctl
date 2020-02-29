@@ -16,13 +16,49 @@
 #include <ndctl/libndctl.h>
 #include "private.h"
 
+static unsigned int intel_cmd_get_firmware_status(struct ndctl_cmd *cmd)
+{
+	struct nd_pkg_intel *intel = cmd->intel;
+
+	switch (intel->gen.nd_command) {
+	case ND_INTEL_SMART:
+		return intel->smart.status;
+	case ND_INTEL_SMART_THRESHOLD:
+		return intel->thresh.status;
+	case ND_INTEL_SMART_SET_THRESHOLD:
+		return intel->set_thresh.status;
+	case ND_INTEL_SMART_INJECT:
+		return intel->inject.status;
+	case ND_INTEL_FW_GET_INFO:
+		return intel->info.status;
+	case ND_INTEL_FW_START_UPDATE:
+		return intel->start.status;
+	case ND_INTEL_FW_SEND_DATA: {
+		    struct nd_intel_fw_send_data *send = &intel->send;
+		    u32 status;
+
+		    /* the last dword after the payload is reserved for status */
+		    memcpy(&status, ((void *) send) + sizeof(*send) + send->length,
+				    sizeof(status));
+		    return status;
+	}
+	case ND_INTEL_FW_FINISH_UPDATE:
+		return intel->finish.status;
+	case ND_INTEL_FW_FINISH_STATUS_QUERY:
+		return intel->fquery.status;
+	case ND_INTEL_ENABLE_LSS_STATUS:
+		return intel->lss.status;
+	}
+	return -1U;
+}
+
 static int intel_cmd_xlat_firmware_status(struct ndctl_cmd *cmd)
 {
 	struct nd_pkg_intel *pkg = cmd->intel;
 	unsigned int status, ext_status;
 
-	status = (*cmd->firmware_status) & ND_INTEL_STATUS_MASK;
-	ext_status = (*cmd->firmware_status) & ND_INTEL_STATUS_EXTEND_MASK;
+	status = cmd->get_firmware_status(cmd) & ND_INTEL_STATUS_MASK;
+	ext_status = cmd->get_firmware_status(cmd) & ND_INTEL_STATUS_EXTEND_MASK;
 
 	/* Common statuses */
 	switch (status) {
@@ -91,6 +127,7 @@ static struct ndctl_cmd *alloc_intel_cmd(struct ndctl_dimm *dimm,
 	cmd->type = ND_CMD_CALL;
 	cmd->size = size;
 	cmd->status = 1;
+	cmd->get_firmware_status = intel_cmd_get_firmware_status;
 
 	*(cmd->intel) = (struct nd_pkg_intel) {
 		.gen = {
@@ -114,7 +151,6 @@ static struct ndctl_cmd *intel_dimm_cmd_new_smart(struct ndctl_dimm *dimm)
 			0, sizeof(cmd->intel->smart));
 	if (!cmd)
 		return NULL;
-	cmd->firmware_status = &cmd->intel->smart.status;
 
 	return cmd;
 }
@@ -269,7 +305,6 @@ static struct ndctl_cmd *intel_dimm_cmd_new_smart_threshold(
 			0, sizeof(cmd->intel->thresh));
 	if (!cmd)
 		return NULL;
-	cmd->firmware_status = &cmd->intel->thresh.status;
 
 	return cmd;
 }
@@ -299,7 +334,6 @@ static struct ndctl_cmd *intel_dimm_cmd_new_smart_set_threshold(
 	set_thresh->spares = thresh->spares;
 	set_thresh->media_temperature = thresh->media_temperature;
 	set_thresh->ctrl_temperature = thresh->ctrl_temperature;
-	cmd->firmware_status = &set_thresh->status;
 
 	return cmd;
 }
@@ -360,7 +394,6 @@ static struct ndctl_cmd *intel_new_smart_inject(struct ndctl_dimm *dimm)
 			offsetof(struct nd_intel_smart_inject, status), 4);
 	if (!cmd)
 		return NULL;
-	cmd->firmware_status = &cmd->intel->inject.status;
 
 	return cmd;
 }
@@ -468,7 +501,6 @@ static struct ndctl_cmd *intel_dimm_cmd_new_fw_get_info(struct ndctl_dimm *dimm)
 	if (!cmd)
 		return NULL;
 
-	cmd->firmware_status = &cmd->intel->info.status;
 	return cmd;
 }
 
@@ -540,7 +572,6 @@ static struct ndctl_cmd *intel_dimm_cmd_new_fw_start(struct ndctl_dimm *dimm)
 	if (!cmd)
 		return NULL;
 
-	cmd->firmware_status = &cmd->intel->start.status;
 	return cmd;
 }
 
@@ -583,9 +614,6 @@ static struct ndctl_cmd *intel_dimm_cmd_new_fw_send(struct ndctl_cmd *start,
 	cmd->intel->send.offset = offset;
 	cmd->intel->send.length = len;
 	memcpy(cmd->intel->send.data, data, len);
-	/* the last dword is reserved for status */
-	cmd->firmware_status =
-		(unsigned int *)(&cmd->intel->send.data[0] + len);
 	return cmd;
 }
 
@@ -602,7 +630,6 @@ static struct ndctl_cmd *intel_dimm_cmd_new_fw_finish(struct ndctl_cmd *start)
 
 	cmd->intel->finish.context = start->intel->start.context;
 	cmd->intel->finish.ctrl_flags = 0;
-	cmd->firmware_status = &cmd->intel->finish.status;
 	return cmd;
 }
 
@@ -619,7 +646,6 @@ static struct ndctl_cmd *intel_dimm_cmd_new_fw_abort(struct ndctl_cmd *start)
 
 	cmd->intel->finish.context = start->intel->start.context;
 	cmd->intel->finish.ctrl_flags = 1;
-	cmd->firmware_status = &cmd->intel->finish.status;
 	return cmd;
 }
 
@@ -636,7 +662,6 @@ intel_dimm_cmd_new_fw_finish_query(struct ndctl_cmd *start)
 		return NULL;
 
 	cmd->intel->fquery.context = start->intel->start.context;
-	cmd->firmware_status = &cmd->intel->fquery.status;
 	return cmd;
 }
 
@@ -704,7 +729,7 @@ intel_cmd_fw_xlat_extend_firmware_status(struct ndctl_cmd *cmd,
 static enum ND_FW_STATUS
 intel_cmd_fw_xlat_firmware_status(struct ndctl_cmd *cmd)
 {
-	unsigned int status = *cmd->firmware_status;
+	unsigned int status = intel_cmd_get_firmware_status(cmd);
 
 	switch (status & ND_INTEL_STATUS_MASK) {
 	case ND_INTEL_STATUS_SUCCESS:
@@ -742,7 +767,6 @@ intel_dimm_cmd_new_lss(struct ndctl_dimm *dimm)
 		return NULL;
 
 	cmd->intel->lss.enable = 1;
-	cmd->firmware_status = &cmd->intel->lss.status;
 	return cmd;
 }
 

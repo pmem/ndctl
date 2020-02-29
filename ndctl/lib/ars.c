@@ -15,6 +15,22 @@
 #include <ndctl/libndctl.h>
 #include "private.h"
 
+static u32 get_ars_command_status(struct ndctl_cmd *cmd)
+{
+	switch (cmd->type) {
+	case ND_CMD_ARS_CAP:
+		return cmd->ars_cap->status;
+	case ND_CMD_ARS_START:
+		return cmd->ars_start->status;
+	case ND_CMD_ARS_STATUS:
+		return cmd->ars_status->status;
+	case ND_CMD_CLEAR_ERROR:
+		return cmd->clear_err->status;
+	}
+
+	return -1U;
+}
+
 NDCTL_EXPORT struct ndctl_cmd *ndctl_bus_cmd_new_ars_cap(struct ndctl_bus *bus,
 		unsigned long long address, unsigned long long len)
 {
@@ -35,9 +51,9 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_bus_cmd_new_ars_cap(struct ndctl_bus *bus,
 	cmd->bus = bus;
 	ndctl_cmd_ref(cmd);
 	cmd->type = ND_CMD_ARS_CAP;
+	cmd->get_firmware_status = get_ars_command_status;
 	cmd->size = size;
 	cmd->status = 1;
-	cmd->firmware_status = &cmd->ars_cap->status;
 	cmd->ars_cap->address = address;
 	cmd->ars_cap->length = len;
 
@@ -55,7 +71,7 @@ static bool __validate_ars_cap(struct ndctl_cmd *ars_cap)
 {
 	if (ars_cap->type != ND_CMD_ARS_CAP || ars_cap->status != 0)
 		return false;
-	if ((*ars_cap->firmware_status & ARS_STATUS_MASK) != 0)
+	if ((ars_cap->get_firmware_status(ars_cap) & ARS_STATUS_MASK) != 0)
 		return false;
 	return validate_clear_error(ars_cap);
 }
@@ -84,7 +100,7 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_bus_cmd_new_ars_start(struct ndctl_cmd *ars
 	if (!validate_ars_cap(ctx, ars_cap))
 		return NULL;
 
-	if (!(*ars_cap->firmware_status >> ARS_EXT_STATUS_SHIFT & type)) {
+	if (!(ars_cap->get_firmware_status(ars_cap) >> ARS_EXT_STATUS_SHIFT & type)) {
 		dbg(ctx, "ars_cap does not show requested type as supported\n");
 		return NULL;
 	}
@@ -97,9 +113,9 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_bus_cmd_new_ars_start(struct ndctl_cmd *ars
 	cmd->bus = bus;
 	ndctl_cmd_ref(cmd);
 	cmd->type = ND_CMD_ARS_START;
+	cmd->get_firmware_status = get_ars_command_status;
 	cmd->size = size;
 	cmd->status = 1;
-	cmd->firmware_status = &cmd->ars_start->status;
 	cmd->ars_start->address = ars_cap->ars_cap->address;
 	cmd->ars_start->length = ars_cap->ars_cap->length;
 	cmd->ars_start->type = type;
@@ -145,9 +161,9 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_bus_cmd_new_ars_status(struct ndctl_cmd *ar
 	cmd->bus = bus;
 	ndctl_cmd_ref(cmd);
 	cmd->type = ND_CMD_ARS_STATUS;
+	cmd->get_firmware_status = get_ars_command_status;
 	cmd->size = size;
 	cmd->status = 1;
-	cmd->firmware_status = &cmd->ars_status->status;
 	cmd->ars_status->out_length = ars_cap_cmd->max_ars_out;
 
 	return cmd;
@@ -325,9 +341,9 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_bus_cmd_new_clear_error(
 	ndctl_cmd_ref(clear_err);
 	clear_err->bus = bus;
 	clear_err->type = ND_CMD_CLEAR_ERROR;
+	clear_err->get_firmware_status = get_ars_command_status;
 	clear_err->size = size;
 	clear_err->status = 1;
-	clear_err->firmware_status = &clear_err->clear_err->status;
 	clear_err->clear_err->address = address;
 	clear_err->clear_err->length = len;
 

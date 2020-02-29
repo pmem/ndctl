@@ -32,6 +32,7 @@
 #include "hpe1.h"
 #include "msft.h"
 #include "hyperv.h"
+#include "libndctl-nfit.h"
 
 struct nvdimm_data {
 	struct ndctl_cmd *cmd_read;
@@ -233,7 +234,7 @@ struct ndctl_namespace {
  * @type: cmd number
  * @size: total size of the ndctl_cmd allocation
  * @status: negative if failed, 0 if success, > 0 if never submitted
- * @firmware_status: NFIT command output status code
+ * @get_firmware_status: per command firmware status field retrieval
  * @iter: iterator for multi-xfer commands
  * @source: source cmd of an inherited iter.total_buf
  *
@@ -250,7 +251,7 @@ struct ndctl_cmd {
 	int type;
 	int size;
 	int status;
-	u32 *firmware_status;
+	u32 (*get_firmware_status)(struct ndctl_cmd *cmd);
 	struct ndctl_cmd_iter {
 		u32 init_offset;
 		u32 *offset;
@@ -268,6 +269,7 @@ struct ndctl_cmd {
 		struct nd_cmd_ars_status ars_status[0];
 		struct nd_cmd_clear_error clear_err[0];
 		struct nd_cmd_pkg pkg[0];
+		struct nd_cmd_bus cmd_bus[0];
 		struct ndn_pkg_hpe1 hpe1[0];
 		struct ndn_pkg_msft msft[0];
 		struct nd_pkg_hyperv hyperv[0];
@@ -341,6 +343,7 @@ struct ndctl_dimm_ops {
 	struct ndctl_cmd *(*new_ack_shutdown_count)(struct ndctl_dimm *);
 	int (*fw_update_supported)(struct ndctl_dimm *);
 	int (*xlat_firmware_status)(struct ndctl_cmd *);
+	u32 (*get_firmware_status)(struct ndctl_cmd *);
 };
 
 extern struct ndctl_dimm_ops * const intel_dimm_ops;
