@@ -334,8 +334,7 @@ static const char *parse_namespace_options(int argc, const char **argv,
 				break;
 		}
 
-		if ((action == ACTION_READ_INFOBLOCK && !param.infile)
-				|| action != ACTION_READ_INFOBLOCK) {
+		if (action != ACTION_READ_INFOBLOCK) {
 			error("specify a namespace to %s, or \"all\"\n", action_string);
 			rc = -EINVAL;
 		}
@@ -355,6 +354,8 @@ static const char *parse_namespace_options(int argc, const char **argv,
 		return NULL; /* we won't return from usage_with_options() */
 	}
 
+	if (action == ACTION_READ_INFOBLOCK && !param.infile && !argc)
+		return NULL;
 	return action == ACTION_CREATE ? param.reconfig : argv[0];
 }
 
@@ -1688,7 +1689,12 @@ static int file_read_infoblock(const char *path, struct ndctl_namespace *ndns,
 	if (!buf)
 		return -ENOMEM;
 
-	fd = open(path, O_RDONLY|O_EXCL);
+	if (!path) {
+		fd = STDIN_FILENO;
+		path = "<stdin>";
+	} else
+		fd = open(path, O_RDONLY|O_EXCL);
+
 	if (fd < 0) {
 		pr_verbose("%s: %s failed to open %s: %s\n",
 				cmd, devname, path, strerror(errno));
@@ -1697,17 +1703,20 @@ static int file_read_infoblock(const char *path, struct ndctl_namespace *ndns,
 	}
 
 	rc = read(fd, buf, INFOBLOCK_SZ);
-	if (rc < 0) {
+	if (rc < INFOBLOCK_SZ) {
 		pr_verbose("%s: %s failed to read %s: %s\n",
 				cmd, devname, path, strerror(errno));
-		rc = -errno;
+		if (rc < 0)
+			rc = -errno;
+		else
+			rc = -EIO;
 		goto out;
 	}
 
 	rc = parse_namespace_infoblock(buf, ndns, path, ri_ctx);
 out:
 	free(buf);
-	if (fd >= 0)
+	if (fd >= 0 && fd != STDIN_FILENO)
 		close(fd);
 	return rc;
 }
@@ -1766,10 +1775,12 @@ static int do_xaction_namespace(const char *namespace,
 			}
 		}
 
-		if (param.infile) {
+		if (param.infile || !namespace) {
 			rc = file_read_infoblock(param.infile, NULL, &ri_ctx);
 			if (ri_ctx.jblocks)
 				util_display_json_array(ri_ctx.f_out, ri_ctx.jblocks, 0);
+			if (rc >= 0)
+				(*processed)++;
 			return rc;
 		}
 	}
