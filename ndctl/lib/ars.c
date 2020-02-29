@@ -11,6 +11,7 @@
  * more details.
  */
 #include <stdlib.h>
+#include <util/size.h>
 #include <ndctl/libndctl.h>
 #include "private.h"
 
@@ -41,11 +42,6 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_bus_cmd_new_ars_cap(struct ndctl_bus *bus,
 	cmd->ars_cap->length = len;
 
 	return cmd;
-}
-
-static bool is_power_of_2(unsigned int v)
-{
-	return v && ((v & (v - 1)) == 0);
 }
 
 static bool validate_clear_error(struct ndctl_cmd *ars_cap)
