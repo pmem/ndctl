@@ -560,6 +560,7 @@ static int validate_namespace_options(struct ndctl_region *region,
 	struct ndctl_pfn *pfn = NULL;
 	struct ndctl_dax *dax = NULL;
 	unsigned long region_align;
+	bool default_size = false;
 	unsigned int ways;
 	int rc = 0;
 
@@ -574,10 +575,13 @@ static int validate_namespace_options(struct ndctl_region *region,
 		p->size = __parse_size64(param.size, &units);
 	else if (ndns)
 		p->size = ndctl_namespace_get_size(ndns);
+	else
+		default_size = true;
 
 	/*
 	 * Validate available capacity in the create case, in the
-	 * reconfigure case the capacity is already allocated.
+	 * reconfigure case the capacity is already allocated. A default
+	 * size will be established from available capacity.
 	 */
 	if (!ndns) {
 		rc = validate_available_capacity(region, p);
@@ -766,6 +770,21 @@ static int validate_namespace_options(struct ndctl_region *region,
 		err("'--size=' must align to interleave-width: %d and alignment: %ld\n"
 				"did you intend --size=%lld%s?\n",
 				ways, p->align, p->size, suffix);
+		return -EINVAL;
+	}
+
+	/*
+	 * Catch attempts to create sub-16M namespaces to match the
+	 * kernel's restriction (see nd_namespace_store())
+	 */
+	if (p->size < SZ_16M && p->mode != NDCTL_NS_MODE_RAW) {
+		if (default_size) {
+			debug("%s: insufficient capacity for mode: %s\n",
+					region_name, util_nsmode_name(p->mode));
+			return -EAGAIN;
+		}
+		error("'--size=' must be >= 16MiB for '%s' mode\n",
+				util_nsmode_name(p->mode));
 		return -EINVAL;
 	}
 
