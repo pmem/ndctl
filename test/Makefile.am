@@ -49,6 +49,7 @@ if ENABLE_DESTRUCTIVE
 TESTS +=\
 	blk-ns \
 	pmem-ns \
+	sub-section.sh \
 	dax-dev \
 	dax-ext4.sh \
 	dax-xfs.sh \
