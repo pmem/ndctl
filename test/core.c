@@ -164,7 +164,7 @@ int nfit_test_init(struct kmod_ctx **ctx, struct kmod_module **mod,
 		 * Don't check for device-dax modules on kernels older
 		 * than 4.7.
 		 */
-		if (strstr(name, "dax")
+		if (strcmp(name, "dax") == 0
 				&& !ndctl_test_attempt(test,
 					KERNEL_VERSION(4, 7, 0)))
 			continue;
@@ -172,8 +172,8 @@ int nfit_test_init(struct kmod_ctx **ctx, struct kmod_module **mod,
 		/*
 		 * Skip device-dax bus-model modules on pre-v5.1
 		 */
-		if ((strstr(name, "dax_pmem_core")
-				|| strstr(name, "dax_pmem_compat"))
+		if ((strcmp(name, "dax_pmem_core") == 0
+				|| strcmp(name, "dax_pmem_compat") == 0)
 				&& !ndctl_test_attempt(test,
 					KERNEL_VERSION(5, 1, 0)))
 			continue;
