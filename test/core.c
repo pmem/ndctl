@@ -180,6 +180,14 @@ int nfit_test_init(struct kmod_ctx **ctx, struct kmod_module **mod,
 
 retry:
 		rc = kmod_module_new_from_name(*ctx, name, mod);
+
+		/*
+		 * dax_pmem_compat is not required, missing is ok,
+		 * present-but-production is not ok.
+		 */
+		if (rc && strcmp(name, "dax_pmem_compat") == 0)
+			continue;
+
 		if (rc) {
 			log_err(&log_ctx, "%s.ko: missing\n", name);
 			break;
