@@ -1958,8 +1958,10 @@ static int file_write_infoblock(const char *path)
 	}
 
 	buf = calloc(INFOBLOCK_SZ, 1);
-	if (!buf)
-		return -ENOMEM;
+	if (!buf) {
+		rc = -ENOMEM;
+		goto out;
+	}
 
 	switch (util_nsmode(param.mode)) {
 	case NDCTL_NS_MODE_FSDAX:
