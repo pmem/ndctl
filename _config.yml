@@ -3,4 +3,4 @@ highlighter: rouge
 plugins:
   - jekyll-mentions
 
-exclude: ['LICENSE', 'README.md', 'build-docs.sh', 'build', 'Gemfile*']
+exclude: ['vendor', 'LICENSE', 'README.md', 'build-docs.sh', 'build', 'Gemfile*']
