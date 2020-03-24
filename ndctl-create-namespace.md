@@ -145,6 +145,14 @@ dax.
         2M alignment an attempt to fault a 4K aligned offset will result
         in SIGBUS.
 
+  
+Note both *fsdax* and *devdax* mode require 16MiB physical alignment to
+be cross-arch compatible. By default ndctl will block attempts to create
+namespaces in these modes when the physical starting address of the
+namespace is not 16MiB aligned. The --force option tries to override
+this constraint if the platform supports a smaller alignment, but this
+is not recommended.
+
 `-s; --size=`  
 For NVDIMM devices that support namespace labels, set the namespace size
 in bytes. Otherwise it defaults to the maximum size specified by
@@ -167,12 +175,23 @@ mapping is not possible it will silently fall back to a smaller page
 size.
 
 `-e; --reconfig=`  
-Reconfigure an existing namespace (change the mode, sector size, etc…​).
-All namespace parameters, save uuid, default to the current attributes
-of the specified namespace. The namespace is then re-created with the
-specified modifications. The uuid is refreshed to a new value by default
-whenever the data layout of a namespace is changed, see --uuid= to set a
-specific uuid.
+Reconfigure an existing namespace. This option is a shortcut for the
+following sequence:
+
+-   Read all parameters from @victim\_namespace
+
+-   Destroy @victim\_namespace
+
+-   Create @new\_namespace merging old parameters with new ones
+
+  
+Note that the major implication of a destroy-create cycle is that data
+from @victim\_namespace is not preserved in @new\_namespace. The
+attributes transferred from @victim\_namespace are the geometry, mode,
+and name (not uuid without --uuid=). No attempt is made to preserve the
+data and any old data that is visible in @new\_namespace is by
+coincidence not convention. "Backup and restore" is the only reliable
+method to populate @new\_namespace with data from @victim\_namespace.
 
 `-u; --uuid=`  
 This option is not recommended as a new uuid should be generated every
@@ -196,10 +215,10 @@ per-page metadata. The allocation can be drawn from either:
 
 -   "dev": persistent memory reserved from the namespace
 
-        Given relative capacities of "Persistent Memory" to "System
-        RAM" the allocation defaults to reserving space out of the
-        namespace directly ("--map=dev"). The overhead is 64-bytes per
-        4K (16GB per 1TB) on x86.
+  
+Given relative capacities of "Persistent Memory" to "System RAM" the
+allocation defaults to reserving space out of the namespace directly
+("--map=dev"). The overhead is 64-bytes per 4K (16GB per 1TB) on x86.
 
 `-c; --continue`  
 Do not stop after creating one namespace. Instead, greedily create as
@@ -253,6 +272,12 @@ namespace" operation.
         ndctl disable-region all
         ndctl init-labels all
         ndctl enable-region all
+
+`-R; --autorecover; --no-autorecover`  
+By default, if a namespace creation attempt fails, ndctl will cleanup
+the partially initialized namespace. Use --no-autorecover to disable
+this behavior for debug and development scenarios where it useful to
+have the label and info-block state preserved after a failure.
 
 `-v; --verbose`  
 Emit debug messages for the namespace creation process

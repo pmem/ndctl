@@ -3,7 +3,7 @@ title: ndctl
 layout: pmdk
 ---
 [View the Project on GitHub](https://github.com/pmem/ndctl)  
-**Generated from [ndctl-67](https://github.com/pmem/ndctl/releases/tag/v67) [[tree]](https://github.com/pmem/ndctl/tree/v67)**  
+**Generated from [ndctl-68](https://github.com/pmem/ndctl/releases/tag/v68) [[tree]](https://github.com/pmem/ndctl/tree/v68)**  
 
 ---
 
@@ -27,6 +27,7 @@ layout: pmdk
 * [ndctl-list](ndctl-list.md)
 * [ndctl-load-keys](ndctl-load-keys.md)
 * [ndctl-monitor](ndctl-monitor.md)
+* [ndctl-read-infoblock](ndctl-read-infoblock.md)
 * [ndctl-read-labels](ndctl-read-labels.md)
 * [ndctl-remove-passphrase](ndctl-remove-passphrase.md)
 * [ndctl-sanitize-dimm](ndctl-sanitize-dimm.md)
@@ -36,6 +37,7 @@ layout: pmdk
 * [ndctl-update-passphrase](ndctl-update-passphrase.md)
 * [ndctl-wait-overwrite](ndctl-wait-overwrite.md)
 * [ndctl-wait-scrub](ndctl-wait-scrub.md)
+* [ndctl-write-infoblock](ndctl-write-infoblock.md)
 * [ndctl-write-labels](ndctl-write-labels.md)
 * [ndctl-zero-labels](ndctl-zero-labels.md)
 

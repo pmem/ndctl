@@ -171,6 +171,11 @@ default if no other options are specified to the command.
 `-i; --idle`  
 Include idle (not enabled) devices in the listing
 
+`-c; --configured`  
+Include configured devices (non-zero sized namespaces) regardless of
+whether they are enabled, or not. Other devices besides namespaces are
+always considered "configured".
+
 `-C; --capabilities`  
 Include region capabilities in the listing, i.e. supported namespace
 modes and variable properties like sector sizes and alignments.
@@ -221,7 +226,53 @@ information.
 -   **-vvv** Everything *-vv* provides, plus --health, --capabilities,
     --idle, and --firmware.
 
+  
+The verbosity can also be scoped by the object type. For example to just
+list regions with capabilities and media error info.
+
 <!-- -->
+
+    # ndctl list -Ru -vvv -r 0
+    {
+      "dev":"region0",
+      "size":"4.00 GiB (4.29 GB)",
+      "available_size":0,
+      "max_available_extent":0,
+      "type":"pmem",
+      "numa_node":0,
+      "target_node":2,
+      "capabilities":[
+        {
+          "mode":"sector",
+          "sector_sizes":[
+            512,
+            520,
+            528,
+            4096,
+            4104,
+            4160,
+            4224
+          ]
+        },
+        {
+          "mode":"fsdax",
+          "alignments":[
+            4096,
+            2097152,
+            1073741824
+          ]
+        },
+        {
+          "mode":"devdax",
+          "alignments":[
+            4096,
+            2097152,
+            1073741824
+          ]
+        }
+      ],
+      "persistence_domain":"unknown"
+    }
 
 `-u; --human`  
 Format numbers representing storage sizes, or offsets as human readable
@@ -249,6 +300,21 @@ data. Convert other numeric fields into hexadecimal strings.
       "iset_id":"0xa76c6907811fae57",
       "badblock_count":8
     }
+
+ENVIRONMENT VARIABLES
+=====================
+
+*NDCTL\_LIST\_LINT*  
+A bug in the "ndctl list" output needs to be fixed with care for other
+tooling that may have developed a dependency on the buggy behavior. The
+NDCTL\_LIST\_LINT variable is an opt-in to apply fixes, and not regress
+previously shipped behavior by default. This environment variable
+applies the following fixups:
+
+-   Fix "ndctl list -Rv" to only show region objects and not include
+    namespace objects.
+
+  
 
 COPYRIGHT
 =========
