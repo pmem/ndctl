@@ -23,8 +23,6 @@
 #include <ndctl/libndctl.h>
 #include <daxctl/libdaxctl.h>
 
-#define NUMA_NO_NODE    (-1)
-
 struct ndctl_bus *util_bus_filter(struct ndctl_bus *bus, const char *__ident)
 {
 	char *end = NULL, *ident, *save;
@@ -467,7 +465,22 @@ int util_filter_walk(struct ndctl_ctx *ctx, struct util_filter_ctx *fctx,
 						param->namespace))
 				continue;
 
+			/*
+			 * if numa_node attribute is not available for regions
+			 * (which is true for pre 5.4 kernels), don't skip the
+			 * region if namespace is also requested, let the
+			 * namespace filter handle the NUMA node filtering.
+			 */
 			if (numa_node != NUMA_NO_NODE &&
+			    !ndctl_region_has_numa(region) &&
+			    !fctx->filter_namespace) {
+				fprintf(stderr,
+					"This kernel does not provide NUMA node information per-region\n");
+				continue;
+			}
+
+			if (ndctl_region_has_numa(region) &&
+			    numa_node != NUMA_NO_NODE &&
 			    ndctl_region_get_numa_node(region) != numa_node)
 				continue;
 
@@ -487,6 +500,10 @@ int util_filter_walk(struct ndctl_ctx *ctx, struct util_filter_ctx *fctx,
 
 				mode = ndctl_namespace_get_mode(ndns);
 				if (param->mode && util_nsmode(param->mode) != mode)
+					continue;
+
+				if (numa_node != NUMA_NO_NODE &&
+				    ndctl_namespace_get_numa_node(ndns) != numa_node)
 					continue;
 
 				fctx->filter_namespace(ndns, fctx);
