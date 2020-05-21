@@ -34,7 +34,7 @@ is_aligned() {
 set -e
 trap 'err $LINENO cleanup' ERR
 
-region=$($NDCTL list -R -b ACPI.NFIT | jq -r '.[] | [select(.available_size == .size)] | .[0].dev')
+region=$($NDCTL list -R -b ACPI.NFIT | jq -r '[.[] | select(.available_size == .size)][0] | .dev')
 
 if [ "x$region" = "xnull"  ]; then
 	unset $region
