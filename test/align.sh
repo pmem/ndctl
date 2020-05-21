@@ -34,8 +34,19 @@ is_aligned() {
 set -e
 trap 'err $LINENO cleanup' ERR
 
-region=$($NDCTL list -R -b ACPI.NFIT | jq -r '[.[] | select(.available_size == .size)][0] | .dev')
+find_region()
+{
+	$NDCTL list -R -b ACPI.NFIT | jq -r '[.[] | select(.available_size == .size)][0] | .dev'
+}
 
+region=$(find_region)
+if [ "x$region" = "xnull"  ]; then
+	# this is destructive
+	$NDCTL disable-region -b ACPI.NFIT all
+	$NDCTL init-labels -f -b ACPI.NFIT all
+	$NDCTL enable-region -b ACPI.NFIT all
+fi
+region=$(find_region)
 if [ "x$region" = "xnull"  ]; then
 	unset $region
 	echo "unable to find empty region"
