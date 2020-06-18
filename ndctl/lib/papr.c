@@ -124,10 +124,23 @@ static struct ndctl_cmd *allocate_cmd(struct ndctl_dimm *dimm,
 	return cmd;
 }
 
+/* Parse the nd_papr_pdsm_health and update dimm flags */
+static int update_dimm_flags(struct ndctl_dimm *dimm, struct nd_papr_pdsm_health *health)
+{
+	/* Update the dimm flags */
+	dimm->flags.f_arm = health->dimm_unarmed;
+	dimm->flags.f_flush = health->dimm_bad_shutdown;
+	dimm->flags.f_restore = health->dimm_bad_restore;
+	dimm->flags.f_smart = (health->dimm_health != 0);
+
+	return 0;
+}
+
 /* Validate the ndctl_cmd and return applicable flags */
 static unsigned int papr_smart_get_flags(struct ndctl_cmd *cmd)
 {
 	struct nd_pkg_pdsm *pcmd;
+	struct nd_papr_pdsm_health health;
 
 	if (!cmd_is_valid(cmd))
 		return 0;
@@ -140,14 +153,72 @@ static unsigned int papr_smart_get_flags(struct ndctl_cmd *cmd)
 		return 0;
 	}
 
-	/* return empty flags for now */
+	/*
+	 * In case of nvdimm health PDSM, update dimm flags
+	 * and  return possible flags.
+	 */
+	if (to_pdsm_cmd(cmd) == PAPR_PDSM_HEALTH) {
+		health = pcmd->payload.health;
+		update_dimm_flags(cmd->dimm, &health);
+		return ND_SMART_HEALTH_VALID | ND_SMART_SHUTDOWN_VALID;
+	}
+
+	/* Else return empty flags */
 	return 0;
 }
 
+static struct ndctl_cmd *papr_new_smart_health(struct ndctl_dimm *dimm)
+{
+	struct ndctl_cmd *cmd;
+
+	cmd = allocate_cmd(dimm, PAPR_PDSM_HEALTH,
+			       sizeof(struct nd_papr_pdsm_health));
+	if (!cmd)
+		papr_err(dimm, "Unable to allocate smart_health command\n");
+
+	return cmd;
+}
+
+static unsigned int papr_smart_get_health(struct ndctl_cmd *cmd)
+{
+	struct nd_papr_pdsm_health health;
+
+	/* Ignore in case of error or invalid pdsm */
+	if (!cmd_is_valid(cmd) ||
+	    to_pdsm(cmd)->cmd_status != 0 ||
+	    to_pdsm_cmd(cmd) != PAPR_PDSM_HEALTH)
+		return 0;
+
+	/* get the payload from command */
+	health = to_payload(cmd)->health;
+
+	/* Use some math to return one of defined ND_SMART_*_HEALTH values */
+	return  !health.dimm_health ? 0 : 1 << (health.dimm_health - 1);
+}
+
+static unsigned int papr_smart_get_shutdown_state(struct ndctl_cmd *cmd)
+{
+	struct nd_papr_pdsm_health health;
+
+	/* Ignore in case of error or invalid pdsm */
+	if (!cmd_is_valid(cmd) ||
+	    to_pdsm(cmd)->cmd_status != 0 ||
+	    to_pdsm_cmd(cmd) != PAPR_PDSM_HEALTH)
+		return 0;
+
+	/* get the payload from command */
+	health = to_payload(cmd)->health;
+
+	/* return the bad shutdown flag returned from papr_scm */
+	return health.dimm_bad_shutdown;
+}
 
 struct ndctl_dimm_ops * const papr_dimm_ops = &(struct ndctl_dimm_ops) {
 	.cmd_is_supported = papr_cmd_is_supported,
 	.smart_get_flags = papr_smart_get_flags,
 	.get_firmware_status =  papr_get_firmware_status,
 	.xlat_firmware_status = papr_xlat_firmware_status,
+	.new_smart = papr_new_smart_health,
+	.smart_get_health = papr_smart_get_health,
+	.smart_get_shutdown_state = papr_smart_get_shutdown_state,
 };
