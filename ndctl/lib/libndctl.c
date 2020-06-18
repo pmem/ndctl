@@ -799,6 +799,28 @@ static void parse_nfit_mem_flags(struct ndctl_dimm *dimm, char *flags)
 				ndctl_dimm_get_devname(dimm), flags);
 }
 
+static void parse_papr_flags(struct ndctl_dimm *dimm, char *flags)
+{
+	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
+	char *start, *end;
+
+	start = flags;
+	while ((end = strchr(start, ' '))) {
+		*end = '\0';
+		if (strcmp(start, "not_armed") == 0)
+			dimm->flags.f_arm = 1;
+		else if (strcmp(start, "flush_fail") == 0)
+			dimm->flags.f_flush = 1;
+		else if (strcmp(start, "restore_fail") == 0)
+			dimm->flags.f_restore = 1;
+		else if (strcmp(start, "smart_notify") == 0)
+			dimm->flags.f_smart = 1;
+		start = end + 1;
+	}
+	if (end != start)
+		dbg(ctx, "%s: Flags:%s\n", ndctl_dimm_get_devname(dimm), flags);
+}
+
 static void parse_dimm_flags(struct ndctl_dimm *dimm, char *flags)
 {
 	char *start, *end;
@@ -855,6 +877,12 @@ static void *add_bus(void *parent, int id, const char *ctl_base)
 		bus->has_nfit = 1;
 		bus->revision = strtoul(buf, NULL, 0);
 	}
+
+	sprintf(path, "%s/device/of_node/compatible", ctl_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		bus->has_of_node = 0;
+	else
+		bus->has_of_node = 1;
 
 	sprintf(path, "%s/device/nfit/dsm_mask", ctl_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
@@ -962,6 +990,23 @@ NDCTL_EXPORT struct ndctl_bus *ndctl_bus_get_next(struct ndctl_bus *bus)
 NDCTL_EXPORT int ndctl_bus_has_nfit(struct ndctl_bus *bus)
 {
 	return bus->has_nfit;
+}
+
+NDCTL_EXPORT int ndctl_bus_has_of_node(struct ndctl_bus *bus)
+{
+	return bus->has_of_node;
+}
+
+NDCTL_EXPORT int ndctl_bus_is_papr_scm(struct ndctl_bus *bus)
+{
+	char buf[SYSFS_ATTR_SIZE];
+
+	snprintf(bus->bus_buf, bus->buf_len,
+		 "%s/of_node/compatible", bus->bus_path);
+	if (sysfs_read_attr(bus->ctx, bus->bus_buf, buf) < 0)
+		return 0;
+
+	return (strcmp(buf, "ibm,pmemory") == 0);
 }
 
 /**
@@ -1441,6 +1486,40 @@ static int ndctl_bind(struct ndctl_ctx *ctx, struct kmod_module *module,
 static int ndctl_unbind(struct ndctl_ctx *ctx, const char *devpath);
 static struct kmod_module *to_module(struct ndctl_ctx *ctx, const char *alias);
 
+static int add_papr_dimm(struct ndctl_dimm *dimm, const char *dimm_base)
+{
+	int rc = -ENODEV;
+	char buf[SYSFS_ATTR_SIZE];
+	struct ndctl_ctx *ctx = dimm->bus->ctx;
+	char *path = calloc(1, strlen(dimm_base) + 100);
+	const char * const devname = ndctl_dimm_get_devname(dimm);
+
+	dbg(ctx, "%s: Probing of_pmem dimm at %s\n", devname, dimm_base);
+
+	if (!path)
+		return -ENOMEM;
+
+	/* construct path to the papr compatible dimm flags file */
+	sprintf(path, "%s/papr/flags", dimm_base);
+
+	if (ndctl_bus_is_papr_scm(dimm->bus) &&
+	    sysfs_read_attr(ctx, path, buf) == 0) {
+
+		dbg(ctx, "%s: Adding papr-scm dimm flags:\"%s\"\n", devname, buf);
+		dimm->cmd_family = NVDIMM_FAMILY_PAPR;
+
+		/* Parse dimm flags */
+		parse_papr_flags(dimm, buf);
+
+		/* Allocate monitor mode fd */
+		dimm->health_eventfd = open(path, O_RDONLY|O_CLOEXEC);
+		rc = 0;
+	}
+
+	free(path);
+	return rc;
+}
+
 static int add_nfit_dimm(struct ndctl_dimm *dimm, const char *dimm_base)
 {
 	int i, rc = -1;
@@ -1619,6 +1698,8 @@ static void *add_dimm(void *parent, int id, const char *dimm_base)
 	if (ndctl_bus_has_nfit(bus)) {
 		dimm->formats = formats;
 		rc = add_nfit_dimm(dimm, dimm_base);
+	} else if (ndctl_bus_has_of_node(bus)) {
+		rc = add_papr_dimm(dimm, dimm_base);
 	}
 
 	if (rc == -ENODEV) {
@@ -1636,6 +1717,9 @@ static void *add_dimm(void *parent, int id, const char *dimm_base)
 		dimm->ops = msft_dimm_ops;
 	if (dimm->cmd_family == NVDIMM_FAMILY_HYPERV)
 		dimm->ops = hyperv_dimm_ops;
+	if (dimm->cmd_family == NVDIMM_FAMILY_PAPR)
+		dimm->ops = papr_dimm_ops;
+
  out:
 	if (rc) {
 		err(ctx, "%s: probe failed: %s\n", ndctl_dimm_get_devname(dimm),

@@ -431,3 +431,8 @@ LIBNDCTL_23 {
 	ndctl_region_get_align;
 	ndctl_region_set_align;
 } LIBNDCTL_22;
+
+LIBNDCTL_24 {
+	ndctl_bus_has_of_node;
+	ndctl_bus_is_papr_scm;
+} LIBNDCTL_23;

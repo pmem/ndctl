@@ -167,6 +167,7 @@ struct ndctl_bus {
 	int dimms_init;
 	int regions_init;
 	int has_nfit;
+	int has_of_node;
 	char *bus_path;
 	char *bus_buf;
 	size_t buf_len;
@@ -352,6 +353,7 @@ extern struct ndctl_dimm_ops * const intel_dimm_ops;
 extern struct ndctl_dimm_ops * const hpe1_dimm_ops;
 extern struct ndctl_dimm_ops * const msft_dimm_ops;
 extern struct ndctl_dimm_ops * const hyperv_dimm_ops;
+extern struct ndctl_dimm_ops * const papr_dimm_ops;
 
 static inline struct ndctl_bus *cmd_to_bus(struct ndctl_cmd *cmd)
 {
