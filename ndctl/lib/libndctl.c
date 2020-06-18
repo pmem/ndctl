@@ -1441,10 +1441,110 @@ static int ndctl_bind(struct ndctl_ctx *ctx, struct kmod_module *module,
 static int ndctl_unbind(struct ndctl_ctx *ctx, const char *devpath);
 static struct kmod_module *to_module(struct ndctl_ctx *ctx, const char *alias);
 
+static int add_nfit_dimm(struct ndctl_dimm *dimm, const char *dimm_base)
+{
+	int i, rc = -1;
+	char buf[SYSFS_ATTR_SIZE];
+	struct ndctl_ctx *ctx = dimm->bus->ctx;
+	char *path = calloc(1, strlen(dimm_base) + 100);
+
+	if (!path)
+		return -ENOMEM;
+
+	/*
+	 * 'unique_id' may not be available on older kernels, so don't
+	 * fail if the read fails.
+	 */
+	sprintf(path, "%s/nfit/id", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) == 0) {
+		unsigned int b[9];
+
+		dimm->unique_id = strdup(buf);
+		if (!dimm->unique_id)
+			goto err_read;
+		if (sscanf(dimm->unique_id, "%02x%02x-%02x-%02x%02x-%02x%02x%02x%02x",
+					&b[0], &b[1], &b[2], &b[3], &b[4],
+					&b[5], &b[6], &b[7], &b[8]) == 9) {
+			dimm->manufacturing_date = b[3] << 8 | b[4];
+			dimm->manufacturing_location = b[2];
+		}
+	}
+
+	sprintf(path, "%s/nfit/handle", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		goto err_read;
+	dimm->handle = strtoul(buf, NULL, 0);
+
+	sprintf(path, "%s/nfit/phys_id", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		goto err_read;
+	dimm->phys_id = strtoul(buf, NULL, 0);
+
+	sprintf(path, "%s/nfit/serial", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) == 0)
+		dimm->serial = strtoul(buf, NULL, 0);
+
+	sprintf(path, "%s/nfit/vendor", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) == 0)
+		dimm->vendor_id = strtoul(buf, NULL, 0);
+
+	sprintf(path, "%s/nfit/device", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) == 0)
+		dimm->device_id = strtoul(buf, NULL, 0);
+
+	sprintf(path, "%s/nfit/rev_id", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) == 0)
+		dimm->revision_id = strtoul(buf, NULL, 0);
+
+	sprintf(path, "%s/nfit/dirty_shutdown", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) == 0)
+		dimm->dirty_shutdown = strtoll(buf, NULL, 0);
+
+	sprintf(path, "%s/nfit/subsystem_vendor", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) == 0)
+		dimm->subsystem_vendor_id = strtoul(buf, NULL, 0);
+
+	sprintf(path, "%s/nfit/subsystem_device", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) == 0)
+		dimm->subsystem_device_id = strtoul(buf, NULL, 0);
+
+	sprintf(path, "%s/nfit/subsystem_rev_id", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) == 0)
+		dimm->subsystem_revision_id = strtoul(buf, NULL, 0);
+
+	sprintf(path, "%s/nfit/family", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) == 0)
+		dimm->cmd_family = strtoul(buf, NULL, 0);
+
+	sprintf(path, "%s/nfit/dsm_mask", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) == 0)
+		dimm->nfit_dsm_mask = strtoul(buf, NULL, 0);
+
+	sprintf(path, "%s/nfit/format", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) == 0)
+		dimm->format[0] = strtoul(buf, NULL, 0);
+	for (i = 1; i < dimm->formats; i++) {
+		sprintf(path, "%s/nfit/format%d", dimm_base, i);
+		if (sysfs_read_attr(ctx, path, buf) == 0)
+			dimm->format[i] = strtoul(buf, NULL, 0);
+	}
+
+	sprintf(path, "%s/nfit/flags", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) == 0)
+		parse_nfit_mem_flags(dimm, buf);
+
+	dimm->health_eventfd = open(path, O_RDONLY|O_CLOEXEC);
+	rc = 0;
+ err_read:
+
+	free(path);
+	return rc;
+}
+
 static void *add_dimm(void *parent, int id, const char *dimm_base)
 {
-	int formats, i;
-	struct ndctl_dimm *dimm;
+	int formats, i, rc = -ENODEV;
+	struct ndctl_dimm *dimm = NULL;
 	char buf[SYSFS_ATTR_SIZE];
 	struct ndctl_bus *bus = parent;
 	struct ndctl_ctx *ctx = bus->ctx;
@@ -1515,73 +1615,19 @@ static void *add_dimm(void *parent, int id, const char *dimm_base)
 	} else
 		parse_dimm_flags(dimm, buf);
 
-	if (!ndctl_bus_has_nfit(bus))
-		goto out;
-
-	/*
-	 * 'unique_id' may not be available on older kernels, so don't
-	 * fail if the read fails.
-	 */
-	sprintf(path, "%s/nfit/id", dimm_base);
-	if (sysfs_read_attr(ctx, path, buf) == 0) {
-		unsigned int b[9];
-
-		dimm->unique_id = strdup(buf);
-		if (!dimm->unique_id)
-			goto err_read;
-		if (sscanf(dimm->unique_id, "%02x%02x-%02x-%02x%02x-%02x%02x%02x%02x",
-					&b[0], &b[1], &b[2], &b[3], &b[4],
-					&b[5], &b[6], &b[7], &b[8]) == 9) {
-			dimm->manufacturing_date = b[3] << 8 | b[4];
-			dimm->manufacturing_location = b[2];
-		}
+	/* Check if the given dimm supports nfit */
+	if (ndctl_bus_has_nfit(bus)) {
+		dimm->formats = formats;
+		rc = add_nfit_dimm(dimm, dimm_base);
 	}
 
-	sprintf(path, "%s/nfit/handle", dimm_base);
-	if (sysfs_read_attr(ctx, path, buf) < 0)
-		goto err_read;
-	dimm->handle = strtoul(buf, NULL, 0);
+	if (rc == -ENODEV) {
+		/* Unprobed dimm with no family */
+		rc = 0;
+		goto out;
+	}
 
-	sprintf(path, "%s/nfit/phys_id", dimm_base);
-	if (sysfs_read_attr(ctx, path, buf) < 0)
-		goto err_read;
-	dimm->phys_id = strtoul(buf, NULL, 0);
-
-	sprintf(path, "%s/nfit/serial", dimm_base);
-	if (sysfs_read_attr(ctx, path, buf) == 0)
-		dimm->serial = strtoul(buf, NULL, 0);
-
-	sprintf(path, "%s/nfit/vendor", dimm_base);
-	if (sysfs_read_attr(ctx, path, buf) == 0)
-		dimm->vendor_id = strtoul(buf, NULL, 0);
-
-	sprintf(path, "%s/nfit/device", dimm_base);
-	if (sysfs_read_attr(ctx, path, buf) == 0)
-		dimm->device_id = strtoul(buf, NULL, 0);
-
-	sprintf(path, "%s/nfit/rev_id", dimm_base);
-	if (sysfs_read_attr(ctx, path, buf) == 0)
-		dimm->revision_id = strtoul(buf, NULL, 0);
-
-	sprintf(path, "%s/nfit/dirty_shutdown", dimm_base);
-	if (sysfs_read_attr(ctx, path, buf) == 0)
-		dimm->dirty_shutdown = strtoll(buf, NULL, 0);
-
-	sprintf(path, "%s/nfit/subsystem_vendor", dimm_base);
-	if (sysfs_read_attr(ctx, path, buf) == 0)
-		dimm->subsystem_vendor_id = strtoul(buf, NULL, 0);
-
-	sprintf(path, "%s/nfit/subsystem_device", dimm_base);
-	if (sysfs_read_attr(ctx, path, buf) == 0)
-		dimm->subsystem_device_id = strtoul(buf, NULL, 0);
-
-	sprintf(path, "%s/nfit/subsystem_rev_id", dimm_base);
-	if (sysfs_read_attr(ctx, path, buf) == 0)
-		dimm->subsystem_revision_id = strtoul(buf, NULL, 0);
-
-	sprintf(path, "%s/nfit/family", dimm_base);
-	if (sysfs_read_attr(ctx, path, buf) == 0)
-		dimm->cmd_family = strtoul(buf, NULL, 0);
+	/* Assign dimm-ops based on command family */
 	if (dimm->cmd_family == NVDIMM_FAMILY_INTEL)
 		dimm->ops = intel_dimm_ops;
 	if (dimm->cmd_family == NVDIMM_FAMILY_HPE1)
@@ -1590,27 +1636,13 @@ static void *add_dimm(void *parent, int id, const char *dimm_base)
 		dimm->ops = msft_dimm_ops;
 	if (dimm->cmd_family == NVDIMM_FAMILY_HYPERV)
 		dimm->ops = hyperv_dimm_ops;
-
-	sprintf(path, "%s/nfit/dsm_mask", dimm_base);
-	if (sysfs_read_attr(ctx, path, buf) == 0)
-		dimm->nfit_dsm_mask = strtoul(buf, NULL, 0);
-
-	dimm->formats = formats;
-	sprintf(path, "%s/nfit/format", dimm_base);
-	if (sysfs_read_attr(ctx, path, buf) == 0)
-		dimm->format[0] = strtoul(buf, NULL, 0);
-	for (i = 1; i < formats; i++) {
-		sprintf(path, "%s/nfit/format%d", dimm_base, i);
-		if (sysfs_read_attr(ctx, path, buf) == 0)
-			dimm->format[i] = strtoul(buf, NULL, 0);
+ out:
+	if (rc) {
+		err(ctx, "%s: probe failed: %s\n", ndctl_dimm_get_devname(dimm),
+		    strerror(-rc));
+		goto err_read;
 	}
 
-	sprintf(path, "%s/nfit/flags", dimm_base);
-	if (sysfs_read_attr(ctx, path, buf) == 0)
-		parse_nfit_mem_flags(dimm, buf);
-
-	dimm->health_eventfd = open(path, O_RDONLY|O_CLOEXEC);
- out:
 	list_add(&bus->dimms, &dimm->list);
 	free(path);
 
