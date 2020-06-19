@@ -108,6 +108,10 @@ will not work if "--daemon" is specified.
 The monitor will attempt to enable the alarm control bits for all
 specified events.
 
+-p::
+--poll=::
+	Poll and report status/event every <n> seconds.
+
 -u::
 --human::
 	Output monitor notification as human friendly json format instead

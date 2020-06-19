@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <json-c/json.h>
 #include <libgen.h>
+#include <time.h>
 #include <dirent.h>
 #include <util/json.h>
 #include <util/filter.h>
@@ -33,6 +34,7 @@ static struct monitor {
 	bool daemon;
 	bool human;
 	bool verbose;
+	unsigned int poll_timeout;
 	unsigned int event_flags;
 	struct log_ctx ctx;
 } monitor;
@@ -322,9 +324,14 @@ static int monitor_event(struct ndctl_ctx *ctx,
 		struct monitor_filter_arg *mfa)
 {
 	struct epoll_event ev, *events;
-	int nfds, epollfd, i, rc = 0;
+	int nfds, epollfd, i, rc = 0, polltimeout = -1;
 	struct monitor_dimm *mdimm;
 	char buf;
+	/* last time a full poll happened */
+	struct timespec fullpoll_ts, ts;
+
+	if (monitor.poll_timeout)
+		polltimeout = monitor.poll_timeout * 1000;
 
 	events = calloc(mfa->num_dimm, sizeof(struct epoll_event));
 	if (!events) {
@@ -354,14 +361,30 @@ static int monitor_event(struct ndctl_ctx *ctx,
 		}
 	}
 
+	clock_gettime(CLOCK_BOOTTIME, &fullpoll_ts);
 	while (1) {
 		did_fail = 0;
-		nfds = epoll_wait(epollfd, events, mfa->num_dimm, -1);
-		if (nfds <= 0 && errno != EINTR) {
+		nfds = epoll_wait(epollfd, events, mfa->num_dimm, polltimeout);
+		if (nfds < 0 && errno != EINTR) {
 			err(&monitor, "epoll_wait error: (%s)\n", strerror(errno));
 			rc = -errno;
 			goto out;
 		}
+
+		/* If needed force a full poll of dimm health */
+		clock_gettime(CLOCK_BOOTTIME, &ts);
+		if ((fullpoll_ts.tv_sec - ts.tv_sec) > monitor.poll_timeout) {
+			nfds = 0;
+			dbg(&monitor, "forcing a full poll\n");
+		}
+
+		/* If we timed out then fill events array with all dimms */
+		if (nfds == 0) {
+			list_for_each(&mfa->dimms, mdimm, list)
+				events[nfds++].data.ptr = mdimm;
+			fullpoll_ts = ts;
+		}
+
 		for (i = 0; i < nfds; i++) {
 			mdimm = events[i].data.ptr;
 			if (util_dimm_event_filter(mdimm, monitor.event_flags)) {
@@ -570,6 +593,8 @@ int cmd_monitor(int argc, const char **argv, struct ndctl_ctx *ctx)
 				"use human friendly output formats"),
 		OPT_BOOLEAN('v', "verbose", &monitor.verbose,
 				"emit extra debug messages to log"),
+		OPT_UINTEGER('p', "poll", &monitor.poll_timeout,
+			     "poll and report events/status every <n> seconds"),
 		OPT_END(),
 	};
 	const char * const u[] = {
