@@ -18,7 +18,6 @@
 #include <unistd.h>
 #include <limits.h>
 #include <syslog.h>
-#include <util/log.h>
 #include <util/size.h>
 #include <uuid/uuid.h>
 #include <util/json.h>
@@ -32,6 +31,11 @@
 #include <ccan/array_size/array_size.h>
 #include <ndctl/firmware-update.h>
 #include <util/keys.h>
+
+static const char *cmd_name = "dimm";
+static int err_count;
+#define err(fmt, ...) \
+	({ err_count++; error("%s: " fmt, cmd_name, ##__VA_ARGS__); })
 
 struct action_context {
 	struct json_object *jdimms;
@@ -832,22 +836,28 @@ static int update_firmware(struct ndctl_dimm *dimm,
 
 static int action_update(struct ndctl_dimm *dimm, struct action_context *actx)
 {
+	struct ndctl_bus *bus = ndctl_dimm_get_bus(dimm);
+	const char *devname = ndctl_dimm_get_devname(dimm);
 	int rc;
 
 	rc = ndctl_dimm_fw_update_supported(dimm);
 	switch (rc) {
 	case -ENOTTY:
-		error("%s: firmware update not supported by ndctl.",
-			ndctl_dimm_get_devname(dimm));
+		err("%s: firmware update not supported by ndctl.", devname);
 		return rc;
 	case -EOPNOTSUPP:
-		error("%s: firmware update not supported by the kernel",
-			ndctl_dimm_get_devname(dimm));
+		err("%s: firmware update not supported by the kernel", devname);
 		return rc;
 	case -EIO:
-		error("%s: firmware update not supported by either platform firmware or the kernel.",
-			ndctl_dimm_get_devname(dimm));
+		err("%s: firmware update not supported by either platform firmware or the kernel.",
+				devname);
 		return rc;
+	}
+
+	if (ndctl_bus_get_scrub_state(bus) > 0 && !param.force) {
+		err("%s: scrub active, retry after 'ndctl wait-scrub'",
+				devname);
+		return -EBUSY;
 	}
 
 	rc = update_verify_input(actx);
@@ -1073,7 +1083,8 @@ OPT_STRING('i', "input", &param.infile, "input-file", \
 
 #define UPDATE_OPTIONS() \
 OPT_STRING('f', "firmware", &param.infile, "firmware-file", \
-	"firmware filename for update")
+	"firmware filename for update"), \
+OPT_BOOLEAN('i', "force", &param.force, "ignore ARS status, try to force update")
 
 #define INIT_OPTIONS() \
 OPT_BOOLEAN('f', "force", &param.force, \
@@ -1386,7 +1397,10 @@ int cmd_enable_dimm(int argc, const char **argv, struct ndctl_ctx *ctx)
 
 int cmd_update_firmware(int argc, const char **argv, struct ndctl_ctx *ctx)
 {
-	int count = dimm_action(argc, argv, ctx, action_update, update_options,
+	int count;
+
+	cmd_name = "update firmware";
+	count = dimm_action(argc, argv, ctx, action_update, update_options,
 			"ndctl update-firmware <nmem0> [<nmem1>..<nmemN>] [<options>]");
 
 	fprintf(stderr, "updated %d nmem%s.\n", count >= 0 ? count : 0,

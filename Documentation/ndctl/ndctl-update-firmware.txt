@@ -47,6 +47,11 @@ include::xable-bus-options.txt[]
 --firmware::
 	firmware file used to perform the update
 
+-i::
+--force::
+	Ignore in-progress Address Range Scrub and try to submit the
+	firmware update.
+
 -v::
 --verbose::
         Emit debug messages for the namespace check process.
