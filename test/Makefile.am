@@ -56,6 +56,7 @@ TESTS +=\
 	dax-xfs.sh \
 	align.sh \
 	device-dax \
+	revoke-devmem \
 	device-dax-fio.sh \
 	daxctl-devices.sh \
 	dm.sh \
@@ -71,6 +72,7 @@ check_PROGRAMS +=\
 	dax-dev \
 	dax-pmd \
 	device-dax \
+	revoke-devmem \
 	mmap
 endif
 
@@ -153,6 +155,13 @@ device_dax_LDADD = \
 		$(JSON_LIBS) \
                 $(UUID_LIBS) \
 		../libutil.a
+
+revoke_devmem_SOURCES = \
+		revoke-devmem.c \
+		dax-dev.c \
+		$(testcore)
+
+revoke_devmem_LDADD = $(LIBNDCTL_LIB)
 
 smart_notify_SOURCES = smart-notify.c
 smart_notify_LDADD = $(LIBNDCTL_LIB)
