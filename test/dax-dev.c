@@ -60,6 +60,10 @@ struct ndctl_namespace *ndctl_get_test_dev(struct ndctl_ctx *ctx)
 	if (!ndns)
 		goto out;
 
+	rc = ndctl_namespace_enable(ndns);
+	if (rc)
+		goto out;
+
 	mode = ndctl_namespace_get_mode(ndns);
 	if (mode >= 0 && mode != NDCTL_NS_MODE_MEMORY)
 		goto out;

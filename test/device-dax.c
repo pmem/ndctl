@@ -268,6 +268,13 @@ static int __test_device_dax(unsigned long align, int loglevel,
 					ndctl_namespace_get_devname(ndns));
 			goto out;
 		}
+
+		rc = test_dax_remap(test, fd, align, NULL, 0, devdax);
+		if (rc) {
+			fprintf(stderr, "%s: failed dax remap\n",
+					ndctl_namespace_get_devname(ndns));
+			goto out;
+		}
 		close(fd);
 
 		fprintf(stderr, "%s: test dax poison\n",

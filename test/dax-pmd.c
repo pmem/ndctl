@@ -27,6 +27,7 @@
 #include <test.h>
 #include <util/size.h>
 #include <linux/fiemap.h>
+#include <linux/version.h>
 
 #define NUM_EXTENTS 5
 #define fail() fprintf(stderr, "%s: failed at: %d (%s)\n", \
@@ -34,6 +35,92 @@
 #define faili(i) fprintf(stderr, "%s: failed at: %d: %d (%s)\n", \
 	__func__, __LINE__, i, strerror(errno))
 #define TEST_FILE "test_dax_data"
+
+#define REGION_MEM_SIZE 4096*4
+#define REGION_PM_SIZE        4096*512
+#define REMAP_SIZE      4096
+
+static sigjmp_buf sj_env;
+
+static void sigbus(int sig, siginfo_t *siginfo, void *d)
+{
+	siglongjmp(sj_env, 1);
+}
+
+int test_dax_remap(struct ndctl_test *test, int dax_fd, unsigned long align, void *dax_addr,
+		off_t offset, bool fsdax)
+{
+	void *anon, *remap, *addr;
+	struct sigaction act;
+	int rc, val;
+
+	if ((fsdax || align == SZ_2M) && !ndctl_test_attempt(test, KERNEL_VERSION(5, 8, 0))) {
+		/* kernel's prior to 5.8 may crash on this test */
+		fprintf(stderr, "%s: SKIP mremap() test\n", __func__);
+		return 0;
+	}
+
+	anon = mmap(NULL, REGION_MEM_SIZE, PROT_READ|PROT_WRITE,
+			MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+
+	addr = mmap(dax_addr, 2*align,
+			PROT_READ|PROT_WRITE, MAP_SHARED, dax_fd, offset);
+
+	fprintf(stderr, "%s: addr: %p size: %#lx\n", __func__, addr, 2*align);
+
+	if (addr == MAP_FAILED) {
+		rc = -errno;
+		faili(0);
+		return rc;
+	}
+
+	memset(anon, 'a', REGION_MEM_SIZE);
+	memset(addr, 'i', align*2);
+
+	remap = mremap(addr, REMAP_SIZE, REMAP_SIZE, MREMAP_MAYMOVE|MREMAP_FIXED, anon);
+
+	if (remap != anon) {
+		rc = -ENXIO;
+		perror("mremap");
+		faili(1);
+		return rc;
+	}
+
+	fprintf(stderr, "%s: addr: %p size: %#x\n", __func__, remap, REMAP_SIZE);
+
+	memset(&act, 0, sizeof(act));
+	act.sa_sigaction = sigbus;
+	act.sa_flags = SA_SIGINFO;
+	if (sigaction(SIGBUS, &act, 0)) {
+		perror("sigaction");
+		rc = EXIT_FAILURE;
+		goto out;
+	}
+
+	/* test fault after device-dax instance disabled */
+	if (sigsetjmp(sj_env, 1)) {
+		if (!fsdax && align > SZ_4K) {
+			fprintf(stderr, "got expected SIGBUS after mremap() of device-dax\n");
+			rc = 0;
+		} else {
+			fprintf(stderr, "unpexpected SIGBUS after mremap()\n");
+			rc = -EIO;
+		}
+		goto out;
+	}
+
+	*(int *) anon = 0xAA;
+	val = *(int *) anon;
+
+	if (val != 0xAA) {
+		faili(2);
+		return -ENXIO;
+	}
+
+	rc = 0;
+out:
+	return rc;
+}
 
 int test_dax_directio(int dax_fd, unsigned long align, void *dax_addr, off_t offset)
 {
@@ -254,15 +341,19 @@ static int test_pmd(struct ndctl_test *test, int fd)
 
 	pmd_addr = (char *) base + m_align;
 	pmd_off =  ext->fe_logical + p_align;
+	rc = test_dax_remap(test, fd, HPAGE_SIZE, pmd_addr, pmd_off, fsdax);
+	if (rc)
+		goto err_test;
+
 	rc = test_dax_directio(fd, HPAGE_SIZE, pmd_addr, pmd_off);
 	if (rc)
-		goto err_directio;
+		goto err_test;
 
 	rc = test_dax_poison(test, fd, HPAGE_SIZE, pmd_addr, pmd_off, fsdax);
 
- err_directio:
- err_extent:
- err_mmap:
+err_test:
+err_extent:
+err_mmap:
 	free(map);
 	return rc;
 }
