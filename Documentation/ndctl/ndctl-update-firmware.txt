@@ -5,7 +5,7 @@ ndctl-update-firmware(1)
 
 NAME
 ----
-ndctl-update-firmware - provides for updating the firmware on an NVDIMM
+ndctl-update-firmware - update the firmware the given device
 
 SYNOPSIS
 --------
@@ -15,9 +15,24 @@ SYNOPSIS
 DESCRIPTION
 -----------
 Provide a generic interface for updating NVDIMM firmware. The use of this
-depends on support from the underlying libndctl, kernel, as well as the
-platform itself.
+depends on support for the NVDIMM "family" in libndctl, the kernel needs
+to enable that command set, and the device itself needs to implement the
+command. Use "ndctl list -DF" to interrogate if firmware
+update is enabled. For example:
 
+[verse]
+ndctl list -DFu -d nmem1
+{
+  "dev":"nmem1",
+  "id":"cdab-0a-07e0-ffffffff",
+  "handle":"0",
+  "phys_id":"0",
+  "security":"disabled",
+  "firmware":{
+    "current_version":"0",
+    "can_update":true
+  }
+}
 
 OPTIONS
 -------

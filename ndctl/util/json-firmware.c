@@ -46,6 +46,11 @@ struct json_object *util_dimm_firmware_to_json(struct ndctl_dimm *dimm,
 	if (jobj)
 		json_object_object_add(jfirmware, "current_version", jobj);
 
+	rc = ndctl_dimm_fw_update_supported(dimm);
+	jobj = json_object_new_boolean(rc == 0);
+	if (jobj)
+		json_object_object_add(jfirmware, "can_update", jobj);
+
 	next = ndctl_cmd_fw_info_get_updated_version(cmd);
 	if (next == ULLONG_MAX) {
 		jobj = util_json_object_hex(-1, flags);
