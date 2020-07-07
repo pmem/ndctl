@@ -111,7 +111,7 @@ struct ndn_hpe1_smart {
 	__u32 status;
 	union {
 		__u8 buf[124];
-		struct ndn_hpe1_smart_data data[0];
+		struct ndn_hpe1_smart_data data[1];
 	};
 } __attribute__((packed));
 
@@ -136,7 +136,7 @@ struct ndn_hpe1_smart_threshold {
 	__u32 status;
 	union {
 		__u8 buf[32];
-		struct ndn_hpe1_smart_threshold_data data[0];
+		struct ndn_hpe1_smart_threshold_data data[1];
 	};
 } __attribute__((packed));
 
