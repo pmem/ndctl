@@ -22,7 +22,7 @@
 #include <util/parse-options.h>
 #include <util/size.h>
 
-#include <nfit.h>
+#include <acpi.h>
 
 #define DEFAULT_NFIT "local_nfit.bin"
 static const char *nfit_file = DEFAULT_NFIT;
@@ -68,44 +68,6 @@ static int parse_add_spa(const struct option *option, const char *__arg, int uns
 	return rc;
 }
 
-static unsigned char nfit_checksum(void *buf, size_t size)
-{
-        unsigned char sum, *data = buf;
-        size_t i;
-
-        for (sum = 0, i = 0; i < size; i++)
-                sum += data[i];
-        return 0 - sum;
-}
-
-static void writeq(unsigned long long v, void *a)
-{
-	unsigned long long *p = a;
-
-	*p = htole64(v);
-}
-
-static void writel(unsigned long v, void *a)
-{
-	unsigned long *p = a;
-
-	*p = htole32(v);
-}
-
-static void writew(unsigned short v, void *a)
-{
-	unsigned short *p = a;
-
-	*p = htole16(v);
-}
-
-static void writeb(unsigned char v, void *a)
-{
-	unsigned char *p = a;
-
-	*p = v;
-}
-
 static struct nfit *create_nfit(struct list_head *spa_list)
 {
 	struct nfit_spa *nfit_spa;
@@ -124,15 +86,15 @@ static struct nfit *create_nfit(struct list_head *spa_list)
 		return NULL;
 
 	/* nfit header */
-	nfit = (struct nfit *) buf;
-	memcpy(nfit->signature, "NFIT", 4);
-	writel(size, &nfit->length);
-	writeb(1, &nfit->revision);
-	memcpy(nfit->oemid, "LOCAL", 6);
-	writew(1, &nfit->oem_tbl_id);
-	writel(1, &nfit->oem_revision);
-	writel(0x80860000, &nfit->creator_id);
-	writel(1, &nfit->creator_revision);
+	nfit = (typeof(nfit)) buf;
+	memcpy(nfit->h.signature, "NFIT", 4);
+	writel(size, &nfit->h.length);
+	writeb(1, &nfit->h.revision);
+	memcpy(nfit->h.oemid, "LOCAL", 6);
+	writew(1, &nfit->h.oem_tbl_id);
+	writel(1, &nfit->h.oem_revision);
+	writel(0x80860000, &nfit->h.asl_id);
+	writel(1, &nfit->h.asl_revision);
 
 	nfit_spa = (struct nfit_spa *) (buf + sizeof(*nfit));
 	i = 1;
@@ -146,7 +108,7 @@ static struct nfit *create_nfit(struct list_head *spa_list)
 		nfit_spa++;
 	}
 
-	writeb(nfit_checksum(buf, size), &nfit->checksum);
+	writeb(acpi_checksum(buf, size), &nfit->h.checksum);
 
 	return nfit;
 }
@@ -170,7 +132,7 @@ static int write_nfit(struct nfit *nfit, const char *file, int force)
 		return -errno;
 	}
 
-	rc = write(fd, nfit, le32toh(nfit->length));
+	rc = write(fd, nfit, le32toh(nfit->h.length));
 	close(fd);
 	return rc;
 }
@@ -210,9 +172,9 @@ int cmd_create_nfit(int argc, const char **argv, struct ndctl_ctx *ctx)
 		goto out;
 
 	rc = write_nfit(nfit, nfit_file, force);
-	if ((unsigned int) rc == le32toh(nfit->length)) {
+	if ((unsigned int) rc == le32toh(nfit->h.length)) {
 		fprintf(stderr, "wrote %d bytes to %s\n",
-				le32toh(nfit->length), nfit_file);
+				le32toh(nfit->h.length), nfit_file);
 		rc = 0;
 	}
 
