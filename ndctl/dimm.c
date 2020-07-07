@@ -460,6 +460,7 @@ static int verify_fw_size(struct update_context *uctx)
 static int submit_get_firmware_info(struct ndctl_dimm *dimm,
 		struct action_context *actx)
 {
+	const char *devname = ndctl_dimm_get_devname(dimm);
 	struct update_context *uctx = &actx->update;
 	struct fw_info *fw = &uctx->dimm_fw;
 	struct ndctl_cmd *cmd;
@@ -477,8 +478,7 @@ static int submit_get_firmware_info(struct ndctl_dimm *dimm,
 	rc = -ENXIO;
 	status = ndctl_cmd_fw_xlat_firmware_status(cmd);
 	if (status != FW_SUCCESS) {
-		fprintf(stderr, "GET FIRMWARE INFO on DIMM %s failed: %#x\n",
-				ndctl_dimm_get_devname(dimm), status);
+		err("%s: failed to retrieve firmware info", devname);
 		goto out;
 	}
 
@@ -512,6 +512,7 @@ out:
 static int submit_start_firmware_upload(struct ndctl_dimm *dimm,
 		struct action_context *actx)
 {
+	const char *devname = ndctl_dimm_get_devname(dimm);
 	struct update_context *uctx = &actx->update;
 	struct fw_info *fw = &uctx->dimm_fw;
 	struct ndctl_cmd *cmd;
@@ -527,21 +528,18 @@ static int submit_start_firmware_upload(struct ndctl_dimm *dimm,
 		return rc;
 
 	status = ndctl_cmd_fw_xlat_firmware_status(cmd);
+	if (status == FW_EBUSY) {
+		err("%s: busy with another firmware update", devname);
+		return -EBUSY;
+	}
 	if (status != FW_SUCCESS) {
-		fprintf(stderr,
-			"START FIRMWARE UPDATE on DIMM %s failed: %#x\n",
-			ndctl_dimm_get_devname(dimm), status);
-		if (status == FW_EBUSY)
-			fprintf(stderr, "Another firmware upload in progress"
-					" or firmware already updated.\n");
+		err("%s: failed to create start context", devname);
 		return -ENXIO;
 	}
 
 	fw->context = ndctl_cmd_fw_start_get_context(cmd);
 	if (fw->context == UINT_MAX) {
-		fprintf(stderr,
-			"Retrieved firmware context invalid on DIMM %s\n",
-			ndctl_dimm_get_devname(dimm));
+		err("%s: failed to retrieve start context", devname);
 		return -ENXIO;
 	}
 
@@ -567,16 +565,16 @@ static int get_fw_data_from_file(FILE *file, void *buf, uint32_t len)
 	return len;
 }
 
-static int send_firmware(struct ndctl_dimm *dimm,
-		struct action_context *actx)
+static int send_firmware(struct ndctl_dimm *dimm, struct action_context *actx)
 {
+	const char *devname = ndctl_dimm_get_devname(dimm);
 	struct update_context *uctx = &actx->update;
 	struct fw_info *fw = &uctx->dimm_fw;
-	struct ndctl_cmd *cmd = NULL;
-	ssize_t read;
-	int rc = -ENXIO;
-	enum ND_FW_STATUS status;
 	uint32_t copied = 0, len, remain;
+	struct ndctl_cmd *cmd = NULL;
+	enum ND_FW_STATUS status;
+	int rc = -ENXIO;
+	ssize_t read;
 	void *buf;
 
 	buf = malloc(fw->update_size);
@@ -596,18 +594,22 @@ static int send_firmware(struct ndctl_dimm *dimm,
 		cmd = ndctl_dimm_cmd_new_fw_send(uctx->start, copied, read,
 				buf);
 		if (!cmd) {
-			rc = -ENXIO;
+			rc = -ENOMEM;
 			goto cleanup;
 		}
 
 		rc = ndctl_cmd_submit(cmd);
-		if (rc < 0)
+		if (rc < 0) {
+			err("%s: failed to issue firmware transmit: %d",
+					devname, rc);
 			goto cleanup;
+		}
 
 		status = ndctl_cmd_fw_xlat_firmware_status(cmd);
 		if (status != FW_SUCCESS) {
-			error("SEND FIRMWARE failed: %#x\n", status);
-			rc = -ENXIO;
+			err("%s: failed to transmit firmware: %d",
+					devname, status);
+			rc = -EIO;
 			goto cleanup;
 		}
 
@@ -627,10 +629,11 @@ cleanup:
 static int submit_finish_firmware(struct ndctl_dimm *dimm,
 		struct action_context *actx)
 {
+	const char *devname = ndctl_dimm_get_devname(dimm);
 	struct update_context *uctx = &actx->update;
-	struct ndctl_cmd *cmd;
-	int rc;
 	enum ND_FW_STATUS status;
+	struct ndctl_cmd *cmd;
+	int rc = -ENXIO;
 
 	cmd = ndctl_dimm_cmd_new_fw_finish(uctx->start);
 	if (!cmd)
@@ -641,12 +644,19 @@ static int submit_finish_firmware(struct ndctl_dimm *dimm,
 		goto out;
 
 	status = ndctl_cmd_fw_xlat_firmware_status(cmd);
-	if (status != FW_SUCCESS) {
-		fprintf(stderr,
-			"FINISH FIRMWARE UPDATE on DIMM %s failed: %#x\n",
-			ndctl_dimm_get_devname(dimm), status);
-		rc = -ENXIO;
-		goto out;
+	switch (status) {
+	case FW_SUCCESS:
+		rc = 0;
+		break;
+	case FW_ERETRY:
+		err("%s: device busy with other operation (ARS?)", devname);
+		break;
+	case FW_EBADFW:
+		err("%s: firmware image rejected", devname);
+		break;
+	default:
+		err("%s: update failed: error code: %d", devname, status);
+		break;
 	}
 
 out:
@@ -687,13 +697,14 @@ out:
 static int query_fw_finish_status(struct ndctl_dimm *dimm,
 		struct action_context *actx)
 {
+	const char *devname = ndctl_dimm_get_devname(dimm);
 	struct update_context *uctx = &actx->update;
 	struct fw_info *fw = &uctx->dimm_fw;
-	struct ndctl_cmd *cmd;
-	int rc;
-	enum ND_FW_STATUS status;
 	struct timespec now, before, after;
+	enum ND_FW_STATUS status;
+	struct ndctl_cmd *cmd;
 	uint64_t ver;
+	int rc;
 
 	cmd = ndctl_dimm_cmd_new_fw_finish_query(uctx->start);
 	if (!cmd)
@@ -747,8 +758,8 @@ again:
 	case FW_SUCCESS:
 		ver = ndctl_cmd_fw_fquery_get_fw_rev(cmd);
 		if (ver == 0) {
-			fprintf(stderr, "No firmware updated.\n");
-			rc = -ENXIO;
+			err("%s: new firmware not found after update", devname);
+			rc = -EIO;
 			goto unref;
 		}
 
@@ -759,25 +770,16 @@ again:
 		rc = 0;
 		break;
 	case FW_EBADFW:
-		fprintf(stderr,
-			"Firmware failed to verify by DIMM %s.\n",
-			ndctl_dimm_get_devname(dimm));
-		/* FALLTHROUGH */
-	case FW_EINVAL_CTX:
-	case FW_ESEQUENCE:
-		rc = -ENXIO;
+		err("%s: firmware verification failure", devname);
+		rc = -EINVAL;
 		break;
 	case FW_ENORES:
-		fprintf(stderr,
-			"Firmware update sequence timed out: %s\n",
-			ndctl_dimm_get_devname(dimm));
+		err("%s: timeout awaiting update", devname);
 		rc = -ETIMEDOUT;
 		break;
 	default:
-		fprintf(stderr,
-			"Unknown update status: %#x on DIMM %s\n",
-			status, ndctl_dimm_get_devname(dimm));
-		rc = -EINVAL;
+		err("%s: unhandled error %d", devname, status);
+		rc = -EIO;
 		break;
 	}
 
@@ -789,6 +791,7 @@ unref:
 static int update_firmware(struct ndctl_dimm *dimm,
 		struct action_context *actx)
 {
+	const char *devname = ndctl_dimm_get_devname(dimm);
 	int rc;
 
 	rc = submit_get_firmware_info(dimm, actx);
@@ -800,15 +803,14 @@ static int update_firmware(struct ndctl_dimm *dimm,
 		return rc;
 
 	if (param.verbose)
-		fprintf(stderr, "Uploading firmware to DIMM %s.\n",
-				ndctl_dimm_get_devname(dimm));
+		fprintf(stderr, "%s: uploading firmware\n", devname);
 
 	rc = send_firmware(dimm, actx);
 	if (rc < 0) {
-		error("Firmware send failed. Aborting!\n");
+		err("%s: firmware send failed", devname);
 		rc = submit_abort_firmware(dimm, actx);
 		if (rc < 0)
-			error("Aborting update sequence failed.\n");
+			err("%s: abort failed", devname);
 		return rc;
 	}
 
@@ -820,10 +822,10 @@ static int update_firmware(struct ndctl_dimm *dimm,
 
 	rc = submit_finish_firmware(dimm, actx);
 	if (rc < 0) {
-		fprintf(stderr, "Unable to end update sequence.\n");
+		err("%s: failed to finish update sequence", devname);
 		rc = submit_abort_firmware(dimm, actx);
 		if (rc < 0)
-			fprintf(stderr, "Aborting update sequence failed.\n");
+			err("%s: failed to abort update", devname);
 		return rc;
 	}
 
