@@ -25,7 +25,6 @@ ndctl_SOURCES = ndctl.c \
 		../util/json.c \
 		../util/json.h \
 		util/json-smart.c \
-		util/json-firmware.c \
 		util/keys.h \
 		inject-error.c \
 		inject-smart.c \

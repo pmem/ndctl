@@ -59,6 +59,8 @@ static unsigned long listopts_to_flags(void)
 		flags |= UTIL_JSON_VERBOSE;
 	if (list.capabilities)
 		flags |= UTIL_JSON_CAPABILITIES;
+	if (list.firmware)
+		flags |= UTIL_JSON_FIRMWARE;
 	return flags;
 }
 
@@ -365,14 +367,6 @@ static void filter_dimm(struct ndctl_dimm *dimm, struct util_filter_ctx *ctx)
 			fail("\n");
 			return;
 		}
-	}
-
-	if (list.firmware) {
-		struct json_object *jfirmware;
-
-		jfirmware = util_dimm_firmware_to_json(dimm, lfa->flags);
-		if (jfirmware)
-			json_object_object_add(jdimm, "firmware", jfirmware);
 	}
 
 	/*

@@ -18,14 +18,15 @@
 #include <ccan/short_types/short_types.h>
 
 enum util_json_flags {
-	UTIL_JSON_IDLE = (1 << 0),
-	UTIL_JSON_MEDIA_ERRORS = (1 << 1),
-	UTIL_JSON_DAX = (1 << 2),
-	UTIL_JSON_DAX_DEVS = (1 << 3),
-	UTIL_JSON_HUMAN = (1 << 4),
-	UTIL_JSON_VERBOSE = (1 << 5),
-	UTIL_JSON_CAPABILITIES = (1 << 6),
-	UTIL_JSON_CONFIGURED = (1 << 7),
+	UTIL_JSON_IDLE		= (1 << 0),
+	UTIL_JSON_MEDIA_ERRORS	= (1 << 1),
+	UTIL_JSON_DAX		= (1 << 2),
+	UTIL_JSON_DAX_DEVS	= (1 << 3),
+	UTIL_JSON_HUMAN		= (1 << 4),
+	UTIL_JSON_VERBOSE	= (1 << 5),
+	UTIL_JSON_CAPABILITIES	= (1 << 6),
+	UTIL_JSON_CONFIGURED	= (1 << 7),
+	UTIL_JSON_FIRMWARE	= (1 << 8),
 };
 
 struct json_object;
