@@ -795,15 +795,16 @@ static int update_firmware(struct ndctl_dimm *dimm,
 	if (rc < 0)
 		return rc;
 
-	printf("Uploading firmware to DIMM %s.\n",
-			ndctl_dimm_get_devname(dimm));
+	if (param.verbose)
+		fprintf(stderr, "Uploading firmware to DIMM %s.\n",
+				ndctl_dimm_get_devname(dimm));
 
 	rc = send_firmware(dimm, actx);
 	if (rc < 0) {
-		fprintf(stderr, "Firmware send failed. Aborting!\n");
+		error("Firmware send failed. Aborting!\n");
 		rc = submit_abort_firmware(dimm, actx);
 		if (rc < 0)
-			fprintf(stderr, "Aborting update sequence failed.\n");
+			error("Aborting update sequence failed.\n");
 		return rc;
 	}
 
@@ -945,7 +946,8 @@ static int action_sanitize_dimm(struct ndctl_dimm *dimm,
 	 */
 	if (!param.crypto_erase && !param.overwrite) {
 		param.crypto_erase = true;
-		printf("No santize method passed in, default to crypto-erase\n");
+		if (param.verbose)
+			fprintf(stderr, "No santize method passed in, default to crypto-erase\n");
 	}
 
 	if (param.crypto_erase) {
@@ -982,8 +984,8 @@ static int action_wait_overwrite(struct ndctl_dimm *dimm,
 	}
 
 	rc = ndctl_dimm_wait_overwrite(dimm);
-	if (rc == 1)
-		printf("%s: overwrite completed.\n",
+	if (rc == 1 && param.verbose)
+		fprintf(stderr, "%s: overwrite completed.\n",
 				ndctl_dimm_get_devname(dimm));
 	return rc;
 }
