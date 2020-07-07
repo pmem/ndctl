@@ -40,6 +40,7 @@ struct update_context {
 	size_t fw_size;
 	struct fw_info dimm_fw;
 	struct ndctl_cmd *start;
+	struct json_object *jdimms;
 };
 
 #endif

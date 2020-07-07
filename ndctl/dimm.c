@@ -701,8 +701,10 @@ static int query_fw_finish_status(struct ndctl_dimm *dimm,
 	struct update_context *uctx = &actx->update;
 	struct fw_info *fw = &uctx->dimm_fw;
 	struct timespec now, before, after;
+	struct json_object *jobj;
 	enum ND_FW_STATUS status;
 	struct ndctl_cmd *cmd;
+	unsigned long flags;
 	uint64_t ver;
 	int rc;
 
@@ -763,10 +765,12 @@ again:
 			goto unref;
 		}
 
-		fprintf(stderr, "Image updated successfully to DIMM %s.\n",
-			ndctl_dimm_get_devname(dimm));
-		fprintf(stderr, "Firmware version %#lx.\n", ver);
-		fprintf(stderr, "Cold reboot to activate.\n");
+		flags = UTIL_JSON_FIRMWARE;
+		if (isatty(1))
+			flags |= UTIL_JSON_HUMAN;
+		jobj = util_dimm_to_json(dimm, flags);
+		if (jobj)
+			json_object_array_add(actx->jdimms, jobj);
 		rc = 0;
 		break;
 	case FW_EBADFW:
@@ -1202,7 +1206,7 @@ static int dimm_action(int argc, const char **argv, struct ndctl_ctx *ctx,
 		return -EINVAL;
 	}
 
-	json = param.json || param.human;
+	json = param.json || param.human || action == action_update;
 	if (action == action_read && json && (param.len || param.offset)) {
 		fprintf(stderr, "--size and --offset are incompatible with --json\n");
 		usage_with_options(u, options);
@@ -1308,8 +1312,13 @@ static int dimm_action(int argc, const char **argv, struct ndctl_ctx *ctx,
 			rc = action(single, &actx);
 	}
 
-	if (actx.jdimms)
-		util_display_json_array(actx.f_out, actx.jdimms, 0);
+	if (actx.jdimms && json_object_array_length(actx.jdimms) > 0) {
+		unsigned long flags = 0;
+
+		if (actx.f_out == stdout && isatty(1))
+			flags |= UTIL_JSON_HUMAN;
+		util_display_json_array(actx.f_out, actx.jdimms, flags);
+	}
 
 	if (actx.f_out != stdout)
 		fclose(actx.f_out);
