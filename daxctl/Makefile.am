@@ -13,6 +13,7 @@ config.h: $(srcdir)/Makefile.am
 
 daxctl_SOURCES =\
 		daxctl.c \
+		acpi.c \
 		list.c \
 		migrate.c \
 		device.c \
