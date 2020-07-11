@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/sysmacros.h>
+#include <util/size.h>
 #include <util/json.h>
 #include <util/filter.h>
 #include <json-c/json.h>
@@ -20,6 +21,7 @@ static struct {
 	const char *dev;
 	const char *mode;
 	const char *region;
+	const char *size;
 	bool no_online;
 	bool no_movable;
 	bool force;
@@ -47,6 +49,7 @@ enum device_action {
 	ACTION_RECONFIG,
 	ACTION_ONLINE,
 	ACTION_OFFLINE,
+	ACTION_CREATE,
 	ACTION_DISABLE,
 	ACTION_ENABLE,
 };
@@ -63,9 +66,20 @@ OPT_BOOLEAN('N', "no-online", &param.no_online, \
 OPT_BOOLEAN('f', "force", &param.force, \
 		"attempt to offline memory sections before reconfiguration")
 
+#define CREATE_OPTIONS() \
+OPT_STRING('s', "size", &param.size, "size", "size to switch the device to")
+
 #define ZONE_OPTIONS() \
 OPT_BOOLEAN('\0', "no-movable", &param.no_movable, \
 		"online memory in ZONE_NORMAL")
+
+static const struct option create_options[] = {
+	BASE_OPTIONS(),
+	CREATE_OPTIONS(),
+	RECONFIG_OPTIONS(),
+	ZONE_OPTIONS(),
+	OPT_END(),
+};
 
 static const struct option reconfig_options[] = {
 	BASE_OPTIONS(),
@@ -104,12 +118,14 @@ static const char *parse_device_options(int argc, const char **argv,
 		usage,
 		NULL
 	};
+	unsigned long long units = 1;
 	int i, rc = 0;
 
 	argc = parse_options(argc, argv, options, u, 0);
 
 	/* Handle action-agnostic non-option arguments */
-	if (argc == 0) {
+	if (argc == 0 &&
+	    action != ACTION_CREATE) {
 		char *action_string;
 
 		switch (action) {
@@ -175,6 +191,10 @@ static const char *parse_device_options(int argc, const char **argv,
 			}
 		}
 		break;
+	case ACTION_CREATE:
+		if (param.size)
+			size = __parse_size64(param.size, &units);
+		/* fall through */
 	case ACTION_ONLINE:
 		if (param.no_movable)
 			mem_zone = MEM_ZONE_NORMAL;
@@ -446,6 +466,47 @@ static int reconfig_mode_devdax(struct daxctl_dev *dev)
 	return 0;
 }
 
+static int do_create(struct daxctl_region *region, long long val,
+		     struct json_object **jdevs)
+{
+	struct json_object *jdev;
+	struct daxctl_dev *dev;
+	int rc = 0;
+
+	if (daxctl_region_create_dev(region))
+		return -ENOSPC;
+
+	dev = daxctl_region_get_dev_seed(region);
+	if (!dev)
+		return -ENOSPC;
+
+	if (val == -1)
+		val = daxctl_region_get_available_size(region);
+
+	if (val <= 0)
+		return -ENOSPC;
+
+	rc = daxctl_dev_set_size(dev, val);
+	if (rc < 0)
+		return rc;
+
+	rc = daxctl_dev_enable_devdax(dev);
+	if (rc) {
+		fprintf(stderr, "%s: enable failed: %s\n",
+			daxctl_dev_get_devname(dev), strerror(-rc));
+		return rc;
+	}
+
+	*jdevs = json_object_new_array();
+	if (*jdevs) {
+		jdev = util_daxctl_dev_to_json(dev, flags);
+		if (jdev)
+			json_object_array_add(*jdevs, jdev);
+	}
+
+	return 0;
+}
+
 static int do_reconfig(struct daxctl_dev *dev, enum dev_mode mode,
 		struct json_object **jdevs)
 {
@@ -548,6 +609,42 @@ static int do_xble(struct daxctl_dev *dev, enum device_action action)
 	return rc;
 }
 
+static int do_xaction_region(enum device_action action,
+		struct daxctl_ctx *ctx, int *processed)
+{
+	struct json_object *jdevs = NULL;
+	struct daxctl_region *region;
+	int rc = -ENXIO;
+
+	*processed = 0;
+
+	daxctl_region_foreach(ctx, region) {
+		if (!util_daxctl_region_filter(region, param.region))
+			continue;
+
+		switch (action) {
+		case ACTION_CREATE:
+			rc = do_create(region, size, &jdevs);
+			if (rc == 0)
+				(*processed)++;
+			break;
+		default:
+			rc = -EINVAL;
+			break;
+		}
+	}
+
+	/*
+	 * jdevs is the containing json array for all devices we are reporting
+	 * on. It therefore needs to be outside the region/device iterators,
+	 * and passed in to the do_<action> functions to add their objects to
+	 */
+	if (jdevs)
+		util_display_json_array(stdout, jdevs, flags);
+
+	return rc;
+}
+
 static int do_xaction_device(const char *device, enum device_action action,
 		struct daxctl_ctx *ctx, int *processed)
 {
@@ -607,6 +704,24 @@ static int do_xaction_device(const char *device, enum device_action action,
 	if (jdevs)
 		util_display_json_array(stdout, jdevs, flags);
 
+	return rc;
+}
+
+int cmd_create_device(int argc, const char **argv, struct daxctl_ctx *ctx)
+{
+	char *usage = "daxctl create-device [<options>]";
+	int processed, rc;
+
+	parse_device_options(argc, argv, ACTION_CREATE,
+			create_options, usage, ctx);
+
+	rc = do_xaction_region(ACTION_CREATE, ctx, &processed);
+	if (rc < 0)
+		fprintf(stderr, "error creating devices: %s\n",
+				strerror(-rc));
+
+	fprintf(stderr, "created %d device%s\n", processed,
+			processed == 1 ? "" : "s");
 	return rc;
 }
 
