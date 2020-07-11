@@ -47,6 +47,7 @@ enum device_action {
 	ACTION_RECONFIG,
 	ACTION_ONLINE,
 	ACTION_OFFLINE,
+	ACTION_DISABLE,
 };
 
 #define BASE_OPTIONS() \
@@ -84,6 +85,11 @@ static const struct option offline_options[] = {
 	OPT_END(),
 };
 
+static const struct option disable_options[] = {
+	BASE_OPTIONS(),
+	OPT_END(),
+};
+
 static const char *parse_device_options(int argc, const char **argv,
 		enum device_action action, const struct option *options,
 		const char *usage, struct daxctl_ctx *ctx)
@@ -109,6 +115,9 @@ static const char *parse_device_options(int argc, const char **argv,
 			break;
 		case ACTION_OFFLINE:
 			action_string = "offline memory for";
+			break;
+		case ACTION_DISABLE:
+			action_string = "disable";
 			break;
 		default:
 			action_string = "<>";
@@ -162,6 +171,7 @@ static const char *parse_device_options(int argc, const char **argv,
 			mem_zone = MEM_ZONE_NORMAL;
 		/* fall through */
 	case ACTION_OFFLINE:
+	case ACTION_DISABLE:
 		/* nothing special */
 		break;
 	}
@@ -491,6 +501,35 @@ static int do_xline(struct daxctl_dev *dev, enum device_action action)
 	return rc;
 }
 
+static int do_xble(struct daxctl_dev *dev, enum device_action action)
+{
+	struct daxctl_memory *mem = daxctl_dev_get_memory(dev);
+	const char *devname = daxctl_dev_get_devname(dev);
+	int rc;
+
+	if (mem) {
+		fprintf(stderr,
+			"%s: status operations are only applicable in devdax mode\n",
+			devname);
+		return -ENXIO;
+	}
+
+	switch (action) {
+	case ACTION_DISABLE:
+		rc = daxctl_dev_disable(dev);
+		if (rc) {
+			fprintf(stderr, "%s: disable failed: %s\n",
+				daxctl_dev_get_devname(dev), strerror(-rc));
+			return rc;
+		}
+		break;
+	default:
+		fprintf(stderr, "%s: invalid action: %d\n", devname, action);
+		rc = -EINVAL;
+	}
+	return rc;
+}
+
 static int do_xaction_device(const char *device, enum device_action action,
 		struct daxctl_ctx *ctx, int *processed)
 {
@@ -525,6 +564,11 @@ static int do_xaction_device(const char *device, enum device_action action,
 				if (rc == 0)
 					(*processed)++;
 				break;
+			case ACTION_DISABLE:
+				rc = do_xble(dev, action);
+				if (rc == 0)
+					(*processed)++;
+				break;
 			default:
 				rc = -EINVAL;
 				break;
@@ -556,6 +600,23 @@ int cmd_reconfig_device(int argc, const char **argv, struct daxctl_ctx *ctx)
 				strerror(-rc));
 
 	fprintf(stderr, "reconfigured %d device%s\n", processed,
+			processed == 1 ? "" : "s");
+	return rc;
+}
+
+int cmd_disable_device(int argc, const char **argv, struct daxctl_ctx *ctx)
+{
+	char *usage = "daxctl disable-device <device>";
+	const char *device = parse_device_options(argc, argv, ACTION_DISABLE,
+			disable_options, usage, ctx);
+	int processed, rc;
+
+	rc = do_xaction_device(device, ACTION_DISABLE, ctx, &processed);
+	if (rc < 0)
+		fprintf(stderr, "error disabling device: %s\n",
+				strerror(-rc));
+
+	fprintf(stderr, "disabled %d device%s\n", processed,
 			processed == 1 ? "" : "s");
 	return rc;
 }
