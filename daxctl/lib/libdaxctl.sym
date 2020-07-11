@@ -80,4 +80,5 @@ LIBDAXCTL_8 {
 global:
 	daxctl_dev_set_size;
 	daxctl_region_create_dev;
+	daxctl_region_destroy_dev;
 } LIBDAXCTL_7;
