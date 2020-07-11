@@ -56,6 +56,7 @@ unsigned long daxctl_region_get_align(struct daxctl_region *region);
 const char *daxctl_region_get_devname(struct daxctl_region *region);
 const char *daxctl_region_get_path(struct daxctl_region *region);
 
+int daxctl_region_create_dev(struct daxctl_region *region);
 struct daxctl_dev *daxctl_region_get_dev_seed(struct daxctl_region *region);
 
 struct daxctl_dev;

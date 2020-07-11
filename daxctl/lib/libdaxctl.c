@@ -583,6 +583,32 @@ DAXCTL_EXPORT unsigned long long daxctl_region_get_available_size(
 	return 0;
 }
 
+DAXCTL_EXPORT int daxctl_region_create_dev(struct daxctl_region *region)
+{
+	struct daxctl_ctx *ctx = daxctl_region_get_ctx(region);
+	char *path = region->region_buf;
+	int rc, len = region->buf_len;
+	char *num_devices;
+
+	if (snprintf(path, len, "%s/%s/create", region->region_path, attrs) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				daxctl_region_get_devname(region));
+		return -EFAULT;
+	}
+
+	if (asprintf(&num_devices, "%d", 1) < 0) {
+		err(ctx, "%s: buffer too small!\n",
+				daxctl_region_get_devname(region));
+		return -EFAULT;
+	}
+
+	rc = sysfs_write_attr(ctx, path, num_devices);
+	if (rc)
+		return rc;
+
+	return 0;
+}
+
 DAXCTL_EXPORT struct daxctl_dev *daxctl_region_get_dev_seed(
 		struct daxctl_region *region)
 {
