@@ -76,6 +76,7 @@ static struct cmd_struct commands[] = {
 	{ "online-memory", .d_fn = cmd_online_memory },
 	{ "offline-memory", .d_fn = cmd_offline_memory },
 	{ "disable-device", .d_fn = cmd_disable_device },
+	{ "enable-device", .d_fn = cmd_enable_device },
 };
 
 int main(int argc, const char **argv)
