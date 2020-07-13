@@ -72,6 +72,7 @@ static struct cmd_struct commands[] = {
 	{ "help", .d_fn = cmd_help },
 	{ "split-acpi", .d_fn = cmd_split_acpi, },
 	{ "migrate-device-model", .d_fn = cmd_migrate },
+	{ "create-device", .d_fn = cmd_create_device },
 	{ "reconfigure-device", .d_fn = cmd_reconfig_device },
 	{ "online-memory", .d_fn = cmd_online_memory },
 	{ "offline-memory", .d_fn = cmd_offline_memory },
