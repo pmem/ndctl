@@ -1,0 +1,51 @@
+// SPDX-License-Identifier: GPL-2.0
+
+daxctl-destroy-device(1)
+========================
+
+NAME
+----
+daxctl-destroy-device - Destroy a devdax device
+
+SYNOPSIS
+--------
+[verse]
+'daxctl destroy-device' <dax0.0> [<dax1.0>...<daxY.Z>] [<options>]
+
+EXAMPLES
+--------
+
+* Destroys dax0.1
+----
+# daxctl disable-device dax0.1
+disabled 1 device
+# daxctl destroy-device dax0.1
+destroyed 1 device
+----
+
+* Destroys all devices in region id 0
+----
+# daxctl disable-device -r 0 all
+disabled 3 devices
+# daxctl destroy-device -r 0 all
+destroyed 2 devices
+----
+
+DESCRIPTION
+-----------
+
+Destroys a dax device in 'devdax' mode.
+
+OPTIONS
+-------
+include::region-option.txt[]
+
+include::human-option.txt[]
+
+include::verbose-option.txt[]
+
+include::../copyright.txt[]
+
+SEE ALSO
+--------
+linkdaxctl:daxctl-list[1],daxctl-reconfigure-device[1],daxctl-create-device[1]

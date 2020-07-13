@@ -34,7 +34,8 @@ man1_MANS = \
 	daxctl-offline-memory.1 \
 	daxctl-disable-device.1 \
 	daxctl-enable-device.1 \
-	daxctl-create-device.1
+	daxctl-create-device.1 \
+	daxctl-destroy-device.1
 
 EXTRA_DIST = $(man1_MANS)
 

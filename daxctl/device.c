@@ -52,6 +52,7 @@ enum device_action {
 	ACTION_CREATE,
 	ACTION_DISABLE,
 	ACTION_ENABLE,
+	ACTION_DESTROY,
 };
 
 #define BASE_OPTIONS() \
@@ -68,6 +69,10 @@ OPT_BOOLEAN('f', "force", &param.force, \
 
 #define CREATE_OPTIONS() \
 OPT_STRING('s', "size", &param.size, "size", "size to switch the device to")
+
+#define DESTROY_OPTIONS() \
+OPT_BOOLEAN('f', "force", &param.force, \
+		"attempt to disable before destroying device")
 
 #define ZONE_OPTIONS() \
 OPT_BOOLEAN('\0', "no-movable", &param.no_movable, \
@@ -110,6 +115,12 @@ static const struct option enable_options[] = {
 	OPT_END(),
 };
 
+static const struct option destroy_options[] = {
+	BASE_OPTIONS(),
+	DESTROY_OPTIONS(),
+	OPT_END(),
+};
+
 static const char *parse_device_options(int argc, const char **argv,
 		enum device_action action, const struct option *options,
 		const char *usage, struct daxctl_ctx *ctx)
@@ -143,6 +154,9 @@ static const char *parse_device_options(int argc, const char **argv,
 			break;
 		case ACTION_ENABLE:
 			action_string = "enable";
+			break;
+		case ACTION_DESTROY:
+			action_string = "destroy";
 			break;
 		default:
 			action_string = "<>";
@@ -199,6 +213,7 @@ static const char *parse_device_options(int argc, const char **argv,
 		if (param.no_movable)
 			mem_zone = MEM_ZONE_NORMAL;
 		/* fall through */
+	case ACTION_DESTROY:
 	case ACTION_OFFLINE:
 	case ACTION_DISABLE:
 	case ACTION_ENABLE:
@@ -358,6 +373,35 @@ static int dev_resize(struct daxctl_dev *dev, unsigned long long val)
 	int rc;
 
 	rc = daxctl_dev_set_size(dev, val);
+	if (rc < 0)
+		return rc;
+
+	return 0;
+}
+
+static int dev_destroy(struct daxctl_dev *dev)
+{
+	const char *devname = daxctl_dev_get_devname(dev);
+	int rc;
+
+	if (daxctl_dev_is_enabled(dev) && !param.force) {
+		fprintf(stderr, "%s is active, specify --force for deletion\n",
+			devname);
+		return -ENXIO;
+	} else {
+		rc = daxctl_dev_disable(dev);
+		if (rc) {
+			fprintf(stderr, "%s: disable failed: %s\n",
+				daxctl_dev_get_devname(dev), strerror(-rc));
+			return rc;
+		}
+	}
+
+	rc = daxctl_dev_set_size(dev, 0);
+	if (rc < 0)
+		return rc;
+
+	rc = daxctl_region_destroy_dev(daxctl_dev_get_region(dev), dev);
 	if (rc < 0)
 		return rc;
 
@@ -689,6 +733,11 @@ static int do_xaction_device(const char *device, enum device_action action,
 				if (rc == 0)
 					(*processed)++;
 				break;
+			case ACTION_DESTROY:
+				rc = dev_destroy(dev);
+				if (rc == 0)
+					(*processed)++;
+				break;
 			default:
 				rc = -EINVAL;
 				break;
@@ -721,6 +770,23 @@ int cmd_create_device(int argc, const char **argv, struct daxctl_ctx *ctx)
 				strerror(-rc));
 
 	fprintf(stderr, "created %d device%s\n", processed,
+			processed == 1 ? "" : "s");
+	return rc;
+}
+
+int cmd_destroy_device(int argc, const char **argv, struct daxctl_ctx *ctx)
+{
+	char *usage = "daxctl destroy-device <device> [<options>]";
+	const char *device = parse_device_options(argc, argv, ACTION_DESTROY,
+			destroy_options, usage, ctx);
+	int processed, rc;
+
+	rc = do_xaction_device(device, ACTION_DESTROY, ctx, &processed);
+	if (rc < 0)
+		fprintf(stderr, "error destroying devices: %s\n",
+				strerror(-rc));
+
+	fprintf(stderr, "destroyed %d device%s\n", processed,
 			processed == 1 ? "" : "s");
 	return rc;
 }
