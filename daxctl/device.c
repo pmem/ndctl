@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/sysmacros.h>
+#include <util/size.h>
 #include <util/json.h>
 #include <util/filter.h>
 #include <json-c/json.h>
@@ -20,6 +21,7 @@ static struct {
 	const char *dev;
 	const char *mode;
 	const char *region;
+	const char *size;
 	bool no_online;
 	bool no_movable;
 	bool force;
@@ -34,6 +36,7 @@ enum dev_mode {
 };
 
 static enum dev_mode reconfig_mode = DAXCTL_DEV_MODE_UNKNOWN;
+static long long size = -1;
 static unsigned long flags;
 
 enum memory_zone {
@@ -60,12 +63,16 @@ OPT_BOOLEAN('N', "no-online", &param.no_online, \
 OPT_BOOLEAN('f', "force", &param.force, \
 		"attempt to offline memory sections before reconfiguration")
 
+#define CREATE_OPTIONS() \
+OPT_STRING('s', "size", &param.size, "size", "size to switch the device to")
+
 #define ZONE_OPTIONS() \
 OPT_BOOLEAN('\0', "no-movable", &param.no_movable, \
 		"online memory in ZONE_NORMAL")
 
 static const struct option reconfig_options[] = {
 	BASE_OPTIONS(),
+	CREATE_OPTIONS(),
 	RECONFIG_OPTIONS(),
 	ZONE_OPTIONS(),
 	OPT_END(),
@@ -90,6 +97,7 @@ static const char *parse_device_options(int argc, const char **argv,
 		usage,
 		NULL
 	};
+	unsigned long long units = 1;
 	int i, rc = 0;
 
 	argc = parse_options(argc, argv, options, u, 0);
@@ -135,12 +143,14 @@ static const char *parse_device_options(int argc, const char **argv,
 	/* Handle action-specific options */
 	switch (action) {
 	case ACTION_RECONFIG:
-		if (!param.mode) {
-			fprintf(stderr, "error: a 'mode' option is required\n");
+		if (!param.size && !param.mode) {
+			fprintf(stderr, "error: a 'mode' or 'size' option is required\n");
 			usage_with_options(u, reconfig_options);
 			rc = -EINVAL;
 		}
-		if (strcmp(param.mode, "system-ram") == 0) {
+		if (param.size) {
+			size = __parse_size64(param.size, &units);
+		} else if (strcmp(param.mode, "system-ram") == 0) {
 			reconfig_mode = DAXCTL_DEV_MODE_RAM;
 			if (param.no_movable)
 				mem_zone = MEM_ZONE_NORMAL;
@@ -309,6 +319,17 @@ static int dev_offline_memory(struct daxctl_dev *dev)
 	return 0;
 }
 
+static int dev_resize(struct daxctl_dev *dev, unsigned long long val)
+{
+	int rc;
+
+	rc = daxctl_dev_set_size(dev, val);
+	if (rc < 0)
+		return rc;
+
+	return 0;
+}
+
 static int disable_devdax_device(struct daxctl_dev *dev)
 {
 	struct daxctl_memory *mem = daxctl_dev_get_memory(dev);
@@ -417,6 +438,11 @@ static int do_reconfig(struct daxctl_dev *dev, enum dev_mode mode,
 	const char *devname = daxctl_dev_get_devname(dev);
 	struct json_object *jdev;
 	int rc = 0;
+
+	if (size >= 0) {
+		rc = dev_resize(dev, size);
+		return rc;
+	}
 
 	switch (mode) {
 	case DAXCTL_DEV_MODE_RAM:
