@@ -609,6 +609,23 @@ DAXCTL_EXPORT int daxctl_region_create_dev(struct daxctl_region *region)
 	return 0;
 }
 
+DAXCTL_EXPORT int daxctl_region_destroy_dev(struct daxctl_region *region,
+					    struct daxctl_dev *dev)
+{
+	struct daxctl_ctx *ctx = daxctl_region_get_ctx(region);
+	char *path = region->region_buf;
+	int rc, len = region->buf_len;
+
+	if (snprintf(path, len, "%s/%s/delete", region->region_path, attrs) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				daxctl_region_get_devname(region));
+		return -EFAULT;
+	}
+
+	rc = sysfs_write_attr(ctx, path, daxctl_dev_get_devname(dev));
+	return rc;
+}
+
 DAXCTL_EXPORT struct daxctl_dev *daxctl_region_get_dev_seed(
 		struct daxctl_region *region)
 {

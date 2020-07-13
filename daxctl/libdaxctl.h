@@ -61,6 +61,7 @@ struct daxctl_dev *daxctl_region_get_dev_seed(struct daxctl_region *region);
 
 struct daxctl_dev;
 struct daxctl_dev *daxctl_dev_get_first(struct daxctl_region *region);
+int daxctl_region_destroy_dev(struct daxctl_region *region, struct daxctl_dev *dev);
 struct daxctl_dev *daxctl_dev_get_next(struct daxctl_dev *dev);
 struct daxctl_region *daxctl_dev_get_region(struct daxctl_dev *dev);
 int daxctl_dev_get_id(struct daxctl_dev *dev);
