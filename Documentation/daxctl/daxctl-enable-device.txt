@@ -1,0 +1,47 @@
+// SPDX-License-Identifier: GPL-2.0
+
+daxctl-enable-device(1)
+=======================
+
+NAME
+----
+daxctl-enable-device - Enable a devdax device
+
+SYNOPSIS
+--------
+[verse]
+'daxctl enable-device' <dax0.0> [<dax1.0>...<daxY.Z>] [<options>]
+
+EXAMPLES
+--------
+
+* Enables dax0.1
+----
+# daxctl enable-device dax0.1
+enabled 1 device
+----
+
+* Enables all devices in region id 0
+----
+# daxctl enable-device -r 0 all
+enabled 3 devices
+----
+
+DESCRIPTION
+-----------
+
+Enables a dax device in 'devdax' mode.
+
+OPTIONS
+-------
+include::region-option.txt[]
+
+include::human-option.txt[]
+
+include::verbose-option.txt[]
+
+include::../copyright.txt[]
+
+SEE ALSO
+--------
+linkdaxctl:daxctl-list[1],daxctl-reconfigure-device[1],daxctl-create-device[1]

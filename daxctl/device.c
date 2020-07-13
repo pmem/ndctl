@@ -50,6 +50,7 @@ enum device_action {
 	ACTION_ONLINE,
 	ACTION_OFFLINE,
 	ACTION_DISABLE,
+	ACTION_ENABLE,
 };
 
 #define BASE_OPTIONS() \
@@ -95,6 +96,11 @@ static const struct option disable_options[] = {
 	OPT_END(),
 };
 
+static const struct option enable_options[] = {
+	BASE_OPTIONS(),
+	OPT_END(),
+};
+
 static const char *parse_device_options(int argc, const char **argv,
 		enum device_action action, const struct option *options,
 		const char *usage, struct daxctl_ctx *ctx)
@@ -124,6 +130,9 @@ static const char *parse_device_options(int argc, const char **argv,
 			break;
 		case ACTION_DISABLE:
 			action_string = "disable";
+			break;
+		case ACTION_ENABLE:
+			action_string = "enable";
 			break;
 		default:
 			action_string = "<>";
@@ -178,6 +187,7 @@ static const char *parse_device_options(int argc, const char **argv,
 		/* fall through */
 	case ACTION_OFFLINE:
 	case ACTION_DISABLE:
+	case ACTION_ENABLE:
 		/* nothing special */
 		break;
 	}
@@ -521,6 +531,14 @@ static int do_xble(struct daxctl_dev *dev, enum device_action action)
 	}
 
 	switch (action) {
+	case ACTION_ENABLE:
+		rc = daxctl_dev_enable_devdax(dev);
+		if (rc) {
+			fprintf(stderr, "%s: enable failed: %s\n",
+				daxctl_dev_get_devname(dev), strerror(-rc));
+			return rc;
+		}
+		break;
 	case ACTION_DISABLE:
 		rc = daxctl_dev_disable(dev);
 		if (rc) {
@@ -567,6 +585,11 @@ static int do_xaction_device(const char *device, enum device_action action,
 				break;
 			case ACTION_OFFLINE:
 				rc = do_xline(dev, action);
+				if (rc == 0)
+					(*processed)++;
+				break;
+			case ACTION_ENABLE:
+				rc = do_xble(dev, action);
 				if (rc == 0)
 					(*processed)++;
 				break;
@@ -623,6 +646,23 @@ int cmd_disable_device(int argc, const char **argv, struct daxctl_ctx *ctx)
 				strerror(-rc));
 
 	fprintf(stderr, "disabled %d device%s\n", processed,
+			processed == 1 ? "" : "s");
+	return rc;
+}
+
+int cmd_enable_device(int argc, const char **argv, struct daxctl_ctx *ctx)
+{
+	char *usage = "daxctl enable-device <device>";
+	const char *device = parse_device_options(argc, argv, ACTION_DISABLE,
+			enable_options, usage, ctx);
+	int processed, rc;
+
+	rc = do_xaction_device(device, ACTION_ENABLE, ctx, &processed);
+	if (rc < 0)
+		fprintf(stderr, "error enabling device: %s\n",
+				strerror(-rc));
+
+	fprintf(stderr, "enabled %d device%s\n", processed,
 			processed == 1 ? "" : "s");
 	return rc;
 }
