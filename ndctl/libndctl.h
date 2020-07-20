@@ -110,6 +110,20 @@ enum ndctl_persistence_domain {
 	PERSISTENCE_UNKNOWN = INT_MAX,
 };
 
+enum ndctl_fwa_state {
+	NDCTL_FWA_INVALID,
+	NDCTL_FWA_IDLE,
+	NDCTL_FWA_ARMED,
+	NDCTL_FWA_BUSY,
+	NDCTL_FWA_ARM_OVERFLOW,
+};
+
+enum ndctl_fwa_method {
+	NDCTL_FWA_METHOD_RESET,
+	NDCTL_FWA_METHOD_SUSPEND,
+	NDCTL_FWA_METHOD_LIVE,
+};
+
 struct ndctl_bus;
 struct ndctl_bus *ndctl_bus_get_first(struct ndctl_ctx *ctx);
 struct ndctl_bus *ndctl_bus_get_next(struct ndctl_bus *bus);
@@ -141,6 +155,8 @@ unsigned int ndctl_bus_get_scrub_count(struct ndctl_bus *bus);
 int ndctl_bus_get_scrub_state(struct ndctl_bus *bus);
 int ndctl_bus_start_scrub(struct ndctl_bus *bus);
 int ndctl_bus_has_error_injection(struct ndctl_bus *bus);
+enum ndctl_fwa_state ndctl_bus_get_fw_activate_state(struct ndctl_bus *bus);
+enum ndctl_fwa_method ndctl_bus_get_fw_activate_method(struct ndctl_bus *bus);
 
 struct ndctl_dimm;
 struct ndctl_dimm *ndctl_dimm_get_first(struct ndctl_bus *bus);
@@ -704,6 +720,18 @@ unsigned long long ndctl_cmd_fw_fquery_get_fw_rev(struct ndctl_cmd *cmd);
 enum ND_FW_STATUS ndctl_cmd_fw_xlat_firmware_status(struct ndctl_cmd *cmd);
 struct ndctl_cmd *ndctl_dimm_cmd_new_ack_shutdown_count(struct ndctl_dimm *dimm);
 int ndctl_dimm_fw_update_supported(struct ndctl_dimm *dimm);
+
+enum ndctl_fwa_result {
+        NDCTL_FWA_RESULT_INVALID,
+        NDCTL_FWA_RESULT_NONE,
+        NDCTL_FWA_RESULT_SUCCESS,
+        NDCTL_FWA_RESULT_NOTSTAGED,
+        NDCTL_FWA_RESULT_NEEDRESET,
+        NDCTL_FWA_RESULT_FAIL,
+};
+
+enum ndctl_fwa_state ndctl_dimm_get_fw_activate_state(struct ndctl_dimm *dimm);
+enum ndctl_fwa_result ndctl_dimm_get_fw_activate_result(struct ndctl_dimm *dimm);
 
 int ndctl_cmd_xlat_firmware_status(struct ndctl_cmd *cmd);
 int ndctl_cmd_submit_xlat(struct ndctl_cmd *cmd);

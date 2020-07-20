@@ -92,7 +92,7 @@ static int bus_action(int argc, const char **argv, const char *usage,
 			rc = scrub_action(bus, action);
 			if (rc == 0) {
 				success++;
-				jbus = util_bus_to_json(bus);
+				jbus = util_bus_to_json(bus, 0);
 				if (jbus)
 					json_object_array_add(jbuses, jbus);
 			} else if (!fail)

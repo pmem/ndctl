@@ -403,11 +403,12 @@ static bool filter_bus(struct ndctl_bus *bus, struct util_filter_ctx *ctx)
 		}
 	}
 
-	lfa->jbus = util_bus_to_json(bus);
+	lfa->jbus = util_bus_to_json(bus, lfa->flags);
 	if (!lfa->jbus) {
 		fail("\n");
 		return false;
 	}
+
 	json_object_array_add(lfa->jbuses, lfa->jbus);
 	return true;
 }

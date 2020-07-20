@@ -80,6 +80,8 @@ struct ndctl_dimm {
 	unsigned long cmd_mask;
 	unsigned long nfit_dsm_mask;
 	long long dirty_shutdown;
+	enum ndctl_fwa_state fwa_state;
+	enum ndctl_fwa_result fwa_result;
 	char *unique_id;
 	char *dimm_path;
 	char *dimm_buf;
@@ -176,6 +178,8 @@ struct ndctl_bus {
 	char *scrub_path;
 	unsigned long cmd_mask;
 	unsigned long nfit_dsm_mask;
+	enum ndctl_fwa_state fwa_state;
+	enum ndctl_fwa_method fwa_method;
 };
 
 /**

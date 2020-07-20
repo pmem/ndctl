@@ -841,6 +841,31 @@ static void parse_dimm_flags(struct ndctl_dimm *dimm, char *flags)
 				ndctl_dimm_get_devname(dimm), flags);
 }
 
+static enum ndctl_fwa_state fwa_to_state(const char *fwa)
+{
+	if (strcmp(fwa, "idle") == 0)
+		return NDCTL_FWA_IDLE;
+	if (strcmp(fwa, "busy") == 0)
+		return NDCTL_FWA_BUSY;
+	if (strcmp(fwa, "armed") == 0)
+		return NDCTL_FWA_ARMED;
+	if (strcmp(fwa, "overflow") == 0)
+		return NDCTL_FWA_ARM_OVERFLOW;
+	return NDCTL_FWA_INVALID;
+}
+
+static enum ndctl_fwa_method fwa_method_to_method(const char *fwa_method)
+{
+	if (!fwa_method)
+		return NDCTL_FWA_METHOD_RESET;
+
+	if (strcmp(fwa_method, "quiesce") == 0)
+		return NDCTL_FWA_METHOD_SUSPEND;
+	if (strcmp(fwa_method, "live") == 0)
+		return NDCTL_FWA_METHOD_LIVE;
+	return NDCTL_FWA_METHOD_RESET;
+}
+
 static void *add_bus(void *parent, int id, const char *ctl_base)
 {
 	char buf[SYSFS_ATTR_SIZE];
@@ -907,6 +932,19 @@ static void *add_bus(void *parent, int id, const char *ctl_base)
 	bus->scrub_path = strdup(path);
 	if (!bus->scrub_path)
 		goto err_read;
+
+	sprintf(path, "%s/device/firmware/activate", ctl_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		bus->fwa_state = NDCTL_FWA_INVALID;
+	else
+		bus->fwa_state = fwa_to_state(buf);
+
+	sprintf(path, "%s/device/firmware/capability", ctl_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		bus->fwa_method = fwa_method_to_method(NULL);
+	else
+		bus->fwa_method = fwa_method_to_method(buf);
+
 
 	bus->bus_path = parent_dev_path("char", bus->major, bus->minor);
 	if (!bus->bus_path)
@@ -1481,6 +1519,51 @@ NDCTL_EXPORT int ndctl_bus_wait_for_scrub_completion(struct ndctl_bus *bus)
 	return ndctl_bus_poll_scrub_completion(bus, 0, 0);
 }
 
+NDCTL_EXPORT enum ndctl_fwa_state ndctl_bus_get_fw_activate_state(
+		struct ndctl_bus *bus)
+{
+	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
+	char *path = bus->bus_buf;
+	char buf[SYSFS_ATTR_SIZE];
+	int len = bus->buf_len;
+
+	if (bus->fwa_state == NDCTL_FWA_INVALID)
+		return NDCTL_FWA_INVALID;
+
+	if (snprintf(path, len, "%s/firmware/activate", bus->bus_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				ndctl_bus_get_devname(bus));
+		return NDCTL_FWA_INVALID;
+	}
+
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		return NDCTL_FWA_INVALID;
+
+	bus->fwa_state = fwa_to_state(buf);
+
+	return bus->fwa_state;
+}
+
+NDCTL_EXPORT enum ndctl_fwa_method ndctl_bus_get_fw_activate_method(struct ndctl_bus *bus)
+{
+	return bus->fwa_method;
+}
+
+static enum ndctl_fwa_result fwa_result_to_result(const char *result)
+{
+	if (strcmp(result, "none") == 0)
+		return NDCTL_FWA_RESULT_NONE;
+	if (strcmp(result, "success") == 0)
+		return NDCTL_FWA_RESULT_SUCCESS;
+	if (strcmp(result, "fail") == 0)
+		return NDCTL_FWA_RESULT_FAIL;
+	if (strcmp(result, "not_staged") == 0)
+		return NDCTL_FWA_RESULT_NOTSTAGED;
+	if (strcmp(result, "need_reset") == 0)
+		return NDCTL_FWA_RESULT_NEEDRESET;
+	return NDCTL_FWA_RESULT_INVALID;
+}
+
 static int ndctl_bind(struct ndctl_ctx *ctx, struct kmod_module *module,
 		const char *devname);
 static int ndctl_unbind(struct ndctl_ctx *ctx, const char *devpath);
@@ -1693,6 +1776,21 @@ static void *add_dimm(void *parent, int id, const char *dimm_base)
 		dimm->aliased = -1;
 	} else
 		parse_dimm_flags(dimm, buf);
+
+	sprintf(path, "%s/firmware/activate", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		dimm->fwa_state = NDCTL_FWA_INVALID;
+	else
+		dimm->fwa_state = fwa_to_state(buf);
+
+	sprintf(path, "%s/firmware/result", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		dimm->fwa_result = NDCTL_FWA_RESULT_INVALID;
+	else
+		dimm->fwa_result = fwa_result_to_result(buf);
+
+	if (!ndctl_bus_has_nfit(bus))
+		goto out;
 
 	/* Check if the given dimm supports nfit */
 	if (ndctl_bus_has_nfit(bus)) {
@@ -2112,6 +2210,51 @@ NDCTL_EXPORT int ndctl_dimm_enable(struct ndctl_dimm *dimm)
 	dbg(ctx, "%s: enabled\n", devname);
 
 	return 0;
+}
+
+NDCTL_EXPORT enum ndctl_fwa_state ndctl_dimm_get_fw_activate_state(
+		struct ndctl_dimm *dimm)
+{
+	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
+	char *path = dimm->dimm_buf;
+	char buf[SYSFS_ATTR_SIZE];
+	int len = dimm->buf_len;
+
+	if (dimm->fwa_state == NDCTL_FWA_INVALID)
+		return NDCTL_FWA_INVALID;
+
+	if (snprintf(path, len, "%s/firmware/activate", dimm->dimm_path) >= len) {
+		err(ctx, "%s: buffer too small!\n", ndctl_dimm_get_devname(dimm));
+		return NDCTL_FWA_INVALID;
+	}
+
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		return NDCTL_FWA_INVALID;
+
+	dimm->fwa_state = fwa_to_state(buf);
+	return dimm->fwa_state;
+}
+
+NDCTL_EXPORT enum ndctl_fwa_result ndctl_dimm_get_fw_activate_result(
+		struct ndctl_dimm *dimm)
+{
+	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
+	char *path = dimm->dimm_buf;
+	char buf[SYSFS_ATTR_SIZE];
+	int len = dimm->buf_len;
+
+	if (dimm->fwa_result == NDCTL_FWA_RESULT_INVALID)
+		return NDCTL_FWA_RESULT_INVALID;
+
+	if (snprintf(path, len, "%s/firmware/result", dimm->dimm_path) >= len) {
+		err(ctx, "%s: buffer too small!\n", ndctl_dimm_get_devname(dimm));
+		return NDCTL_FWA_RESULT_INVALID;
+	}
+
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		return NDCTL_FWA_RESULT_INVALID;
+
+	return fwa_result_to_result(buf);
 }
 
 NDCTL_EXPORT struct ndctl_dimm *ndctl_dimm_get_by_handle(struct ndctl_bus *bus,

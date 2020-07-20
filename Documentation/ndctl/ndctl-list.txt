@@ -132,16 +132,35 @@ include::xable-bus-options.txt[]
 
 -F::
 --firmware::
-	Include dimm firmware info in the listing. For example:
-[verse]
-{
-  "dev":"nmem0",
-  "firmware":{
-      "current_version":0,
-      "next_version":1,
-      "need_powercycle":true
-  }
-}
+	Include firmware info in the listing, including the state and
+	capability of runtime firmware activation:
+
+----
+# ndctl list -BDF
+[
+  {
+    "provider":"nfit_test.0",
+    "dev":"ndbus2",
+    "scrub_state":"idle",
+    "firmware":{
+      "activate_method":"suspend",
+      "activate_state":"idle"
+    },
+    "dimms":[
+      {
+        "dev":"nmem1",
+        "id":"cdab-0a-07e0-ffffffff",
+        "handle":0,
+        "phys_id":0,
+        "security":"disabled",
+        "firmware":{
+          "current_version":0,
+          "can_update":true
+        }
+      },
+...
+]
+----
 
 -X::
 --device-dax::

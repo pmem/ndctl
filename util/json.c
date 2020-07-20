@@ -122,10 +122,10 @@ void util_display_json_array(FILE *f_out, struct json_object *jarray,
 	json_object_put(jarray);
 }
 
-struct json_object *util_bus_to_json(struct ndctl_bus *bus)
+struct json_object *util_bus_to_json(struct ndctl_bus *bus, unsigned long flags)
 {
 	struct json_object *jbus = json_object_new_object();
-	struct json_object *jobj;
+	struct json_object *jobj, *fw_obj = NULL;
 	int scrub;
 
 	if (!jbus)
@@ -150,6 +150,49 @@ struct json_object *util_bus_to_json(struct ndctl_bus *bus)
 		goto err;
 	json_object_object_add(jbus, "scrub_state", jobj);
 
+	if (flags & UTIL_JSON_FIRMWARE) {
+		struct ndctl_dimm *dimm;
+
+		/*
+		 * Skip displaying firmware activation capability if no
+		 * DIMMs support firmware update.
+		 */
+		ndctl_dimm_foreach(bus, dimm)
+			if (ndctl_dimm_fw_update_supported(dimm) == 0) {
+				fw_obj = json_object_new_object();
+				break;
+			}
+	}
+
+	if (fw_obj) {
+		enum ndctl_fwa_state state;
+		enum ndctl_fwa_method method;
+
+		jobj = NULL;
+		method = ndctl_bus_get_fw_activate_method(bus);
+		if (method == NDCTL_FWA_METHOD_RESET)
+			jobj = json_object_new_string("reset");
+		if (method == NDCTL_FWA_METHOD_SUSPEND)
+			jobj = json_object_new_string("suspend");
+		if (method == NDCTL_FWA_METHOD_LIVE)
+			jobj = json_object_new_string("live");
+		if (jobj)
+			json_object_object_add(fw_obj, "activate_method", jobj);
+
+		jobj = NULL;
+		state = ndctl_bus_get_fw_activate_state(bus);
+		if (state == NDCTL_FWA_ARMED)
+			jobj = json_object_new_string("armed");
+		if (state == NDCTL_FWA_IDLE)
+			jobj = json_object_new_string("idle");
+		if (state == NDCTL_FWA_ARM_OVERFLOW)
+			jobj = json_object_new_string("overflow");
+		if (jobj)
+			json_object_object_add(fw_obj, "activate_state", jobj);
+
+		json_object_object_add(jbus, "firmware", fw_obj);
+	}
+
 	return jbus;
  err:
 	json_object_put(jbus);
@@ -160,10 +203,13 @@ struct json_object *util_dimm_firmware_to_json(struct ndctl_dimm *dimm,
 		unsigned long flags)
 {
 	struct json_object *jfirmware = json_object_new_object();
+	bool can_update, need_powercycle;
+	enum ndctl_fwa_result result;
+	enum ndctl_fwa_state state;
 	struct json_object *jobj;
 	struct ndctl_cmd *cmd;
-	int rc;
 	uint64_t run, next;
+	int rc;
 
 	if (!jfirmware)
 		return NULL;
@@ -195,9 +241,11 @@ struct json_object *util_dimm_firmware_to_json(struct ndctl_dimm *dimm,
 		json_object_object_add(jfirmware, "current_version", jobj);
 
 	rc = ndctl_dimm_fw_update_supported(dimm);
-	jobj = json_object_new_boolean(rc == 0);
+	can_update = rc == 0;
+	jobj = json_object_new_boolean(can_update);
 	if (jobj)
 		json_object_object_add(jfirmware, "can_update", jobj);
+
 
 	next = ndctl_cmd_fw_info_get_updated_version(cmd);
 	if (next == ULLONG_MAX) {
@@ -208,16 +256,61 @@ struct json_object *util_dimm_firmware_to_json(struct ndctl_dimm *dimm,
 		goto out;
 	}
 
-	if (next != 0) {
-		jobj = util_json_object_hex(next, flags);
-		if (jobj)
-			json_object_object_add(jfirmware,
-					"next_version", jobj);
+	if (!next)
+		goto out;
 
+	jobj = util_json_object_hex(next, flags);
+	if (jobj)
+		json_object_object_add(jfirmware,
+				"next_version", jobj);
+
+	state = ndctl_dimm_get_fw_activate_state(dimm);
+	switch (state) {
+	case NDCTL_FWA_IDLE:
+		jobj = json_object_new_string("idle");
+		break;
+	case NDCTL_FWA_ARMED:
+		jobj = json_object_new_string("armed");
+		break;
+	case NDCTL_FWA_BUSY:
+		jobj = json_object_new_string("busy");
+		break;
+	default:
+		jobj = NULL;
+		break;
+	}
+	if (jobj)
+		json_object_object_add(jfirmware, "activate_state", jobj);
+
+	result = ndctl_dimm_get_fw_activate_result(dimm);
+	switch (result) {
+	case NDCTL_FWA_RESULT_NONE:
+	case NDCTL_FWA_RESULT_SUCCESS:
+	case NDCTL_FWA_RESULT_NOTSTAGED:
+		/*
+		 * If a 'next' firmware version is staged then this
+		 * result is stale, if the activation succeeds that is
+		 * indicated by not finding a 'next' entry.
+		 */
+		need_powercycle = false;
+		break;
+	case NDCTL_FWA_RESULT_NEEDRESET:
+	case NDCTL_FWA_RESULT_FAIL:
+	default:
+		/*
+		 * If the last activation failed, or if the activation
+		 * result is unavailable it is always the case that the
+		 * only remediation is powercycle.
+		 */
+		need_powercycle = true;
+		break;
+	}
+
+	if (need_powercycle) {
 		jobj = json_object_new_boolean(true);
-		if (jobj)
-			json_object_object_add(jfirmware,
-					"need_powercycle", jobj);
+		if (!jobj)
+			goto out;
+		json_object_object_add(jfirmware, "need_powercycle", jobj);
 	}
 
 	ndctl_cmd_unref(cmd);
