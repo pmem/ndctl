@@ -157,6 +157,11 @@ int ndctl_bus_start_scrub(struct ndctl_bus *bus);
 int ndctl_bus_has_error_injection(struct ndctl_bus *bus);
 enum ndctl_fwa_state ndctl_bus_get_fw_activate_state(struct ndctl_bus *bus);
 enum ndctl_fwa_method ndctl_bus_get_fw_activate_method(struct ndctl_bus *bus);
+int ndctl_bus_set_fw_activate_noidle(struct ndctl_bus *bus);
+int ndctl_bus_clear_fw_activate_noidle(struct ndctl_bus *bus);
+int ndctl_bus_set_fw_activate_nosuspend(struct ndctl_bus *bus);
+int ndctl_bus_clear_fw_activate_nosuspend(struct ndctl_bus *bus);
+int ndctl_bus_activate_firmware(struct ndctl_bus *bus, enum ndctl_fwa_method method);
 
 struct ndctl_dimm;
 struct ndctl_dimm *ndctl_dimm_get_first(struct ndctl_bus *bus);

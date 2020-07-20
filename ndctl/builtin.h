@@ -24,6 +24,7 @@ int cmd_init_labels(int argc, const char **argv, struct ndctl_ctx *ctx);
 int cmd_check_labels(int argc, const char **argv, struct ndctl_ctx *ctx);
 int cmd_inject_error(int argc, const char **argv, struct ndctl_ctx *ctx);
 int cmd_wait_scrub(int argc, const char **argv, struct ndctl_ctx *ctx);
+int cmd_activate_firmware(int argc, const char **argv, struct ndctl_ctx *ctx);
 int cmd_start_scrub(int argc, const char **argv, struct ndctl_ctx *ctx);
 int cmd_list(int argc, const char **argv, struct ndctl_ctx *ctx);
 int cmd_monitor(int argc, const char **argv, struct ndctl_ctx *ctx);

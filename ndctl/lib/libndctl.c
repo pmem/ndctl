@@ -1549,6 +1549,92 @@ NDCTL_EXPORT enum ndctl_fwa_method ndctl_bus_get_fw_activate_method(struct ndctl
 	return bus->fwa_method;
 }
 
+NDCTL_EXPORT int ndctl_bus_activate_firmware(struct ndctl_bus *bus, enum ndctl_fwa_method method)
+{
+	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
+	char *path = bus->bus_buf;
+	char buf[SYSFS_ATTR_SIZE];
+	int len = bus->buf_len;
+
+	if (snprintf(path, len, "%s/firmware/activate", bus->bus_path) >= len) {
+		err(ctx, "%s: buffer too small!\n", ndctl_bus_get_devname(bus));
+		return -ENOMEM;
+	}
+
+	switch (method) {
+	case NDCTL_FWA_METHOD_LIVE:
+	case NDCTL_FWA_METHOD_SUSPEND:
+		break;
+	default:
+		err(ctx, "%s: method: %d invalid\n", ndctl_bus_get_devname(bus), method);
+		return -EINVAL;
+	}
+
+	sprintf(buf, "%s\n", method == NDCTL_FWA_METHOD_LIVE ? "live" : "quiesce");
+
+	return sysfs_write_attr(ctx, path, buf);
+}
+
+static int write_fw_activate_noidle(struct ndctl_bus *bus, int arg)
+{
+	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
+	char *path = bus->bus_buf;
+	char buf[SYSFS_ATTR_SIZE];
+	int len = bus->buf_len;
+
+	if (!ndctl_bus_has_nfit(bus))
+		return -EOPNOTSUPP;
+
+	if (snprintf(path, len, "%s/nfit/firmware_activate_noidle", bus->bus_path) >= len) {
+		err(ctx, "%s: buffer too small!\n", ndctl_bus_get_devname(bus));
+		return -ENOMEM;
+	}
+
+	sprintf(buf, "%d\n", arg);
+
+	return sysfs_write_attr(ctx, path, buf);
+}
+
+NDCTL_EXPORT int ndctl_bus_set_fw_activate_noidle(struct ndctl_bus *bus)
+{
+	return write_fw_activate_noidle(bus, 1);
+}
+
+NDCTL_EXPORT int ndctl_bus_clear_fw_activate_noidle(struct ndctl_bus *bus)
+{
+	return write_fw_activate_noidle(bus, 0);
+}
+
+static int write_fw_activate_nosuspend(struct ndctl_bus *bus, int arg)
+{
+	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
+	char *path = bus->bus_buf;
+	char buf[SYSFS_ATTR_SIZE];
+	int len = bus->buf_len;
+
+	if (!ndctl_bus_has_nfit(bus))
+		return -EOPNOTSUPP;
+
+	if (snprintf(path, len, "%s/nfit/firmware_activate_nosuspend", bus->bus_path) >= len) {
+		err(ctx, "%s: buffer too small!\n", ndctl_bus_get_devname(bus));
+		return -ENOMEM;
+	}
+
+	sprintf(buf, "%d\n", arg);
+
+	return sysfs_write_attr(ctx, path, buf);
+}
+
+NDCTL_EXPORT int ndctl_bus_set_fw_activate_nosuspend(struct ndctl_bus *bus)
+{
+	return write_fw_activate_nosuspend(bus, 1);
+}
+
+NDCTL_EXPORT int ndctl_bus_clear_fw_activate_nosuspend(struct ndctl_bus *bus)
+{
+	return write_fw_activate_nosuspend(bus, 0);
+}
+
 static enum ndctl_fwa_result fwa_result_to_result(const char *result)
 {
 	if (strcmp(result, "none") == 0)

@@ -445,4 +445,9 @@ LIBNDCTL_25 {
 	ndctl_bus_get_fw_activate_method;
 	ndctl_dimm_fw_activate_disarm;
 	ndctl_dimm_fw_activate_arm;
+	ndctl_bus_set_fw_activate_noidle;
+	ndctl_bus_clear_fw_activate_noidle;
+	ndctl_bus_set_fw_activate_nosuspend;
+	ndctl_bus_clear_fw_activate_nosuspend;
+	ndctl_bus_activate_firmware;
 } LIBNDCTL_24;

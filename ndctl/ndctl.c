@@ -90,6 +90,7 @@ static struct cmd_struct commands[] = {
 	{ "update-firmware", { cmd_update_firmware } },
 	{ "inject-smart", { cmd_inject_smart } },
 	{ "wait-scrub", { cmd_wait_scrub } },
+	{ "activate-firmware", { cmd_activate_firmware } },
 	{ "start-scrub", { cmd_start_scrub } },
 	{ "setup-passphrase", { cmd_setup_passphrase } },
 	{ "update-passphrase", { cmd_update_passphrase } },

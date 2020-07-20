@@ -57,7 +57,8 @@ man1_MANS = \
 	ndctl-load-keys.1 \
 	ndctl-wait-overwrite.1 \
 	ndctl-read-infoblock.1 \
-	ndctl-write-infoblock.1
+	ndctl-write-infoblock.1 \
+	ndctl-activate-firmware.1
 
 EXTRA_DIST = $(man1_MANS)
 
