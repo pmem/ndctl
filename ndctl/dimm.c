@@ -59,10 +59,15 @@ static struct parameters {
 	bool master_pass;
 	bool human;
 	bool force;
+	bool arm;
+	bool arm_set;
+	bool disarm;
+	bool disarm_set;
 	bool index;
 	bool json;
 	bool verbose;
 } param = {
+	.arm = true,
 	.labelversion = "1.1",
 };
 
@@ -694,6 +699,72 @@ out:
 	return rc;
 }
 
+static enum ndctl_fwa_state fw_update_arm(struct ndctl_dimm *dimm)
+{
+	struct ndctl_bus *bus = ndctl_dimm_get_bus(dimm);
+	const char *devname = ndctl_dimm_get_devname(dimm);
+	enum ndctl_fwa_state state = ndctl_bus_get_fw_activate_state(bus);
+
+	if (state == NDCTL_FWA_INVALID) {
+		if (param.verbose)
+			err("%s: firmware activate capability not found\n",
+					devname);
+		return NDCTL_FWA_INVALID;
+	}
+
+	if (state == NDCTL_FWA_ARM_OVERFLOW && !param.force) {
+		err("%s: overflow detected skip arm\n", devname);
+		return NDCTL_FWA_INVALID;
+	}
+
+	state = ndctl_dimm_fw_activate_arm(dimm);
+	if (state != NDCTL_FWA_ARMED) {
+		err("%s: failed to arm\n", devname);
+		return NDCTL_FWA_INVALID;
+	}
+
+	if (param.force)
+		return state;
+
+	state = ndctl_bus_get_fw_activate_state(bus);
+	if (state == NDCTL_FWA_ARM_OVERFLOW) {
+		err("%s: arm aborted, tripped overflow\n", devname);
+		ndctl_dimm_fw_activate_disarm(dimm);
+		return NDCTL_FWA_INVALID;
+	}
+	return NDCTL_FWA_ARMED;
+}
+
+#define ARM_FAILURE_FATAL (1)
+#define ARM_FAILURE_OK (0)
+
+static int fw_update_toggle_arm(struct ndctl_dimm *dimm,
+		struct json_object *jdimms, bool arm_fatal)
+{
+	enum ndctl_fwa_state state;
+	struct json_object *jobj;
+	unsigned long flags;
+
+	if (param.disarm)
+		state = ndctl_dimm_fw_activate_disarm(dimm);
+	else if (param.arm)
+		state = fw_update_arm(dimm);
+	else
+		state = NDCTL_FWA_INVALID;
+
+	if (state == NDCTL_FWA_INVALID && arm_fatal)
+		return -ENXIO;
+
+	flags = UTIL_JSON_FIRMWARE;
+	if (isatty(1))
+		flags |= UTIL_JSON_HUMAN;
+	jobj = util_dimm_to_json(dimm, flags);
+	if (jobj)
+		json_object_array_add(jdimms, jobj);
+
+	return 0;
+}
+
 static int query_fw_finish_status(struct ndctl_dimm *dimm,
 		struct action_context *actx)
 {
@@ -701,10 +772,8 @@ static int query_fw_finish_status(struct ndctl_dimm *dimm,
 	struct update_context *uctx = &actx->update;
 	struct fw_info *fw = &uctx->dimm_fw;
 	struct timespec now, before, after;
-	struct json_object *jobj;
 	enum ND_FW_STATUS status;
 	struct ndctl_cmd *cmd;
-	unsigned long flags;
 	uint64_t ver;
 	int rc;
 
@@ -765,12 +834,13 @@ again:
 			goto unref;
 		}
 
-		flags = UTIL_JSON_FIRMWARE;
-		if (isatty(1))
-			flags |= UTIL_JSON_HUMAN;
-		jobj = util_dimm_to_json(dimm, flags);
-		if (jobj)
-			json_object_array_add(actx->jdimms, jobj);
+		/*
+		 * Now try to arm/disarm firmware activation if
+		 * requested.  Failure to toggle the arm state is not
+		 * fatal, the success / failure will be inferred from
+		 * the emitted json state.
+		 */
+		fw_update_toggle_arm(dimm, actx->jdimms, ARM_FAILURE_OK);
 		rc = 0;
 		break;
 	case FW_EBADFW:
@@ -845,6 +915,10 @@ static int action_update(struct ndctl_dimm *dimm, struct action_context *actx)
 	struct ndctl_bus *bus = ndctl_dimm_get_bus(dimm);
 	const char *devname = ndctl_dimm_get_devname(dimm);
 	int rc;
+
+	if (!param.infile)
+		return fw_update_toggle_arm(dimm, actx->jdimms,
+				ARM_FAILURE_FATAL);
 
 	rc = ndctl_dimm_fw_update_supported(dimm);
 	switch (rc) {
@@ -1090,7 +1164,11 @@ OPT_STRING('i', "input", &param.infile, "input-file", \
 #define UPDATE_OPTIONS() \
 OPT_STRING('f', "firmware", &param.infile, "firmware-file", \
 	"firmware filename for update"), \
-OPT_BOOLEAN('i', "force", &param.force, "ignore ARS status, try to force update")
+OPT_BOOLEAN('i', "force", &param.force, "ignore ARS / arm status, try to force update"), \
+OPT_BOOLEAN_SET('A', "arm", &param.arm, &param.arm_set, \
+	"arm device for firmware activation (default)"), \
+OPT_BOOLEAN_SET('D', "disarm", &param.disarm, &param.disarm_set, \
+	"disarm device for firmware activation")
 
 #define INIT_OPTIONS() \
 OPT_BOOLEAN('f', "force", &param.force, \
@@ -1237,10 +1315,35 @@ static int dimm_action(int argc, const char **argv, struct ndctl_ctx *ctx,
 		}
 	}
 
+	if (param.arm_set && param.disarm_set) {
+		fprintf(stderr, "set either --arm, or --disarm, not both\n");
+		usage_with_options(u, options);
+	}
+
+	if (param.disarm_set && !param.disarm) {
+		fprintf(stderr, "--no-disarm syntax not supported\n");
+		usage_with_options(u, options);
+		return -EINVAL;
+	}
+
 	if (!param.infile) {
+		/*
+		 * Update needs an infile unless we are only being
+		 * called to toggle the arm state. Other actions either
+		 * do no need an input file, or are prepared for stdin.
+		 */
 		if (action == action_update) {
-			usage_with_options(u, options);
-			return -EINVAL;
+			if (!param.arm_set && !param.disarm_set) {
+				fprintf(stderr, "require --arm, or --disarm\n");
+				usage_with_options(u, options);
+				return -EINVAL;
+			}
+
+			if (param.arm_set && !param.arm) {
+				fprintf(stderr, "--no-arm syntax not supported\n");
+				usage_with_options(u, options);
+				return -EINVAL;
+			}
 		}
 		actx.f_in = stdin;
 	} else {

@@ -2212,6 +2212,37 @@ NDCTL_EXPORT int ndctl_dimm_enable(struct ndctl_dimm *dimm)
 	return 0;
 }
 
+static int dimm_set_arm(struct ndctl_dimm *dimm, bool arm)
+{
+	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
+	char *path = dimm->dimm_buf;
+	int len = dimm->buf_len;
+
+	if (dimm->fwa_state == NDCTL_FWA_INVALID)
+		return NDCTL_FWA_INVALID;
+
+	if (snprintf(path, len, "%s/firmware/activate", dimm->dimm_path) >= len) {
+		err(ctx, "%s: buffer too small!\n", ndctl_dimm_get_devname(dimm));
+		return NDCTL_FWA_INVALID;
+	}
+
+	if (sysfs_write_attr(ctx, path, arm ? "arm" : "disarm") < 0)
+		return NDCTL_FWA_INVALID;
+	return NDCTL_FWA_ARMED;
+}
+
+NDCTL_EXPORT enum ndctl_fwa_state ndctl_dimm_fw_activate_disarm(
+		struct ndctl_dimm *dimm)
+{
+	return dimm_set_arm(dimm, false);
+}
+
+NDCTL_EXPORT enum ndctl_fwa_state ndctl_dimm_fw_activate_arm(
+		struct ndctl_dimm *dimm)
+{
+	return dimm_set_arm(dimm, true);
+}
+
 NDCTL_EXPORT enum ndctl_fwa_state ndctl_dimm_get_fw_activate_state(
 		struct ndctl_dimm *dimm)
 {

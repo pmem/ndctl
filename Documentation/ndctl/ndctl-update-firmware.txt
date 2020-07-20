@@ -50,7 +50,21 @@ include::xable-bus-options.txt[]
 -i::
 --force::
 	Ignore in-progress Address Range Scrub and try to submit the
-	firmware update.
+	firmware update, or ignore firmware activate arm overflows and
+	force-arm devices.
+
+-A::
+--arm::
+	Arm a device for firmware activation. This is enabled by default
+	when a firmware image is specified. Specify --no-arm to disable
+	this default. Otherwise, without a firmware image, this option can be
+	used to manually arm a device for firmware activate.
+
+-D::
+--disarm::
+	Disarm devices after uploading the firmware file, or manually
+	disarm devices when a firmware image is not specified.
+	--no-disarm is not accepted.
 
 -v::
 --verbose::

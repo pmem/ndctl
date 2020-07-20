@@ -732,6 +732,8 @@ enum ndctl_fwa_result {
 
 enum ndctl_fwa_state ndctl_dimm_get_fw_activate_state(struct ndctl_dimm *dimm);
 enum ndctl_fwa_result ndctl_dimm_get_fw_activate_result(struct ndctl_dimm *dimm);
+enum ndctl_fwa_state ndctl_dimm_fw_activate_disarm(struct ndctl_dimm *dimm);
+enum ndctl_fwa_state ndctl_dimm_fw_activate_arm(struct ndctl_dimm *dimm);
 
 int ndctl_cmd_xlat_firmware_status(struct ndctl_cmd *cmd);
 int ndctl_cmd_submit_xlat(struct ndctl_cmd *cmd);
