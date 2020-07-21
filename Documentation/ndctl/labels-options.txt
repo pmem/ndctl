@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 
 <memory device(s)>::
-	One or more 'nmemX' device names. The keyword 'all' can be specified to
-	operate on every dimm in the system, optionally filtered by bus id (see
-        --bus= option).
+include::xable-dimm-options.txt[]
 
 -s::
 --size=::
@@ -16,8 +14,7 @@
 
 -b::
 --bus=::
-	Limit operation to memory devices (dimms) that are on the given bus.
-	Where 'bus' can be a provider name or a bus id number.
+include::xable-bus-options.txt[]
 
 -v::
 	Turn on verbose debug messages in the library (if ndctl was built with

@@ -38,9 +38,7 @@ OPTIONS
 -------
 -b::
 --bus=::
-	Enforce that the operation only be carried on devices that are
-	attached to the given bus. Where 'bus' can be a provider name or a bus
-	id number.
+include::xable-bus-options.txt[]
 
 -m::
 --media-temperature=::
