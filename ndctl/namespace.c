@@ -175,7 +175,7 @@ OPT_STRING('m', "mode", &param.mode, "operation-mode", \
 OPT_STRING('s', "size", &param.size, "size", \
 	"override the image size to instantiate the infoblock"), \
 OPT_STRING('a', "align", &param.align, "align", \
-	"specify the expected physical alignment (default: 2M)"), \
+	"specify the expected physical alignment"), \
 OPT_STRING('u', "uuid", &param.uuid, "uuid", \
 	"specify the uuid for the infoblock (default: autogenerate)"), \
 OPT_STRING('M', "map", &param.map, "memmap-location", \
@@ -325,22 +325,14 @@ static int set_defaults(enum device_action action)
 					sysconf(_SC_PAGE_SIZE));
 			rc = -EINVAL;
 		}
-	} else if (action == ACTION_WRITE_INFOBLOCK)
-		param.align = "2M";
+	}
 
 	if (param.size) {
 		unsigned long long size = parse_size64(param.size);
-		unsigned long long align = parse_size64(param.align);
 
 		if (size == ULLONG_MAX) {
 			error("failed to parse namespace size '%s'\n",
 					param.size);
-			rc = -EINVAL;
-		} else if (action == ACTION_WRITE_INFOBLOCK
-				&& align < ULLONG_MAX
-				&& !IS_ALIGNED(size, align)) {
-			error("--size=%s not aligned to %s\n", param.size,
-					param.align);
 			rc = -EINVAL;
 		}
 	}
@@ -1982,6 +1974,23 @@ out:
 	return rc;
 }
 
+static unsigned long ndctl_get_default_alignment(struct ndctl_namespace *ndns)
+{
+	unsigned long long align = 0;
+	struct ndctl_dax *dax = ndctl_namespace_get_dax(ndns);
+	struct ndctl_pfn *pfn = ndctl_namespace_get_pfn(ndns);
+
+	if (ndctl_namespace_get_mode(ndns) == NDCTL_NS_MODE_FSDAX && pfn)
+		align = ndctl_pfn_get_supported_alignment(pfn, 1);
+	else if (ndctl_namespace_get_mode(ndns) == NDCTL_NS_MODE_DEVDAX && dax)
+		align = ndctl_dax_get_supported_alignment(dax, 1);
+
+	if (!align)
+		align =  sysconf(_SC_PAGE_SIZE);
+
+	return align;
+}
+
 static int namespace_rw_infoblock(struct ndctl_namespace *ndns,
 		struct read_infoblock_ctx *ri_ctx, int write)
 {
@@ -2013,9 +2022,40 @@ static int namespace_rw_infoblock(struct ndctl_namespace *ndns,
 	}
 
 	sprintf(path, "/dev/%s", ndctl_namespace_get_block_device(ndns));
-	if (write)
-		rc = file_write_infoblock(path);
-	else
+	if (write) {
+		unsigned long long align;
+		bool align_provided = true;
+
+		if (!param.align) {
+			align = ndctl_get_default_alignment(ndns);
+
+			if (asprintf((char **)&param.align, "%llu", align) < 0) {
+				rc = -EINVAL;
+				goto out;
+			}
+			align_provided = false;
+		}
+
+		if (param.size) {
+			unsigned long long size = parse_size64(param.size);
+			align = parse_size64(param.align);
+
+			if (align < ULLONG_MAX && !IS_ALIGNED(size, align)) {
+				error("--size=%s not aligned to %s\n", param.size,
+					param.align);
+
+				rc = -EINVAL;
+			}
+		}
+
+		if (!rc)
+			rc = file_write_infoblock(path);
+
+		if (!align_provided) {
+			free((char *)param.align);
+			param.align = NULL;
+		}
+	} else
 		rc = file_read_infoblock(path, ndns, ri_ctx);
 	param.parent_uuid = save;
 out:
@@ -2060,6 +2100,9 @@ static int do_xaction_namespace(const char *namespace,
 	}
 
 	if (action == ACTION_WRITE_INFOBLOCK && !namespace) {
+		if (!param.align)
+			param.align = "2M";
+
 		rc = file_write_infoblock(param.outfile);
 		if (rc >= 0)
 			(*processed)++;
