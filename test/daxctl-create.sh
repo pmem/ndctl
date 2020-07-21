@@ -46,7 +46,15 @@ find_testdev()
 
 setup_dev()
 {
+	local rc=1
+	local nmaps=0
 	test -n "$testdev"
+
+	nmaps=$(daxctl_get_nr_mappings "$testdev")
+	if [[ $nmaps == 0 ]]; then
+		printf "Device is idle"
+		exit "$rc"
+	fi
 
 	"$DAXCTL" disable-device "$testdev"
 	"$DAXCTL" reconfigure-device -s 0 "$testdev"
@@ -110,6 +118,47 @@ daxctl_get_mode()
 	"$DAXCTL" list -d "$1" | jq -er '.[].mode'
 }
 
+daxctl_get_size_by_mapping()
+{
+	local size=0
+	local _start=0
+	local _end=0
+
+	_start=$(cat "$1"/start)
+	_end=$(cat "$1"/end)
+	((size=size + _end - _start + 1))
+	echo $size
+}
+
+daxctl_get_nr_mappings()
+{
+	local i=0
+	local _size=0
+	local devsize=0
+	local path=""
+
+	path=$(readlink -f /sys/bus/dax/devices/"$1"/)
+	until ! [ -d "$path/mapping$i" ]
+	do
+		_size=$(daxctl_get_size_by_mapping "$path/mapping$i")
+		if [[ $_size == 0 ]]; then
+			i=0
+			break
+		fi
+		((devsize=devsize + _size))
+		((i=i + 1))
+	done
+
+	# Return number of mappings if the sizes between size field
+	# and the one computed by mappingNNN are the same
+	_size=$("$DAXCTL" list -d "$1" | jq -er '.[0].size | .//""')
+	if [[ ! $_size == "$devsize" ]]; then
+		echo 0
+	else
+		echo $i
+	fi
+}
+
 daxctl_test_multi()
 {
 	local daxdev
@@ -139,6 +188,7 @@ daxctl_test_multi()
 	new_size=$((size * 2))
 	daxdev_4=$("$DAXCTL" create-device -r 0 -s "$new_size" | jq -er '.[].chardev')
 	test -n "$daxdev_4"
+	test "$(daxctl_get_nr_mappings "$daxdev_4")" -eq 2
 
 	fail_if_available
 
@@ -173,6 +223,9 @@ daxctl_test_multi_reconfig()
 		"$DAXCTL" reconfigure-device -s "$i" "$daxdev_1"
 	done
 
+	test "$(daxctl_get_nr_mappings "$testdev")" -eq $((ncfgs / 2))
+	test "$(daxctl_get_nr_mappings "$daxdev_1")" -eq $((ncfgs / 2))
+
 	fail_if_available
 
 	"$DAXCTL" disable-device "$daxdev_1" && "$DAXCTL" destroy-device "$daxdev_1"
@@ -191,7 +244,8 @@ daxctl_test_adjust()
 	start=$((size + size))
 	for i in $(seq 1 1 $ncfgs)
 	do
-		daxdev=$("$DAXCTL" create-device -r 0 -s "$size")
+		daxdev=$("$DAXCTL" create-device -r 0 -s "$size" | jq -er '.[].chardev')
+		test "$(daxctl_get_nr_mappings "$daxdev")" -eq 1
 	done
 
 	daxdev=$(daxctl_get_dev "dax0.1")
@@ -202,10 +256,17 @@ daxctl_test_adjust()
 	daxdev=$(daxctl_get_dev "dax0.2")
 	"$DAXCTL" disable-device "$daxdev"
 	"$DAXCTL" reconfigure-device -s $((size * 2)) "$daxdev"
+	# Allocates space at the beginning: expect two mappings as
+	# as don't adjust the mappingX region. This is because we
+	# preserve the relative page_offset of existing allocations
+	test "$(daxctl_get_nr_mappings "$daxdev")" -eq 2
 
 	daxdev=$(daxctl_get_dev "dax0.3")
 	"$DAXCTL" disable-device "$daxdev"
 	"$DAXCTL" reconfigure-device -s $((size * 2)) "$daxdev"
+	# Adjusts space at the end, expect one mapping because we are
+	# able to extend existing region range.
+	test "$(daxctl_get_nr_mappings "$daxdev")" -eq 1
 
 	fail_if_available
 
@@ -232,6 +293,7 @@ daxctl_test1()
 	daxdev=$("$DAXCTL" create-device -r 0 | jq -er '.[].chardev')
 
 	test -n "$daxdev"
+	test "$(daxctl_get_nr_mappings "$daxdev")" -eq 1
 	fail_if_available
 
 	"$DAXCTL" disable-device "$daxdev" && "$DAXCTL" destroy-device "$daxdev"
