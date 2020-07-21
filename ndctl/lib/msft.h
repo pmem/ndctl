@@ -46,7 +46,7 @@ struct ndn_msft_smart {
 	__u32	status;
 	union {
 		__u8 buf[9];
-		struct ndn_msft_smart_data data[0];
+		struct ndn_msft_smart_data data[1];
 	};
 } __attribute__((packed));
 

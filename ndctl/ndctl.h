@@ -91,7 +91,7 @@ struct nd_cmd_ars_status {
 		__u32 reserved;
 		__u64 err_address;
 		__u64 length;
-	} __attribute__((packed)) records[0];
+	} __attribute__((packed)) records[];
 } __attribute__((packed));
 
 struct nd_cmd_clear_error {
