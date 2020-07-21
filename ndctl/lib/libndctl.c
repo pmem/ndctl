@@ -2252,7 +2252,7 @@ static void *add_region(void *parent, int id, const char *region_base)
 	struct ndctl_bus *bus = parent;
 	struct ndctl_ctx *ctx = bus->ctx;
 	char *path = calloc(1, strlen(region_base) + 100);
-	int perm;
+	int perm, rc;
 
 	if (!path)
 		return NULL;
@@ -2302,10 +2302,12 @@ static void *add_region(void *parent, int id, const char *region_base)
 	region->module = to_module(ctx, buf);
 
 	sprintf(path, "%s/numa_node", region_base);
-	if (sysfs_read_attr(ctx, path, buf) == 0)
+	if ((rc = sysfs_read_attr(ctx, path, buf)) == 0)
 		region->numa_node = strtol(buf, NULL, 0);
+	else if (rc == -ENOENT)
+		region->numa_node = NUMA_NO_ATTR;
 	else
-		region->numa_node = -1;
+		region->numa_node = NUMA_NO_NODE;
 
 	sprintf(path, "%s/target_node", region_base);
 	if (sysfs_read_attr(ctx, path, buf) == 0)
@@ -2585,6 +2587,11 @@ NDCTL_EXPORT struct ndctl_dimm *ndctl_region_get_next_dimm(struct ndctl_region *
 	}
 
 	return NULL;
+}
+
+NDCTL_EXPORT int ndctl_region_has_numa(struct ndctl_region *region)
+{
+	return (region->numa_node != NUMA_NO_ATTR);
 }
 
 NDCTL_EXPORT int ndctl_region_get_numa_node(struct ndctl_region *region)
