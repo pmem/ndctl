@@ -1969,7 +1969,7 @@ static int file_write_infoblock(const char *path)
 
 	free(buf);
 out:
-	if (fd > 0 && fd != STDOUT_FILENO)
+	if (fd >= 0 && fd != STDOUT_FILENO)
 		close(fd);
 	return rc;
 }
