@@ -56,9 +56,7 @@ static u32 papr_get_firmware_status(struct ndctl_cmd *cmd)
 
 static int papr_xlat_firmware_status(struct ndctl_cmd *cmd)
 {
-	const struct nd_pkg_pdsm *pcmd = to_pdsm(cmd);
-
-	return pcmd->cmd_status;
+	return (cmd->type == ND_CMD_CALL) ? to_pdsm(cmd)->cmd_status : 0;
 }
 
 /* Verify if the given command is supported and valid */
