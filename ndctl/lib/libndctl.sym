@@ -430,10 +430,10 @@ LIBNDCTL_23 {
 	ndctl_region_get_target_node;
 	ndctl_region_get_align;
 	ndctl_region_set_align;
-	ndctl_region_has_numa;
 } LIBNDCTL_22;
 
 LIBNDCTL_24 {
 	ndctl_bus_has_of_node;
 	ndctl_bus_is_papr_scm;
+	ndctl_region_has_numa;
 } LIBNDCTL_23;
