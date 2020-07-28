@@ -27,12 +27,12 @@ for command to succeed:
 
 The updated key blobs will be created in the /etc/ndctl/keys directory
 with a file name format of
-"nvdimm\_&lt;dimm-unique-id&gt;\_&lt;hostname&gt;.blob".
+"nvdimm\_\<dimm-unique-id\>\_\<hostname\>.blob".
 
 OPTIONS
 =======
 
-`<dimm>`  
+\<dimm\>  
 A *nmemX* device name, or a dimm id number. Restrict the operation to
 the specified dimm(s). The keyword *all* can be specified to indicate
 the lack of any restriction, however this is the same as not supplying a

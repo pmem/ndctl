@@ -149,7 +149,7 @@ policy. Use this option to disable the automatic onlining behavior.
 
 `--no-movable`  
 *--movable* is the default. This can be overridden to online new memory
-such that is is not *movable*. This allows any allocation to potentially
+such that it is not *movable*. This allows any allocation to potentially
 be served from this memory. This may preclude subsequent removal. With
 the *--movable* behavior (which is default), kernel allocations will not
 consider this memory, and it will be reserved for application use.

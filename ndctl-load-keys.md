@@ -27,7 +27,7 @@ before module load.
 > **Note**
 >
 > All key files are expected to be in the format:
-> nvdimm\_&lt;id&gt;\_hostname  
+> nvdimm\_\<id\>\_hostname  
 > The `'_`' character is used to delimit the different components in the
 > file name. Within the hostname, the `'_`' character is allowed since
 > it is the last component of the file name.

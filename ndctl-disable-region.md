@@ -27,7 +27,7 @@ for the nd\_pmem or nd\_blk device driver to consume.
 OPTIONS
 =======
 
-`<region>`  
+\<region\>  
 A *regionX* device name, or a region id number. Restrict the operation
 to the specified region(s). The keyword *all* can be specified to
 indicate the lack of any restriction, however this is the same as not

@@ -48,17 +48,22 @@ OPTIONS
 =======
 
 `-b; --bus=`  
-Enforce that the operation only be carried on devices that are attached
-to the given bus. Where *bus* can be a provider name or a bus id number.
+A bus id number, or a provider string (e.g. "ACPI.NFIT"). Restrict the
+operation to the specified bus(es). The keyword *all* can be specified
+to indicate the lack of any restriction, however this is the same as not
+supplying a --bus option at all.
 
 `-d; --dimm=`  
-A *nmemX* device name, or dimm id number. Select the devices to monitor
-reference the given dimm.
+A *nmemX* device name, or a dimm id number. Restrict the operation to
+the specified dimm(s). The keyword *all* can be specified to indicate
+the lack of any restriction, however this is the same as not supplying a
+--dimm option at all.
 
 `-r; --region=`  
-A *regionX* device name, or a region id number. The keyword *all* can be
-specified to carry out the operation on every region in the system,
-optionally filtered by bus id (see --bus= option).
+A *regionX* device name, or a region id number. Restrict the operation
+to the specified region(s). The keyword *all* can be specified to
+indicate the lack of any restriction, however this is the same as not
+supplying a --region option at all.
 
 `-n; --namespace=`  
 A *namespaceX.Y* device name, or namespace region plus id tuple *X.Y*.
@@ -66,17 +71,16 @@ A *namespaceX.Y* device name, or namespace region plus id tuple *X.Y*.
 `-l; --log=`  
 Send log messages to the specified destination.
 
--   "&lt;file&gt;": Send log messages to specified &lt;file&gt;. When
-    fopen() is not able to open &lt;file&gt;, log messages will be
-    forwarded to syslog.
+-   "\<file\>": Send log messages to specified \<file\>. When fopen() is
+    not able to open \<file\>, log messages will be forwarded to syslog.
 
 -   "syslog": Send messages to syslog.
 
 -   "standard": Send messages to standard output.
 
 The default log destination is *syslog* if "--daemon" is specified,
-otherwise *standard*. Note that standard and relative path for
-`<file&gt; will not work if "--daemon" is specified.
+otherwise *standard*. Note that standard and relative path for \<file\>
+will not work if "--daemon" is specified.
 
 `-c; --config-file=`  
 Provide the config file to use. This overrides the default config
@@ -104,6 +108,9 @@ Name of an smart health event from the following:
 
 The monitor will attempt to enable the alarm control bits for all
 specified events.
+
+`-p; --poll=`  
+Poll and report status/event every \<n\> seconds.
 
 `-u; --human`  
 Output monitor notification as human friendly json format instead of the

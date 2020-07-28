@@ -48,8 +48,8 @@ instance id. The keyword *all* can be specified to carry out the
 operation on every region in the system.
 
 `-d; --dev=`  
-Specify a dax device name, &lt;region id&gt;.&lt;instance id&gt; tuple,
-or keyword *all* to filter the listing. For example to list the first
+Specify a dax device name, \<region id\>.\<instance id\> tuple, or
+keyword *all* to filter the listing. For example to list the first
 device instance in region1:
 
 <!-- -->

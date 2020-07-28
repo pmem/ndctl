@@ -143,15 +143,13 @@ dax.
     -   Enforces deterministic behavior by being strict about what fault
         scenarios are supported. I.e. if a device is configured with a
         2M alignment an attempt to fault a 4K aligned offset will result
-        in SIGBUS.
-
-  
-Note both *fsdax* and *devdax* mode require 16MiB physical alignment to
-be cross-arch compatible. By default ndctl will block attempts to create
-namespaces in these modes when the physical starting address of the
-namespace is not 16MiB aligned. The --force option tries to override
-this constraint if the platform supports a smaller alignment, but this
-is not recommended.
+        in SIGBUS. :: Note both *fsdax* and *devdax* mode require 16MiB
+        physical alignment to be cross-arch compatible. By default ndctl
+        will block attempts to create namespaces in these modes when the
+        physical starting address of the namespace is not 16MiB aligned.
+        The --force option tries to override this constraint if the
+        platform supports a smaller alignment, but this is not
+        recommended.
 
 `-s; --size=`  
 For NVDIMM devices that support namespace labels, set the namespace size
@@ -182,16 +180,15 @@ following sequence:
 
 -   Destroy @victim\_namespace
 
--   Create @new\_namespace merging old parameters with new ones
-
-  
-Note that the major implication of a destroy-create cycle is that data
-from @victim\_namespace is not preserved in @new\_namespace. The
-attributes transferred from @victim\_namespace are the geometry, mode,
-and name (not uuid without --uuid=). No attempt is made to preserve the
-data and any old data that is visible in @new\_namespace is by
-coincidence not convention. "Backup and restore" is the only reliable
-method to populate @new\_namespace with data from @victim\_namespace.
+-   Create @new\_namespace merging old parameters with new ones :: Note
+    that the major implication of a destroy-create cycle is that data
+    from @victim\_namespace is not preserved in @new\_namespace. The
+    attributes transferred from @victim\_namespace are the geometry,
+    mode, and name (not uuid without --uuid=). No attempt is made to
+    preserve the data and any old data that is visible in
+    @new\_namespace is by coincidence not convention. "Backup and
+    restore" is the only reliable method to populate @new\_namespace
+    with data from @victim\_namespace.
 
 `-u; --uuid=`  
 This option is not recommended as a new uuid should be generated every
@@ -213,12 +210,11 @@ per-page metadata. The allocation can be drawn from either:
 
 -   "mem": typical system memory
 
--   "dev": persistent memory reserved from the namespace
-
-  
-Given relative capacities of "Persistent Memory" to "System RAM" the
-allocation defaults to reserving space out of the namespace directly
-("--map=dev"). The overhead is 64-bytes per 4K (16GB per 1TB) on x86.
+-   "dev": persistent memory reserved from the namespace :: Given
+    relative capacities of "Persistent Memory" to "System RAM" the
+    allocation defaults to reserving space out of the namespace directly
+    ("--map=dev"). The overhead is 64-bytes per 4K (16GB per 1TB) on
+    x86.
 
 `-c; --continue`  
 Do not stop after creating one namespace. Instead, greedily create as

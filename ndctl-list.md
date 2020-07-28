@@ -224,11 +224,9 @@ information.
     --buses, and --regions.  
 
 -   **-vvv** Everything *-vv* provides, plus --health, --capabilities,
-    --idle, and --firmware.
-
-  
-The verbosity can also be scoped by the object type. For example to just
-list regions with capabilities and media error info.
+    --idle, and --firmware. :: The verbosity can also be scoped by the
+    object type. For example to just list regions with capabilities and
+    media error info.
 
 <!-- -->
 
@@ -312,9 +310,7 @@ previously shipped behavior by default. This environment variable
 applies the following fixups:
 
 -   Fix "ndctl list -Rv" to only show region objects and not include
-    namespace objects.
-
-  
+    namespace objects. ::
 
 COPYRIGHT
 =========

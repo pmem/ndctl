@@ -80,7 +80,7 @@ these modes:
 OPTIONS
 =======
 
-`<namespace>`  
+\<namespace\>  
 A *namespaceX.Y* device name. The keyword *all* can be specified to
 carry out the operation on every namespace in the system, optionally
 filtered by region (see --region=option)

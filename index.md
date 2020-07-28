@@ -3,7 +3,7 @@ title: ndctl
 layout: pmdk
 ---
 [View the Project on GitHub](https://github.com/pmem/ndctl)  
-**Generated from [ndctl-68](https://github.com/pmem/ndctl/releases/tag/v68) [[tree]](https://github.com/pmem/ndctl/tree/v68)**  
+**Generated from [ndctl-69](https://github.com/pmem/ndctl/releases/tag/v69) [[tree]](https://github.com/pmem/ndctl/tree/v69)**  
 
 ---
 

@@ -25,10 +25,11 @@ deleting all labels.
 OPTIONS
 =======
 
-`<memory device(s)>`  
-One or more *nmemX* device names. The keyword *all* can be specified to
-operate on every dimm in the system, optionally filtered by bus id (see
---bus= option).
+\<memory device(s)\>  
+A *nmemX* device name, or a dimm id number. Restrict the operation to
+the specified dimm(s). The keyword *all* can be specified to indicate
+the lack of any restriction, however this is the same as not supplying a
+--dimm option at all.
 
 `-s; --size=`  
 Limit the operation to the given number of bytes. A size of 0 indicates
@@ -38,8 +39,10 @@ to operate over the entire label capacity.
 Begin the operation at the given offset into the label area.
 
 `-b; --bus=`  
-Limit operation to memory devices (dimms) that are on the given bus.
-Where *bus* can be a provider name or a bus id number.
+A bus id number, or a provider string (e.g. "ACPI.NFIT"). Restrict the
+operation to the specified bus(es). The keyword *all* can be specified
+to indicate the lack of any restriction, however this is the same as not
+supplying a --bus option at all.
 
 `-v`  
 Turn on verbose debug messages in the library (if ndctl was built with

@@ -65,7 +65,7 @@ EXAMPLE
 OPTIONS
 =======
 
-`<namespace(s)>`  
+\<namespace(s)\>  
 One or more *namespaceX.Y* device names. The keyword *all* can be
 specified to operate on every namespace in the system, optionally
 filtered by bus id (see --bus= option), or region id (see --region=

@@ -54,7 +54,7 @@ EXAMPLES
 OPTIONS
 =======
 
-`<dimm>`  
+\<dimm\>  
 A *nmemX* device name, or a dimm id number. Restrict the operation to
 the specified dimm(s). The keyword *all* can be specified to indicate
 the lack of any restriction, however this is the same as not supplying a
