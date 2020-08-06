@@ -162,7 +162,6 @@ static int do_multi_pmem(struct ndctl_ctx *ctx, struct ndctl_test *test)
 		char uuid_str1[40], uuid_str2[40];
 		uuid_t uuid_check;
 
-		ndctl_namespace_foreach(region, ndns)
 		sprintf(devname, "namespace%d.%d",
 				ndctl_region_get_id(region), i);
 		ndctl_namespace_foreach(region, ndns)
