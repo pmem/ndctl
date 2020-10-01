@@ -3675,8 +3675,8 @@ NDCTL_EXPORT int ndctl_dimm_is_active(struct ndctl_dimm *dimm)
 {
 	struct ndctl_ctx *ctx = ndctl_dimm_get_ctx(dimm);
 	char *path = dimm->dimm_buf;
+	char buf[SYSFS_ATTR_SIZE];
 	int len = dimm->buf_len;
-	char buf[20];
 
 	if (snprintf(path, len, "%s/state", dimm->dimm_path) >= len) {
 		err(ctx, "%s: buffer too small!\n",
