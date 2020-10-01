@@ -255,9 +255,6 @@ static int injection_status(struct ndctl_namespace *ndns)
 	}
 
 	ndctl_namespace_bb_foreach(ndns, bb) {
-		if (!bb)
-			break;
-
 		block = ndctl_bb_get_block(bb);
 		count = ndctl_bb_get_count(bb);
 		jbb = util_badblock_rec_to_json(block, count, ictx.json_flags);
