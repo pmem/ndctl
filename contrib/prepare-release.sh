@@ -94,8 +94,8 @@ gen_lists()
 {
 	local range="$1"
 
-	git shortlog "$range" > release/shortlog
-	git log --pretty=format:"%s" "$range" > release/commits
+	git shortlog --no-merges "$range" > release/shortlog
+	git log --no-merges --pretty=format:"%s" "$range" > release/commits
 	c_count=$(git log --pretty=format:"%s" "$range" | wc -l)
 }
 
@@ -182,7 +182,8 @@ next_fix=$(next_fix "$last_fix")
 check_libtool_vers "libndctl"
 check_libtool_vers "libdaxctl"
 
-gen_lists ${last_ref}..HEAD
+# HEAD~1 because HEAD would be the release commit
+gen_lists ${last_ref}..HEAD~1
 
 # For ABI diff purposes, use the latest fixes tag
 contrib/do_abidiff ${last_fix}..HEAD
