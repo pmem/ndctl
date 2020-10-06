@@ -128,16 +128,35 @@ Include dimm health info in the listing. For example:
 >     }
 
 `-F; --firmware`  
-Include dimm firmware info in the listing. For example:
+Include firmware info in the listing, including the state and capability
+of runtime firmware activation:
 
->     {
->       "dev":"nmem0",
->       "firmware":{
->           "current_version":0,
->           "next_version":1,
->           "need_powercycle":true
->       }
->     }
+<!-- -->
+
+    # ndctl list -BDF
+    [
+      {
+        "provider":"nfit_test.0",
+        "dev":"ndbus2",
+        "scrub_state":"idle",
+        "firmware":{
+          "activate_method":"suspend",
+          "activate_state":"idle"
+        },
+        "dimms":[
+          {
+            "dev":"nmem1",
+            "id":"cdab-0a-07e0-ffffffff",
+            "handle":0,
+            "phys_id":0,
+            "security":"disabled",
+            "firmware":{
+              "current_version":0,
+              "can_update":true
+            }
+          },
+    ...
+    ]
 
 `-X; --device-dax`  
 Include device-dax ("daxregion") details when a namespace is in "devdax"
@@ -315,7 +334,7 @@ applies the following fixups:
 COPYRIGHT
 =========
 
-Copyright (c) 2016 - 2019, Intel Corporation. License GPLv2: GNU GPL
+Copyright (c) 2016 - 2020, Intel Corporation. License GPLv2: GNU GPL
 version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
 are free to change and redistribute it. There is NO WARRANTY, to the
 extent permitted by law.

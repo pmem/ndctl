@@ -3,12 +3,13 @@ title: ndctl
 layout: pmdk
 ---
 [View the Project on GitHub](https://github.com/pmem/ndctl)  
-**Generated from [ndctl-69](https://github.com/pmem/ndctl/releases/tag/v69) [[tree]](https://github.com/pmem/ndctl/tree/v69)**  
+**Generated from [ndctl-70](https://github.com/pmem/ndctl/releases/tag/v70) [[tree]](https://github.com/pmem/ndctl/tree/v70)**  
 
 ---
 
 #### ndctl man pages
 * [ndctl](ndctl.md)
+* [ndctl-activate-firmware](ndctl-activate-firmware.md)
 * [ndctl-check-labels](ndctl-check-labels.md)
 * [ndctl-check-namespace](ndctl-check-namespace.md)
 * [ndctl-clear-errors](ndctl-clear-errors.md)
