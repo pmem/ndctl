@@ -684,6 +684,17 @@ static int validate_namespace_options(struct ndctl_region *region,
 			return rc;
 	}
 
+	/*
+	 * Block attempts to set a custom size on legacy (label-less)
+	 * namespaces
+	 */
+	if (ndctl_region_get_nstype(region) == ND_DEVICE_NAMESPACE_IO
+			&& p->size != ndctl_region_get_size(region)) {
+		error("Legacy / label-less namespaces do not support sub-dividing a region\n");
+		error("Retry without -s/--size=\n");
+		return -EINVAL;
+	}
+
 	if (param.uuid) {
 		if (uuid_parse(param.uuid, p->uuid) != 0) {
 			err("%s: invalid uuid\n", __func__);
