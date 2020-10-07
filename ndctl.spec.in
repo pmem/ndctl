@@ -9,7 +9,12 @@ Source0:	https://github.com/pmem/%{name}/archive/v%{version}.tar.gz#/%{name}-%{v
 Requires:	LNAME%{?_isa} = %{version}-%{release}
 Requires:	DAX_LNAME%{?_isa} = %{version}-%{release}
 BuildRequires:	autoconf
+%if 0%{?rhel} < 9
+BuildRequires:	asciidoc
+%define asciidoc --disable-asciidoctor
+%else
 BuildRequires:	rubygem-asciidoctor
+%endif
 BuildRequires:	xmlto
 BuildRequires:	automake
 BuildRequires:	libtool
@@ -86,7 +91,7 @@ control API for these devices.
 %build
 echo %{version} > version
 ./autogen.sh
-%configure --disable-static --disable-silent-rules
+%configure --disable-static --disable-silent-rules %{?asciidoc}
 make %{?_smp_mflags}
 
 %install
