@@ -1875,9 +1875,6 @@ static void *add_dimm(void *parent, int id, const char *dimm_base)
 	else
 		dimm->fwa_result = fwa_result_to_result(buf);
 
-	if (!ndctl_bus_has_nfit(bus))
-		goto out;
-
 	/* Check if the given dimm supports nfit */
 	if (ndctl_bus_has_nfit(bus)) {
 		dimm->formats = formats;
