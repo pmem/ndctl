@@ -1,5 +1,5 @@
-/* SPDX-License-Identifier: GPL-2.0 */
-/* Copyright(c) 2018 Intel Corporation. All rights reserved. */
+// SPDX-License-Identifier: GPL-2.0
+/* Copyright (C) 2018-2020 Intel Corporation. All rights reserved. */
 #include <stdlib.h>
 #include <limits.h>
 #include <util/log.h>

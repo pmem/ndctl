@@ -1,4 +1,5 @@
-/* SPDX-License-Identifier: GPL-2.0 */
+// SPDX-License-Identifier: GPL-2.0
+
 /* originally copied from git/abspath.c */
 
 #include <util/util.h>

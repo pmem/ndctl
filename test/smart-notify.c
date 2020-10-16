@@ -1,5 +1,5 @@
-/* SPDX-License-Identifier: GPL-2.0 */
-/* Copyright(c) 2017 Intel Corporation. All rights reserved. */
+// SPDX-License-Identifier: GPL-2.0
+// Copyright (C) 2017-2020 Intel Corporation. All rights reserved.
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>

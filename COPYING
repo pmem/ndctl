@@ -1,6 +1,25 @@
-This project has 2 classes of binaries, "tools" like ndctl and daxctl,
-and "libraries" like libndctl and libdaxctl. The libraries are licensed
-LGPLv2.1 for third-party application linking. See COPYING.libraries for
-the full license. The "tools" are licensed GPLv2 to provide a command
-line interface to the C libraries. See COPYING.tools for the full
-license.
+The ndctl project provides tools under:
+
+	SPDX-License-Identifier: GPL-2.0
+
+Being under the terms of the GNU General Public License version 2 only,
+according with:
+
+	LICENSES/preferred/GPL-2.0
+
+The ndctl project provides libraries under:
+
+	SPDX-License-Identifier: LGPL-2.1
+
+Being under the terms of the GNU Lesser General Public License version
+2.1 only, according with:
+
+	LICENSES/preferred/LGPL-2.1
+
+The project incorporates helper routines from the CCAN project under
+CC0-1.0 and MIT licenses according with:
+
+	LICENSES/other/CC0-1.0
+	LICENSES/other/MIT
+
+All contributions to the ndctl project are subject to this COPYING file.

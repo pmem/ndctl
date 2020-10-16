@@ -1,6 +1,6 @@
 #!/bin/bash -Ex
 # SPDX-License-Identifier: GPL-2.0
-# Copyright(c) 2020, Oracle and/or its affiliates.
+# Copyright (C) 2020, Oracle and/or its affiliates.
 
 rc=77
 . $(dirname $0)/common

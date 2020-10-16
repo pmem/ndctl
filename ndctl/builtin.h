@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: GPL-2.0 */
-/* Copyright(c) 2015-2018 Intel Corporation. All rights reserved. */
+/* Copyright (C) 2015-2020 Intel Corporation. All rights reserved. */
 #ifndef _NDCTL_BUILTIN_H_
 #define _NDCTL_BUILTIN_H_
 

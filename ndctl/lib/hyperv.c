@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright(c) 2019, Microsoft Corporation. All rights reserved. */
+/* Copyright (C) 2019, Microsoft Corporation. All rights reserved. */
 
 #include <stdlib.h>
 #include <limits.h>
