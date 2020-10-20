@@ -1229,7 +1229,7 @@ static int memblock_in_dev(struct daxctl_memory *mem, const char *memblock)
 	rc = sysfs_read_attr(ctx, path, buf);
 	if (rc == 0) {
 		phys_index = strtoul(buf, NULL, 16);
-		if (phys_index == 0 || phys_index == ULONG_MAX) {
+		if (phys_index == ULONG_MAX) {
 			rc = -errno;
 			err(ctx, "%s: %s: Unable to determine phys_index: %s\n",
 				devname, memblock, strerror(-rc));
