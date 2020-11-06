@@ -287,6 +287,8 @@ static struct daxctl_region *add_dax_region(void *parent, int id,
 	region->refcount = 1;
 	list_head_init(&region->devices);
 	region->devname = strdup(devpath_to_devname(base));
+	if (!region->devname)
+		goto err_read;
 
 	sprintf(path, "%s/%s/size", base, attrs);
 	if (sysfs_read_attr(ctx, path, buf) == 0)
@@ -314,6 +316,7 @@ static struct daxctl_region *add_dax_region(void *parent, int id,
  err_read:
 	free(region->region_buf);
 	free(region->region_path);
+	free(region->devname);
 	free(region);
  err_region:
 	free(path);
