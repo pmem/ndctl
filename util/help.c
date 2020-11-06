@@ -44,8 +44,14 @@ static void exec_man_konqueror(const char *path, const char *page)
 		if (path) {
 			const char *file = strrchr(path, '/');
 			if (file && !strcmp(file + 1, "konqueror")) {
+				char *dest;
 				char *new = strdup(path);
-				char *dest = strrchr(new, '/');
+				if (!new) {
+					pr_err("strdup(path) failed.\n");
+					exit(1);
+				}
+
+				dest = strrchr(new, '/');
 
 				/* strlen("konqueror") == strlen("kfmclient") */
 				strcpy(dest + 1, "kfmclient");
