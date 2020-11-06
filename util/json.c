@@ -1004,6 +1004,9 @@ static void util_btt_badblocks_to_json(struct ndctl_btt *btt,
 	struct ndctl_namespace *ndns = ndctl_btt_get_namespace(btt);
 	unsigned long long begin, size;
 
+	if (!ndns)
+		return;
+
 	begin = ndctl_namespace_get_resource(ndns);
 	if (begin == ULLONG_MAX)
 		return;

@@ -983,13 +983,19 @@ static int check_pfn_create(struct ndctl_region *region,
 
 static int check_btt_size(struct ndctl_btt *btt)
 {
+	unsigned long long ns_size;
+	unsigned long sect_size;
+	unsigned long long actual, expect;
+	int size_select, sect_select;
 	struct ndctl_ctx *ctx = ndctl_btt_get_ctx(btt);
 	struct ndctl_test *test = ndctl_get_private_data(ctx);
 	struct ndctl_namespace *ndns = ndctl_btt_get_namespace(btt);
-	unsigned long long ns_size = ndctl_namespace_get_size(ndns);
-	unsigned long sect_size = ndctl_btt_get_sector_size(btt);
-	unsigned long long actual, expect;
-	int size_select, sect_select;
+
+	if (!ndns)
+		return -ENXIO;
+
+	ns_size = ndctl_namespace_get_size(ndns);
+	sect_size = ndctl_btt_get_sector_size(btt);
 	unsigned long long expect_table[][2] = {
 		[0] = {
 			[0] = 0x11b5400,
@@ -1461,7 +1467,7 @@ static int check_btt_autodetect(struct ndctl_bus *bus,
 		if (!ndctl_btt_is_enabled(btt))
 			continue;
 		btt_ndns = ndctl_btt_get_namespace(btt);
-		if (strcmp(ndctl_namespace_get_devname(btt_ndns), devname) != 0)
+		if (!btt_ndns || strcmp(ndctl_namespace_get_devname(btt_ndns), devname) != 0)
 			continue;
 		fprintf(stderr, "%s: btt_ndns: %p ndns: %p\n", __func__,
 				btt_ndns, ndns);

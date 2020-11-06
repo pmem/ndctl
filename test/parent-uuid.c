@@ -115,7 +115,7 @@ static struct ndctl_btt *check_valid_btt(struct ndctl_region *region,
 		if (!ndctl_btt_is_enabled(btt))
 			continue;
 		btt_ndns = ndctl_btt_get_namespace(btt);
-		if (strcmp(ndctl_namespace_get_devname(btt_ndns),
+		if (!btt_ndns || strcmp(ndctl_namespace_get_devname(btt_ndns),
 				ndctl_namespace_get_devname(ndns)) != 0)
 			continue;
 		return btt;
