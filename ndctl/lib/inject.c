@@ -114,6 +114,10 @@ static int ndctl_namespace_get_clear_unit(struct ndctl_namespace *ndns)
 	if (rc)
 		return rc;
 	cmd = ndctl_bus_cmd_new_ars_cap(bus, ns_offset, ns_size);
+	if (!cmd) {
+		err(ctx, "bus: %s failed to create cmd\n", ndctl_bus_get_provider(bus));
+		return -ENOTTY;
+	}
 	rc = ndctl_cmd_submit(cmd);
 	if (rc < 0) {
 		dbg(ctx, "Error submitting ars_cap: %d\n", rc);
@@ -457,6 +461,10 @@ NDCTL_EXPORT int ndctl_namespace_injection_status(struct ndctl_namespace *ndns)
 			return rc;
 
 		cmd = ndctl_bus_cmd_new_ars_cap(bus, ns_offset, ns_size);
+		if (!cmd) {
+			err(ctx, "bus: %s failed to create cmd\n", ndctl_bus_get_provider(bus));
+			return -ENOTTY;
+		}
 		rc = ndctl_cmd_submit(cmd);
 		if (rc < 0) {
 			dbg(ctx, "Error submitting ars_cap: %d\n", rc);
