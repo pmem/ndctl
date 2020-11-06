@@ -848,8 +848,7 @@ static int validate_namespace_options(struct ndctl_region *region,
 	region_align = ndctl_region_get_align(region);
 	if (region_align < ULONG_MAX && p->size % region_align) {
 		err("%s: align setting is %#lx size %#llx is misaligned\n",
-				ndctl_region_get_devname(region), region_align,
-				p->size);
+				region_name, region_align, p->size);
 		return -EINVAL;
 	}
 
@@ -925,8 +924,13 @@ static int validate_namespace_options(struct ndctl_region *region,
 		} else {
 			struct ndctl_namespace *seed = ndns;
 
-			if (!seed)
+			if (!seed) {
 				seed = ndctl_region_get_namespace_seed(region);
+				if (!seed) {
+					err("%s: failed to get seed\n", region_name);
+					return -ENXIO;
+				}
+			}
 			num = ndctl_namespace_get_num_sector_sizes(seed);
 			for (i = 0; i < num; i++)
 				if (ndctl_namespace_get_supported_sector_size(seed, i)
@@ -954,9 +958,13 @@ static int validate_namespace_options(struct ndctl_region *region,
 		struct ndctl_namespace *seed;
 
 		seed = ndctl_region_get_namespace_seed(region);
+		if (!seed) {
+			err("%s: failed to get seed\n", region_name);
+			return -ENXIO;
+		}
 		if (ndctl_namespace_get_type(seed) == ND_DEVICE_NAMESPACE_BLK)
 			debug("%s: set_defaults() should preclude this?\n",
-				ndctl_region_get_devname(region));
+				region_name);
 		/*
 		 * Pick a default sector size for a pmem namespace based
 		 * on what the kernel supports.
