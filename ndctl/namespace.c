@@ -1091,11 +1091,10 @@ static int zero_info_block(struct ndctl_namespace *ndns)
 	return rc;
 }
 
-static int namespace_destroy(struct ndctl_region *region,
+static int namespace_prep_reconfig(struct ndctl_region *region,
 		struct ndctl_namespace *ndns)
 {
 	const char *devname = ndctl_namespace_get_devname(ndns);
-	unsigned long long size;
 	bool did_zero = false;
 	int rc;
 
@@ -1109,11 +1108,11 @@ static int namespace_destroy(struct ndctl_region *region,
 		error("%s is active, specify --force for re-configuration\n",
 				devname);
 		return -EBUSY;
-	} else {
-		rc = ndctl_namespace_disable_safe(ndns);
-		if (rc)
-			return rc;
 	}
+
+	rc = ndctl_namespace_disable_safe(ndns);
+	if (rc)
+		return rc;
 
 	ndctl_namespace_set_enforce_mode(ndns, NDCTL_NS_MODE_RAW);
 
@@ -1126,6 +1125,7 @@ static int namespace_destroy(struct ndctl_region *region,
 	switch (ndctl_namespace_get_type(ndns)) {
         case ND_DEVICE_NAMESPACE_PMEM:
         case ND_DEVICE_NAMESPACE_BLK:
+		rc = 2;
 		break;
 	default:
 		/*
@@ -1137,14 +1137,31 @@ static int namespace_destroy(struct ndctl_region *region,
 			rc = 0;
 		else
 			rc = 1;
-		goto out;
+		break;
 	}
+
+	return rc;
+}
+
+static int namespace_destroy(struct ndctl_region *region,
+		struct ndctl_namespace *ndns)
+{
+	const char *devname = ndctl_namespace_get_devname(ndns);
+	unsigned long long size;
+	int rc;
+
+	rc = namespace_prep_reconfig(region, ndns);
+	if (rc < 0)
+		return rc;
 
 	size = ndctl_namespace_get_size(ndns);
 
-	rc = ndctl_namespace_delete(ndns);
-	if (rc)
-		debug("%s: failed to reclaim\n", devname);
+	/* Labeled namespace, destroy label / allocation */
+	if (rc == 2) {
+		rc = ndctl_namespace_delete(ndns);
+		if (rc)
+			debug("%s: failed to reclaim\n", devname);
+	}
 
 	/*
 	 * Don't report a destroyed namespace when no capacity was
@@ -1153,7 +1170,6 @@ static int namespace_destroy(struct ndctl_region *region,
 	if (size == 0 && rc == 0)
 		rc = 1;
 
-out:
 	return rc;
 }
 
@@ -1167,7 +1183,7 @@ static int enable_labels(struct ndctl_region *region)
 
 	/* no dimms => no labels */
 	if (!mappings)
-		return 0;
+		return -ENODEV;
 
 	count = 0;
 	ndctl_dimm_foreach_in_region(region, dimm) {
@@ -1182,7 +1198,7 @@ static int enable_labels(struct ndctl_region *region)
 
 	/* all the dimms must support labeling */
 	if (count != mappings)
-		return 0;
+		return -ENODEV;
 
 	ndctl_region_disable_invalidate(region);
 	count = 0;
@@ -1250,23 +1266,28 @@ static int namespace_reconfig(struct ndctl_region *region,
 	if (rc)
 		return rc;
 
-	rc = namespace_destroy(region, ndns);
+	rc = namespace_prep_reconfig(region, ndns);
 	if (rc < 0)
 		return rc;
 
 	/* check if we can enable labels on this region */
 	if (ndctl_region_get_nstype(region) == ND_DEVICE_NAMESPACE_IO
 			&& p.autolabel) {
-		/* if this fails, try to continue label-less */
-		enable_labels(region);
-	}
-
-	ndns = region_get_namespace(region);
-	if (!ndns || !ndctl_namespace_is_configuration_idle(ndns)) {
-		debug("%s: no %s namespace seed\n",
-				ndctl_region_get_devname(region),
-				ndns ? "idle" : "available");
-		return -ENODEV;
+		/*
+		 * If this fails, try to continue label-less, if this
+		 * got far enough to invalidate the region than @ndns is
+		 * now invalid.
+		 */
+		rc = enable_labels(region);
+		if (rc != -ENODEV)
+			ndns = region_get_namespace(region);
+		if (!ndns || (rc != -ENODEV
+				&& !ndctl_namespace_is_configuration_idle(ndns))) {
+			debug("%s: no %s namespace seed\n",
+					ndctl_region_get_devname(region),
+					ndns ? "idle" : "available");
+			return -ENODEV;
+		}
 	}
 
 	return setup_namespace(region, ndns, &p);
