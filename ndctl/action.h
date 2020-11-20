@@ -1,8 +1,5 @@
-/*
- * Copyright(c) 2015-2017 Intel Corporation. All rights reserved.
- *
- * SPDX-License-Identifier: GPL-2.0
- */
+/* SPDX-License-Identifier: GPL-2.0 */
+/* Copyright (C) 2015-2020 Intel Corporation. All rights reserved. */
 #ifndef __NDCTL_ACTION_H__
 #define __NDCTL_ACTION_H__
 enum device_action {

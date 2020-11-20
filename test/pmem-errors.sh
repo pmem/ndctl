@@ -1,6 +1,6 @@
 #!/bin/bash -x
 # SPDX-License-Identifier: GPL-2.0
-# Copyright(c) 2015-2017 Intel Corporation. All rights reserved.
+# Copyright (C) 2015-2020 Intel Corporation. All rights reserved.
 
 MNT=test_dax_mnt
 FILE=image

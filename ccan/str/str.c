@@ -1,4 +1,4 @@
-/* CC0 (Public domain) - see LICENSE file for details */
+// SPDX-License-Identifier: CC0-1.0
 #include <ccan/str/str.h>
 
 size_t strcount(const char *haystack, const char *needle)

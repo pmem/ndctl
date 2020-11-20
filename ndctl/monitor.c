@@ -1,5 +1,5 @@
-/* SPDX-License-Identifier: GPL-2.0 */
-/* Copyright(c) 2018, FUJITSU LIMITED. All rights reserved. */
+// SPDX-License-Identifier: GPL-2.0
+// Copyright (C) 2018, FUJITSU LIMITED. All rights reserved.
 
 #include <stdio.h>
 #include <json-c/json.h>

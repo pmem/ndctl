@@ -1,7 +1,6 @@
 #!/bin/bash -Ex
-
 # SPDX-License-Identifier: GPL-2.0
-# Copyright(c) 2018, FUJITSU LIMITED. All rights reserved.
+# Copyright (C) 2018, FUJITSU LIMITED. All rights reserved.
 
 rc=77
 
