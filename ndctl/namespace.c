@@ -549,6 +549,8 @@ static int setup_namespace(struct ndctl_region *region,
 
 	if (do_setup_pfn(ndns, p)) {
 		struct ndctl_pfn *pfn = ndctl_region_get_pfn_seed(region);
+		if (!pfn)
+			return -ENXIO;
 
 		rc = check_dax_align(ndns);
 		if (rc)
@@ -563,6 +565,8 @@ static int setup_namespace(struct ndctl_region *region,
 			ndctl_pfn_set_namespace(pfn, NULL);
 	} else if (p->mode == NDCTL_NS_MODE_DEVDAX) {
 		struct ndctl_dax *dax = ndctl_region_get_dax_seed(region);
+		if (!dax)
+			return -ENXIO;
 
 		rc = check_dax_align(ndns);
 		if (rc)
@@ -577,6 +581,8 @@ static int setup_namespace(struct ndctl_region *region,
 			ndctl_dax_set_namespace(dax, NULL);
 	} else if (p->mode == NDCTL_NS_MODE_SECTOR) {
 		struct ndctl_btt *btt = ndctl_region_get_btt_seed(region);
+		if (!btt)
+			return -ENXIO;
 
 		/*
 		 * Handle the case of btt on a pmem namespace where the
