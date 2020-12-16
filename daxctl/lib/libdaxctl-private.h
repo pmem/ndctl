@@ -99,6 +99,7 @@ struct daxctl_dev {
 	struct list_node list;
 	unsigned long long resource;
 	unsigned long long size;
+	unsigned long align;
 	struct kmod_module *module;
 	struct daxctl_region *region;
 	struct daxctl_memory *mem;
