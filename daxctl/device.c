@@ -216,6 +216,8 @@ static const char *parse_device_options(int argc, const char **argv,
 	case ACTION_CREATE:
 		if (param.size)
 			size = __parse_size64(param.size, &units);
+		if (param.align)
+			align = __parse_size64(param.align, &units);
 		/* fall through */
 	case ACTION_ONLINE:
 		if (param.no_movable)
@@ -537,6 +539,12 @@ static int do_create(struct daxctl_region *region, long long val,
 
 	if (val <= 0)
 		return -ENOSPC;
+
+	if (align > 0) {
+		rc = daxctl_dev_set_align(dev, align);
+		if (rc < 0)
+			return rc;
+	}
 
 	rc = daxctl_dev_set_size(dev, val);
 	if (rc < 0)
