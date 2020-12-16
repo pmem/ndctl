@@ -343,6 +343,34 @@ daxctl_test5()
 	test_pass
 }
 
+# Test 6: align
+# Successfully creates a device with a align property
+daxctl_test6()
+{
+	local daxdev
+	local align
+	local size
+
+	# Available size
+	size=$available
+
+	# Use 2M by default or 1G if supported
+	align=2097152
+	if [[ $((available >= 1073741824 )) ]]; then
+		align=1073741824
+		size=$align
+	fi
+
+	daxdev=$("$DAXCTL" create-device -r 0 -s $size -a $align | jq -er '.[].chardev')
+
+	test -n "$daxdev"
+
+	"$DAXCTL" disable-device "$daxdev" && "$DAXCTL" destroy-device "$daxdev"
+
+	clear_dev
+	test_pass
+}
+
 find_testdev
 rc=1
 setup_dev
@@ -352,5 +380,6 @@ daxctl_test2
 daxctl_test3
 daxctl_test4
 daxctl_test5
+daxctl_test6
 reset_dev
 exit 0
