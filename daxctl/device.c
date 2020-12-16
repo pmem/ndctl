@@ -22,6 +22,7 @@ static struct {
 	const char *mode;
 	const char *region;
 	const char *size;
+	const char *align;
 	bool no_online;
 	bool no_movable;
 	bool force;
@@ -36,6 +37,7 @@ enum dev_mode {
 };
 
 static enum dev_mode reconfig_mode = DAXCTL_DEV_MODE_UNKNOWN;
+static long long align = -1;
 static long long size = -1;
 static unsigned long flags;
 
@@ -68,7 +70,8 @@ OPT_BOOLEAN('f', "force", &param.force, \
 		"attempt to offline memory sections before reconfiguration")
 
 #define CREATE_OPTIONS() \
-OPT_STRING('s', "size", &param.size, "size", "size to switch the device to")
+OPT_STRING('s', "size", &param.size, "size", "size to switch the device to"), \
+OPT_STRING('a', "align", &param.align, "align", "alignment to switch the device to")
 
 #define DESTROY_OPTIONS() \
 OPT_BOOLEAN('f', "force", &param.force, \
@@ -185,13 +188,18 @@ static const char *parse_device_options(int argc, const char **argv,
 	/* Handle action-specific options */
 	switch (action) {
 	case ACTION_RECONFIG:
-		if (!param.size && !param.mode) {
-			fprintf(stderr, "error: a 'mode' or 'size' option is required\n");
+		if (!param.size &&
+		    !param.align &&
+		    !param.mode) {
+			fprintf(stderr, "error: a 'align', 'mode' or 'size' option is required\n");
 			usage_with_options(u, reconfig_options);
 			rc = -EINVAL;
 		}
-		if (param.size) {
-			size = __parse_size64(param.size, &units);
+		if (param.size || param.align) {
+			if (param.size)
+				size = __parse_size64(param.size, &units);
+			if (param.align)
+				align = __parse_size64(param.align, &units);
 		} else if (strcmp(param.mode, "system-ram") == 0) {
 			reconfig_mode = DAXCTL_DEV_MODE_RAM;
 			if (param.no_movable)
@@ -557,6 +565,12 @@ static int do_reconfig(struct daxctl_dev *dev, enum dev_mode mode,
 	const char *devname = daxctl_dev_get_devname(dev);
 	struct json_object *jdev;
 	int rc = 0;
+
+	if (align > 0) {
+		rc = daxctl_dev_set_align(dev, align);
+		if (rc < 0)
+			return rc;
+	}
 
 	if (size >= 0) {
 		rc = dev_resize(dev, size);

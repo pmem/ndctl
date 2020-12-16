@@ -131,6 +131,18 @@ include::region-option.txt[]
 
 	The size must be a multiple of the region alignment.
 
+	This option is mutually exclusive with -m or --mode.
+
+-a::
+--align::
+	Applications that want to establish dax memory mappings with
+	page table entries greater than system base page size (4K on
+	x86) need a device that is sufficiently aligned. This defaults
+	to 2M. Note that "devdax" mode enforces all mappings to be
+	aligned to this value, i.e. it fails unaligned mapping attempts.
+
+	This option is mutually exclusive with -m or --mode.
+
 -m::
 --mode=::
 	Specify the mode to which the dax device(s) should be reconfigured.
