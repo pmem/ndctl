@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright(c) 2019 Intel Corporation. All rights reserved. */
+/* Copyright (C) 2019-2020 Intel Corporation. All rights reserved. */
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -9,9 +9,11 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/sysmacros.h>
+#include <util/size.h>
 #include <util/json.h>
 #include <util/filter.h>
 #include <json-c/json.h>
+#include <json-c/json_util.h>
 #include <daxctl/libdaxctl.h>
 #include <util/parse-options.h>
 #include <ccan/array_size/array_size.h>
@@ -20,6 +22,9 @@ static struct {
 	const char *dev;
 	const char *mode;
 	const char *region;
+	const char *size;
+	const char *align;
+	const char *input;
 	bool no_online;
 	bool no_movable;
 	bool force;
@@ -33,8 +38,16 @@ enum dev_mode {
 	DAXCTL_DEV_MODE_RAM,
 };
 
+struct mapping {
+	unsigned long long start, end, pgoff;
+};
+
 static enum dev_mode reconfig_mode = DAXCTL_DEV_MODE_UNKNOWN;
+static long long align = -1;
+static long long size = -1;
 static unsigned long flags;
+static struct mapping *maps = NULL;
+static long long nmaps = -1;
 
 enum memory_zone {
 	MEM_ZONE_MOVABLE,
@@ -46,6 +59,10 @@ enum device_action {
 	ACTION_RECONFIG,
 	ACTION_ONLINE,
 	ACTION_OFFLINE,
+	ACTION_CREATE,
+	ACTION_DISABLE,
+	ACTION_ENABLE,
+	ACTION_DESTROY,
 };
 
 #define BASE_OPTIONS() \
@@ -60,12 +77,30 @@ OPT_BOOLEAN('N', "no-online", &param.no_online, \
 OPT_BOOLEAN('f', "force", &param.force, \
 		"attempt to offline memory sections before reconfiguration")
 
+#define CREATE_OPTIONS() \
+OPT_STRING('s', "size", &param.size, "size", "size to switch the device to"), \
+OPT_STRING('a', "align", &param.align, "align", "alignment to switch the device to"), \
+OPT_STRING('\0', "input", &param.input, "input", "input device JSON file")
+
+#define DESTROY_OPTIONS() \
+OPT_BOOLEAN('f', "force", &param.force, \
+		"attempt to disable before destroying device")
+
 #define ZONE_OPTIONS() \
 OPT_BOOLEAN('\0', "no-movable", &param.no_movable, \
 		"online memory in ZONE_NORMAL")
 
+static const struct option create_options[] = {
+	BASE_OPTIONS(),
+	CREATE_OPTIONS(),
+	RECONFIG_OPTIONS(),
+	ZONE_OPTIONS(),
+	OPT_END(),
+};
+
 static const struct option reconfig_options[] = {
 	BASE_OPTIONS(),
+	CREATE_OPTIONS(),
 	RECONFIG_OPTIONS(),
 	ZONE_OPTIONS(),
 	OPT_END(),
@@ -82,6 +117,110 @@ static const struct option offline_options[] = {
 	OPT_END(),
 };
 
+static const struct option disable_options[] = {
+	BASE_OPTIONS(),
+	OPT_END(),
+};
+
+static const struct option enable_options[] = {
+	BASE_OPTIONS(),
+	OPT_END(),
+};
+
+static const struct option destroy_options[] = {
+	BASE_OPTIONS(),
+	DESTROY_OPTIONS(),
+	OPT_END(),
+};
+
+static int sort_mappings(const void *a, const void *b)
+{
+	json_object **jsoa, **jsob;
+	struct json_object *va, *vb;
+	unsigned long long pga, pgb;
+
+	jsoa = (json_object **)a;
+	jsob = (json_object **)b;
+	if (!*jsoa && !*jsob)
+		return 0;
+
+	if (!json_object_object_get_ex(*jsoa, "page_offset", &va) ||
+	    !json_object_object_get_ex(*jsob, "page_offset", &vb))
+		return 0;
+
+	pga = json_object_get_int64(va);
+	pgb = json_object_get_int64(vb);
+
+	return pga > pgb;
+}
+
+static int parse_device_file(const char *filename)
+{
+	struct json_object *jobj, *jval = NULL, *jmappings = NULL;
+	int i, len, rc = -EINVAL, region_id, id;
+	const char *chardev;
+	char  *region = NULL;
+	struct mapping *m;
+
+	jobj = json_object_from_file(filename);
+	if (!jobj)
+		return rc;
+
+	if (!json_object_object_get_ex(jobj, "align", &jval))
+		return rc;
+	param.align = json_object_get_string(jval);
+
+	if (!json_object_object_get_ex(jobj, "size", &jval))
+		return rc;
+	param.size = json_object_get_string(jval);
+
+	if (!json_object_object_get_ex(jobj, "chardev", &jval))
+		return rc;
+	chardev = json_object_get_string(jval);
+	if (sscanf(chardev, "dax%u.%u", &region_id, &id) != 2)
+		return rc;
+	if (asprintf(&region, "%u", region_id) < 0)
+		return rc;
+	param.region = region;
+
+	if (!json_object_object_get_ex(jobj, "mappings", &jmappings))
+		return rc;
+	json_object_array_sort(jmappings, sort_mappings);
+
+	len = json_object_array_length(jmappings);
+	m = calloc(len, sizeof(*m));
+	if (!m)
+		return -ENOMEM;
+
+	for (i = 0; i < len; i++) {
+		struct json_object *j, *val;
+
+		j = json_object_array_get_idx(jmappings, i);
+		if (!j)
+			goto err;
+
+		if (!json_object_object_get_ex(j, "start", &val))
+			goto err;
+		m[i].start = json_object_get_int64(val);
+
+		if (!json_object_object_get_ex(j, "end", &val))
+			goto err;
+		m[i].end = json_object_get_int64(val);
+
+		if (!json_object_object_get_ex(j, "page_offset", &val))
+			goto err;
+		m[i].pgoff = json_object_get_int64(val);
+	}
+	maps = m;
+	nmaps = len;
+	rc = 0;
+
+err:
+	if (!maps)
+		free(m);
+	return rc;
+}
+
 static const char *parse_device_options(int argc, const char **argv,
 		enum device_action action, const struct option *options,
 		const char *usage, struct daxctl_ctx *ctx)
@@ -90,12 +229,14 @@ static const char *parse_device_options(int argc, const char **argv,
 		usage,
 		NULL
 	};
+	unsigned long long units = 1;
 	int i, rc = 0;
 
 	argc = parse_options(argc, argv, options, u, 0);
 
 	/* Handle action-agnostic non-option arguments */
-	if (argc == 0) {
+	if (argc == 0 &&
+	    action != ACTION_CREATE) {
 		char *action_string;
 
 		switch (action) {
@@ -107,6 +248,15 @@ static const char *parse_device_options(int argc, const char **argv,
 			break;
 		case ACTION_OFFLINE:
 			action_string = "offline memory for";
+			break;
+		case ACTION_DISABLE:
+			action_string = "disable";
+			break;
+		case ACTION_ENABLE:
+			action_string = "enable";
+			break;
+		case ACTION_DESTROY:
+			action_string = "destroy";
 			break;
 		default:
 			action_string = "<>";
@@ -135,12 +285,19 @@ static const char *parse_device_options(int argc, const char **argv,
 	/* Handle action-specific options */
 	switch (action) {
 	case ACTION_RECONFIG:
-		if (!param.mode) {
-			fprintf(stderr, "error: a 'mode' option is required\n");
+		if (!param.size &&
+		    !param.align &&
+		    !param.mode) {
+			fprintf(stderr, "error: a 'align', 'mode' or 'size' option is required\n");
 			usage_with_options(u, reconfig_options);
 			rc = -EINVAL;
 		}
-		if (strcmp(param.mode, "system-ram") == 0) {
+		if (param.size || param.align) {
+			if (param.size)
+				size = __parse_size64(param.size, &units);
+			if (param.align)
+				align = __parse_size64(param.align, &units);
+		} else if (strcmp(param.mode, "system-ram") == 0) {
 			reconfig_mode = DAXCTL_DEV_MODE_RAM;
 			if (param.no_movable)
 				mem_zone = MEM_ZONE_NORMAL;
@@ -153,11 +310,27 @@ static const char *parse_device_options(int argc, const char **argv,
 			}
 		}
 		break;
+	case ACTION_CREATE:
+		if (param.input &&
+		    (rc = parse_device_file(param.input)) != 0) {
+			fprintf(stderr,
+				"error: failed to parse device file: %s\n",
+				strerror(-rc));
+			break;
+		}
+		if (param.size)
+			size = __parse_size64(param.size, &units);
+		if (param.align)
+			align = __parse_size64(param.align, &units);
+		/* fall through */
 	case ACTION_ONLINE:
 		if (param.no_movable)
 			mem_zone = MEM_ZONE_NORMAL;
 		/* fall through */
+	case ACTION_DESTROY:
 	case ACTION_OFFLINE:
+	case ACTION_DISABLE:
+	case ACTION_ENABLE:
 		/* nothing special */
 		break;
 	}
@@ -309,6 +482,46 @@ static int dev_offline_memory(struct daxctl_dev *dev)
 	return 0;
 }
 
+static int dev_resize(struct daxctl_dev *dev, unsigned long long val)
+{
+	int rc;
+
+	rc = daxctl_dev_set_size(dev, val);
+	if (rc < 0)
+		return rc;
+
+	return 0;
+}
+
+static int dev_destroy(struct daxctl_dev *dev)
+{
+	const char *devname = daxctl_dev_get_devname(dev);
+	int rc;
+
+	if (daxctl_dev_is_enabled(dev) && !param.force) {
+		fprintf(stderr, "%s is active, specify --force for deletion\n",
+			devname);
+		return -ENXIO;
+	} else {
+		rc = daxctl_dev_disable(dev);
+		if (rc) {
+			fprintf(stderr, "%s: disable failed: %s\n",
+				daxctl_dev_get_devname(dev), strerror(-rc));
+			return rc;
+		}
+	}
+
+	rc = daxctl_dev_set_size(dev, 0);
+	if (rc < 0)
+		return rc;
+
+	rc = daxctl_region_destroy_dev(daxctl_dev_get_region(dev), dev);
+	if (rc < 0)
+		return rc;
+
+	return 0;
+}
+
 static int disable_devdax_device(struct daxctl_dev *dev)
 {
 	struct daxctl_memory *mem = daxctl_dev_get_memory(dev);
@@ -411,12 +624,84 @@ static int reconfig_mode_devdax(struct daxctl_dev *dev)
 	return 0;
 }
 
+static int do_create(struct daxctl_region *region, long long val,
+		     struct json_object **jdevs)
+{
+	struct json_object *jdev;
+	struct daxctl_dev *dev;
+	int i, rc = 0;
+	long long alloc = 0;
+
+	if (daxctl_region_create_dev(region))
+		return -ENOSPC;
+
+	dev = daxctl_region_get_dev_seed(region);
+	if (!dev)
+		return -ENOSPC;
+
+	if (val == -1)
+		val = daxctl_region_get_available_size(region);
+
+	if (val <= 0)
+		return -ENOSPC;
+
+	if (align > 0) {
+		rc = daxctl_dev_set_align(dev, align);
+		if (rc < 0)
+			return rc;
+	}
+
+	/* @maps is ordered by page_offset */
+	for (i = 0; i < nmaps; i++) {
+		rc = daxctl_dev_set_mapping(dev, maps[i].start, maps[i].end);
+		if (rc < 0)
+			return rc;
+		alloc += (maps[i].end - maps[i].start + 1);
+	}
+
+	if (nmaps > 0 && val > 0 && alloc != val) {
+		fprintf(stderr, "%s: allocated %lld but specified size %lld\n",
+			daxctl_dev_get_devname(dev), alloc, val);
+	} else {
+		rc = daxctl_dev_set_size(dev, val);
+		if (rc < 0)
+			return rc;
+	}
+
+	rc = daxctl_dev_enable_devdax(dev);
+	if (rc) {
+		fprintf(stderr, "%s: enable failed: %s\n",
+			daxctl_dev_get_devname(dev), strerror(-rc));
+		return rc;
+	}
+
+	*jdevs = json_object_new_array();
+	if (*jdevs) {
+		jdev = util_daxctl_dev_to_json(dev, flags);
+		if (jdev)
+			json_object_array_add(*jdevs, jdev);
+	}
+
+	return 0;
+}
+
 static int do_reconfig(struct daxctl_dev *dev, enum dev_mode mode,
 		struct json_object **jdevs)
 {
 	const char *devname = daxctl_dev_get_devname(dev);
 	struct json_object *jdev;
 	int rc = 0;
+
+	if (align > 0) {
+		rc = daxctl_dev_set_align(dev, align);
+		if (rc < 0)
+			return rc;
+	}
+
+	if (size >= 0) {
+		rc = dev_resize(dev, size);
+		return rc;
+	}
 
 	switch (mode) {
 	case DAXCTL_DEV_MODE_RAM:
@@ -471,6 +756,79 @@ static int do_xline(struct daxctl_dev *dev, enum device_action action)
 	return rc;
 }
 
+static int do_xble(struct daxctl_dev *dev, enum device_action action)
+{
+	struct daxctl_memory *mem = daxctl_dev_get_memory(dev);
+	const char *devname = daxctl_dev_get_devname(dev);
+	int rc;
+
+	if (mem) {
+		fprintf(stderr,
+			"%s: status operations are only applicable in devdax mode\n",
+			devname);
+		return -ENXIO;
+	}
+
+	switch (action) {
+	case ACTION_ENABLE:
+		rc = daxctl_dev_enable_devdax(dev);
+		if (rc) {
+			fprintf(stderr, "%s: enable failed: %s\n",
+				daxctl_dev_get_devname(dev), strerror(-rc));
+			return rc;
+		}
+		break;
+	case ACTION_DISABLE:
+		rc = daxctl_dev_disable(dev);
+		if (rc) {
+			fprintf(stderr, "%s: disable failed: %s\n",
+				daxctl_dev_get_devname(dev), strerror(-rc));
+			return rc;
+		}
+		break;
+	default:
+		fprintf(stderr, "%s: invalid action: %d\n", devname, action);
+		rc = -EINVAL;
+	}
+	return rc;
+}
+
+static int do_xaction_region(enum device_action action,
+		struct daxctl_ctx *ctx, int *processed)
+{
+	struct json_object *jdevs = NULL;
+	struct daxctl_region *region;
+	int rc = -ENXIO;
+
+	*processed = 0;
+
+	daxctl_region_foreach(ctx, region) {
+		if (!util_daxctl_region_filter(region, param.region))
+			continue;
+
+		switch (action) {
+		case ACTION_CREATE:
+			rc = do_create(region, size, &jdevs);
+			if (rc == 0)
+				(*processed)++;
+			break;
+		default:
+			rc = -EINVAL;
+			break;
+		}
+	}
+
+	/*
+	 * jdevs is the containing json array for all devices we are reporting
+	 * on. It therefore needs to be outside the region/device iterators,
+	 * and passed in to the do_<action> functions to add their objects to
+	 */
+	if (jdevs)
+		util_display_json_array(stdout, jdevs, flags);
+
+	return rc;
+}
+
 static int do_xaction_device(const char *device, enum device_action action,
 		struct daxctl_ctx *ctx, int *processed)
 {
@@ -505,6 +863,21 @@ static int do_xaction_device(const char *device, enum device_action action,
 				if (rc == 0)
 					(*processed)++;
 				break;
+			case ACTION_ENABLE:
+				rc = do_xble(dev, action);
+				if (rc == 0)
+					(*processed)++;
+				break;
+			case ACTION_DISABLE:
+				rc = do_xble(dev, action);
+				if (rc == 0)
+					(*processed)++;
+				break;
+			case ACTION_DESTROY:
+				rc = dev_destroy(dev);
+				if (rc == 0)
+					(*processed)++;
+				break;
 			default:
 				rc = -EINVAL;
 				break;
@@ -523,6 +896,41 @@ static int do_xaction_device(const char *device, enum device_action action,
 	return rc;
 }
 
+int cmd_create_device(int argc, const char **argv, struct daxctl_ctx *ctx)
+{
+	char *usage = "daxctl create-device [<options>]";
+	int processed, rc;
+
+	parse_device_options(argc, argv, ACTION_CREATE,
+			create_options, usage, ctx);
+
+	rc = do_xaction_region(ACTION_CREATE, ctx, &processed);
+	if (rc < 0)
+		fprintf(stderr, "error creating devices: %s\n",
+				strerror(-rc));
+
+	fprintf(stderr, "created %d device%s\n", processed,
+			processed == 1 ? "" : "s");
+	return rc;
+}
+
+int cmd_destroy_device(int argc, const char **argv, struct daxctl_ctx *ctx)
+{
+	char *usage = "daxctl destroy-device <device> [<options>]";
+	const char *device = parse_device_options(argc, argv, ACTION_DESTROY,
+			destroy_options, usage, ctx);
+	int processed, rc;
+
+	rc = do_xaction_device(device, ACTION_DESTROY, ctx, &processed);
+	if (rc < 0)
+		fprintf(stderr, "error destroying devices: %s\n",
+				strerror(-rc));
+
+	fprintf(stderr, "destroyed %d device%s\n", processed,
+			processed == 1 ? "" : "s");
+	return rc;
+}
+
 int cmd_reconfig_device(int argc, const char **argv, struct daxctl_ctx *ctx)
 {
 	char *usage = "daxctl reconfigure-device <device> [<options>]";
@@ -536,6 +944,40 @@ int cmd_reconfig_device(int argc, const char **argv, struct daxctl_ctx *ctx)
 				strerror(-rc));
 
 	fprintf(stderr, "reconfigured %d device%s\n", processed,
+			processed == 1 ? "" : "s");
+	return rc;
+}
+
+int cmd_disable_device(int argc, const char **argv, struct daxctl_ctx *ctx)
+{
+	char *usage = "daxctl disable-device <device>";
+	const char *device = parse_device_options(argc, argv, ACTION_DISABLE,
+			disable_options, usage, ctx);
+	int processed, rc;
+
+	rc = do_xaction_device(device, ACTION_DISABLE, ctx, &processed);
+	if (rc < 0)
+		fprintf(stderr, "error disabling device: %s\n",
+				strerror(-rc));
+
+	fprintf(stderr, "disabled %d device%s\n", processed,
+			processed == 1 ? "" : "s");
+	return rc;
+}
+
+int cmd_enable_device(int argc, const char **argv, struct daxctl_ctx *ctx)
+{
+	char *usage = "daxctl enable-device <device>";
+	const char *device = parse_device_options(argc, argv, ACTION_DISABLE,
+			enable_options, usage, ctx);
+	int processed, rc;
+
+	rc = do_xaction_device(device, ACTION_ENABLE, ctx, &processed);
+	if (rc < 0)
+		fprintf(stderr, "error enabling device: %s\n",
+				strerror(-rc));
+
+	fprintf(stderr, "enabled %d device%s\n", processed,
 			processed == 1 ? "" : "s");
 	return rc;
 }

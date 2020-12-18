@@ -1,18 +1,6 @@
-/*
- *
- * Copyright (c) 2017 Hewlett Packard Enterprise Development LP
- * Copyright (c) 2017 Intel Corporation. All rights reserved.
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms and conditions of the GNU Lesser General Public License,
- * version 2.1, as published by the Free Software Foundation.
- *
- * This program is distributed in the hope it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
- * more details.
- */
-
+/* SPDX-License-Identifier: LGPL-2.1 */
+/* Copyright (C) 2017 Hewlett Packard Enterprise Development LP */
+/* Copyright (C) 2017-2020 Intel Corporation. All rights reserved. */
 #ifndef __LIBNDCTL_NFIT_H__
 #define __LIBNDCTL_NFIT_H__
 

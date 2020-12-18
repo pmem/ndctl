@@ -1,4 +1,4 @@
-/* CC0 (Public domain) - see LICENSE file for details */
+// SPDX-License-Identifier: CC0-1.0
 #include "config.h"
 #include <ccan/str/str_debug.h>
 #include <assert.h>

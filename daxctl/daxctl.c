@@ -1,16 +1,6 @@
-/*
- * Copyright(c) 2015-2017 Intel Corporation. All rights reserved.
- * Copyright(c) 2005 Andreas Ericsson. All rights reserved.
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of version 2 of the GNU General Public License as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- */
+// SPDX-License-Identifier: GPL-2.0
+// Copyright (C) 2015-2020 Intel Corporation. All rights reserved.
+// Copyright (C) 2005 Andreas Ericsson. All rights reserved.
 
 /* originally copied from perf and git */
 
@@ -72,9 +62,13 @@ static struct cmd_struct commands[] = {
 	{ "help", .d_fn = cmd_help },
 	{ "split-acpi", .d_fn = cmd_split_acpi, },
 	{ "migrate-device-model", .d_fn = cmd_migrate },
+	{ "create-device", .d_fn = cmd_create_device },
+	{ "destroy-device", .d_fn = cmd_destroy_device },
 	{ "reconfigure-device", .d_fn = cmd_reconfig_device },
 	{ "online-memory", .d_fn = cmd_online_memory },
 	{ "offline-memory", .d_fn = cmd_offline_memory },
+	{ "disable-device", .d_fn = cmd_disable_device },
+	{ "enable-device", .d_fn = cmd_enable_device },
 };
 
 int main(int argc, const char **argv)

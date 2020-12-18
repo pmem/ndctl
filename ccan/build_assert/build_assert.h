@@ -1,4 +1,4 @@
-/* CC0 (Public domain) - see LICENSE file for details */
+/* SPDX-License-Identifier: CC0-1.0 */
 #ifndef CCAN_BUILD_ASSERT_H
 #define CCAN_BUILD_ASSERT_H
 

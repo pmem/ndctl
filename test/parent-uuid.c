@@ -1,17 +1,5 @@
-/*
- * blk_namespaces: tests functionality of multiple block namespaces
- *
- * Copyright (c) 2015, Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms and conditions of the GNU Lesser General Public License,
- * version 2.1, as published by the Free Software Foundation.
- *
- * This program is distributed in the hope it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
- * more details.
- */
+// SPDX-License-Identifier: LGPL-2.1
+// Copyright (C) 2015-2020, Intel Corporation. All rights reserved.
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -115,7 +103,7 @@ static struct ndctl_btt *check_valid_btt(struct ndctl_region *region,
 		if (!ndctl_btt_is_enabled(btt))
 			continue;
 		btt_ndns = ndctl_btt_get_namespace(btt);
-		if (strcmp(ndctl_namespace_get_devname(btt_ndns),
+		if (!btt_ndns || strcmp(ndctl_namespace_get_devname(btt_ndns),
 				ndctl_namespace_get_devname(ndns)) != 0)
 			continue;
 		return btt;

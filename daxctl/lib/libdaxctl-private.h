@@ -1,15 +1,5 @@
-/*
- * Copyright (c) 2014-2016, Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms and conditions of the GNU Lesser General Public License,
- * version 2.1, as published by the Free Software Foundation.
- *
- * This program is distributed in the hope it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
- * more details.
- */
+/* SPDX-License-Identifier: LGPL-2.1 */
+/* Copyright (C) 2014-2020, Intel Corporation. All rights reserved. */
 #ifndef _LIBDAXCTL_PRIVATE_H_
 #define _LIBDAXCTL_PRIVATE_H_
 
@@ -91,6 +81,12 @@ struct daxctl_region {
 	struct list_head devices;
 };
 
+struct daxctl_mapping {
+	struct daxctl_dev *dev;
+	unsigned long long pgoff, start, end;
+	struct list_node list;
+};
+
 struct daxctl_dev {
 	int id, major, minor;
 	void *dev_buf;
@@ -99,10 +95,13 @@ struct daxctl_dev {
 	struct list_node list;
 	unsigned long long resource;
 	unsigned long long size;
+	unsigned long align;
 	struct kmod_module *module;
 	struct daxctl_region *region;
 	struct daxctl_memory *mem;
 	int target_node;
+	int num_mappings;
+	struct list_head mappings;
 };
 
 struct daxctl_memory {

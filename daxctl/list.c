@@ -1,15 +1,5 @@
-/*
- * Copyright(c) 2015-2017 Intel Corporation. All rights reserved.
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of version 2 of the GNU General Public License as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- */
+// SPDX-License-Identifier: GPL-2.0
+// Copyright (C) 2015-2020 Intel Corporation. All rights reserved.
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -25,6 +15,7 @@
 static struct {
 	bool devs;
 	bool regions;
+	bool mappings;
 	bool idle;
 	bool human;
 } list;
@@ -35,6 +26,8 @@ static unsigned long listopts_to_flags(void)
 
 	if (list.devs)
 		flags |= UTIL_JSON_DAX_DEVS;
+	if (list.mappings)
+		flags |= UTIL_JSON_DAX_MAPPINGS;
 	if (list.idle)
 		flags |= UTIL_JSON_IDLE;
 	if (list.human)
@@ -70,6 +63,7 @@ int cmd_list(int argc, const char **argv, struct daxctl_ctx *ctx)
 				"filter by dax device instance name"),
 		OPT_BOOLEAN('D', "devices", &list.devs, "include dax device info"),
 		OPT_BOOLEAN('R', "regions", &list.regions, "include dax region info"),
+		OPT_BOOLEAN('M', "mappings", &list.mappings, "include dax mappings info"),
 		OPT_BOOLEAN('i', "idle", &list.idle, "include idle devices"),
 		OPT_BOOLEAN('u', "human", &list.human,
 				"use human friendly number formats "),

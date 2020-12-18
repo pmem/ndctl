@@ -1,15 +1,5 @@
-/*
- * Copyright (c) 2016, Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms and conditions of the GNU Lesser General Public License,
- * version 2.1, as published by the Free Software Foundation.
- *
- * This program is distributed in the hope it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
- * more details.
- */
+// SPDX-License-Identifier: LGPL-2.1
+// Copyright (C) 2016-2020, Intel Corporation. All rights reserved.
 #include <stdio.h>
 #include <errno.h>
 #include <limits.h>
@@ -287,6 +277,8 @@ static struct daxctl_region *add_dax_region(void *parent, int id,
 	region->refcount = 1;
 	list_head_init(&region->devices);
 	region->devname = strdup(devpath_to_devname(base));
+	if (!region->devname)
+		goto err_read;
 
 	sprintf(path, "%s/%s/size", base, attrs);
 	if (sysfs_read_attr(ctx, path, buf) == 0)
@@ -314,6 +306,7 @@ static struct daxctl_region *add_dax_region(void *parent, int id,
  err_read:
 	free(region->region_buf);
 	free(region->region_path);
+	free(region->devname);
 	free(region);
  err_region:
 	free(path);
@@ -498,6 +491,13 @@ static void *add_dax_dev(void *parent, int id, const char *daxdev_base)
 		goto err_read;
 	dev->size = strtoull(buf, NULL, 0);
 
+	/* Device align attribute is only available in v5.10 or up */
+	sprintf(path, "%s/align", daxdev_base);
+	if (!sysfs_read_attr(ctx, path, buf))
+		dev->align = strtoull(buf, NULL, 0);
+	else
+		dev->align = 0;
+
 	dev->dev_path = strdup(daxdev_base);
 	if (!dev->dev_path)
 		goto err_read;
@@ -519,7 +519,8 @@ static void *add_dax_dev(void *parent, int id, const char *daxdev_base)
 			free(path);
 			return dev_dup;
 		}
-
+	dev->num_mappings = -1;
+	list_head_init(&dev->mappings);
 	list_add(&region->devices, &dev->list);
 	free(path);
 	return dev;
@@ -581,6 +582,49 @@ DAXCTL_EXPORT unsigned long long daxctl_region_get_available_size(
 	if (buf[0] && *end == '\0')
 		return avail;
 	return 0;
+}
+
+DAXCTL_EXPORT int daxctl_region_create_dev(struct daxctl_region *region)
+{
+	struct daxctl_ctx *ctx = daxctl_region_get_ctx(region);
+	char *path = region->region_buf;
+	int rc, len = region->buf_len;
+	char *num_devices;
+
+	if (snprintf(path, len, "%s/%s/create", region->region_path, attrs) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				daxctl_region_get_devname(region));
+		return -EFAULT;
+	}
+
+	if (asprintf(&num_devices, "%d", 1) < 0) {
+		err(ctx, "%s: buffer too small!\n",
+				daxctl_region_get_devname(region));
+		return -EFAULT;
+	}
+
+	rc = sysfs_write_attr(ctx, path, num_devices);
+	if (rc)
+		return rc;
+
+	return 0;
+}
+
+DAXCTL_EXPORT int daxctl_region_destroy_dev(struct daxctl_region *region,
+					    struct daxctl_dev *dev)
+{
+	struct daxctl_ctx *ctx = daxctl_region_get_ctx(region);
+	char *path = region->region_buf;
+	int rc, len = region->buf_len;
+
+	if (snprintf(path, len, "%s/%s/delete", region->region_path, attrs) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				daxctl_region_get_devname(region));
+		return -EFAULT;
+	}
+
+	rc = sysfs_write_attr(ctx, path, daxctl_dev_get_devname(dev));
+	return rc;
 }
 
 DAXCTL_EXPORT struct daxctl_dev *daxctl_region_get_dev_seed(
@@ -1019,6 +1063,86 @@ DAXCTL_EXPORT unsigned long long daxctl_dev_get_size(struct daxctl_dev *dev)
 	return dev->size;
 }
 
+DAXCTL_EXPORT int daxctl_dev_set_size(struct daxctl_dev *dev, unsigned long long size)
+{
+	struct daxctl_ctx *ctx = daxctl_dev_get_ctx(dev);
+	char buf[SYSFS_ATTR_SIZE];
+	char *path = dev->dev_buf;
+	int len = dev->buf_len;
+
+	if (snprintf(path, len, "%s/size", dev->dev_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				daxctl_dev_get_devname(dev));
+		return -ENXIO;
+	}
+
+	sprintf(buf, "%#llx\n", size);
+	if (sysfs_write_attr(ctx, path, buf) < 0) {
+		err(ctx, "%s: failed to set size\n",
+				daxctl_dev_get_devname(dev));
+		return -ENXIO;
+	}
+
+	dev->size = size;
+	return 0;
+}
+
+DAXCTL_EXPORT unsigned long daxctl_dev_get_align(struct daxctl_dev *dev)
+{
+	return dev->align;
+}
+
+DAXCTL_EXPORT int daxctl_dev_set_align(struct daxctl_dev *dev, unsigned long align)
+{
+	struct daxctl_ctx *ctx = daxctl_dev_get_ctx(dev);
+	char buf[SYSFS_ATTR_SIZE];
+	char *path = dev->dev_buf;
+	int len = dev->buf_len;
+
+	if (snprintf(path, len, "%s/align", dev->dev_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				daxctl_dev_get_devname(dev));
+		return -ENXIO;
+	}
+
+	sprintf(buf, "%#lx\n", align);
+	if (sysfs_write_attr(ctx, path, buf) < 0) {
+		err(ctx, "%s: failed to set align\n",
+				daxctl_dev_get_devname(dev));
+		return -ENXIO;
+	}
+
+	dev->align = align;
+	return 0;
+}
+
+DAXCTL_EXPORT int daxctl_dev_set_mapping(struct daxctl_dev *dev,
+					unsigned long long start,
+					unsigned long long end)
+{
+	struct daxctl_ctx *ctx = daxctl_dev_get_ctx(dev);
+	unsigned long long size = end - start + 1;
+	char buf[SYSFS_ATTR_SIZE];
+	char *path = dev->dev_buf;
+	int len = dev->buf_len;
+
+	if (snprintf(path, len, "%s/mapping", dev->dev_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				daxctl_dev_get_devname(dev));
+		return -ENXIO;
+	}
+
+	sprintf(buf, "%#llx-%#llx\n", start, end);
+	if (sysfs_write_attr(ctx, path, buf) < 0) {
+		err(ctx, "%s: failed to set mapping\n",
+				daxctl_dev_get_devname(dev));
+		return -ENXIO;
+	}
+	dev->size += size;
+
+	return 0;
+}
+
 DAXCTL_EXPORT int daxctl_dev_get_target_node(struct daxctl_dev *dev)
 {
 	return dev->target_node;
@@ -1045,6 +1169,94 @@ DAXCTL_EXPORT const char *daxctl_memory_get_node_path(struct daxctl_memory *mem)
 DAXCTL_EXPORT unsigned long daxctl_memory_get_block_size(struct daxctl_memory *mem)
 {
 	return mem->block_size;
+}
+
+static void mappings_init(struct daxctl_dev *dev)
+{
+	struct daxctl_ctx *ctx = daxctl_dev_get_ctx(dev);
+	char buf[SYSFS_ATTR_SIZE];
+	char *path = dev->dev_buf;
+	int i;
+
+	if (dev->num_mappings != -1)
+		return;
+
+	dev->num_mappings = 0;
+	for (;;) {
+		struct daxctl_mapping *mapping;
+		unsigned long long pgoff, start, end;
+
+		i = dev->num_mappings;
+		mapping = calloc(1, sizeof(*mapping));
+		if (!mapping) {
+			err(ctx, "%s: mapping%u allocation failure\n",
+				daxctl_dev_get_devname(dev), i);
+			continue;
+		}
+
+		sprintf(path, "%s/mapping%d/start", dev->dev_path, i);
+		if (sysfs_read_attr(ctx, path, buf) < 0) {
+			free(mapping);
+			break;
+		}
+		start = strtoull(buf, NULL, 0);
+
+		sprintf(path, "%s/mapping%d/end", dev->dev_path, i);
+		if (sysfs_read_attr(ctx, path, buf) < 0) {
+			free(mapping);
+			break;
+		}
+		end = strtoull(buf, NULL, 0);
+
+		sprintf(path, "%s/mapping%d/page_offset", dev->dev_path, i);
+		if (sysfs_read_attr(ctx, path, buf) < 0) {
+			free(mapping);
+			break;
+		}
+		pgoff = strtoull(buf, NULL, 0);
+
+		mapping->dev = dev;
+		mapping->start = start;
+		mapping->end = end;
+		mapping->pgoff = pgoff;
+
+		dev->num_mappings++;
+		list_add(&dev->mappings, &mapping->list);
+	}
+}
+
+DAXCTL_EXPORT struct daxctl_mapping *daxctl_mapping_get_first(struct daxctl_dev *dev)
+{
+	mappings_init(dev);
+
+	return list_top(&dev->mappings, struct daxctl_mapping, list);
+}
+
+DAXCTL_EXPORT struct daxctl_mapping *daxctl_mapping_get_next(struct daxctl_mapping *mapping)
+{
+	struct daxctl_dev *dev = mapping->dev;
+
+	return list_next(&dev->mappings, mapping, list);
+}
+
+DAXCTL_EXPORT unsigned long long daxctl_mapping_get_start(struct daxctl_mapping *mapping)
+{
+	return mapping->start;
+}
+
+DAXCTL_EXPORT unsigned long long daxctl_mapping_get_end(struct daxctl_mapping *mapping)
+{
+	return mapping->end;
+}
+
+DAXCTL_EXPORT unsigned long long  daxctl_mapping_get_offset(struct daxctl_mapping *mapping)
+{
+	return mapping->pgoff;
+}
+
+DAXCTL_EXPORT unsigned long long daxctl_mapping_get_size(struct daxctl_mapping *mapping)
+{
+	return mapping->end - mapping->start + 1;
 }
 
 static int memblock_is_online(struct daxctl_memory *mem, char *memblock)

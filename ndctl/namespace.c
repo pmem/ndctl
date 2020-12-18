@@ -1,15 +1,5 @@
-/*
- * Copyright(c) 2015-2017 Intel Corporation. All rights reserved.
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of version 2 of the GNU General Public License as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- */
+// SPDX-License-Identifier: GPL-2.0
+// Copyright (C) 2015-2020 Intel Corporation. All rights reserved.
 #include <stdio.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -549,6 +539,8 @@ static int setup_namespace(struct ndctl_region *region,
 
 	if (do_setup_pfn(ndns, p)) {
 		struct ndctl_pfn *pfn = ndctl_region_get_pfn_seed(region);
+		if (!pfn)
+			return -ENXIO;
 
 		rc = check_dax_align(ndns);
 		if (rc)
@@ -563,6 +555,8 @@ static int setup_namespace(struct ndctl_region *region,
 			ndctl_pfn_set_namespace(pfn, NULL);
 	} else if (p->mode == NDCTL_NS_MODE_DEVDAX) {
 		struct ndctl_dax *dax = ndctl_region_get_dax_seed(region);
+		if (!dax)
+			return -ENXIO;
 
 		rc = check_dax_align(ndns);
 		if (rc)
@@ -577,6 +571,8 @@ static int setup_namespace(struct ndctl_region *region,
 			ndctl_dax_set_namespace(dax, NULL);
 	} else if (p->mode == NDCTL_NS_MODE_SECTOR) {
 		struct ndctl_btt *btt = ndctl_region_get_btt_seed(region);
+		if (!btt)
+			return -ENXIO;
 
 		/*
 		 * Handle the case of btt on a pmem namespace where the
@@ -842,8 +838,7 @@ static int validate_namespace_options(struct ndctl_region *region,
 	region_align = ndctl_region_get_align(region);
 	if (region_align < ULONG_MAX && p->size % region_align) {
 		err("%s: align setting is %#lx size %#llx is misaligned\n",
-				ndctl_region_get_devname(region), region_align,
-				p->size);
+				region_name, region_align, p->size);
 		return -EINVAL;
 	}
 
@@ -919,8 +914,13 @@ static int validate_namespace_options(struct ndctl_region *region,
 		} else {
 			struct ndctl_namespace *seed = ndns;
 
-			if (!seed)
+			if (!seed) {
 				seed = ndctl_region_get_namespace_seed(region);
+				if (!seed) {
+					err("%s: failed to get seed\n", region_name);
+					return -ENXIO;
+				}
+			}
 			num = ndctl_namespace_get_num_sector_sizes(seed);
 			for (i = 0; i < num; i++)
 				if (ndctl_namespace_get_supported_sector_size(seed, i)
@@ -948,9 +948,13 @@ static int validate_namespace_options(struct ndctl_region *region,
 		struct ndctl_namespace *seed;
 
 		seed = ndctl_region_get_namespace_seed(region);
+		if (!seed) {
+			err("%s: failed to get seed\n", region_name);
+			return -ENXIO;
+		}
 		if (ndctl_namespace_get_type(seed) == ND_DEVICE_NAMESPACE_BLK)
 			debug("%s: set_defaults() should preclude this?\n",
-				ndctl_region_get_devname(region));
+				region_name);
 		/*
 		 * Pick a default sector size for a pmem namespace based
 		 * on what the kernel supports.
@@ -1101,11 +1105,10 @@ static int zero_info_block(struct ndctl_namespace *ndns)
 	return rc;
 }
 
-static int namespace_destroy(struct ndctl_region *region,
+static int namespace_prep_reconfig(struct ndctl_region *region,
 		struct ndctl_namespace *ndns)
 {
 	const char *devname = ndctl_namespace_get_devname(ndns);
-	unsigned long long size;
 	bool did_zero = false;
 	int rc;
 
@@ -1119,11 +1122,11 @@ static int namespace_destroy(struct ndctl_region *region,
 		error("%s is active, specify --force for re-configuration\n",
 				devname);
 		return -EBUSY;
-	} else {
-		rc = ndctl_namespace_disable_safe(ndns);
-		if (rc)
-			return rc;
 	}
+
+	rc = ndctl_namespace_disable_safe(ndns);
+	if (rc)
+		return rc;
 
 	ndctl_namespace_set_enforce_mode(ndns, NDCTL_NS_MODE_RAW);
 
@@ -1136,6 +1139,7 @@ static int namespace_destroy(struct ndctl_region *region,
 	switch (ndctl_namespace_get_type(ndns)) {
         case ND_DEVICE_NAMESPACE_PMEM:
         case ND_DEVICE_NAMESPACE_BLK:
+		rc = 2;
 		break;
 	default:
 		/*
@@ -1147,14 +1151,31 @@ static int namespace_destroy(struct ndctl_region *region,
 			rc = 0;
 		else
 			rc = 1;
-		goto out;
+		break;
 	}
+
+	return rc;
+}
+
+static int namespace_destroy(struct ndctl_region *region,
+		struct ndctl_namespace *ndns)
+{
+	const char *devname = ndctl_namespace_get_devname(ndns);
+	unsigned long long size;
+	int rc;
+
+	rc = namespace_prep_reconfig(region, ndns);
+	if (rc < 0)
+		return rc;
 
 	size = ndctl_namespace_get_size(ndns);
 
-	rc = ndctl_namespace_delete(ndns);
-	if (rc)
-		debug("%s: failed to reclaim\n", devname);
+	/* Labeled namespace, destroy label / allocation */
+	if (rc == 2) {
+		rc = ndctl_namespace_delete(ndns);
+		if (rc)
+			debug("%s: failed to reclaim\n", devname);
+	}
 
 	/*
 	 * Don't report a destroyed namespace when no capacity was
@@ -1163,7 +1184,6 @@ static int namespace_destroy(struct ndctl_region *region,
 	if (size == 0 && rc == 0)
 		rc = 1;
 
-out:
 	return rc;
 }
 
@@ -1177,7 +1197,7 @@ static int enable_labels(struct ndctl_region *region)
 
 	/* no dimms => no labels */
 	if (!mappings)
-		return 0;
+		return -ENODEV;
 
 	count = 0;
 	ndctl_dimm_foreach_in_region(region, dimm) {
@@ -1192,7 +1212,7 @@ static int enable_labels(struct ndctl_region *region)
 
 	/* all the dimms must support labeling */
 	if (count != mappings)
-		return 0;
+		return -ENODEV;
 
 	ndctl_region_disable_invalidate(region);
 	count = 0;
@@ -1260,23 +1280,28 @@ static int namespace_reconfig(struct ndctl_region *region,
 	if (rc)
 		return rc;
 
-	rc = namespace_destroy(region, ndns);
+	rc = namespace_prep_reconfig(region, ndns);
 	if (rc < 0)
 		return rc;
 
 	/* check if we can enable labels on this region */
 	if (ndctl_region_get_nstype(region) == ND_DEVICE_NAMESPACE_IO
 			&& p.autolabel) {
-		/* if this fails, try to continue label-less */
-		enable_labels(region);
-	}
-
-	ndns = region_get_namespace(region);
-	if (!ndns || !ndctl_namespace_is_configuration_idle(ndns)) {
-		debug("%s: no %s namespace seed\n",
-				ndctl_region_get_devname(region),
-				ndns ? "idle" : "available");
-		return -ENODEV;
+		/*
+		 * If this fails, try to continue label-less, if this
+		 * got far enough to invalidate the region than @ndns is
+		 * now invalid.
+		 */
+		rc = enable_labels(region);
+		if (rc != -ENODEV)
+			ndns = region_get_namespace(region);
+		if (!ndns || (rc != -ENODEV
+				&& !ndctl_namespace_is_configuration_idle(ndns))) {
+			debug("%s: no %s namespace seed\n",
+					ndctl_region_get_devname(region),
+					ndns ? "idle" : "available");
+			return -ENODEV;
+		}
 	}
 
 	return setup_namespace(region, ndns, &p);

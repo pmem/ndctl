@@ -1,0 +1,46 @@
+// SPDX-License-Identifier: GPL-2.0
+
+daxctl-disable-device(1)
+========================
+
+NAME
+----
+daxctl-disable-device - Disables a devdax device
+
+SYNOPSIS
+--------
+[verse]
+'daxctl disable-device' [<options>]
+
+EXAMPLES
+--------
+
+* Disables dax0.1
+----
+# daxctl disable-device dax0.1
+----
+
+* Disables all devices in region id 0
+----
+# daxctl disable-device -r 0 all
+disabled 3 devices
+----
+
+DESCRIPTION
+-----------
+
+Disables a dax device in 'devdax' mode.
+
+OPTIONS
+-------
+include::region-option.txt[]
+
+include::human-option.txt[]
+
+include::verbose-option.txt[]
+
+include::../copyright.txt[]
+
+SEE ALSO
+--------
+linkdaxctl:daxctl-list[1],daxctl-reconfigure-device[1],daxctl-create-device[1]

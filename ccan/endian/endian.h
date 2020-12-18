@@ -1,4 +1,4 @@
-/* CC0 (Public domain) - see LICENSE file for details */
+/* SPDX-License-Identifier: CC0-1.0 */
 #ifndef CCAN_ENDIAN_H
 #define CCAN_ENDIAN_H
 #include <stdint.h>

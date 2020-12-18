@@ -1,15 +1,5 @@
-/*
- * Copyright (c) 2016, Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms and conditions of the GNU Lesser General Public License,
- * version 2.1, as published by the Free Software Foundation.
- *
- * This program is distributed in the hope it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
- * more details.
- */
+/* SPDX-License-Identifier: LGPL-2.1 */
+/* Copyright (C) 2016-2020, Intel Corporation. All rights reserved. */
 #ifndef _LIBDAXCTL_H_
 #define _LIBDAXCTL_H_
 
@@ -56,10 +46,12 @@ unsigned long daxctl_region_get_align(struct daxctl_region *region);
 const char *daxctl_region_get_devname(struct daxctl_region *region);
 const char *daxctl_region_get_path(struct daxctl_region *region);
 
+int daxctl_region_create_dev(struct daxctl_region *region);
 struct daxctl_dev *daxctl_region_get_dev_seed(struct daxctl_region *region);
 
 struct daxctl_dev;
 struct daxctl_dev *daxctl_dev_get_first(struct daxctl_region *region);
+int daxctl_region_destroy_dev(struct daxctl_region *region, struct daxctl_dev *dev);
 struct daxctl_dev *daxctl_dev_get_next(struct daxctl_dev *dev);
 struct daxctl_region *daxctl_dev_get_region(struct daxctl_dev *dev);
 int daxctl_dev_get_id(struct daxctl_dev *dev);
@@ -68,6 +60,11 @@ int daxctl_dev_get_major(struct daxctl_dev *dev);
 int daxctl_dev_get_minor(struct daxctl_dev *dev);
 unsigned long long daxctl_dev_get_resource(struct daxctl_dev *dev);
 unsigned long long daxctl_dev_get_size(struct daxctl_dev *dev);
+int daxctl_dev_set_size(struct daxctl_dev *dev, unsigned long long size);
+unsigned long daxctl_dev_get_align(struct daxctl_dev *dev);
+int daxctl_dev_set_align(struct daxctl_dev *dev, unsigned long align);
+int daxctl_dev_set_mapping(struct daxctl_dev *dev, unsigned long long start,
+			unsigned long long end);
 struct daxctl_ctx *daxctl_dev_get_ctx(struct daxctl_dev *dev);
 int daxctl_dev_is_enabled(struct daxctl_dev *dev);
 int daxctl_dev_disable(struct daxctl_dev *dev);
@@ -97,6 +94,18 @@ int daxctl_memory_online_no_movable(struct daxctl_memory *mem);
         for (region = daxctl_region_get_first(ctx); \
              region != NULL; \
              region = daxctl_region_get_next(region))
+
+struct daxctl_mapping;
+struct daxctl_mapping *daxctl_mapping_get_first(struct daxctl_dev *dev);
+struct daxctl_mapping *daxctl_mapping_get_next(struct daxctl_mapping *mapping);
+#define daxctl_mapping_foreach(dev, mapping) \
+        for (mapping = daxctl_mapping_get_first(dev); \
+             mapping != NULL; \
+             mapping = daxctl_mapping_get_next(mapping))
+unsigned long long daxctl_mapping_get_start(struct daxctl_mapping *mapping);
+unsigned long long daxctl_mapping_get_end(struct daxctl_mapping *mapping);
+unsigned long long  daxctl_mapping_get_offset(struct daxctl_mapping *mapping);
+unsigned long long daxctl_mapping_get_size(struct daxctl_mapping *mapping);
 
 #ifdef __cplusplus
 } /* extern "C" */

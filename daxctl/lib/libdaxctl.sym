@@ -75,3 +75,19 @@ global:
 	daxctl_memory_is_movable;
 	daxctl_memory_online_no_movable;
 } LIBDAXCTL_6;
+
+LIBDAXCTL_8 {
+global:
+	daxctl_dev_set_size;
+	daxctl_region_create_dev;
+	daxctl_region_destroy_dev;
+	daxctl_dev_get_align;
+	daxctl_dev_set_align;
+	daxctl_mapping_get_first;
+	daxctl_mapping_get_next;
+	daxctl_mapping_get_start;
+	daxctl_mapping_get_end;
+	daxctl_mapping_get_offset;
+	daxctl_mapping_get_size;
+	daxctl_dev_set_mapping;
+} LIBDAXCTL_7;

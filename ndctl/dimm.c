@@ -1,15 +1,5 @@
-/*
- * Copyright (c) 2016, Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms and conditions of the GNU Lesser General Public License,
- * version 2.1, as published by the Free Software Foundation.
- *
- * This program is distributed in the hope it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
- * more details.
- */
+// SPDX-License-Identifier: LGPL-2.1
+// Copyright (C) 2016-2020, Intel Corporation. All rights reserved.
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -1352,7 +1342,7 @@ static int dimm_action(int argc, const char **argv, struct ndctl_ctx *ctx,
 			fprintf(stderr, "failed to open: %s: (%s)\n",
 					param.infile, strerror(errno));
 			rc = -errno;
-			goto out;
+			goto out_close_fout;
 		}
 	}
 
@@ -1371,7 +1361,7 @@ static int dimm_action(int argc, const char **argv, struct ndctl_ctx *ctx,
 		fprintf(stderr, "'%s' is not a valid label version\n",
 				param.labelversion);
 		rc = -EINVAL;
-		goto out;
+		goto out_close_fin_fout;
 	}
 
 	rc = 0;
@@ -1423,11 +1413,13 @@ static int dimm_action(int argc, const char **argv, struct ndctl_ctx *ctx,
 		util_display_json_array(actx.f_out, actx.jdimms, flags);
 	}
 
-	if (actx.f_out != stdout)
-		fclose(actx.f_out);
-
+ out_close_fin_fout:
 	if (actx.f_in != stdin)
 		fclose(actx.f_in);
+
+ out_close_fout:
+	if (actx.f_out != stdout)
+		fclose(actx.f_out);
 
  out:
 	/*

@@ -1,17 +1,7 @@
-/*
- * Copyright(c) 2015-2017 Intel Corporation. All rights reserved.
- * Copyright(c) 2008 Miklos Vajna. All rights reserved.
- * Copyright(c) 2006 Linus Torvalds. All rights reserved.
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of version 2 of the GNU General Public License as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- */
+// SPDX-License-Identifier: GPL-2.0
+// Copyright (C) 2015-2020 Intel Corporation. All rights reserved.
+// Copyright (C) 2008 Miklos Vajna. All rights reserved.
+// Copyright (C) 2006 Linus Torvalds. All rights reserved.
 
 /* originally copied from perf and git */
 
@@ -44,8 +34,14 @@ static void exec_man_konqueror(const char *path, const char *page)
 		if (path) {
 			const char *file = strrchr(path, '/');
 			if (file && !strcmp(file + 1, "konqueror")) {
+				char *dest;
 				char *new = strdup(path);
-				char *dest = strrchr(new, '/');
+				if (!new) {
+					pr_err("strdup(path) failed.\n");
+					exit(1);
+				}
+
+				dest = strrchr(new, '/');
 
 				/* strlen("konqueror") == strlen("kfmclient") */
 				strcpy(dest + 1, "kfmclient");

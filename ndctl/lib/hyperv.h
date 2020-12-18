@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: GPL-2.0
-/* Copyright(c) 2019, Microsoft Corporation. All rights reserved. */
+/* SPDX-License-Identifier: GPL-2.0 */
+/* Copyright (C) 2019, Microsoft Corporation. All rights reserved. */
 
 #ifndef __NDCTL_HYPERV_H__
 #define __NDCTL_HYPERV_H__

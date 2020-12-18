@@ -67,6 +67,10 @@ OPTIONS
 --devices::
 	Include device-dax instance info in the listing (default)
 
+-M::
+--mappings::
+	Include device-dax instance mappings info in the listing
+
 -R::
 --regions::
 	Include region info in the listing

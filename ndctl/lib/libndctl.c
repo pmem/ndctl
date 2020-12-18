@@ -1,15 +1,5 @@
-/*
- * Copyright (c) 2014-2016, Intel Corporation.
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms and conditions of the GNU Lesser General Public License,
- * version 2.1, as published by the Free Software Foundation.
- *
- * This program is distributed in the hope it will be useful, but WITHOUT ANY
- * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
- * more details.
- */
+// SPDX-License-Identifier: LGPL-2.1
+// Copyright (C) 2014-2020, Intel Corporation. All rights reserved.
 #include <poll.h>
 #include <stdio.h>
 #include <signal.h>
@@ -975,6 +965,7 @@ static void *add_bus(void *parent, int id, const char *ctl_base)
 	free(bus->wait_probe_path);
 	free(bus->scrub_path);
 	free(bus->provider);
+	free(bus->bus_path);
 	free(bus->bus_buf);
 	free(bus);
  err_bus:

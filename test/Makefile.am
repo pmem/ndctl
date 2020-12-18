@@ -59,6 +59,7 @@ TESTS +=\
 	revoke-devmem \
 	device-dax-fio.sh \
 	daxctl-devices.sh \
+	daxctl-create.sh \
 	dm.sh \
 	mmap.sh
 

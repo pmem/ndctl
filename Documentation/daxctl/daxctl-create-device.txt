@@ -1,0 +1,114 @@
+// SPDX-License-Identifier: GPL-2.0
+
+daxctl-create-device(1)
+=======================
+
+NAME
+----
+daxctl-create-device - Create a devdax device
+
+SYNOPSIS
+--------
+[verse]
+'daxctl create-device' [<options>]
+
+EXAMPLES
+--------
+
+* Creates dax0.1 with 4G of size
+----
+# daxctl create-device -s 4G
+[
+  {
+    "chardev":"dax0.1",
+    "size":4294967296,
+    "target_node":0,
+    "mode":"devdax"
+  }
+]
+----
+
+* Creates devices with fully available size on all regions
+----
+# daxctl create-device -u
+[
+  {
+    "chardev":"dax0.1",
+    "size":"15.63 GiB (16.78 GB)",
+    "target_node":0,
+    "mode":"devdax"
+  },
+  {
+    "chardev":"dax1.1",
+    "size":"15.63 GiB (16.78 GB)",
+    "target_node":1,
+    "mode":"devdax"
+  }
+]
+----
+
+* Creates dax0.1 with fully available size on region id 0
+----
+# daxctl create-device -r 0 -u
+{
+  "chardev":"dax0.1",
+  "size":"15.63 GiB (16.78 GB)",
+  "target_node":0,
+  "mode":"devdax"
+}
+----
+
+DESCRIPTION
+-----------
+
+Creates dax device in 'devdax' mode in dynamic regions. The resultant can also
+be convereted to the 'system-ram' mode which arranges for the dax range to be
+hot-plugged into the system as regular memory.
+
+'daxctl create-device' expects that the BIOS or kernel defines a range in the
+EFI memory map with EFI_MEMORY_SP. The resultant ranges mean that it's
+100% capacity is reserved for applications.
+
+OPTIONS
+-------
+include::region-option.txt[]
+
+-s::
+--size=::
+	For regions that support dax device cretion, set the device size
+	in bytes.  Otherwise it defaults to the maximum size specified by
+	region.  This option supports the suffixes "k" or "K" for KiB, "m" or
+	"M" for MiB, "g" or "G" for GiB and "t" or "T" for TiB.
+
+	The size must be a multiple of the region alignment.
+
+-a::
+--align::
+	Applications that want to establish dax memory mappings with
+	page table entries greater than system base page size (4K on
+	x86) need a device that is sufficiently aligned. This defaults
+	to 2M. Note that "devdax" mode enforces all mappings to be
+	aligned to this value, i.e. it fails unaligned mapping attempts.
+
+--input::
+	Applications that want to select ranges assigned to a device-dax
+	instance, or wanting to establish previously created devices, can
+	pass an input JSON file. The file option lets a user pass a JSON
+	object similar to the one listed with "daxctl list".
+
+	The device name is not re-created, but if a "chardev" is passed in
+	the JSON file, it will use that to get the region id.
+
+	Note that the JSON content in the file cannot be an array of
+	JSON objects but rather a single JSON object i.e. without the
+	array enclosing brackets.
+
+include::human-option.txt[]
+
+include::verbose-option.txt[]
+
+include::../copyright.txt[]
+
+SEE ALSO
+--------
+linkdaxctl:daxctl-list[1],daxctl-reconfigure-device[1],daxctl-destroy-device[1]

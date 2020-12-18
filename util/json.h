@@ -1,20 +1,11 @@
-/*
- * Copyright(c) 2015-2017 Intel Corporation. All rights reserved.
- *
- * This program is free software; you can redistribute it and/or modify it
- * under the terms of version 2 of the GNU General Public License as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * General Public License for more details.
- */
+/* SPDX-License-Identifier: GPL-2.0 */
+/* Copyright (C) 2015-2020 Intel Corporation. All rights reserved. */
 #ifndef __NDCTL_JSON_H__
 #define __NDCTL_JSON_H__
 #include <stdio.h>
 #include <stdbool.h>
 #include <ndctl/libndctl.h>
+#include <daxctl/libdaxctl.h>
 #include <ccan/short_types/short_types.h>
 
 enum util_json_flags {
@@ -27,6 +18,7 @@ enum util_json_flags {
 	UTIL_JSON_CAPABILITIES	= (1 << 6),
 	UTIL_JSON_CONFIGURED	= (1 << 7),
 	UTIL_JSON_FIRMWARE	= (1 << 8),
+	UTIL_JSON_DAX_MAPPINGS	= (1 << 9),
 };
 
 struct json_object;
@@ -37,6 +29,8 @@ struct json_object *util_bus_to_json(struct ndctl_bus *bus,
 struct json_object *util_dimm_to_json(struct ndctl_dimm *dimm,
 		unsigned long flags);
 struct json_object *util_mapping_to_json(struct ndctl_mapping *mapping,
+		unsigned long flags);
+struct json_object *util_daxctl_mapping_to_json(struct daxctl_mapping *mapping,
 		unsigned long flags);
 struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 		unsigned long flags);
