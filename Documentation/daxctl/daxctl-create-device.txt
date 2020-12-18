@@ -90,6 +90,19 @@ include::region-option.txt[]
 	to 2M. Note that "devdax" mode enforces all mappings to be
 	aligned to this value, i.e. it fails unaligned mapping attempts.
 
+--input::
+	Applications that want to select ranges assigned to a device-dax
+	instance, or wanting to establish previously created devices, can
+	pass an input JSON file. The file option lets a user pass a JSON
+	object similar to the one listed with "daxctl list".
+
+	The device name is not re-created, but if a "chardev" is passed in
+	the JSON file, it will use that to get the region id.
+
+	Note that the JSON content in the file cannot be an array of
+	JSON objects but rather a single JSON object i.e. without the
+	array enclosing brackets.
+
 include::human-option.txt[]
 
 include::verbose-option.txt[]

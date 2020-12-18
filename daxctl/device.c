@@ -13,6 +13,7 @@
 #include <util/json.h>
 #include <util/filter.h>
 #include <json-c/json.h>
+#include <json-c/json_util.h>
 #include <daxctl/libdaxctl.h>
 #include <util/parse-options.h>
 #include <ccan/array_size/array_size.h>
@@ -23,6 +24,7 @@ static struct {
 	const char *region;
 	const char *size;
 	const char *align;
+	const char *input;
 	bool no_online;
 	bool no_movable;
 	bool force;
@@ -36,10 +38,16 @@ enum dev_mode {
 	DAXCTL_DEV_MODE_RAM,
 };
 
+struct mapping {
+	unsigned long long start, end, pgoff;
+};
+
 static enum dev_mode reconfig_mode = DAXCTL_DEV_MODE_UNKNOWN;
 static long long align = -1;
 static long long size = -1;
 static unsigned long flags;
+static struct mapping *maps = NULL;
+static long long nmaps = -1;
 
 enum memory_zone {
 	MEM_ZONE_MOVABLE,
@@ -71,7 +79,8 @@ OPT_BOOLEAN('f', "force", &param.force, \
 
 #define CREATE_OPTIONS() \
 OPT_STRING('s', "size", &param.size, "size", "size to switch the device to"), \
-OPT_STRING('a', "align", &param.align, "align", "alignment to switch the device to")
+OPT_STRING('a', "align", &param.align, "align", "alignment to switch the device to"), \
+OPT_STRING('\0', "input", &param.input, "input", "input device JSON file")
 
 #define DESTROY_OPTIONS() \
 OPT_BOOLEAN('f', "force", &param.force, \
@@ -123,6 +132,94 @@ static const struct option destroy_options[] = {
 	DESTROY_OPTIONS(),
 	OPT_END(),
 };
+
+static int sort_mappings(const void *a, const void *b)
+{
+	json_object **jsoa, **jsob;
+	struct json_object *va, *vb;
+	unsigned long long pga, pgb;
+
+	jsoa = (json_object **)a;
+	jsob = (json_object **)b;
+	if (!*jsoa && !*jsob)
+		return 0;
+
+	if (!json_object_object_get_ex(*jsoa, "page_offset", &va) ||
+	    !json_object_object_get_ex(*jsob, "page_offset", &vb))
+		return 0;
+
+	pga = json_object_get_int64(va);
+	pgb = json_object_get_int64(vb);
+
+	return pga > pgb;
+}
+
+static int parse_device_file(const char *filename)
+{
+	struct json_object *jobj, *jval = NULL, *jmappings = NULL;
+	int i, len, rc = -EINVAL, region_id, id;
+	const char *chardev;
+	char  *region = NULL;
+	struct mapping *m;
+
+	jobj = json_object_from_file(filename);
+	if (!jobj)
+		return rc;
+
+	if (!json_object_object_get_ex(jobj, "align", &jval))
+		return rc;
+	param.align = json_object_get_string(jval);
+
+	if (!json_object_object_get_ex(jobj, "size", &jval))
+		return rc;
+	param.size = json_object_get_string(jval);
+
+	if (!json_object_object_get_ex(jobj, "chardev", &jval))
+		return rc;
+	chardev = json_object_get_string(jval);
+	if (sscanf(chardev, "dax%u.%u", &region_id, &id) != 2)
+		return rc;
+	if (asprintf(&region, "%u", region_id) < 0)
+		return rc;
+	param.region = region;
+
+	if (!json_object_object_get_ex(jobj, "mappings", &jmappings))
+		return rc;
+	json_object_array_sort(jmappings, sort_mappings);
+
+	len = json_object_array_length(jmappings);
+	m = calloc(len, sizeof(*m));
+	if (!m)
+		return -ENOMEM;
+
+	for (i = 0; i < len; i++) {
+		struct json_object *j, *val;
+
+		j = json_object_array_get_idx(jmappings, i);
+		if (!j)
+			goto err;
+
+		if (!json_object_object_get_ex(j, "start", &val))
+			goto err;
+		m[i].start = json_object_get_int64(val);
+
+		if (!json_object_object_get_ex(j, "end", &val))
+			goto err;
+		m[i].end = json_object_get_int64(val);
+
+		if (!json_object_object_get_ex(j, "page_offset", &val))
+			goto err;
+		m[i].pgoff = json_object_get_int64(val);
+	}
+	maps = m;
+	nmaps = len;
+	rc = 0;
+
+err:
+	if (!maps)
+		free(m);
+	return rc;
+}
 
 static const char *parse_device_options(int argc, const char **argv,
 		enum device_action action, const struct option *options,
@@ -214,6 +311,13 @@ static const char *parse_device_options(int argc, const char **argv,
 		}
 		break;
 	case ACTION_CREATE:
+		if (param.input &&
+		    (rc = parse_device_file(param.input)) != 0) {
+			fprintf(stderr,
+				"error: failed to parse device file: %s\n",
+				strerror(-rc));
+			break;
+		}
 		if (param.size)
 			size = __parse_size64(param.size, &units);
 		if (param.align)
@@ -525,7 +629,8 @@ static int do_create(struct daxctl_region *region, long long val,
 {
 	struct json_object *jdev;
 	struct daxctl_dev *dev;
-	int rc = 0;
+	int i, rc = 0;
+	long long alloc = 0;
 
 	if (daxctl_region_create_dev(region))
 		return -ENOSPC;
@@ -546,9 +651,22 @@ static int do_create(struct daxctl_region *region, long long val,
 			return rc;
 	}
 
-	rc = daxctl_dev_set_size(dev, val);
-	if (rc < 0)
-		return rc;
+	/* @maps is ordered by page_offset */
+	for (i = 0; i < nmaps; i++) {
+		rc = daxctl_dev_set_mapping(dev, maps[i].start, maps[i].end);
+		if (rc < 0)
+			return rc;
+		alloc += (maps[i].end - maps[i].start + 1);
+	}
+
+	if (nmaps > 0 && val > 0 && alloc != val) {
+		fprintf(stderr, "%s: allocated %lld but specified size %lld\n",
+			daxctl_dev_get_devname(dev), alloc, val);
+	} else {
+		rc = daxctl_dev_set_size(dev, val);
+		if (rc < 0)
+			return rc;
+	}
 
 	rc = daxctl_dev_enable_devdax(dev);
 	if (rc) {
