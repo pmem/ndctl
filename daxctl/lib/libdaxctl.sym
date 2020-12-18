@@ -89,4 +89,5 @@ global:
 	daxctl_mapping_get_end;
 	daxctl_mapping_get_offset;
 	daxctl_mapping_get_size;
+	daxctl_dev_set_mapping;
 } LIBDAXCTL_7;
