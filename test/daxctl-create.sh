@@ -199,6 +199,7 @@ daxctl_test_multi()
 daxctl_test_multi_reconfig()
 {
 	local ncfgs=$1
+	local dump=$2
 	local daxdev
 
 	size=$((available / ncfgs))
@@ -225,6 +226,10 @@ daxctl_test_multi_reconfig()
 
 	test "$(daxctl_get_nr_mappings "$testdev")" -eq $((ncfgs / 2))
 	test "$(daxctl_get_nr_mappings "$daxdev_1")" -eq $((ncfgs / 2))
+
+	if [[ $dump ]]; then
+		"$DAXCTL" list -M -d "$daxdev_1" | jq -er '.[]' > "$dump"
+	fi
 
 	fail_if_available
 
@@ -328,7 +333,7 @@ daxctl_test3()
 # pick at the end of the region
 daxctl_test4()
 {
-	daxctl_test_multi_reconfig 8
+	daxctl_test_multi_reconfig 8 ""
 	clear_dev
 	test_pass
 }
@@ -371,6 +376,29 @@ daxctl_test6()
 	test_pass
 }
 
+# Test 7: input device
+# Successfully creates a device with an input file from the multi-range
+# device test, and checking that we have the same number of mappings/size.
+daxctl_test7()
+{
+	daxctl_test_multi_reconfig 8 "input.json"
+
+	# The parameter should parse the region_id from the chardev entry
+	# therefore using the same region_id as test4
+	daxdev_1=$("$DAXCTL" create-device --input input.json | jq -er '.[].chardev')
+
+	# Validate if it's the same mappings as done by test4
+	# It also validates the size computed from the mappings
+	# A zero value means it failed, and four mappings is what's
+	# created by daxctl_test4
+	test "$(daxctl_get_nr_mappings "$daxdev_1")" -eq 4
+
+	"$DAXCTL" disable-device "$daxdev_1" && "$DAXCTL" destroy-device "$daxdev_1"
+
+	clear_dev
+	test_pass
+}
+
 find_testdev
 rc=1
 setup_dev
@@ -381,5 +409,6 @@ daxctl_test3
 daxctl_test4
 daxctl_test5
 daxctl_test6
+daxctl_test7
 reset_dev
 exit 0
