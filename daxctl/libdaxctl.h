@@ -103,6 +103,18 @@ int daxctl_memory_online_no_movable(struct daxctl_memory *mem);
              region != NULL; \
              region = daxctl_region_get_next(region))
 
+struct daxctl_mapping;
+struct daxctl_mapping *daxctl_mapping_get_first(struct daxctl_dev *dev);
+struct daxctl_mapping *daxctl_mapping_get_next(struct daxctl_mapping *mapping);
+#define daxctl_mapping_foreach(dev, mapping) \
+        for (mapping = daxctl_mapping_get_first(dev); \
+             mapping != NULL; \
+             mapping = daxctl_mapping_get_next(mapping))
+unsigned long long daxctl_mapping_get_start(struct daxctl_mapping *mapping);
+unsigned long long daxctl_mapping_get_end(struct daxctl_mapping *mapping);
+unsigned long long  daxctl_mapping_get_offset(struct daxctl_mapping *mapping);
+unsigned long long daxctl_mapping_get_size(struct daxctl_mapping *mapping);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

@@ -91,6 +91,12 @@ struct daxctl_region {
 	struct list_head devices;
 };
 
+struct daxctl_mapping {
+	struct daxctl_dev *dev;
+	unsigned long long pgoff, start, end;
+	struct list_node list;
+};
+
 struct daxctl_dev {
 	int id, major, minor;
 	void *dev_buf;
@@ -104,6 +110,8 @@ struct daxctl_dev {
 	struct daxctl_region *region;
 	struct daxctl_memory *mem;
 	int target_node;
+	int num_mappings;
+	struct list_head mappings;
 };
 
 struct daxctl_memory {

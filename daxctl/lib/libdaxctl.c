@@ -526,7 +526,8 @@ static void *add_dax_dev(void *parent, int id, const char *daxdev_base)
 			free(path);
 			return dev_dup;
 		}
-
+	dev->num_mappings = -1;
+	list_head_init(&dev->mappings);
 	list_add(&region->devices, &dev->list);
 	free(path);
 	return dev;
@@ -1148,6 +1149,94 @@ DAXCTL_EXPORT const char *daxctl_memory_get_node_path(struct daxctl_memory *mem)
 DAXCTL_EXPORT unsigned long daxctl_memory_get_block_size(struct daxctl_memory *mem)
 {
 	return mem->block_size;
+}
+
+static void mappings_init(struct daxctl_dev *dev)
+{
+	struct daxctl_ctx *ctx = daxctl_dev_get_ctx(dev);
+	char buf[SYSFS_ATTR_SIZE];
+	char *path = dev->dev_buf;
+	int i;
+
+	if (dev->num_mappings != -1)
+		return;
+
+	dev->num_mappings = 0;
+	for (;;) {
+		struct daxctl_mapping *mapping;
+		unsigned long long pgoff, start, end;
+
+		i = dev->num_mappings;
+		mapping = calloc(1, sizeof(*mapping));
+		if (!mapping) {
+			err(ctx, "%s: mapping%u allocation failure\n",
+				daxctl_dev_get_devname(dev), i);
+			continue;
+		}
+
+		sprintf(path, "%s/mapping%d/start", dev->dev_path, i);
+		if (sysfs_read_attr(ctx, path, buf) < 0) {
+			free(mapping);
+			break;
+		}
+		start = strtoull(buf, NULL, 0);
+
+		sprintf(path, "%s/mapping%d/end", dev->dev_path, i);
+		if (sysfs_read_attr(ctx, path, buf) < 0) {
+			free(mapping);
+			break;
+		}
+		end = strtoull(buf, NULL, 0);
+
+		sprintf(path, "%s/mapping%d/page_offset", dev->dev_path, i);
+		if (sysfs_read_attr(ctx, path, buf) < 0) {
+			free(mapping);
+			break;
+		}
+		pgoff = strtoull(buf, NULL, 0);
+
+		mapping->dev = dev;
+		mapping->start = start;
+		mapping->end = end;
+		mapping->pgoff = pgoff;
+
+		dev->num_mappings++;
+		list_add(&dev->mappings, &mapping->list);
+	}
+}
+
+DAXCTL_EXPORT struct daxctl_mapping *daxctl_mapping_get_first(struct daxctl_dev *dev)
+{
+	mappings_init(dev);
+
+	return list_top(&dev->mappings, struct daxctl_mapping, list);
+}
+
+DAXCTL_EXPORT struct daxctl_mapping *daxctl_mapping_get_next(struct daxctl_mapping *mapping)
+{
+	struct daxctl_dev *dev = mapping->dev;
+
+	return list_next(&dev->mappings, mapping, list);
+}
+
+DAXCTL_EXPORT unsigned long long daxctl_mapping_get_start(struct daxctl_mapping *mapping)
+{
+	return mapping->start;
+}
+
+DAXCTL_EXPORT unsigned long long daxctl_mapping_get_end(struct daxctl_mapping *mapping)
+{
+	return mapping->end;
+}
+
+DAXCTL_EXPORT unsigned long long  daxctl_mapping_get_offset(struct daxctl_mapping *mapping)
+{
+	return mapping->pgoff;
+}
+
+DAXCTL_EXPORT unsigned long long daxctl_mapping_get_size(struct daxctl_mapping *mapping)
+{
+	return mapping->end - mapping->start + 1;
 }
 
 static int memblock_is_online(struct daxctl_memory *mem, char *memblock)
