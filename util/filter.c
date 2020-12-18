@@ -12,6 +12,7 @@
 #include <util/filter.h>
 #include <ndctl/libndctl.h>
 #include <daxctl/libdaxctl.h>
+#include <cxl/libcxl.h>
 
 struct ndctl_bus *util_bus_filter(struct ndctl_bus *bus, const char *__ident)
 {
@@ -335,6 +336,25 @@ struct daxctl_region *util_daxctl_region_filter(struct daxctl_region *region,
 			|| sscanf(ident, "region%d", &region_id) == 1)
 			&& daxctl_region_get_id(region) == region_id)
 		return region;
+
+	return NULL;
+}
+
+struct cxl_memdev *util_cxl_memdev_filter(struct cxl_memdev *memdev,
+					  const char *ident)
+{
+	int memdev_id;
+
+	if (!ident || strcmp(ident, "all") == 0)
+		return memdev;
+
+	if (strcmp(ident, cxl_memdev_get_devname(memdev)) == 0)
+		return memdev;
+
+	if ((sscanf(ident, "%d", &memdev_id) == 1
+			|| sscanf(ident, "mem%d", &memdev_id) == 1)
+			&& cxl_memdev_get_id(memdev) == memdev_id)
+		return memdev;
 
 	return NULL;
 }
