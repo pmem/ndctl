@@ -25,6 +25,7 @@
 static struct {
 	bool devs;
 	bool regions;
+	bool mappings;
 	bool idle;
 	bool human;
 } list;
@@ -35,6 +36,8 @@ static unsigned long listopts_to_flags(void)
 
 	if (list.devs)
 		flags |= UTIL_JSON_DAX_DEVS;
+	if (list.mappings)
+		flags |= UTIL_JSON_DAX_MAPPINGS;
 	if (list.idle)
 		flags |= UTIL_JSON_IDLE;
 	if (list.human)
@@ -70,6 +73,7 @@ int cmd_list(int argc, const char **argv, struct daxctl_ctx *ctx)
 				"filter by dax device instance name"),
 		OPT_BOOLEAN('D', "devices", &list.devs, "include dax device info"),
 		OPT_BOOLEAN('R', "regions", &list.regions, "include dax region info"),
+		OPT_BOOLEAN('M', "mappings", &list.mappings, "include dax mappings info"),
 		OPT_BOOLEAN('i', "idle", &list.idle, "include idle devices"),
 		OPT_BOOLEAN('u', "human", &list.human,
 				"use human friendly number formats "),

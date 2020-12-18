@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <ndctl/libndctl.h>
+#include <daxctl/libdaxctl.h>
 #include <ccan/short_types/short_types.h>
 
 enum util_json_flags {
@@ -27,6 +28,7 @@ enum util_json_flags {
 	UTIL_JSON_CAPABILITIES	= (1 << 6),
 	UTIL_JSON_CONFIGURED	= (1 << 7),
 	UTIL_JSON_FIRMWARE	= (1 << 8),
+	UTIL_JSON_DAX_MAPPINGS	= (1 << 9),
 };
 
 struct json_object;
@@ -37,6 +39,8 @@ struct json_object *util_bus_to_json(struct ndctl_bus *bus,
 struct json_object *util_dimm_to_json(struct ndctl_dimm *dimm,
 		unsigned long flags);
 struct json_object *util_mapping_to_json(struct ndctl_mapping *mapping,
+		unsigned long flags);
+struct json_object *util_daxctl_mapping_to_json(struct daxctl_mapping *mapping,
 		unsigned long flags);
 struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 		unsigned long flags);

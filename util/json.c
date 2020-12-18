@@ -454,7 +454,8 @@ struct json_object *util_daxctl_dev_to_json(struct daxctl_dev *dev,
 {
 	struct daxctl_memory *mem = daxctl_dev_get_memory(dev);
 	const char *devname = daxctl_dev_get_devname(dev);
-	struct json_object *jdev, *jobj;
+	struct json_object *jdev, *jobj, *jmappings = NULL;
+	struct daxctl_mapping *mapping = NULL;
 	int node, movable, align;
 
 	jdev = json_object_new_object();
@@ -508,6 +509,25 @@ struct json_object *util_daxctl_dev_to_json(struct daxctl_dev *dev,
 			json_object_object_add(jdev, "state", jobj);
 	}
 
+	if (!(flags & UTIL_JSON_DAX_MAPPINGS))
+		return jdev;
+
+	daxctl_mapping_foreach(dev, mapping) {
+		struct json_object *jmapping;
+
+		if (!jmappings) {
+			jmappings = json_object_new_array();
+			if (!jmappings)
+				continue;
+
+			json_object_object_add(jdev, "mappings", jmappings);
+		}
+
+		jmapping = util_daxctl_mapping_to_json(mapping, flags);
+		if (!jmapping)
+			continue;
+		json_object_array_add(jmappings, jmapping);
+	}
 	return jdev;
 }
 
@@ -1350,6 +1370,41 @@ struct json_object *util_mapping_to_json(struct ndctl_mapping *mapping,
 			goto err;
 		json_object_object_add(jmapping, "position", jobj);
 	}
+
+	return jmapping;
+ err:
+	json_object_put(jmapping);
+	return NULL;
+}
+
+struct json_object *util_daxctl_mapping_to_json(struct daxctl_mapping *mapping,
+		unsigned long flags)
+{
+	struct json_object *jmapping = json_object_new_object();
+	struct json_object *jobj;
+
+	if (!jmapping)
+		return NULL;
+
+	jobj = util_json_object_hex(daxctl_mapping_get_offset(mapping), flags);
+	if (!jobj)
+		goto err;
+	json_object_object_add(jmapping, "page_offset", jobj);
+
+	jobj = util_json_object_hex(daxctl_mapping_get_start(mapping), flags);
+	if (!jobj)
+		goto err;
+	json_object_object_add(jmapping, "start", jobj);
+
+	jobj = util_json_object_hex(daxctl_mapping_get_end(mapping), flags);
+	if (!jobj)
+		goto err;
+	json_object_object_add(jmapping, "end", jobj);
+
+	jobj = util_json_object_size(daxctl_mapping_get_size(mapping), flags);
+	if (!jobj)
+		goto err;
+	json_object_object_add(jmapping, "size", jobj);
 
 	return jmapping;
  err:
