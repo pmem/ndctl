@@ -109,7 +109,7 @@ make check
 
 %files
 %defattr(-,root,root)
-%license util/COPYING licenses/BSD-MIT licenses/CC0
+%license LICENSES/preferred/GPL-2.0 LICENSES/other/MIT LICENSES/other/CC0-1.0
 %{_bindir}/ndctl
 %{_mandir}/man1/ndctl*
 %{bashcompdir}/
@@ -121,7 +121,7 @@ make check
 
 %files -n daxctl
 %defattr(-,root,root)
-%license util/COPYING licenses/BSD-MIT licenses/CC0
+%license LICENSES/preferred/GPL-2.0 LICENSES/other/MIT LICENSES/other/CC0-1.0
 %{_bindir}/daxctl
 %{_mandir}/man1/daxctl*
 %{_datadir}/daxctl/daxctl.conf
@@ -129,25 +129,25 @@ make check
 %files -n LNAME
 %defattr(-,root,root)
 %doc README.md
-%license COPYING licenses/BSD-MIT licenses/CC0
+%license LICENSES/preferred/LGPL-2.1 LICENSES/other/MIT LICENSES/other/CC0-1.0
 %{_libdir}/libndctl.so.*
 
 %files -n DAX_LNAME
 %defattr(-,root,root)
 %doc README.md
-%license COPYING licenses/BSD-MIT licenses/CC0
+%license LICENSES/preferred/LGPL-2.1 LICENSES/other/MIT LICENSES/other/CC0-1.0
 %{_libdir}/libdaxctl.so.*
 
 %files -n DNAME
 %defattr(-,root,root)
-%license COPYING
+%license LICENSES/preferred/LGPL-2.1
 %{_includedir}/ndctl/
 %{_libdir}/libndctl.so
 %{_libdir}/pkgconfig/libndctl.pc
 
 %files -n DAX_DNAME
 %defattr(-,root,root)
-%license COPYING
+%license LICENSES/preferred/LGPL-2.1
 %{_includedir}/daxctl/
 %{_libdir}/libdaxctl.so
 %{_libdir}/pkgconfig/libdaxctl.pc
