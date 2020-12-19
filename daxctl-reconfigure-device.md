@@ -81,6 +81,15 @@ EXAMPLES
 
     # numactl --cpunodebind=0-1 --membind=2 -- some-service --opt1 --opt2
 
+-   Change the size of a dax device
+
+<!-- -->
+
+    # daxctl reconfigure-device dax0.1 -s 16G
+    reconfigured 1 device
+    # daxctl reconfigure-device dax0.1 -s 0
+    reconfigured 1 device
+
 DESCRIPTION
 ===========
 
@@ -131,6 +140,24 @@ A device-dax region is a contiguous range of memory that hosts one or
 more /dev/daxX.Y devices, where X is the region id and Y is the device
 instance id.
 
+`-s; --size=`  
+For regions that support dax device creation, change the device size in
+bytes. This option supports the suffixes "k" or "K" for KiB, "m" or "M"
+for MiB, "g" or "G" for GiB and "t" or "T" for TiB.
+
+    The size must be a multiple of the region alignment.
+
+    This option is mutually exclusive with -m or --mode.
+
+`-a; --align`  
+Applications that want to establish dax memory mappings with page table
+entries greater than system base page size (4K on x86) need a device
+that is sufficiently aligned. This defaults to 2M. Note that "devdax"
+mode enforces all mappings to be aligned to this value, i.e. it fails
+unaligned mapping attempts.
+
+    This option is mutually exclusive with -m or --mode.
+
 `-m; --mode=`  
 Specify the mode to which the dax device(s) should be reconfigured.
 
@@ -161,11 +188,15 @@ touch online memory. However with this option, attempt to offline the
 memory on the NUMA node associated with the dax device before converting
 it back to "devdax" mode.
 
+<!-- -->
+
 `-u; --human`  
 By default the command will output machine-friendly raw-integer data.
 Instead, with this flag, numbers representing storage size will be
 formatted as human readable strings with units, other fields are
 converted to hexadecimal strings.
+
+<!-- -->
 
 `-v; --verbose`  
 Emit more debug messages
@@ -173,7 +204,7 @@ Emit more debug messages
 COPYRIGHT
 =========
 
-Copyright (c) 2016 - 2020, Intel Corporation. License GPLv2: GNU GPL
+Copyright © 2016 - 2020, Intel Corporation. License GPLv2: GNU GPL
 version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
 are free to change and redistribute it. There is NO WARRANTY, to the
 extent permitted by law.
