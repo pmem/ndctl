@@ -157,10 +157,9 @@ static int sort_mappings(const void *a, const void *b)
 static int parse_device_file(const char *filename)
 {
 	struct json_object *jobj, *jval = NULL, *jmappings = NULL;
-	int i, len, rc = -EINVAL, region_id, id;
+	int i, rc = -EINVAL, region_id, id;
 	const char *chardev;
 	char  *region = NULL;
-	struct mapping *m;
 
 	jobj = json_object_from_file(filename);
 	if (!jobj)
@@ -187,12 +186,12 @@ static int parse_device_file(const char *filename)
 		return rc;
 	json_object_array_sort(jmappings, sort_mappings);
 
-	len = json_object_array_length(jmappings);
-	m = calloc(len, sizeof(*m));
-	if (!m)
+	nmaps = json_object_array_length(jmappings);
+	maps = calloc(nmaps, sizeof(*maps));
+	if (!maps)
 		return -ENOMEM;
 
-	for (i = 0; i < len; i++) {
+	for (i = 0; i < nmaps; i++) {
 		struct json_object *j, *val;
 
 		j = json_object_array_get_idx(jmappings, i);
@@ -201,23 +200,21 @@ static int parse_device_file(const char *filename)
 
 		if (!json_object_object_get_ex(j, "start", &val))
 			goto err;
-		m[i].start = json_object_get_int64(val);
+		maps[i].start = json_object_get_int64(val);
 
 		if (!json_object_object_get_ex(j, "end", &val))
 			goto err;
-		m[i].end = json_object_get_int64(val);
+		maps[i].end = json_object_get_int64(val);
 
 		if (!json_object_object_get_ex(j, "page_offset", &val))
 			goto err;
-		m[i].pgoff = json_object_get_int64(val);
+		maps[i].pgoff = json_object_get_int64(val);
 	}
-	maps = m;
-	nmaps = len;
-	rc = 0;
+
+	return 0;
 
 err:
-	if (!maps)
-		free(m);
+	free(maps);
 	return rc;
 }
 
@@ -817,6 +814,7 @@ static int do_xaction_region(enum device_action action,
 			break;
 		}
 	}
+	free(maps);
 
 	/*
 	 * jdevs is the containing json array for all devices we are reporting
