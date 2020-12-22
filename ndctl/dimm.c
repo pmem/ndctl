@@ -504,6 +504,36 @@ out:
 	return rc;
 }
 
+static int submit_abort_firmware(struct ndctl_dimm *dimm,
+		struct action_context *actx)
+{
+	struct update_context *uctx = &actx->update;
+	struct ndctl_cmd *cmd;
+	int rc;
+	enum ND_FW_STATUS status;
+
+	cmd = ndctl_dimm_cmd_new_fw_abort(uctx->start);
+	if (!cmd)
+		return -ENXIO;
+
+	rc = ndctl_cmd_submit(cmd);
+	if (rc < 0)
+		goto out;
+
+	status = ndctl_cmd_fw_xlat_firmware_status(cmd);
+	if (!(status & ND_CMD_STATUS_FIN_ABORTED)) {
+		fprintf(stderr,
+			"Firmware update abort on DIMM %s failed: %#x\n",
+			ndctl_dimm_get_devname(dimm), status);
+		rc = -ENXIO;
+		goto out;
+	}
+
+out:
+	ndctl_cmd_unref(cmd);
+	return rc;
+}
+
 static int submit_start_firmware_upload(struct ndctl_dimm *dimm,
 		struct action_context *actx)
 {
@@ -511,8 +541,8 @@ static int submit_start_firmware_upload(struct ndctl_dimm *dimm,
 	struct update_context *uctx = &actx->update;
 	struct fw_info *fw = &uctx->dimm_fw;
 	struct ndctl_cmd *cmd;
-	int rc;
 	enum ND_FW_STATUS status;
+	int rc;
 
 	cmd = ndctl_dimm_cmd_new_fw_start_update(dimm);
 	if (!cmd)
@@ -520,27 +550,46 @@ static int submit_start_firmware_upload(struct ndctl_dimm *dimm,
 
 	rc = ndctl_cmd_submit(cmd);
 	if (rc < 0)
-		return rc;
+		goto err;
 
+	uctx->start = cmd;
 	status = ndctl_cmd_fw_xlat_firmware_status(cmd);
 	if (status == FW_EBUSY) {
-		err("%s: busy with another firmware update", devname);
-		return -EBUSY;
+		if (param.force) {
+			rc = submit_abort_firmware(dimm, actx);
+			if (rc < 0) {
+				err("%s: busy with another firmware update, "
+				    "abort failed", devname);
+				rc = -EBUSY;
+				goto err;
+			}
+			rc = -EAGAIN;
+			goto err;
+		} else {
+			err("%s: busy with another firmware update", devname);
+			rc = -EBUSY;
+			goto err;
+		}
 	}
 	if (status != FW_SUCCESS) {
 		err("%s: failed to create start context", devname);
-		return -ENXIO;
+		rc = -ENXIO;
+		goto err;
 	}
 
 	fw->context = ndctl_cmd_fw_start_get_context(cmd);
 	if (fw->context == UINT_MAX) {
 		err("%s: failed to retrieve start context", devname);
-		return -ENXIO;
+		rc = -ENXIO;
+		goto err;
 	}
 
-	uctx->start = cmd;
-
 	return 0;
+
+err:
+	uctx->start = NULL;
+	ndctl_cmd_unref(cmd);
+	return rc;
 }
 
 static int get_fw_data_from_file(FILE *file, void *buf, uint32_t len)
@@ -652,36 +701,6 @@ static int submit_finish_firmware(struct ndctl_dimm *dimm,
 	default:
 		err("%s: update failed: error code: %d", devname, status);
 		break;
-	}
-
-out:
-	ndctl_cmd_unref(cmd);
-	return rc;
-}
-
-static int submit_abort_firmware(struct ndctl_dimm *dimm,
-		struct action_context *actx)
-{
-	struct update_context *uctx = &actx->update;
-	struct ndctl_cmd *cmd;
-	int rc;
-	enum ND_FW_STATUS status;
-
-	cmd = ndctl_dimm_cmd_new_fw_abort(uctx->start);
-	if (!cmd)
-		return -ENXIO;
-
-	rc = ndctl_cmd_submit(cmd);
-	if (rc < 0)
-		goto out;
-
-	status = ndctl_cmd_fw_xlat_firmware_status(cmd);
-	if (!(status & ND_CMD_STATUS_FIN_ABORTED)) {
-		fprintf(stderr,
-			"Firmware update abort on DIMM %s failed: %#x\n",
-			ndctl_dimm_get_devname(dimm), status);
-		rc = -ENXIO;
-		goto out;
 	}
 
 out:
@@ -856,15 +875,21 @@ static int update_firmware(struct ndctl_dimm *dimm,
 		struct action_context *actx)
 {
 	const char *devname = ndctl_dimm_get_devname(dimm);
-	int rc;
+	int rc, i;
 
 	rc = submit_get_firmware_info(dimm, actx);
 	if (rc < 0)
 		return rc;
 
-	rc = submit_start_firmware_upload(dimm, actx);
-	if (rc < 0)
-		return rc;
+	/* try a few times in the --force and state busy case */
+	for (i = 0; i < 3; i++) {
+		rc = submit_start_firmware_upload(dimm, actx);
+		if (rc == -EAGAIN)
+			continue;
+		if (rc < 0)
+			return rc;
+		break;
+	}
 
 	if (param.verbose)
 		fprintf(stderr, "%s: uploading firmware\n", devname);
