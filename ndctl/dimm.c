@@ -521,7 +521,7 @@ static int submit_abort_firmware(struct ndctl_dimm *dimm,
 		goto out;
 
 	status = ndctl_cmd_fw_xlat_firmware_status(cmd);
-	if (!(status & ND_CMD_STATUS_FIN_ABORTED)) {
+	if (status != FW_ABORTED) {
 		fprintf(stderr,
 			"Firmware update abort on DIMM %s failed: %#x\n",
 			ndctl_dimm_get_devname(dimm), status);
