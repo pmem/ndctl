@@ -2210,9 +2210,19 @@ static int do_xaction_namespace(const char *namespace,
 			ndctl_namespace_foreach_safe(region, ndns, _n) {
 				ndns_name = ndctl_namespace_get_devname(ndns);
 
-				if (strcmp(namespace, "all") != 0
-						&& strcmp(namespace, ndns_name) != 0)
-					continue;
+				if (strcmp(namespace, "all") == 0) {
+					static const uuid_t zero_uuid;
+					uuid_t uuid;
+
+					ndctl_namespace_get_uuid(ndns, uuid);
+					if (!ndctl_namespace_get_size(ndns) &&
+					    !memcmp(uuid, zero_uuid, sizeof(uuid_t)))
+						continue;
+				} else {
+					if (strcmp(namespace, ndns_name) != 0)
+						continue;
+				}
+
 				switch (action) {
 				case ACTION_DISABLE:
 					rc = ndctl_namespace_disable_safe(ndns);
