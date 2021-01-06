@@ -2151,6 +2151,9 @@ static int do_xaction_namespace(const char *namespace,
 	if (!namespace && action != ACTION_CREATE)
 		return rc;
 
+	if (namespace && (strcmp(namespace, "all") == 0))
+		rc = 0;
+
 	if (verbose)
 		ndctl_set_log_priority(ctx, LOG_DEBUG);
 
