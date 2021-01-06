@@ -1164,14 +1164,11 @@ static int namespace_destroy(struct ndctl_region *region,
 		struct ndctl_namespace *ndns)
 {
 	const char *devname = ndctl_namespace_get_devname(ndns);
-	unsigned long long size;
 	int rc;
 
 	rc = namespace_prep_reconfig(region, ndns);
 	if (rc < 0)
 		return rc;
-
-	size = ndctl_namespace_get_size(ndns);
 
 	/* Labeled namespace, destroy label / allocation */
 	if (rc == 2) {
@@ -1179,13 +1176,6 @@ static int namespace_destroy(struct ndctl_region *region,
 		if (rc)
 			debug("%s: failed to reclaim\n", devname);
 	}
-
-	/*
-	 * Don't report a destroyed namespace when no capacity was
-	 * allocated.
-	 */
-	if (size == 0 && rc == 0)
-		rc = 1;
 
 	return rc;
 }
