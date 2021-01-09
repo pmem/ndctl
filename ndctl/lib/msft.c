@@ -149,10 +149,32 @@ static unsigned int msft_cmd_smart_get_life_used(struct ndctl_cmd *cmd)
 	return 100 - CMD_MSFT_SMART(cmd)->nvm_lifetime;
 }
 
+static int msft_cmd_xlat_firmware_status(struct ndctl_cmd *cmd)
+{
+	unsigned int status;
+
+	status = cmd->get_firmware_status(cmd) & NDN_MSFT_STATUS_MASK;
+
+	/* Common statuses */
+	switch (status) {
+	case NDN_MSFT_STATUS_SUCCESS:
+		return 0;
+	case NDN_MSFT_STATUS_NOTSUPP:
+		return -EOPNOTSUPP;
+	case NDN_MSFT_STATUS_INVALPARM:
+		return -EINVAL;
+	case NDN_MSFT_STATUS_I2CERR:
+		return -EIO;
+	}
+
+	return -ENOMSG;
+}
+
 struct ndctl_dimm_ops * const msft_dimm_ops = &(struct ndctl_dimm_ops) {
 	.new_smart = msft_dimm_cmd_new_smart,
 	.smart_get_flags = msft_cmd_smart_get_flags,
 	.smart_get_health = msft_cmd_smart_get_health,
 	.smart_get_media_temperature = msft_cmd_smart_get_media_temperature,
 	.smart_get_life_used = msft_cmd_smart_get_life_used,
+	.xlat_firmware_status = msft_cmd_xlat_firmware_status,
 };

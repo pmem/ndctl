@@ -50,4 +50,10 @@ struct ndn_pkg_msft {
 	union ndn_msft_cmd	u;
 } __attribute__((packed));
 
+#define NDN_MSFT_STATUS_MASK		0xffff
+#define NDN_MSFT_STATUS_SUCCESS	0
+#define NDN_MSFT_STATUS_NOTSUPP	1
+#define NDN_MSFT_STATUS_INVALPARM	2
+#define NDN_MSFT_STATUS_I2CERR		3
+
 #endif /* __NDCTL_MSFT_H__ */
