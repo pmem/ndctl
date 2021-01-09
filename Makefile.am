@@ -89,4 +89,5 @@ libutil_a_SOURCES = \
 
 nobase_include_HEADERS = \
 	daxctl/libdaxctl.h \
-	cxl/libcxl.h
+	cxl/libcxl.h \
+	cxl/cxl_mem.h
