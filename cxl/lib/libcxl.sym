@@ -39,4 +39,8 @@ global:
 	cxl_cmd_submit;
 	cxl_cmd_get_mbox_status;
 	cxl_cmd_get_out_size;
+	cxl_cmd_new_identify;
+	cxl_cmd_identify_get_fw_rev;
+	cxl_cmd_identify_get_partition_align;
+	cxl_cmd_identify_get_lsa_size;
 } LIBCXL_2;
