@@ -5,6 +5,7 @@
 #include <signal.h>
 #include <setjmp.h>
 #include <sys/mman.h>
+#include <linux/mman.h>
 #include <fcntl.h>
 #include <string.h>
 #include <errno.h>
@@ -49,6 +50,7 @@ int test_dax_poison(struct ndctl_test *test, int dax_fd, unsigned long align,
 	unsigned char *addr = MAP_FAILED;
 	struct sigaction act;
 	unsigned x = x;
+	FILE *smaps;
 	void *buf;
 	int rc;
 
@@ -94,6 +96,9 @@ int test_dax_poison(struct ndctl_test *test, int dax_fd, unsigned long align,
 		goto out;
 	}
 
+	fprintf(stderr, "%s: mmap got %p align: %ld offset: %zd\n",
+			__func__, addr, align, offset);
+
 	if (sigsetjmp(sj_env, 1)) {
 		if (sig_mcerr_ar) {
 			fprintf(stderr, "madvise triggered 'action required' sigbus\n");
@@ -102,6 +107,20 @@ int test_dax_poison(struct ndctl_test *test, int dax_fd, unsigned long align,
 			fail();
 			return -ENXIO;
 		}
+	}
+
+	rc = madvise(addr + align / 2, 4096, MADV_SOFT_OFFLINE);
+	if (rc == 0) {
+		fprintf(stderr, "softoffline should always fail for dax\n");
+		smaps = fopen("/proc/self/smaps", "r");
+		do {
+			rc = fread(buf, 1, 4096, smaps);
+			fwrite(buf, 1, rc, stderr);
+		} while (rc);
+		fclose(smaps);
+		fail();
+		rc = -ENXIO;
+		goto out;
 	}
 
 	rc = madvise(addr + align / 2, 4096, MADV_HWPOISON);
