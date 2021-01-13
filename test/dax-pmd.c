@@ -69,6 +69,11 @@ int test_dax_remap(struct ndctl_test *test, int dax_fd, unsigned long align, voi
 
 	remap = mremap(addr, REMAP_SIZE, REMAP_SIZE, MREMAP_MAYMOVE|MREMAP_FIXED, anon);
 
+	if (remap == MAP_FAILED) {
+		fprintf(stderr, "%s: mremap failed, that's ok too\n", __func__);
+		return 0;
+	}
+
 	if (remap != anon) {
 		rc = -ENXIO;
 		perror("mremap");
