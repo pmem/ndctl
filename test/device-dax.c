@@ -128,6 +128,44 @@ static int verify_data(struct daxctl_dev *dev, char *dax_buf,
 	return 0;
 }
 
+static int test_dax_soft_offline(struct ndctl_test *test, struct ndctl_namespace *ndns)
+{
+	unsigned long long resource = ndctl_namespace_get_resource(ndns);
+	int fd, rc;
+	char *buf;
+
+	if (resource == ULLONG_MAX) {
+		fprintf(stderr, "failed to get resource: %s\n",
+				ndctl_namespace_get_devname(ndns));
+		return -ENXIO;
+	}
+
+	fd = open("/sys/devices/system/memory/soft_offline_page", O_WRONLY);
+	if (fd < 0) {
+		fprintf(stderr, "failed to open soft_offline_page\n");
+		return -ENOENT;
+	}
+
+	rc = asprintf(&buf, "%#llx\n", resource);
+	if (rc < 0) {
+		fprintf(stderr, "failed to alloc resource\n");
+		close(fd);
+		return -ENOMEM;
+	}
+
+	fprintf(stderr, "%s: try to offline page @%#llx\n", __func__, resource);
+	rc = write(fd, buf, rc);
+	free(buf);
+	close(fd);
+
+	if (rc >= 0) {
+		fprintf(stderr, "%s: should have failed\n", __func__);
+		return -ENXIO;
+	}
+
+	return 0;
+}
+
 static int __test_device_dax(unsigned long align, int loglevel,
 		struct ndctl_test *test, struct ndctl_ctx *ctx)
 {
@@ -275,6 +313,13 @@ static int __test_device_dax(unsigned long align, int loglevel,
 			fprintf(stderr, "%s: failed to open for poison test\n",
 					daxctl_dev_get_devname(dev));
 			rc = -ENXIO;
+			goto out;
+		}
+
+		rc = test_dax_soft_offline(test, ndns);
+		if (rc) {
+			fprintf(stderr, "%s: failed dax soft offline\n",
+					ndctl_namespace_get_devname(ndns));
 			goto out;
 		}
 

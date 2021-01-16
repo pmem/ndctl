@@ -980,12 +980,6 @@ static int check_btt_size(struct ndctl_btt *btt)
 	struct ndctl_ctx *ctx = ndctl_btt_get_ctx(btt);
 	struct ndctl_test *test = ndctl_get_private_data(ctx);
 	struct ndctl_namespace *ndns = ndctl_btt_get_namespace(btt);
-
-	if (!ndns)
-		return -ENXIO;
-
-	ns_size = ndctl_namespace_get_size(ndns);
-	sect_size = ndctl_btt_get_sector_size(btt);
 	unsigned long long expect_table[][2] = {
 		[0] = {
 			[0] = 0x11b5400,
@@ -1000,6 +994,12 @@ static int check_btt_size(struct ndctl_btt *btt)
 			[1] = 0xd51b000,
 		},
 	};
+
+	if (!ndns)
+		return -ENXIO;
+
+	ns_size = ndctl_namespace_get_size(ndns);
+	sect_size = ndctl_btt_get_sector_size(btt);
 
 	if (sect_size >= SZ_4K)
 		sect_select = 1;
