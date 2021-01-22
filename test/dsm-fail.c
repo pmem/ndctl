@@ -174,7 +174,7 @@ static int test_regions_enable(struct ndctl_bus *bus,
 	return 0;
 }
 
-static int do_test(struct ndctl_ctx *ctx, struct ndctl_test *test)
+static int do_test(struct ndctl_ctx *ctx, struct test_ctx *test)
 {
 	struct ndctl_bus *bus = ndctl_bus_get_by_provider(ctx, "nfit_test.0");
 	struct ndctl_region *region, *victim_region = NULL;
@@ -339,7 +339,7 @@ static int do_test(struct ndctl_ctx *ctx, struct ndctl_test *test)
 	return err;
 }
 
-int test_dsm_fail(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx)
+int test_dsm_fail(int loglevel, struct test_ctx *test, struct ndctl_ctx *ctx)
 {
 	struct kmod_module *mod;
 	struct kmod_ctx *kmod_ctx;
@@ -364,7 +364,7 @@ int test_dsm_fail(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx)
 
 int __attribute__((weak)) main(int argc, char *argv[])
 {
-	struct ndctl_test *test = ndctl_test_new(0);
+	struct test_ctx *test = ndctl_test_new(0);
 	struct ndctl_ctx *ctx;
 	int rc;
 

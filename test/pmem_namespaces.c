@@ -161,8 +161,8 @@ static int ns_do_io(const char *bdev)
 
 static const char *comm = "test-pmem-namespaces";
 
-int test_pmem_namespaces(int log_level, struct ndctl_test *test,
-		struct ndctl_ctx *ctx)
+int test_pmem_namespaces(int log_level, struct test_ctx *test,
+			 struct ndctl_ctx *ctx)
 {
 	struct ndctl_region *region, *pmem_region = NULL;
 	struct kmod_ctx *kmod_ctx = NULL;
@@ -262,7 +262,7 @@ int test_pmem_namespaces(int log_level, struct ndctl_test *test,
 
 int __attribute__((weak)) main(int argc, char *argv[])
 {
-	struct ndctl_test *test = ndctl_test_new(0);
+	struct test_ctx *test = ndctl_test_new(0);
 	struct ndctl_ctx *ctx;
 	int rc;
 

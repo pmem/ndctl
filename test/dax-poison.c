@@ -44,8 +44,8 @@ static void sigbus_hdl(int sig, siginfo_t *si, void *ptr)
 	siglongjmp(sj_env, 1);
 }
 
-int test_dax_poison(struct ndctl_test *test, int dax_fd, unsigned long align,
-		void *dax_addr, off_t offset, bool fsdax)
+int test_dax_poison(struct test_ctx *test, int dax_fd, unsigned long align,
+		    void *dax_addr, off_t offset, bool fsdax)
 {
 	unsigned char *addr = MAP_FAILED;
 	struct sigaction act;

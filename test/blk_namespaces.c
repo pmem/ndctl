@@ -198,8 +198,8 @@ static int ns_do_io(const char *bdev)
 
 static const char *comm = "test-blk-namespaces";
 
-int test_blk_namespaces(int log_level, struct ndctl_test *test,
-		struct ndctl_ctx *ctx)
+int test_blk_namespaces(int log_level, struct test_ctx *test,
+			struct ndctl_ctx *ctx)
 {
 	char bdev[50];
 	int rc = -ENXIO;
@@ -337,7 +337,7 @@ int test_blk_namespaces(int log_level, struct ndctl_test *test,
 
 int __attribute__((weak)) main(int argc, char *argv[])
 {
-	struct ndctl_test *test = ndctl_test_new(0);
+	struct test_ctx *test = ndctl_test_new(0);
 	struct ndctl_ctx *ctx;
 	int rc;
 

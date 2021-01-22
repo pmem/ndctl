@@ -53,7 +53,7 @@ static void destroy_namespace(struct ndctl_namespace *ndns)
 
 /* Check that the namespace device is gone (if it wasn't the seed) */
 static int check_deleted(struct ndctl_region *region, const char *devname,
-		struct ndctl_test *test)
+		struct test_ctx *test)
 {
 	struct ndctl_namespace *ndns;
 
@@ -73,7 +73,7 @@ static int check_deleted(struct ndctl_region *region, const char *devname,
 	return 0;
 }
 
-static int do_multi_pmem(struct ndctl_ctx *ctx, struct ndctl_test *test)
+static int do_multi_pmem(struct ndctl_ctx *ctx, struct test_ctx *test)
 {
 	int i;
 	char devname[100];
@@ -238,7 +238,8 @@ static int do_multi_pmem(struct ndctl_ctx *ctx, struct ndctl_test *test)
 	return 0;
 }
 
-int test_multi_pmem(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx)
+int test_multi_pmem(int loglevel, struct test_ctx *test,
+		    struct ndctl_ctx *ctx)
 {
 	struct kmod_module *mod;
 	struct kmod_ctx *kmod_ctx;
@@ -267,7 +268,7 @@ int test_multi_pmem(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx
 
 int __attribute__((weak)) main(int argc, char *argv[])
 {
-	struct ndctl_test *test = ndctl_test_new(0);
+	struct test_ctx *test = ndctl_test_new(0);
 	struct ndctl_ctx *ctx;
 	int rc;
 

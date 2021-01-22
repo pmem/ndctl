@@ -54,7 +54,7 @@ static void reset_bus(struct ndctl_bus *bus)
 		ndctl_dimm_zero_labels(dimm);
 }
 
-static int do_test(struct ndctl_ctx *ctx, struct ndctl_test *test)
+static int do_test(struct ndctl_ctx *ctx, struct test_ctx *test)
 {
 	struct ndctl_bus *bus = ndctl_bus_get_by_provider(ctx, "nfit_test.0");
 	struct ndctl_dimm *dimm;
@@ -91,8 +91,8 @@ out:
 	return rc;
 }
 
-static int test_ack_shutdown_count_set(int loglevel, struct ndctl_test *test,
-		struct ndctl_ctx *ctx)
+static int test_ack_shutdown_count_set(int loglevel, struct test_ctx *test,
+				       struct ndctl_ctx *ctx)
 {
 	struct kmod_module *mod;
 	struct kmod_ctx *kmod_ctx;
@@ -117,7 +117,7 @@ static int test_ack_shutdown_count_set(int loglevel, struct ndctl_test *test,
 
 int main(int argc, char *argv[])
 {
-	struct ndctl_test *test = ndctl_test_new(0);
+	struct test_ctx *test = ndctl_test_new(0);
 	struct ndctl_ctx *ctx;
 	int rc;
 

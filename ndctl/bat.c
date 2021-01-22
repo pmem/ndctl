@@ -9,7 +9,7 @@
 int cmd_bat(int argc, const char **argv, struct ndctl_ctx *ctx)
 {
 	int loglevel = LOG_DEBUG, i, rc;
-	struct ndctl_test *test;
+	struct test_ctx *test;
 	bool force = false;
 	const char * const u[] = {
 		"ndctl bat [<options>]",

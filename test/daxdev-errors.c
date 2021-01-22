@@ -29,7 +29,7 @@
 
 struct check_cmd {
 	struct ndctl_cmd *cmd;
-	struct ndctl_test *test;
+	struct test_ctx *test;
 };
 
 static sigjmp_buf sj_env;

@@ -32,7 +32,7 @@ struct test_dpa_namespace {
 
 #define MIN_SIZE SZ_4M
 
-static int do_test(struct ndctl_ctx *ctx, struct ndctl_test *test)
+static int do_test(struct ndctl_ctx *ctx, struct test_ctx *test)
 {
 	unsigned int default_available_slots, available_slots, i;
 	struct ndctl_region *region, *blk_region = NULL;
@@ -280,7 +280,7 @@ static int do_test(struct ndctl_ctx *ctx, struct ndctl_test *test)
 	return 0;
 }
 
-int test_dpa_alloc(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx)
+int test_dpa_alloc(int loglevel, struct test_ctx *test, struct ndctl_ctx *ctx)
 {
 	struct kmod_module *mod;
 	struct kmod_ctx *kmod_ctx;
@@ -307,7 +307,7 @@ int test_dpa_alloc(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx)
 
 int __attribute__((weak)) main(int argc, char *argv[])
 {
-	struct ndctl_test *test = ndctl_test_new(0);
+	struct test_ctx *test = ndctl_test_new(0);
 	struct ndctl_ctx *ctx;
 	int rc;
 

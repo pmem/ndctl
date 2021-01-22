@@ -37,8 +37,9 @@ static void sigbus(int sig, siginfo_t *siginfo, void *d)
 	siglongjmp(sj_env, 1);
 }
 
-int test_dax_remap(struct ndctl_test *test, int dax_fd, unsigned long align, void *dax_addr,
-		off_t offset, bool fsdax)
+int test_dax_remap(struct test_ctx *test, int dax_fd, unsigned long align,
+		   void *dax_addr,
+		   off_t offset, bool fsdax)
 {
 	void *anon, *remap, *addr;
 	struct sigaction act;
@@ -272,7 +273,7 @@ int test_dax_directio(int dax_fd, unsigned long align, void *dax_addr, off_t off
 }
 
 /* test_pmd assumes that fd references a pre-allocated + dax-capable file */
-static int test_pmd(struct ndctl_test *test, int fd)
+static int test_pmd(struct test_ctx *test, int fd)
 {
 	unsigned long long m_align, p_align, pmd_off;
 	static const bool fsdax = true;
@@ -351,7 +352,7 @@ err_mmap:
 
 int __attribute__((weak)) main(int argc, char *argv[])
 {
-	struct ndctl_test *test = ndctl_test_new(0);
+	struct test_ctx *test = ndctl_test_new(0);
 	int fd, rc;
 
 	if (!test) {

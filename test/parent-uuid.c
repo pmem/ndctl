@@ -208,7 +208,8 @@ static int do_test(struct ndctl_ctx *ctx)
 	return 0;
 }
 
-int test_parent_uuid(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx)
+int test_parent_uuid(int loglevel, struct test_ctx *test,
+		     struct ndctl_ctx *ctx)
 {
 	struct kmod_module *mod;
 	struct kmod_ctx *kmod_ctx;
@@ -235,7 +236,7 @@ int test_parent_uuid(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ct
 
 int __attribute__((weak)) main(int argc, char *argv[])
 {
-	struct ndctl_test *test = ndctl_test_new(0);
+	struct test_ctx *test = ndctl_test_new(0);
 	struct ndctl_ctx *ctx;
 	int rc;
 

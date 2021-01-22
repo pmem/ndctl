@@ -613,7 +613,7 @@ static int validate_dax(struct ndctl_dax *dax)
 	const char *devname = ndctl_namespace_get_devname(ndns);
 	struct ndctl_region *region = ndctl_dax_get_region(dax);
 	struct ndctl_ctx *ctx = ndctl_dax_get_ctx(dax);
-	struct ndctl_test *test = ndctl_get_private_data(ctx);
+	struct test_ctx *test = ndctl_get_private_data(ctx);
 	struct daxctl_region *dax_region = NULL, *found;
 	int rc = -ENXIO, fd, count, dax_expect;
 	struct daxctl_dev *dax_dev, *seed;
@@ -725,7 +725,7 @@ static int __check_dax_create(struct ndctl_region *region,
 {
 	struct ndctl_dax *dax_seed = ndctl_region_get_dax_seed(region);
 	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
-	struct ndctl_test *test = ndctl_get_private_data(ctx);
+	struct test_ctx *test = ndctl_get_private_data(ctx);
 	enum ndctl_namespace_mode mode;
 	struct ndctl_dax *dax;
 	const char *devname;
@@ -835,7 +835,7 @@ static int __check_pfn_create(struct ndctl_region *region,
 {
 	struct ndctl_pfn *pfn_seed = ndctl_region_get_pfn_seed(region);
 	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
-	struct ndctl_test *test = ndctl_get_private_data(ctx);
+	struct test_ctx *test = ndctl_get_private_data(ctx);
 	enum ndctl_namespace_mode mode;
 	struct ndctl_pfn *pfn;
 	const char *devname;
@@ -978,7 +978,7 @@ static int check_btt_size(struct ndctl_btt *btt)
 	unsigned long long actual, expect;
 	int size_select, sect_select;
 	struct ndctl_ctx *ctx = ndctl_btt_get_ctx(btt);
-	struct ndctl_test *test = ndctl_get_private_data(ctx);
+	struct test_ctx *test = ndctl_get_private_data(ctx);
 	struct ndctl_namespace *ndns = ndctl_btt_get_namespace(btt);
 	unsigned long long expect_table[][2] = {
 		[0] = {
@@ -1049,7 +1049,7 @@ static int check_btt_create(struct ndctl_region *region, struct ndctl_namespace 
 		struct namespace *namespace)
 {
 	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
-	struct ndctl_test *test = ndctl_get_private_data(ctx);
+	struct test_ctx *test = ndctl_get_private_data(ctx);
 	struct btt *btt_s = namespace->btt_settings;
 	int i, fd, retry = 10;
 	struct ndctl_btt *btt;
@@ -1257,7 +1257,7 @@ static int check_pfn_autodetect(struct ndctl_bus *bus,
 	struct ndctl_region *region = ndctl_namespace_get_region(ndns);
 	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
 	const char *devname = ndctl_namespace_get_devname(ndns);
-	struct ndctl_test *test = ndctl_get_private_data(ctx);
+	struct test_ctx *test = ndctl_get_private_data(ctx);
 	struct pfn *auto_pfn = namespace->pfn_settings;
 	struct ndctl_pfn *pfn, *found = NULL;
 	enum ndctl_namespace_mode mode;
@@ -1354,7 +1354,7 @@ static int check_dax_autodetect(struct ndctl_bus *bus,
 	struct ndctl_region *region = ndctl_namespace_get_region(ndns);
 	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
 	const char *devname = ndctl_namespace_get_devname(ndns);
-	struct ndctl_test *test = ndctl_get_private_data(ctx);
+	struct test_ctx *test = ndctl_get_private_data(ctx);
 	struct dax *auto_dax = namespace->dax_settings;
 	struct ndctl_dax *dax, *found = NULL;
 	enum ndctl_namespace_mode mode;
@@ -1439,7 +1439,7 @@ static int check_btt_autodetect(struct ndctl_bus *bus,
 	struct ndctl_region *region = ndctl_namespace_get_region(ndns);
 	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
 	const char *devname = ndctl_namespace_get_devname(ndns);
-	struct ndctl_test *test = ndctl_get_private_data(ctx);
+	struct test_ctx *test = ndctl_get_private_data(ctx);
 	struct btt *auto_btt = namespace->btt_settings;
 	struct ndctl_btt *btt, *found = NULL;
 	enum ndctl_namespace_mode mode;
@@ -1681,7 +1681,7 @@ static int check_namespaces(struct ndctl_region *region,
 		struct namespace **namespaces, enum ns_mode mode)
 {
 	struct ndctl_ctx *ctx = ndctl_region_get_ctx(region);
-	struct ndctl_test *test = ndctl_get_private_data(ctx);
+	struct test_ctx *test = ndctl_get_private_data(ctx);
 	struct ndctl_bus *bus = ndctl_region_get_bus(region);
 	struct ndctl_namespace **ndns_save;
 	struct namespace *namespace;
@@ -2044,7 +2044,7 @@ static int check_btts(struct ndctl_region *region, struct btt **btts)
 struct check_cmd {
 	int (*check_fn)(struct ndctl_bus *bus, struct ndctl_dimm *dimm, struct check_cmd *check);
 	struct ndctl_cmd *cmd;
-	struct ndctl_test *test;
+	struct test_ctx *test;
 };
 
 static struct check_cmd *check_cmds;
@@ -2412,7 +2412,7 @@ static int check_smart_threshold(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 #define BITS_PER_LONG 32
 static int check_commands(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 		unsigned long bus_commands, unsigned long dimm_commands,
-		struct ndctl_test *test)
+		struct test_ctx *test)
 {
 	/*
 	 * For now, by coincidence, these are indexed in test execution
@@ -2483,7 +2483,7 @@ static int check_commands(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 
 static int check_dimms(struct ndctl_bus *bus, struct dimm *dimms, int n,
 		unsigned long bus_commands, unsigned long dimm_commands,
-		struct ndctl_test *test)
+		struct test_ctx *test)
 {
 	long long dsc;
 	int i, j, rc;
@@ -2604,7 +2604,7 @@ static void reset_bus(struct ndctl_bus *bus)
 		ndctl_region_enable(region);
 }
 
-static int do_test0(struct ndctl_ctx *ctx, struct ndctl_test *test)
+static int do_test0(struct ndctl_ctx *ctx, struct test_ctx *test)
 {
 	struct ndctl_bus *bus = ndctl_bus_get_by_provider(ctx, NFIT_PROVIDER0);
 	struct ndctl_region *region;
@@ -2662,7 +2662,7 @@ static int do_test0(struct ndctl_ctx *ctx, struct ndctl_test *test)
 	return check_regions(bus, regions0, ARRAY_SIZE(regions0), BTT);
 }
 
-static int do_test1(struct ndctl_ctx *ctx, struct ndctl_test *test)
+static int do_test1(struct ndctl_ctx *ctx, struct test_ctx *test)
 {
 	struct ndctl_bus *bus = ndctl_bus_get_by_provider(ctx, NFIT_PROVIDER1);
 	int rc;
@@ -2686,13 +2686,13 @@ static int do_test1(struct ndctl_ctx *ctx, struct ndctl_test *test)
 	return check_regions(bus, regions1, ARRAY_SIZE(regions1), BTT);
 }
 
-typedef int (*do_test_fn)(struct ndctl_ctx *ctx, struct ndctl_test *test);
+typedef int (*do_test_fn)(struct ndctl_ctx *ctx, struct test_ctx *test);
 static do_test_fn do_test[] = {
 	do_test0,
 	do_test1,
 };
 
-int test_libndctl(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx)
+int test_libndctl(int loglevel, struct test_ctx *test, struct ndctl_ctx *ctx)
 {
 	unsigned int i;
 	struct kmod_module *mod;
@@ -2732,7 +2732,7 @@ int test_libndctl(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx)
 
 int __attribute__((weak)) main(int argc, char *argv[])
 {
-	struct ndctl_test *test = ndctl_test_new(0);
+	struct test_ctx *test = ndctl_test_new(0);
 	struct ndctl_ctx *ctx;
 	int rc;
 

@@ -18,7 +18,7 @@ static char *result(int rc)
 
 int cmd_test(int argc, const char **argv, struct ndctl_ctx *ctx)
 {
-	struct ndctl_test *test;
+	struct test_ctx *test;
 	int loglevel = LOG_DEBUG, i, rc;
 	const char * const u[] = {
 		"ndctl test [<options>]",

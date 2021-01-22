@@ -32,8 +32,8 @@ static void sigbus(int sig, siginfo_t *siginfo, void *d)
 #define err(fmt, ...) \
 	fprintf(stderr, "%s: " fmt, __func__, ##__VA_ARGS__)
 
-static int test_devmem(int loglevel, struct ndctl_test *test,
-		struct ndctl_ctx *ctx)
+static int test_devmem(int loglevel, struct test_ctx *test,
+		       struct ndctl_ctx *ctx)
 {
 	void *buf;
 	int fd, rc;
@@ -124,7 +124,7 @@ out_devmem:
 
 int main(int argc, char *argv[])
 {
-	struct ndctl_test *test = ndctl_test_new(0);
+	struct test_ctx *test = ndctl_test_new(0);
 	struct ndctl_ctx *ctx;
 	int rc;
 

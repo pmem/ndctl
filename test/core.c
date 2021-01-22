@@ -16,7 +16,7 @@
 
 #define KVER_STRLEN 20
 
-struct ndctl_test {
+struct test_ctx {
 	unsigned int kver;
 	int attempt;
 	int skip;
@@ -39,9 +39,9 @@ static unsigned int get_system_kver(void)
 	return KERNEL_VERSION(a,b,c);
 }
 
-struct ndctl_test *ndctl_test_new(unsigned int kver)
+struct test_ctx *ndctl_test_new(unsigned int kver)
 {
-	struct ndctl_test *test = calloc(1, sizeof(*test));
+	struct test_ctx *test = calloc(1, sizeof(*test));
 
 	if (!test)
 		return NULL;
@@ -54,7 +54,7 @@ struct ndctl_test *ndctl_test_new(unsigned int kver)
 	return test;
 }
 
-int ndctl_test_result(struct ndctl_test *test, int rc)
+int ndctl_test_result(struct test_ctx *test, int rc)
 {
 	if (ndctl_test_get_skipped(test))
 		fprintf(stderr, "attempted: %d skipped: %d\n",
@@ -75,8 +75,8 @@ static char *kver_str(char *buf, unsigned int kver)
 	return buf;
 }
 
-int __ndctl_test_attempt(struct ndctl_test *test, unsigned int kver,
-		const char *caller, int line)
+int __ndctl_test_attempt(struct test_ctx *test, unsigned int kver,
+			 const char *caller, int line)
 {
 	char requires[KVER_STRLEN], current[KVER_STRLEN];
 
@@ -90,26 +90,26 @@ int __ndctl_test_attempt(struct ndctl_test *test, unsigned int kver,
 	return 0;
 }
 
-void __ndctl_test_skip(struct ndctl_test *test, const char *caller, int line)
+void __ndctl_test_skip(struct test_ctx *test, const char *caller, int line)
 {
 	test->skip++;
 	test->attempt = test->skip;
 	fprintf(stderr, "%s: explicit skip %s:%d\n", __func__, caller, line);
 }
 
-int ndctl_test_get_attempted(struct ndctl_test *test)
+int ndctl_test_get_attempted(struct test_ctx *test)
 {
 	return test->attempt;
 }
 
-int ndctl_test_get_skipped(struct ndctl_test *test)
+int ndctl_test_get_skipped(struct test_ctx *test)
 {
 	return test->skip;
 }
 
 int ndctl_test_init(struct kmod_ctx **ctx, struct kmod_module **mod,
 		struct ndctl_ctx *nd_ctx, int log_level,
-		struct ndctl_test *test)
+		struct test_ctx *test)
 {
 	int rc, family = -1;
 	unsigned int i;

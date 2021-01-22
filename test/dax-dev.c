@@ -87,7 +87,7 @@ struct ndctl_namespace *ndctl_get_test_dev(struct ndctl_ctx *ctx)
 	return rc ? NULL : ndns;
 }
 
-static int emit_e820_device(int loglevel, struct ndctl_test *test)
+static int emit_e820_device(int loglevel, struct test_ctx *test)
 {
 	int err;
 	struct ndctl_ctx *ctx;
@@ -118,7 +118,7 @@ static int emit_e820_device(int loglevel, struct ndctl_test *test)
 
 int __attribute__((weak)) main(int argc, char *argv[])
 {
-	struct ndctl_test *test = ndctl_test_new(0);
+	struct test_ctx *test = ndctl_test_new(0);
 	int rc;
 
 	if (!test) {
