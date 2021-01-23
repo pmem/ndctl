@@ -57,7 +57,7 @@ static int check_deleted(struct ndctl_region *region, const char *devname,
 {
 	struct ndctl_namespace *ndns;
 
-	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 10, 0)))
+	if (!test_attempt(test, KERNEL_VERSION(4, 10, 0)))
 		return 0;
 
 	ndctl_namespace_foreach(region, ndns) {
@@ -85,8 +85,8 @@ static int do_multi_pmem(struct ndctl_ctx *ctx, struct test_ctx *test)
 	struct ndctl_namespace *namespaces[NUM_NAMESPACES];
 	unsigned long long blk_avail, blk_avail_orig, expect;
 
-	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 9, 0))) {
-		ndctl_test_skip(test);
+	if (!test_attempt(test, KERNEL_VERSION(4, 9, 0))) {
+		test_skip(test);
 		return 77;
 	}
 
@@ -245,7 +245,7 @@ int test_multi_pmem(int loglevel, struct test_ctx *test,
 	struct kmod_ctx *kmod_ctx;
 	int err, result = EXIT_FAILURE;
 
-	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 2, 0)))
+	if (!test_attempt(test, KERNEL_VERSION(4, 2, 0)))
 		return 77;
 
 	ndctl_set_log_priority(ctx, loglevel);
@@ -253,7 +253,7 @@ int test_multi_pmem(int loglevel, struct test_ctx *test,
 	err = ndctl_test_init(&kmod_ctx, &mod, NULL, loglevel, test);
 	if (err < 0) {
 		result = 77;
-		ndctl_test_skip(test);
+		test_skip(test);
 		fprintf(stderr, "%s unavailable skipping tests\n",
 				"nfit_test");
 		return result;
@@ -268,7 +268,7 @@ int test_multi_pmem(int loglevel, struct test_ctx *test,
 
 int __attribute__((weak)) main(int argc, char *argv[])
 {
-	struct test_ctx *test = ndctl_test_new(0);
+	struct test_ctx *test = test_new(0);
 	struct ndctl_ctx *ctx;
 	int rc;
 
@@ -279,8 +279,8 @@ int __attribute__((weak)) main(int argc, char *argv[])
 
 	rc = ndctl_new(&ctx);
 	if (rc)
-		return ndctl_test_result(test, rc);
+		return test_result(test, rc);
 	rc = test_multi_pmem(LOG_DEBUG, test, ctx);
 	ndctl_unref(ctx);
-	return ndctl_test_result(test, rc);
+	return test_result(test, rc);
 }

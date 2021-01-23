@@ -32,9 +32,9 @@ int cmd_bat(int argc, const char **argv, struct ndctl_ctx *ctx)
 		usage_with_options(u, options);
 
 	if (force)
-		test = ndctl_test_new(UINT_MAX);
+		test = test_new(UINT_MAX);
 	else
-		test = ndctl_test_new(0);
+		test = test_new(0);
 
 	if (!test) {
 		fprintf(stderr, "failed to initialize test\n");
@@ -48,5 +48,5 @@ int cmd_bat(int argc, const char **argv, struct ndctl_ctx *ctx)
 
 	rc = test_pmem_namespaces(loglevel, test, ctx);
 	fprintf(stderr, "test_pmem_namespaces: %s\n", rc ? "FAIL" : "PASS");
-	return ndctl_test_result(test, rc);
+	return test_result(test, rc);
 }

@@ -95,7 +95,7 @@ test/test-suite.log:
 SKIP: libndctl
 ==============
 test/init: nfit_test_init: nfit.ko: appears to be production version: /lib/modules/4.8.8-200.fc24.x86_64/kernel/drivers/acpi/nfit/nfit.ko.xz
-__ndctl_test_skip: explicit skip test_libndctl:2684
+__test_skip: explicit skip test_libndctl:2684
 nfit_test unavailable skipping tests
 ```
 

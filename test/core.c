@@ -39,7 +39,7 @@ static unsigned int get_system_kver(void)
 	return KERNEL_VERSION(a,b,c);
 }
 
-struct test_ctx *ndctl_test_new(unsigned int kver)
+struct test_ctx *test_new(unsigned int kver)
 {
 	struct test_ctx *test = calloc(1, sizeof(*test));
 
@@ -54,15 +54,15 @@ struct test_ctx *ndctl_test_new(unsigned int kver)
 	return test;
 }
 
-int ndctl_test_result(struct test_ctx *test, int rc)
+int test_result(struct test_ctx *test, int rc)
 {
-	if (ndctl_test_get_skipped(test))
+	if (test_get_skipped(test))
 		fprintf(stderr, "attempted: %d skipped: %d\n",
-				ndctl_test_get_attempted(test),
-				ndctl_test_get_skipped(test));
+				test_get_attempted(test),
+				test_get_skipped(test));
 	if (rc && rc != 77)
 		return rc;
-	if (ndctl_test_get_skipped(test) >= ndctl_test_get_attempted(test))
+	if (test_get_skipped(test) >= test_get_attempted(test))
 		return 77;
 	/* return success if no failures and at least one test not skipped */
 	return 0;
@@ -75,7 +75,7 @@ static char *kver_str(char *buf, unsigned int kver)
 	return buf;
 }
 
-int __ndctl_test_attempt(struct test_ctx *test, unsigned int kver,
+int __test_attempt(struct test_ctx *test, unsigned int kver,
 			 const char *caller, int line)
 {
 	char requires[KVER_STRLEN], current[KVER_STRLEN];
@@ -90,19 +90,19 @@ int __ndctl_test_attempt(struct test_ctx *test, unsigned int kver,
 	return 0;
 }
 
-void __ndctl_test_skip(struct test_ctx *test, const char *caller, int line)
+void __test_skip(struct test_ctx *test, const char *caller, int line)
 {
 	test->skip++;
 	test->attempt = test->skip;
 	fprintf(stderr, "%s: explicit skip %s:%d\n", __func__, caller, line);
 }
 
-int ndctl_test_get_attempted(struct test_ctx *test)
+int test_get_attempted(struct test_ctx *test)
 {
 	return test->attempt;
 }
 
-int ndctl_test_get_skipped(struct test_ctx *test)
+int test_get_skipped(struct test_ctx *test)
 {
 	return test->skip;
 }
@@ -174,7 +174,7 @@ int ndctl_test_init(struct kmod_ctx **ctx, struct kmod_module **mod,
 		 * than 4.7.
 		 */
 		if (strcmp(name, "dax") == 0
-				&& !ndctl_test_attempt(test,
+				&& !test_attempt(test,
 					KERNEL_VERSION(4, 7, 0)))
 			continue;
 
@@ -183,7 +183,7 @@ int ndctl_test_init(struct kmod_ctx **ctx, struct kmod_module **mod,
 		 */
 		if ((strcmp(name, "dax_pmem_core") == 0
 				|| strcmp(name, "dax_pmem_compat") == 0)
-				&& !ndctl_test_attempt(test,
+				&& !test_attempt(test,
 					KERNEL_VERSION(5, 1, 0)))
 			continue;
 

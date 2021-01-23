@@ -95,7 +95,7 @@ static int verify_data(struct daxctl_dev *dev, char *dax_buf,
 	struct timeval tv1, tv2, tv_diff;
 	unsigned long i;
 
-	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 9, 0)))
+	if (!test_attempt(test, KERNEL_VERSION(4, 9, 0)))
 		return 0;
 
 	/* verify data and cache mode */
@@ -128,7 +128,7 @@ static int verify_data(struct daxctl_dev *dev, char *dax_buf,
 	return 0;
 }
 
-static int test_dax_soft_offline(struct ndctl_test *test, struct ndctl_namespace *ndns)
+static int test_dax_soft_offline(struct test_ctx *test, struct ndctl_namespace *ndns)
 {
 	unsigned long long resource = ndctl_namespace_get_resource(ndns);
 	int fd, rc;
@@ -188,10 +188,10 @@ static int __test_device_dax(unsigned long align, int loglevel,
 		return 77;
 	}
 
-	if (align > SZ_2M && !ndctl_test_attempt(test, KERNEL_VERSION(4, 11, 0)))
+	if (align > SZ_2M && !test_attempt(test, KERNEL_VERSION(4, 11, 0)))
 		return 77;
 
-	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 7, 0)))
+	if (!test_attempt(test, KERNEL_VERSION(4, 7, 0)))
 		return 77;
 
 	/* setup up fsdax mode pmem device and seed with verification data */
@@ -279,7 +279,7 @@ static int __test_device_dax(unsigned long align, int loglevel,
 	 * Prior to 4.8-final these tests cause crashes, or are
 	 * otherwise not supported.
 	 */
-	if (ndctl_test_attempt(test, KERNEL_VERSION(4, 9, 0))) {
+	if (test_attempt(test, KERNEL_VERSION(4, 9, 0))) {
 		static const bool devdax = false;
 		int fd2;
 
@@ -394,7 +394,7 @@ static int __test_device_dax(unsigned long align, int loglevel,
 	rc = EXIT_SUCCESS;
 	p = (int *) (buf + align);
 	*p = 0xff;
-	if (ndctl_test_attempt(test, KERNEL_VERSION(4, 9, 0))) {
+	if (test_attempt(test, KERNEL_VERSION(4, 9, 0))) {
 		/* after 4.9 this test will properly get sigbus above */
 		rc = EXIT_FAILURE;
 		fprintf(stderr, "%s: failed to unmap after reset\n",
@@ -423,7 +423,7 @@ static int test_device_dax(int loglevel, struct test_ctx *test,
 
 int __attribute__((weak)) main(int argc, char *argv[])
 {
-	struct test_ctx *test = ndctl_test_new(0);
+	struct test_ctx *test = test_new(0);
 	struct ndctl_ctx *ctx;
 	int rc;
 
@@ -434,9 +434,9 @@ int __attribute__((weak)) main(int argc, char *argv[])
 
 	rc = ndctl_new(&ctx);
 	if (rc < 0)
-		return ndctl_test_result(test, rc);
+		return test_result(test, rc);
 
 	rc = test_device_dax(LOG_DEBUG, test, ctx);
 	ndctl_unref(ctx);
-	return ndctl_test_result(test, rc);
+	return test_result(test, rc);
 }

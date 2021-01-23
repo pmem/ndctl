@@ -62,7 +62,7 @@ static int do_test(struct ndctl_ctx *ctx, struct test_ctx *test)
 	struct log_ctx log_ctx;
 	int rc = 0;
 
-	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 15, 0)))
+	if (!test_attempt(test, KERNEL_VERSION(4, 15, 0)))
 		return 77;
 
 	if (!bus)
@@ -102,7 +102,7 @@ static int test_ack_shutdown_count_set(int loglevel, struct test_ctx *test,
 	err = ndctl_test_init(&kmod_ctx, &mod, NULL, loglevel, test);
 	if (err < 0) {
 		result = 77;
-		ndctl_test_skip(test);
+		test_skip(test);
 		fprintf(stderr, "%s unavailable skipping tests\n",
 				"nfit_test");
 		return result;
@@ -117,7 +117,7 @@ static int test_ack_shutdown_count_set(int loglevel, struct test_ctx *test,
 
 int main(int argc, char *argv[])
 {
-	struct test_ctx *test = ndctl_test_new(0);
+	struct test_ctx *test = test_new(0);
 	struct ndctl_ctx *ctx;
 	int rc;
 
@@ -128,9 +128,9 @@ int main(int argc, char *argv[])
 
 	rc = ndctl_new(&ctx);
 	if (rc)
-		return ndctl_test_result(test, rc);
+		return test_result(test, rc);
 	rc = test_ack_shutdown_count_set(LOG_DEBUG, test, ctx);
 	ndctl_unref(ctx);
 
-	return ndctl_test_result(test, rc);
+	return test_result(test, rc);
 }

@@ -45,7 +45,7 @@ int test_dax_remap(struct test_ctx *test, int dax_fd, unsigned long align,
 	struct sigaction act;
 	int rc, val;
 
-	if ((fsdax || align == SZ_2M) && !ndctl_test_attempt(test, KERNEL_VERSION(5, 8, 0))) {
+	if ((fsdax || align == SZ_2M) && !test_attempt(test, KERNEL_VERSION(5, 8, 0))) {
 		/* kernel's prior to 5.8 may crash on this test */
 		fprintf(stderr, "%s: SKIP mremap() test\n", __func__);
 		return 0;
@@ -352,7 +352,7 @@ err_mmap:
 
 int __attribute__((weak)) main(int argc, char *argv[])
 {
-	struct test_ctx *test = ndctl_test_new(0);
+	struct test_ctx *test = test_new(0);
 	int fd, rc;
 
 	if (!test) {
@@ -367,5 +367,5 @@ int __attribute__((weak)) main(int argc, char *argv[])
 	rc = test_pmd(test, fd);
 	if (fd >= 0)
 		close(fd);
-	return ndctl_test_result(test, rc);
+	return test_result(test, rc);
 }

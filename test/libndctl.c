@@ -639,7 +639,7 @@ static int validate_dax(struct ndctl_dax *dax)
 		return -ENXIO;
 	}
 
-	if (ndctl_test_attempt(test, KERNEL_VERSION(4, 10, 0))) {
+	if (test_attempt(test, KERNEL_VERSION(4, 10, 0))) {
 		if (daxctl_region_get_size(dax_region)
 				!= ndctl_dax_get_size(dax)) {
 			fprintf(stderr, "%s: expect size: %llu != %llu\n",
@@ -745,7 +745,7 @@ static int __check_dax_create(struct ndctl_region *region,
 	ndctl_dax_set_align(dax, SZ_4K);
 
 	rc = ndctl_namespace_set_enforce_mode(ndns, NDCTL_NS_MODE_DAX);
-	if (ndctl_test_attempt(test, KERNEL_VERSION(4, 13, 0)) && rc < 0) {
+	if (test_attempt(test, KERNEL_VERSION(4, 13, 0)) && rc < 0) {
 		fprintf(stderr, "%s: failed to enforce dax mode\n", devname);
 		return rc;
 	}
@@ -856,7 +856,7 @@ static int __check_pfn_create(struct ndctl_region *region,
 	 */
 	ndctl_pfn_set_align(pfn, SZ_4K);
 	rc = ndctl_namespace_set_enforce_mode(ndns, NDCTL_NS_MODE_MEMORY);
-	if (ndctl_test_attempt(test, KERNEL_VERSION(4, 13, 0)) && rc < 0) {
+	if (test_attempt(test, KERNEL_VERSION(4, 13, 0)) && rc < 0) {
 		fprintf(stderr, "%s: failed to enforce pfn mode\n", devname);
 		return rc;
 	}
@@ -1030,7 +1030,7 @@ static int check_btt_size(struct ndctl_btt *btt)
 	}
 
 	/* prior to 4.8 btt devices did not have a size attribute */
-	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 8, 0)))
+	if (!test_attempt(test, KERNEL_VERSION(4, 8, 0)))
 		return 0;
 
 	expect = expect_table[size_select][sect_select];
@@ -1077,7 +1077,7 @@ static int check_btt_create(struct ndctl_region *region, struct ndctl_namespace 
 		ndctl_btt_set_uuid(btt, btt_s->uuid);
 		ndctl_btt_set_sector_size(btt, btt_s->sector_sizes[i]);
 		rc = ndctl_namespace_set_enforce_mode(ndns, NDCTL_NS_MODE_SECTOR);
-		if (ndctl_test_attempt(test, KERNEL_VERSION(4, 13, 0)) && rc < 0) {
+		if (test_attempt(test, KERNEL_VERSION(4, 13, 0)) && rc < 0) {
 			fprintf(stderr, "%s: failed to enforce btt mode\n", devname);
 			goto err;
 		}
@@ -1094,7 +1094,7 @@ static int check_btt_create(struct ndctl_region *region, struct ndctl_namespace 
 		}
 
 		/* prior to v4.5 the mode attribute did not exist */
-		if (ndctl_test_attempt(test, KERNEL_VERSION(4, 5, 0))) {
+		if (test_attempt(test, KERNEL_VERSION(4, 5, 0))) {
 			mode = ndctl_namespace_get_mode(ndns);
 			if (mode >= 0 && mode != NDCTL_NS_MODE_SECTOR)
 				fprintf(stderr, "%s: expected safe mode got: %d\n",
@@ -1102,7 +1102,7 @@ static int check_btt_create(struct ndctl_region *region, struct ndctl_namespace 
 		}
 
 		/* prior to v4.13 the expected sizes were different due to BTT1.1 */
-		if (ndctl_test_attempt(test, KERNEL_VERSION(4, 13, 0))) {
+		if (test_attempt(test, KERNEL_VERSION(4, 13, 0))) {
 			rc = check_btt_size(btt);
 			if (rc)
 				goto err;
@@ -1287,7 +1287,7 @@ static int check_pfn_autodetect(struct ndctl_bus *bus,
 		return -ENXIO;
 
 	mode = ndctl_namespace_get_enforce_mode(ndns);
-	if (ndctl_test_attempt(test, KERNEL_VERSION(4, 13, 0))
+	if (test_attempt(test, KERNEL_VERSION(4, 13, 0))
 			&& mode != NDCTL_NS_MODE_MEMORY) {
 		fprintf(stderr, "%s expected enforce_mode pfn\n", devname);
 		return -ENXIO;
@@ -1384,7 +1384,7 @@ static int check_dax_autodetect(struct ndctl_bus *bus,
 		return -ENXIO;
 
 	mode = ndctl_namespace_get_enforce_mode(ndns);
-	if (ndctl_test_attempt(test, KERNEL_VERSION(4, 13, 0))
+	if (test_attempt(test, KERNEL_VERSION(4, 13, 0))
 			&& mode != NDCTL_NS_MODE_DAX) {
 		fprintf(stderr, "%s expected enforce_mode dax\n", devname);
 		return -ENXIO;
@@ -1469,7 +1469,7 @@ static int check_btt_autodetect(struct ndctl_bus *bus,
 		return -ENXIO;
 
 	mode = ndctl_namespace_get_enforce_mode(ndns);
-	if (ndctl_test_attempt(test, KERNEL_VERSION(4, 13, 0))
+	if (test_attempt(test, KERNEL_VERSION(4, 13, 0))
 			&& mode != NDCTL_NS_MODE_SECTOR) {
 		fprintf(stderr, "%s expected enforce_mode btt\n", devname);
 		return -ENXIO;
@@ -1714,7 +1714,7 @@ static int check_namespaces(struct ndctl_region *region,
 		}
 
 		if (ndctl_region_get_type(region) == ND_DEVICE_REGION_PMEM
-				&& !ndctl_test_attempt(test, KERNEL_VERSION(4, 13, 0)))
+				&& !test_attempt(test, KERNEL_VERSION(4, 13, 0)))
 			/* pass, no sector_size support for pmem prior to 4.13 */;
 		else {
 			num_sector_sizes = namespace->num_sector_sizes;
@@ -2321,7 +2321,7 @@ static int check_smart_threshold(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 	 * Starting with v4.9 smart threshold requests trigger the file
 	 * descriptor returned by ndctl_dimm_get_health_eventfd().
 	 */
-	if (ndctl_test_attempt(check->test, KERNEL_VERSION(4, 9, 0))) {
+	if (test_attempt(check->test, KERNEL_VERSION(4, 9, 0))) {
 		int pid = fork();
 
 		if (pid == 0) {
@@ -2396,7 +2396,7 @@ static int check_smart_threshold(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 		ndctl_cmd_unref(cmd_set);
 	}
 
-	if (ndctl_test_attempt(check->test, KERNEL_VERSION(4, 9, 0))) {
+	if (test_attempt(check->test, KERNEL_VERSION(4, 9, 0))) {
 		wait(&rc);
 		if (WEXITSTATUS(rc) == EXIT_FAILURE) {
 			fprintf(stderr, "%s: expect health event trigger\n",
@@ -2439,7 +2439,7 @@ static int check_commands(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 	 * The kernel did not start emulating v1.2 namespace spec smart data
 	 * until 4.9.
 	 */
-	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 9, 0)))
+	if (!test_attempt(test, KERNEL_VERSION(4, 9, 0)))
 		dimm_commands &= ~((1 << ND_CMD_SMART)
 				| (1 << ND_CMD_SMART_THRESHOLD));
 
@@ -2474,7 +2474,7 @@ static int check_commands(struct ndctl_bus *bus, struct ndctl_dimm *dimm,
 	if (rc)
 		goto out;
 
-	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 6, 0)))
+	if (!test_attempt(test, KERNEL_VERSION(4, 6, 0)))
 		goto out;
 
  out:
@@ -2530,7 +2530,7 @@ static int check_dimms(struct ndctl_bus *bus, struct dimm *dimms, int n,
 			return -ENXIO;
 		}
 
-		if (ndctl_test_attempt(test, KERNEL_VERSION(4, 7, 0))) {
+		if (test_attempt(test, KERNEL_VERSION(4, 7, 0))) {
 			if (ndctl_dimm_get_formats(dimm) != dimms[i].formats) {
 				fprintf(stderr, "dimm%d expected formats: %d got: %d\n",
 						i, dimms[i].formats,
@@ -2548,7 +2548,7 @@ static int check_dimms(struct ndctl_bus *bus, struct dimm *dimms, int n,
 			}
 		}
 
-		if (ndctl_test_attempt(test, KERNEL_VERSION(4, 7, 0))) {
+		if (test_attempt(test, KERNEL_VERSION(4, 7, 0))) {
 			if (ndctl_dimm_get_subsystem_vendor(dimm)
 					!= dimms[i].subsystem_vendor) {
 				fprintf(stderr,
@@ -2559,7 +2559,7 @@ static int check_dimms(struct ndctl_bus *bus, struct dimm *dimms, int n,
 			}
 		}
 
-		if (ndctl_test_attempt(test, KERNEL_VERSION(4, 8, 0))) {
+		if (test_attempt(test, KERNEL_VERSION(4, 8, 0))) {
 			if (ndctl_dimm_get_manufacturing_date(dimm)
 					!= dimms[i].manufacturing_date) {
 				fprintf(stderr,
@@ -2645,14 +2645,14 @@ static int do_test0(struct ndctl_ctx *ctx, struct test_ctx *test)
 	}
 
 	/* pfn and dax tests require vmalloc-enabled nfit_test */
-	if (ndctl_test_attempt(test, KERNEL_VERSION(4, 8, 0))) {
+	if (test_attempt(test, KERNEL_VERSION(4, 8, 0))) {
 		rc = check_regions(bus, regions0, ARRAY_SIZE(regions0), DAX);
 		if (rc)
 			return rc;
 		reset_bus(bus);
 	}
 
-	if (ndctl_test_attempt(test, KERNEL_VERSION(4, 8, 0))) {
+	if (test_attempt(test, KERNEL_VERSION(4, 8, 0))) {
 		rc = check_regions(bus, regions0, ARRAY_SIZE(regions0), PFN);
 		if (rc)
 			return rc;
@@ -2676,7 +2676,7 @@ static int do_test1(struct ndctl_ctx *ctx, struct test_ctx *test)
 	 * Starting with v4.10 the dimm on nfit_test.1 gets a unique
 	 * handle.
 	 */
-	if (ndctl_test_attempt(test, KERNEL_VERSION(4, 10, 0)))
+	if (test_attempt(test, KERNEL_VERSION(4, 10, 0)))
 		dimms1[0].handle = DIMM_HANDLE(1, 0, 0, 0, 0);
 
 	rc = check_dimms(bus, dimms1, ARRAY_SIZE(dimms1), 0, 0, test);
@@ -2700,7 +2700,7 @@ int test_libndctl(int loglevel, struct test_ctx *test, struct ndctl_ctx *ctx)
 	struct daxctl_ctx *daxctl_ctx;
 	int err, result = EXIT_FAILURE;
 
-	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 2, 0)))
+	if (!test_attempt(test, KERNEL_VERSION(4, 2, 0)))
 		return 77;
 
 	ndctl_set_log_priority(ctx, loglevel);
@@ -2710,7 +2710,7 @@ int test_libndctl(int loglevel, struct test_ctx *test, struct ndctl_ctx *ctx)
 
 	err = ndctl_test_init(&kmod_ctx, &mod, ctx, loglevel, test);
 	if (err < 0) {
-		ndctl_test_skip(test);
+		test_skip(test);
 		fprintf(stderr, "nfit_test unavailable skipping tests\n");
 		return 77;
 	}
@@ -2732,7 +2732,7 @@ int test_libndctl(int loglevel, struct test_ctx *test, struct ndctl_ctx *ctx)
 
 int __attribute__((weak)) main(int argc, char *argv[])
 {
-	struct test_ctx *test = ndctl_test_new(0);
+	struct test_ctx *test = test_new(0);
 	struct ndctl_ctx *ctx;
 	int rc;
 
@@ -2743,8 +2743,8 @@ int __attribute__((weak)) main(int argc, char *argv[])
 
 	rc = ndctl_new(&ctx);
 	if (rc)
-		return ndctl_test_result(test, rc);
+		return test_result(test, rc);
 	rc = test_libndctl(LOG_DEBUG, test, ctx);
 	ndctl_unref(ctx);
-	return ndctl_test_result(test, rc);
+	return test_result(test, rc);
 }

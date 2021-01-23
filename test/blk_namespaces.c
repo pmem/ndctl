@@ -210,7 +210,7 @@ int test_blk_namespaces(int log_level, struct test_ctx *test,
 	struct ndctl_namespace *ndns[2];
 	struct ndctl_region *region, *blk_region = NULL;
 
-	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 2, 0)))
+	if (!test_attempt(test, KERNEL_VERSION(4, 2, 0)))
 		return 77;
 
 	ndctl_set_log_priority(ctx, log_level);
@@ -232,7 +232,7 @@ int test_blk_namespaces(int log_level, struct test_ctx *test,
 		ndctl_invalidate(ctx);
 		bus = ndctl_bus_get_by_provider(ctx, "nfit_test.0");
 		if (rc < 0 || !bus) {
-			ndctl_test_skip(test);
+			test_skip(test);
 			fprintf(stderr, "nfit_test unavailable skipping tests\n");
 			return 77;
 		}
@@ -337,7 +337,7 @@ int test_blk_namespaces(int log_level, struct test_ctx *test,
 
 int __attribute__((weak)) main(int argc, char *argv[])
 {
-	struct test_ctx *test = ndctl_test_new(0);
+	struct test_ctx *test = test_new(0);
 	struct ndctl_ctx *ctx;
 	int rc;
 
@@ -349,9 +349,9 @@ int __attribute__((weak)) main(int argc, char *argv[])
 
 	rc = ndctl_new(&ctx);
 	if (rc)
-		return ndctl_test_result(test, rc);
+		return test_result(test, rc);
 
 	rc = test_blk_namespaces(LOG_DEBUG, test, ctx);
 	ndctl_unref(ctx);
-	return ndctl_test_result(test, rc);
+	return test_result(test, rc);
 }

@@ -6,15 +6,15 @@
 
 struct test_ctx;
 struct ndctl_ctx;
-struct test_ctx *ndctl_test_new(unsigned int kver);
-int ndctl_test_result(struct test_ctx *test, int rc);
-int ndctl_test_get_skipped(struct test_ctx *test);
-int ndctl_test_get_attempted(struct test_ctx *test);
-int __ndctl_test_attempt(struct test_ctx *test, unsigned int kver,
+struct test_ctx *test_new(unsigned int kver);
+int test_result(struct test_ctx *test, int rc);
+int test_get_skipped(struct test_ctx *test);
+int test_get_attempted(struct test_ctx *test);
+int __test_attempt(struct test_ctx *test, unsigned int kver,
 		const char *caller, int line);
-#define ndctl_test_attempt(t, v) __ndctl_test_attempt(t, v, __func__, __LINE__)
-void __ndctl_test_skip(struct test_ctx *test, const char *caller, int line);
-#define ndctl_test_skip(t) __ndctl_test_skip(t, __func__, __LINE__)
+#define test_attempt(t, v) __test_attempt(t, v, __func__, __LINE__)
+void __test_skip(struct test_ctx *test, const char *caller, int line);
+#define test_skip(t) __test_skip(t, __func__, __LINE__)
 struct ndctl_namespace *ndctl_get_test_dev(struct ndctl_ctx *ctx);
 void builtin_xaction_namespace_reset(void);
 

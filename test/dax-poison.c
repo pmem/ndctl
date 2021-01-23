@@ -54,7 +54,7 @@ int test_dax_poison(struct test_ctx *test, int dax_fd, unsigned long align,
 	void *buf;
 	int rc;
 
-	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 19, 0)))
+	if (!test_attempt(test, KERNEL_VERSION(4, 19, 0)))
 		return 77;
 
 	/*

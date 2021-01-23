@@ -42,9 +42,9 @@ int cmd_test(int argc, const char **argv, struct ndctl_ctx *ctx)
 		usage_with_options(u, options);
 
 	if (force)
-		test = ndctl_test_new(UINT_MAX);
+		test = test_new(UINT_MAX);
 	else
-		test = ndctl_test_new(0);
+		test = test_new(0);
 	if (!test)
 		return EXIT_FAILURE;
 
@@ -69,5 +69,5 @@ int cmd_test(int argc, const char **argv, struct ndctl_ctx *ctx)
 	rc = test_multi_pmem(loglevel, test, ctx);
 	fprintf(stderr, "test-multi-pmem: %s\n", result(rc));
 
-	return ndctl_test_result(test, rc);
+	return test_result(test, rc);
 }

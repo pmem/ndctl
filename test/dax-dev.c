@@ -93,7 +93,7 @@ static int emit_e820_device(int loglevel, struct test_ctx *test)
 	struct ndctl_ctx *ctx;
 	struct ndctl_namespace *ndns;
 
-	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 3, 0)))
+	if (!test_attempt(test, KERNEL_VERSION(4, 3, 0)))
 		return 77;
 
 	err = ndctl_new(&ctx);
@@ -106,7 +106,7 @@ static int emit_e820_device(int loglevel, struct test_ctx *test)
 	if (!ndns) {
 		fprintf(stderr, "%s: failed to find usable victim device\n",
 				__func__);
-		ndctl_test_skip(test);
+		test_skip(test);
 		err = 77;
 	} else {
 		fprintf(stdout, "%s\n", ndctl_namespace_get_devname(ndns));
@@ -118,7 +118,7 @@ static int emit_e820_device(int loglevel, struct test_ctx *test)
 
 int __attribute__((weak)) main(int argc, char *argv[])
 {
-	struct test_ctx *test = ndctl_test_new(0);
+	struct test_ctx *test = test_new(0);
 	int rc;
 
 	if (!test) {
@@ -127,5 +127,5 @@ int __attribute__((weak)) main(int argc, char *argv[])
 	}
 
 	rc = emit_e820_device(LOG_DEBUG, test);
-	return ndctl_test_result(test, rc);
+	return test_result(test, rc);
 }

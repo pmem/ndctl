@@ -44,7 +44,7 @@ static int test_devmem(int loglevel, struct test_ctx *test,
 	ndctl_set_log_priority(ctx, loglevel);
 
 	/* iostrict devmem started in kernel 4.5 */
-	if (!ndctl_test_attempt(test, KERNEL_VERSION(4, 5, 0)))
+	if (!test_attempt(test, KERNEL_VERSION(4, 5, 0)))
 		return 77;
 
 	ndns = ndctl_get_test_dev(ctx);
@@ -124,7 +124,7 @@ out_devmem:
 
 int main(int argc, char *argv[])
 {
-	struct test_ctx *test = ndctl_test_new(0);
+	struct test_ctx *test = test_new(0);
 	struct ndctl_ctx *ctx;
 	int rc;
 
@@ -135,9 +135,9 @@ int main(int argc, char *argv[])
 
 	rc = ndctl_new(&ctx);
 	if (rc < 0)
-		return ndctl_test_result(test, rc);
+		return test_result(test, rc);
 
 	rc = test_devmem(LOG_DEBUG, test, ctx);
 	ndctl_unref(ctx);
-	return ndctl_test_result(test, rc);
+	return test_result(test, rc);
 }
