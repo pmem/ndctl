@@ -44,7 +44,8 @@ check_PROGRAMS =\
 	hugetlb \
 	daxdev-errors \
 	ack-shutdown-count-set \
-	list-smart-dimm
+	list-smart-dimm \
+	libcxl
 
 if ENABLE_DESTRUCTIVE
 TESTS +=\
@@ -61,7 +62,8 @@ TESTS +=\
 	daxctl-devices.sh \
 	daxctl-create.sh \
 	dm.sh \
-	mmap.sh
+	mmap.sh \
+	libcxl
 
 if ENABLE_KEYUTILS
 TESTS += security.sh
@@ -190,3 +192,9 @@ list_smart_dimm_LDADD = \
 		$(JSON_LIBS) \
 		$(UUID_LIBS) \
 		../libutil.a
+
+LIBCXL_LIB =\
+	../cxl/lib/libcxl.la
+
+libcxl_SOURCES = libcxl.c $(testcore)
+libcxl_LDADD = $(LIBCXL_LIB) $(UUID_LIBS) $(KMOD_LIBS)
