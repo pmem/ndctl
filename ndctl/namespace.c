@@ -1279,6 +1279,9 @@ static int namespace_reconfig(struct ndctl_region *region,
 	rc = validate_namespace_options(region, ndns, &p);
 	if (rc)
 		return rc;
+	/* check if ndns is inactive/destroyed */
+	if (p.size == 0)
+		return -ENXIO;
 
 	rc = namespace_prep_reconfig(region, ndns);
 	if (rc < 0)
