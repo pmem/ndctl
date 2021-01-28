@@ -70,7 +70,7 @@ static int region_action(struct ndctl_region *region, enum device_action mode)
 	case ACTION_DISABLE:
 		ndctl_namespace_foreach(region, ndns) {
 			rc = ndctl_namespace_disable_safe(ndns);
-			if (rc)
+			if (rc < 0)
 				return rc;
 		}
 		rc = ndctl_region_disable_invalidate(region);
