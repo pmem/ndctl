@@ -43,4 +43,13 @@ global:
 	cxl_cmd_identify_get_fw_rev;
 	cxl_cmd_identify_get_partition_align;
 	cxl_cmd_identify_get_lsa_size;
+	cxl_cmd_new_get_health_info;
+	cxl_cmd_get_health_info_get_health_status;
+	cxl_cmd_get_health_info_get_media_status;
+	cxl_cmd_get_health_info_get_ext_status;
+	cxl_cmd_get_health_info_get_life_used;
+	cxl_cmd_get_health_info_get_temperature;
+	cxl_cmd_get_health_info_get_dirty_shutdowns;
+	cxl_cmd_get_health_info_get_volatile_errors;
+	cxl_cmd_get_health_info_get_pmem_errors;
 } LIBCXL_2;

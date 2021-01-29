@@ -62,6 +62,15 @@ struct cxl_cmd *cxl_cmd_new_identify(struct cxl_memdev *memdev);
 int cxl_cmd_identify_get_fw_rev(struct cxl_cmd *cmd, char *fw_rev, int fw_len);
 unsigned long long cxl_cmd_identify_get_partition_align(struct cxl_cmd *cmd);
 unsigned int cxl_cmd_identify_get_lsa_size(struct cxl_cmd *cmd);
+struct cxl_cmd *cxl_cmd_new_get_health_info(struct cxl_memdev *memdev);
+int cxl_cmd_get_health_info_get_health_status(struct cxl_cmd *cmd);
+int cxl_cmd_get_health_info_get_media_status(struct cxl_cmd *cmd);
+int cxl_cmd_get_health_info_get_ext_status(struct cxl_cmd *cmd);
+int cxl_cmd_get_health_info_get_life_used(struct cxl_cmd *cmd);
+int cxl_cmd_get_health_info_get_temperature(struct cxl_cmd *cmd);
+int cxl_cmd_get_health_info_get_dirty_shutdowns(struct cxl_cmd *cmd);
+int cxl_cmd_get_health_info_get_volatile_errors(struct cxl_cmd *cmd);
+int cxl_cmd_get_health_info_get_pmem_errors(struct cxl_cmd *cmd);
 
 #ifdef __cplusplus
 } /* extern "C" */

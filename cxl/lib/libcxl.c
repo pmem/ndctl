@@ -673,6 +673,67 @@ CXL_EXPORT const char *cxl_cmd_get_devname(struct cxl_cmd *cmd)
 	return cxl_memdev_get_devname(cmd->memdev);
 }
 
+#define cmd_get_int(cmd, n, N, field) \
+do { \
+	struct cxl_cmd_##n *c = (void *)cmd->send_cmd->out.payload; \
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_##N) \
+		return EINVAL; \
+	if (cmd->status < 0) \
+		return cmd->status; \
+	return le32_to_cpu(c->field); \
+} while(0);
+
+CXL_EXPORT struct cxl_cmd *cxl_cmd_new_get_health_info(
+		struct cxl_memdev *memdev)
+{
+	return cxl_cmd_new_generic(memdev, CXL_MEM_COMMAND_ID_GET_HEALTH_INFO);
+}
+
+#define cmd_health_get_int(c, f) \
+do { \
+	cmd_get_int(c, get_health_info, GET_HEALTH_INFO, f); \
+} while (0);
+
+CXL_EXPORT int cxl_cmd_get_health_info_get_health_status(struct cxl_cmd *cmd)
+{
+	cmd_health_get_int(cmd, health_status);
+}
+
+CXL_EXPORT int cxl_cmd_get_health_info_get_media_status(struct cxl_cmd *cmd)
+{
+	cmd_health_get_int(cmd, media_status);
+}
+
+CXL_EXPORT int cxl_cmd_get_health_info_get_ext_status(struct cxl_cmd *cmd)
+{
+	cmd_health_get_int(cmd, ext_status);
+}
+
+CXL_EXPORT int cxl_cmd_get_health_info_get_life_used(struct cxl_cmd *cmd)
+{
+	cmd_health_get_int(cmd, life_used);
+}
+
+CXL_EXPORT int cxl_cmd_get_health_info_get_temperature(struct cxl_cmd *cmd)
+{
+	cmd_health_get_int(cmd, temperature);
+}
+
+CXL_EXPORT int cxl_cmd_get_health_info_get_dirty_shutdowns(struct cxl_cmd *cmd)
+{
+	cmd_health_get_int(cmd, dirty_shutdowns);
+}
+
+CXL_EXPORT int cxl_cmd_get_health_info_get_volatile_errors(struct cxl_cmd *cmd)
+{
+	cmd_health_get_int(cmd, volatile_errors);
+}
+
+CXL_EXPORT int cxl_cmd_get_health_info_get_pmem_errors(struct cxl_cmd *cmd)
+{
+	cmd_health_get_int(cmd, pmem_errors);
+}
+
 CXL_EXPORT struct cxl_cmd *cxl_cmd_new_identify(struct cxl_memdev *memdev)
 {
 	return cxl_cmd_new_generic(memdev, CXL_MEM_COMMAND_ID_IDENTIFY);
