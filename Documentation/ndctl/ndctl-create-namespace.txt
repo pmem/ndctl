@@ -258,5 +258,7 @@ linkndctl:ndctl-zero-labels[1],
 linkndctl:ndctl-init-labels[1],
 linkndctl:ndctl-disable-namespace[1],
 linkndctl:ndctl-enable-namespace[1],
+linkndctl:ndctl-destroy-namespace[1].
+linkndctl:ndctl-check-namespace[1].
 http://www.uefi.org/sites/default/files/resources/UEFI_Spec_2_7.pdf[UEFI NVDIMM Label Protocol]
 https://nvdimm.wiki.kernel.org[Linux Persistent Memory Wiki]
