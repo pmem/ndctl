@@ -1,4 +1,5 @@
 *.o
+*.lo
 *.xml
 .deps/
 .libs/
@@ -15,13 +16,13 @@ Makefile.in
 *.1
 Documentation/daxctl/asciidoc.conf
 Documentation/ndctl/asciidoc.conf
+Documentation/ndctl/attrs.adoc
 Documentation/daxctl/asciidoctor-extensions.rb
 Documentation/ndctl/asciidoctor-extensions.rb
 .dirstamp
 daxctl/config.h
 daxctl/daxctl
 daxctl/lib/libdaxctl.la
-daxctl/lib/libdaxctl.lo
 daxctl/lib/libdaxctl.pc
 *.a
 ndctl/config.h
@@ -29,8 +30,6 @@ ndctl/lib/libndctl.pc
 ndctl/ndctl
 rhel/
 sles/ndctl.spec
-util/log.lo
-util/sysfs.lo
 version.m4
 *.swp
 cscope.files
