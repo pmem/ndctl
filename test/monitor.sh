@@ -13,6 +13,8 @@ smart_supported_bus=""
 
 . $(dirname $0)/common
 
+check_prereq "jq"
+
 trap 'err $LINENO' ERR
 
 check_min_kver "4.15" || do_skip "kernel $KVER may not support monitor service"

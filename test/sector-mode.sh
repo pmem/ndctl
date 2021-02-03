@@ -6,6 +6,8 @@ rc=77
 
 . $(dirname $0)/common
 
+check_prereq "jq"
+
 set -e
 trap 'err $LINENO' ERR
 

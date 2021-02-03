@@ -9,6 +9,7 @@ rc=77
 . $(dirname $0)/common
 
 check_min_kver "4.13" || do_skip "may lack multi-dax support"
+check_prereq "jq"
 
 trap 'err $LINENO' ERR
 

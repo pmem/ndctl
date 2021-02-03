@@ -9,6 +9,7 @@ rc=77
 trap 'err $LINENO' ERR
 
 check_min_kver "4.19" || do_skip "kernel $KVER may not support max_available_size"
+check_prereq "jq"
 
 init()
 {

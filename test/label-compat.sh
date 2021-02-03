@@ -10,6 +10,7 @@ BASE=$(dirname $0)
 . $BASE/common
 
 check_min_kver "4.11" || do_skip "may not provide reliable isetcookie values"
+check_prereq "jq"
 
 trap 'err $LINENO' ERR
 

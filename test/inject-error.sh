@@ -11,6 +11,8 @@ err_count=8
 
 . $(dirname $0)/common
 
+check_prereq "jq"
+
 trap 'err $LINENO' ERR
 
 # sample json:
