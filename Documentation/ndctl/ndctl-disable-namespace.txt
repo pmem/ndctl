@@ -22,4 +22,4 @@ include::../copyright.txt[]
 
 SEE ALSO
 --------
-linkndctl:ndctl-disable-namespace[1]
+linkndctl:ndctl-enable-namespace[1]
