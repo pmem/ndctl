@@ -71,6 +71,9 @@ int cxl_cmd_get_health_info_get_temperature(struct cxl_cmd *cmd);
 int cxl_cmd_get_health_info_get_dirty_shutdowns(struct cxl_cmd *cmd);
 int cxl_cmd_get_health_info_get_volatile_errors(struct cxl_cmd *cmd);
 int cxl_cmd_get_health_info_get_pmem_errors(struct cxl_cmd *cmd);
+struct cxl_cmd *cxl_cmd_new_get_lsa(struct cxl_memdev *memdev,
+		unsigned int offset, unsigned int length);
+void *cxl_cmd_get_lsa_get_payload(struct cxl_cmd *cmd);
 
 #ifdef __cplusplus
 } /* extern "C" */
