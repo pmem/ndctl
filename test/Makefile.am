@@ -86,7 +86,8 @@ LIBNDCTL_LIB =\
 testcore =\
 	core.c \
 	../util/log.c \
-	../util/sysfs.c
+	../util/sysfs.c \
+	../util/hexdump.c
 
 libndctl_SOURCES = libndctl.c $(testcore)
 libndctl_LDADD = $(LIBNDCTL_LIB) $(UUID_LIBS) $(KMOD_LIBS)
