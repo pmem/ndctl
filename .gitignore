@@ -17,6 +17,7 @@ Documentation/daxctl/asciidoc.conf
 Documentation/ndctl/asciidoc.conf
 Documentation/daxctl/asciidoctor-extensions.rb
 Documentation/ndctl/asciidoctor-extensions.rb
+Documentation/ndctl/attrs.adoc
 .dirstamp
 daxctl/config.h
 daxctl/daxctl
@@ -31,6 +32,7 @@ rhel/
 sles/ndctl.spec
 util/log.lo
 util/sysfs.lo
+util/iomem.lo
 version.m4
 *.swp
 cscope.files
