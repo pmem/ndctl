@@ -1052,6 +1052,9 @@ static int zero_info_block(struct ndctl_namespace *ndns)
 	void *buf = NULL, *read_buf = NULL;
 	char path[50];
 
+	if (ndctl_namespace_get_size(ndns) == 0)
+		return 1;
+
 	ndctl_namespace_set_raw_mode(ndns, 1);
 	rc = ndctl_namespace_enable(ndns);
 	if (rc < 0) {
