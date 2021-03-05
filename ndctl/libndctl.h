@@ -152,6 +152,8 @@ int ndctl_bus_clear_fw_activate_noidle(struct ndctl_bus *bus);
 int ndctl_bus_set_fw_activate_nosuspend(struct ndctl_bus *bus);
 int ndctl_bus_clear_fw_activate_nosuspend(struct ndctl_bus *bus);
 int ndctl_bus_activate_firmware(struct ndctl_bus *bus, enum ndctl_fwa_method method);
+int ndctl_bus_nfit_translate_spa(struct ndctl_bus *bus, unsigned long long addr,
+		unsigned int *handle, unsigned long long *dpa);
 
 struct ndctl_dimm;
 struct ndctl_dimm *ndctl_dimm_get_first(struct ndctl_bus *bus);

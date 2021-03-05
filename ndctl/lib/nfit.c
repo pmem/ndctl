@@ -114,7 +114,7 @@ static int is_valid_spa(struct ndctl_bus *bus, unsigned long long spa)
  *
  * If success, returns zero, store dimm's @handle, and @dpa.
  */
-int ndctl_bus_nfit_translate_spa(struct ndctl_bus *bus,
+NDCTL_EXPORT int ndctl_bus_nfit_translate_spa(struct ndctl_bus *bus,
 	unsigned long long address, unsigned int *handle, unsigned long long *dpa)
 {
 
