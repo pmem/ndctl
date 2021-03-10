@@ -1541,6 +1541,7 @@ static int validate_bdev(const char *devname, struct ndctl_btt *btt,
 		struct ndctl_pfn *pfn, struct ndctl_namespace *ndns,
 		struct namespace *namespace, void *buf)
 {
+	struct ndctl_region *region = ndctl_namespace_get_region(ndns);
 	char bdevpath[50];
 	int fd, rc, ro;
 
@@ -1578,6 +1579,13 @@ static int validate_bdev(const char *devname, struct ndctl_btt *btt,
 	}
 
 	ro = 0;
+	rc = ndctl_region_set_ro(region, ro);
+	if (rc < 0) {
+		fprintf(stderr, "%s: ndctl_region_set_ro failed\n", devname);
+		rc = -errno;
+		goto out;
+	}
+
 	rc = ioctl(fd, BLKROSET, &ro);
 	if (rc < 0) {
 		fprintf(stderr, "%s: BLKROSET failed\n",
@@ -1605,8 +1613,16 @@ static int validate_bdev(const char *devname, struct ndctl_btt *btt,
 		rc = -ENXIO;
 		goto out;
 	}
+
+	rc = ndctl_region_set_ro(region, namespace->ro);
+	if (rc < 0) {
+		fprintf(stderr, "%s: ndctl_region_set_ro reset failed\n", devname);
+		rc = -errno;
+		goto out;
+	}
+
 	rc = 0;
- out:
+out:
 	close(fd);
 	return rc;
 }
