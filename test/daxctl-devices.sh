@@ -64,6 +64,26 @@ daxctl_get_mode()
 	"$DAXCTL" list -d "$1" | jq -er '.[].mode'
 }
 
+set_online_policy()
+{
+	echo "online" > /sys/devices/system/memory/auto_online_blocks
+}
+
+unset_online_policy()
+{
+	echo "offline" > /sys/devices/system/memory/auto_online_blocks
+}
+
+save_online_policy()
+{
+	saved_policy="$(cat /sys/devices/system/memory/auto_online_blocks)"
+}
+
+restore_online_policy()
+{
+	echo "$saved_policy" > /sys/devices/system/memory/auto_online_blocks
+}
+
 daxctl_test()
 {
 	local daxdev
@@ -71,6 +91,9 @@ daxctl_test()
 	daxdev=$(daxctl_get_dev "$testdev")
 	test -n "$daxdev"
 
+	# these tests need to run with kernel onlining policy turned off
+	save_online_policy
+	unset_online_policy
 	"$DAXCTL" reconfigure-device -N -m system-ram "$daxdev"
 	[[ $(daxctl_get_mode "$daxdev") == "system-ram" ]]
 	"$DAXCTL" online-memory "$daxdev"
@@ -81,6 +104,19 @@ daxctl_test()
 	[[ $(daxctl_get_mode "$daxdev") == "system-ram" ]]
 	"$DAXCTL" reconfigure-device -f -m devdax "$daxdev"
 	[[ $(daxctl_get_mode "$daxdev") == "devdax" ]]
+
+	# this tests for reconfiguration failure if an online-policy is set
+	set_online_policy
+	: "This command is expected to fail:"
+	if ! "$DAXCTL" reconfigure-device -N -m system-ram "$daxdev"; then
+		echo "reconfigure failed as expected"
+	else
+		echo "reconfigure succeded, expected failure"
+		restore_online_policy
+		return 1
+	fi
+
+	restore_online_policy
 }
 
 find_testdev

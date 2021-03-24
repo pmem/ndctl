@@ -91,3 +91,8 @@ global:
 	daxctl_mapping_get_size;
 	daxctl_dev_set_mapping;
 } LIBDAXCTL_7;
+
+LIBDAXCTL_9 {
+global:
+	daxctl_dev_will_auto_online_memory;
+} LIBDAXCTL_8;

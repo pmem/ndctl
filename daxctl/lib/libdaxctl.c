@@ -1644,3 +1644,24 @@ DAXCTL_EXPORT int daxctl_memory_is_movable(struct daxctl_memory *mem)
 		return rc;
 	return (mem->zone == MEM_ZONE_MOVABLE) ? 1 : 0;
 }
+
+DAXCTL_EXPORT int daxctl_dev_will_auto_online_memory(struct daxctl_dev *dev)
+{
+	const char *auto_path = "/sys/devices/system/memory/auto_online_blocks";
+	const char *devname = daxctl_dev_get_devname(dev);
+	struct daxctl_ctx *ctx = daxctl_dev_get_ctx(dev);
+	char buf[SYSFS_ATTR_SIZE];
+
+	/*
+	 * If we can't read the policy for some reason, don't fail yet. Assume
+	 * the auto-onlining policy is absent, and carry on. If onlining blocks
+	 * does result in the memory being in an inconsistent state, we have a
+	 * check and warning for it after the fact
+	 */
+	if (sysfs_read_attr(ctx, auto_path, buf) != 0)
+		err(ctx, "%s: Unable to determine auto-online policy: %s\n",
+				devname, strerror(errno));
+
+	/* match both "online" and "online_movable" */
+	return !strncmp(buf, "online", 6);
+}
