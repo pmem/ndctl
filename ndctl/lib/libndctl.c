@@ -323,12 +323,9 @@ NDCTL_EXPORT int ndctl_new(struct ndctl_ctx **ctx)
 		dbg(c, "timeout = %ld\n", tmo);
 	}
 
-	if (udev) {
-		c->udev = udev;
-		c->udev_queue = udev_queue_new(udev);
-		if (!c->udev_queue)
-			err(c, "failed to retrieve udev queue\n");
-	}
+	c->udev_queue = udev_queue_new(udev);
+	if (!c->udev_queue)
+		err(c, "failed to retrieve udev queue\n");
 
 	c->kmod_ctx = kmod_ctx;
 	c->daxctl_ctx = daxctl_ctx;
