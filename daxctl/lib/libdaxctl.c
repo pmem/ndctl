@@ -1665,3 +1665,13 @@ DAXCTL_EXPORT int daxctl_dev_will_auto_online_memory(struct daxctl_dev *dev)
 	/* match both "online" and "online_movable" */
 	return !strncmp(buf, "online", 6);
 }
+
+DAXCTL_EXPORT int daxctl_dev_has_online_memory(struct daxctl_dev *dev)
+{
+	struct daxctl_memory *mem = daxctl_dev_get_memory(dev);
+
+	if (mem)
+		return daxctl_memory_is_online(mem);
+	else
+		return 0;
+}
