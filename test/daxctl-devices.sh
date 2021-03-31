@@ -105,6 +105,22 @@ daxctl_test()
 	"$DAXCTL" reconfigure-device -f -m devdax "$daxdev"
 	[[ $(daxctl_get_mode "$daxdev") == "devdax" ]]
 
+	# fail 'ndctl-disable-namespace' while the devdax namespace is active
+	# as system-ram. If this test fails, a reboot will be required to
+	# recover from the resulting state.
+	test -n "$testdev"
+	"$DAXCTL" reconfigure-device -m system-ram "$daxdev"
+	[[ $(daxctl_get_mode "$daxdev") == "system-ram" ]]
+	if ! "$NDCTL" disable-namespace "$testdev"; then
+		echo "disable-namespace failed as expected"
+	else
+		echo "disable-namespace succeded, expected failure"
+		echo "reboot required to recover from this state"
+		return 1
+	fi
+	"$DAXCTL" reconfigure-device -f -m devdax "$daxdev"
+	[[ $(daxctl_get_mode "$daxdev") == "devdax" ]]
+
 	# this tests for reconfiguration failure if an online-policy is set
 	set_online_policy
 	: "This command is expected to fail:"
