@@ -119,6 +119,10 @@ recommended to use the --no-online option described below. This will abridge
 the device reconfiguration operation to just hotplugging the memory, and
 refrain from then onlining it.
 
+In case daxctl detects that there is a kernel policy to auto-online blocks
+(via /sys/devices/system/memory/auto_online_blocks), then reconfiguring to
+system-ram will result in a failure. This can be overridden with '--force'.
+
 OPTIONS
 -------
 include::region-option.txt[]
@@ -162,11 +166,17 @@ include::movable-options.txt[]
 
 -f::
 --force::
-	When converting from "system-ram" mode to "devdax", it is expected
+	- When converting from "system-ram" mode to "devdax", it is expected
 	that all the memory sections are first made offline. By default,
 	daxctl won't touch online memory. However with this option, attempt
 	to offline the memory on the NUMA node associated with the dax device
 	before converting it back to "devdax" mode.
+
+	- Additionally, if a kernel policy to auto-online blocks is detected,
+	reconfiguration to system-ram fails. With this option, the failure can
+	be overridden to allow reconfiguration regardless of kernel policy.
+	Doing this may result in a successful reconfiguration, but it may
+	not be possible to subsequently offline the memory without a reboot.
 
 
 include::human-option.txt[]

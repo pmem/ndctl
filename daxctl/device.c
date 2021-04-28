@@ -541,7 +541,17 @@ static int disable_devdax_device(struct daxctl_dev *dev)
 
 static int reconfig_mode_system_ram(struct daxctl_dev *dev)
 {
+	const char *devname = daxctl_dev_get_devname(dev);
 	int rc, skip_enable = 0;
+
+	if (param.no_online || !param.no_movable) {
+		if (!param.force && daxctl_dev_will_auto_online_memory(dev)) {
+			fprintf(stderr,
+				"%s: error: kernel policy will auto-online memory, aborting\n",
+				devname);
+			return -EBUSY;
+		}
+	}
 
 	if (daxctl_dev_is_enabled(dev)) {
 		rc = disable_devdax_device(dev);

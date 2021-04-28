@@ -111,6 +111,7 @@ struct daxctl_memory {
 	char *node_path;
 	unsigned long block_size;
 	enum memory_zones zone;
+	bool auto_online;
 };
 
 

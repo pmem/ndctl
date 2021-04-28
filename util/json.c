@@ -482,6 +482,17 @@ struct json_object *util_daxctl_dev_to_json(struct daxctl_dev *dev,
 		json_object_object_add(jdev, "mode", jobj);
 
 	if (mem && daxctl_dev_get_resource(dev) != 0) {
+		int num_sections = daxctl_memory_num_sections(mem);
+		int num_online = daxctl_memory_is_online(mem);
+
+		jobj = json_object_new_int(num_online);
+		if (jobj)
+			json_object_object_add(jdev, "online_memblocks", jobj);
+
+		jobj = json_object_new_int(num_sections);
+		if (jobj)
+			json_object_object_add(jdev, "total_memblocks", jobj);
+
 		movable = daxctl_memory_is_movable(mem);
 		if (movable == 1)
 			jobj = json_object_new_boolean(true);

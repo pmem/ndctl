@@ -4593,21 +4593,40 @@ NDCTL_EXPORT int ndctl_namespace_disable_invalidate(struct ndctl_namespace *ndns
 	return ndctl_namespace_disable(ndns);
 }
 
+static int ndctl_dax_has_active_memory(struct ndctl_dax *dax)
+{
+	struct daxctl_region *dax_region;
+	struct daxctl_dev *dax_dev;
+
+	dax_region = ndctl_dax_get_daxctl_region(dax);
+	if (!dax_region)
+		return 0;
+
+	daxctl_dev_foreach(dax_region, dax_dev)
+		if (daxctl_dev_has_online_memory(dax_dev))
+			return 1;
+
+	return 0;
+}
+
 NDCTL_EXPORT int ndctl_namespace_disable_safe(struct ndctl_namespace *ndns)
 {
 	const char *devname = ndctl_namespace_get_devname(ndns);
 	struct ndctl_ctx *ctx = ndctl_namespace_get_ctx(ndns);
 	struct ndctl_pfn *pfn = ndctl_namespace_get_pfn(ndns);
 	struct ndctl_btt *btt = ndctl_namespace_get_btt(ndns);
+	struct ndctl_dax *dax = ndctl_namespace_get_dax(ndns);
 	const char *bdev = NULL;
+	int fd, active = 0;
 	char path[50];
-	int fd;
 	unsigned long long size = ndctl_namespace_get_size(ndns);
 
 	if (pfn && ndctl_pfn_is_enabled(pfn))
 		bdev = ndctl_pfn_get_block_device(pfn);
 	else if (btt && ndctl_btt_is_enabled(btt))
 		bdev = ndctl_btt_get_block_device(btt);
+	else if (dax && ndctl_dax_is_enabled(dax))
+		active = ndctl_dax_has_active_memory(dax);
 	else if (ndctl_namespace_is_enabled(ndns))
 		bdev = ndctl_namespace_get_block_device(ndns);
 
@@ -4632,6 +4651,10 @@ NDCTL_EXPORT int ndctl_namespace_disable_safe(struct ndctl_namespace *ndns)
 					devname, bdev, strerror(errno));
 			return -errno;
 		}
+	} else if (active) {
+		dbg(ctx, "%s: active as system-ram, refusing to disable\n",
+				devname);
+		return -EBUSY;
 	} else {
 		if (size == 0)
 			/* No disable necessary due to no capacity allocated */
