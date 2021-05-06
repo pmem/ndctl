@@ -55,3 +55,8 @@ global:
 	cxl_cmd_new_get_lsa;
 	cxl_cmd_get_lsa_get_payload;
 } LIBCXL_2;
+
+LIBCXL_4 {
+global:
+	cxl_memdev_get_lsa_size;
+} LIBCXL_3;
