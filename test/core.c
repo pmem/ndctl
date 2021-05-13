@@ -11,6 +11,7 @@
 #include <util/log.h>
 #include <util/sysfs.h>
 #include <ndctl/libndctl.h>
+#include <ndctl/ndctl.h>
 #include <ccan/array_size/array_size.h>
 
 #define KVER_STRLEN 20
@@ -106,11 +107,11 @@ int ndctl_test_get_skipped(struct ndctl_test *test)
 	return test->skip;
 }
 
-int nfit_test_init(struct kmod_ctx **ctx, struct kmod_module **mod,
+int ndctl_test_init(struct kmod_ctx **ctx, struct kmod_module **mod,
 		struct ndctl_ctx *nd_ctx, int log_level,
 		struct ndctl_test *test)
 {
-	int rc;
+	int rc, family = -1;
 	unsigned int i;
 	const char *name;
 	struct ndctl_bus *bus;
@@ -127,9 +128,27 @@ int nfit_test_init(struct kmod_ctx **ctx, struct kmod_module **mod,
 		"nd_e820",
 		"nd_pmem",
 	};
+	char *test_env;
 
 	log_init(&log_ctx, "test/init", "NDCTL_TEST");
 	log_ctx.log_priority = log_level;
+
+	/*
+	 * The following two checks determine the platform family. For
+	 * Intel/platforms which support ACPI, check sysfs; for other platforms
+	 * determine from the environment variable NVDIMM_TEST_FAMILY
+	 */
+	if (access("/sys/bus/acpi", F_OK) == 0)
+		family = NVDIMM_FAMILY_INTEL;
+
+	test_env = getenv("NDCTL_TEST_FAMILY");
+	if (test_env && strcmp(test_env, "PAPR") == 0)
+		family = NVDIMM_FAMILY_PAPR;
+
+	if (family == -1) {
+		log_err(&log_ctx, "Cannot determine NVDIMM family\n");
+		return -ENOTSUP;
+	}
 
 	*ctx = kmod_new(NULL, NULL);
 	if (!*ctx)
@@ -185,6 +204,11 @@ retry:
 
 		path = kmod_module_get_path(*mod);
 		if (!path) {
+			if (family != NVDIMM_FAMILY_INTEL &&
+			    (strcmp(name, "nfit") == 0 ||
+			     strcmp(name, "nd_e820") == 0))
+				continue;
+
 			log_err(&log_ctx, "%s.ko: failed to get path\n", name);
 			break;
 		}
