@@ -1754,6 +1754,58 @@ static int populate_dimm_attributes(struct ndctl_dimm *dimm,
 	return rc;
 }
 
+static int add_papr_dimm(struct ndctl_dimm *dimm, const char *dimm_base)
+{
+	int rc = -ENODEV;
+	char buf[SYSFS_ATTR_SIZE];
+	struct ndctl_ctx *ctx = dimm->bus->ctx;
+	char *path = calloc(1, strlen(dimm_base) + 100);
+	const char * const devname = ndctl_dimm_get_devname(dimm);
+
+	dbg(ctx, "%s: Probing of_pmem dimm at %s\n", devname, dimm_base);
+
+	if (!path)
+		return -ENOMEM;
+
+	/* Check the compatibility of the probed nvdimm */
+	sprintf(path, "%s/../of_node/compatible", dimm_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0) {
+		dbg(ctx, "%s: Unable to read compatible field\n", devname);
+		rc =  -ENODEV;
+		goto out;
+	}
+
+	dbg(ctx, "%s:Compatible of_pmem = '%s'\n", devname, buf);
+
+	/* Probe for papr-scm memory */
+	if (strcmp(buf, "ibm,pmemory") == 0) {
+		/* Read the dimm flags file */
+		sprintf(path, "%s/papr/flags", dimm_base);
+		if (sysfs_read_attr(ctx, path, buf) < 0) {
+			rc = -errno;
+			err(ctx, "%s: Unable to read dimm-flags\n", devname);
+			goto out;
+		}
+
+		dbg(ctx, "%s: Adding papr-scm dimm flags:\"%s\"\n", devname, buf);
+		dimm->cmd_family = NVDIMM_FAMILY_PAPR;
+
+		/* Parse dimm flags */
+		parse_papr_flags(dimm, buf);
+
+		/* Allocate monitor mode fd */
+		dimm->health_eventfd = open(path, O_RDONLY|O_CLOEXEC);
+		rc = 0;
+
+	} else if (strcmp(buf, "nvdimm_test") == 0) {
+		/* probe via common populate_dimm_attributes() */
+		rc = populate_dimm_attributes(dimm, dimm_base, "papr");
+	}
+out:
+	free(path);
+	return rc;
+}
+
 static void *add_dimm(void *parent, int id, const char *dimm_base)
 {
 	int formats, i, rc = -ENODEV;
@@ -1845,8 +1897,9 @@ static void *add_dimm(void *parent, int id, const char *dimm_base)
 	/* Check if the given dimm supports nfit */
 	if (ndctl_bus_has_nfit(bus)) {
 		rc = populate_dimm_attributes(dimm, dimm_base, "nfit");
-	} else if (ndctl_bus_has_of_node(bus))
-		rc = populate_dimm_attributes(dimm, dimm_base, "papr");
+	} else if (ndctl_bus_has_of_node(bus)) {
+		rc = add_papr_dimm(dimm, dimm_base);
+	}
 
 	if (rc == -ENODEV) {
 		/* Unprobed dimm with no family */
