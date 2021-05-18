@@ -2,7 +2,7 @@ AC_PREREQ(2.60)
 m4_include([version.m4])
 AC_INIT([ndctl],
         GIT_VERSION,
-        [linux-nvdimm@lists.01.org],
+        [nvdimm@lists.linux.dev],
         [ndctl],
         [https://github.com/pmem/ndctl])
 AC_CONFIG_SRCDIR([ndctl/lib/libndctl.c])

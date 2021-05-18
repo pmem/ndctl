@@ -6,13 +6,14 @@ The following is a set of guidelines that we adhere to, and request that
 contributors follow.
 
 1. The libnvdimm (kernel subsystem) and ndctl developers primarily use
-   the [linux-nvdimm](https://lists.01.org/postorius/lists/linux-nvdimm.lists.01.org/)
+   the [nvdimm](https://subspace.kernel.org/lists.linux.dev.html)
    mailing list for everything. It is recommended to send patches to
-   **```linux-nvdimm@lists.01.org```**
+   **```nvdimm@lists.linux.dev```**
+   An archive is available on [lore](https://lore.kernel.org/nvdimm/)
 
 1. Github [issues](https://github.com/pmem/ndctl/issues) are an acceptable
    way to report a problem, but if you just have a question,
-   [email](mailto:linux-nvdimm@lists.01.org) the above list.
+   [email](mailto:nvdimm@lists.linux.dev) the above list.
 
 1. We follow the Linux Kernel [Coding Style Guide][cs] as applicable.
 
