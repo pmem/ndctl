@@ -1354,14 +1354,8 @@ static int __ndctl_bus_get_scrub_state(struct ndctl_bus *bus,
 NDCTL_EXPORT int ndctl_bus_start_scrub(struct ndctl_bus *bus)
 {
 	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
-	int rc;
 
-	rc = sysfs_write_attr(ctx, bus->scrub_path, "1\n");
-	if (rc == -EBUSY)
-		return rc;
-	else if (rc < 0)
-		return -EOPNOTSUPP;
-	return 0;
+	return sysfs_write_attr(ctx, bus->scrub_path, "1\n");
 }
 
 NDCTL_EXPORT int ndctl_bus_get_scrub_state(struct ndctl_bus *bus)
