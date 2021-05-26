@@ -1354,8 +1354,18 @@ static int __ndctl_bus_get_scrub_state(struct ndctl_bus *bus,
 NDCTL_EXPORT int ndctl_bus_start_scrub(struct ndctl_bus *bus)
 {
 	struct ndctl_ctx *ctx = ndctl_bus_get_ctx(bus);
+	int rc;
 
-	return sysfs_write_attr(ctx, bus->scrub_path, "1\n");
+	rc = sysfs_write_attr(ctx, bus->scrub_path, "1\n");
+
+	/*
+	 * Try at least 1 poll cycle before reporting busy in case this
+	 * request hits the kernel's exponential backoff while the
+	 * hardware/platform scrub state is idle.
+	 */
+	if (rc == -EBUSY && ndctl_bus_poll_scrub_completion(bus, 1, 1) == 0)
+		return sysfs_write_attr(ctx, bus->scrub_path, "1\n");
+	return rc;
 }
 
 NDCTL_EXPORT int ndctl_bus_get_scrub_state(struct ndctl_bus *bus)
