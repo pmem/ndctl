@@ -454,6 +454,43 @@ out_fail:
 	return rc;
 }
 
+static char *test_lsa_api_data = "LIBCXL_TEST READ/WRITE LSA DATA 2";
+static int test_cxl_read_write_lsa(struct cxl_ctx *ctx)
+{
+	int data_size = strlen(test_lsa_api_data) + 1;
+	struct cxl_memdev *memdev;
+	unsigned char *buf;
+	int rc = 0;
+
+	buf = calloc(1, data_size);
+	if (!buf)
+		return -ENOMEM;
+
+	cxl_memdev_foreach(ctx, memdev) {
+		rc = cxl_memdev_set_lsa(memdev, test_lsa_api_data, data_size, 0);
+		if (rc)
+			goto out_fail;
+
+		rc = cxl_memdev_get_lsa(memdev, buf, data_size, 0);
+		if (rc < 0)
+			goto out_fail;
+
+		if (memcmp(buf, test_lsa_api_data, data_size) != 0) {
+			fprintf(stderr, "%s: LSA data mismatch.\n", __func__);
+			fprintf(stderr, "%s: Get LSA returned:\n", __func__);
+			hex_dump_buf(buf, data_size);
+			fprintf(stderr, "%s: Set LSA had set:\n", __func__);
+			hex_dump_buf((unsigned char *)test_lsa_api_data, data_size);
+			rc = -EIO;
+			goto out_fail;
+		}
+	}
+
+out_fail:
+	free(buf);
+	return rc;
+}
+
 typedef int (*do_test_fn)(struct cxl_ctx *ctx);
 
 static do_test_fn do_test[] = {
@@ -463,6 +500,7 @@ static do_test_fn do_test[] = {
 	test_cxl_cmd_identify,
 	test_cxl_cmd_lsa,
 	test_cxl_cmd_fuzz_sizes,
+	test_cxl_read_write_lsa,
 };
 
 static int test_libcxl(int loglevel, struct test_ctx *test, struct cxl_ctx *ctx)
