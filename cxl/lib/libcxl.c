@@ -361,6 +361,16 @@ CXL_EXPORT size_t cxl_memdev_get_lsa_size(struct cxl_memdev *memdev)
 	return memdev->lsa_size;
 }
 
+CXL_EXPORT int cxl_memdev_is_active(struct cxl_memdev *memdev)
+{
+	/*
+	 * TODO: Currently memdevs are always considered inactive. Once we have
+	 * cxl_bus drivers that are bound/unbound to memdevs, we'd use that to
+	 * determine the active/inactive state.
+	 */
+	return 0;
+}
+
 CXL_EXPORT void cxl_cmd_unref(struct cxl_cmd *cmd)
 {
 	if (!cmd)

@@ -59,4 +59,5 @@ global:
 LIBCXL_4 {
 global:
 	cxl_memdev_get_lsa_size;
+	cxl_memdev_is_active;
 } LIBCXL_3;
