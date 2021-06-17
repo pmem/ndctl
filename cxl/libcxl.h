@@ -44,6 +44,11 @@ unsigned long long cxl_memdev_get_ram_size(struct cxl_memdev *memdev);
 const char *cxl_memdev_get_firmware_verison(struct cxl_memdev *memdev);
 size_t cxl_memdev_get_lsa_size(struct cxl_memdev *memdev);
 int cxl_memdev_is_active(struct cxl_memdev *memdev);
+int cxl_memdev_zero_lsa(struct cxl_memdev *memdev);
+int cxl_memdev_get_lsa(struct cxl_memdev *memdev, void *buf, size_t length,
+		size_t offset);
+int cxl_memdev_set_lsa(struct cxl_memdev *memdev, void *buf, size_t length,
+		size_t offset);
 
 #define cxl_memdev_foreach(ctx, memdev) \
         for (memdev = cxl_memdev_get_first(ctx); \
@@ -76,6 +81,8 @@ int cxl_cmd_get_health_info_get_pmem_errors(struct cxl_cmd *cmd);
 struct cxl_cmd *cxl_cmd_new_get_lsa(struct cxl_memdev *memdev,
 		unsigned int offset, unsigned int length);
 void *cxl_cmd_get_lsa_get_payload(struct cxl_cmd *cmd);
+struct cxl_cmd *cxl_cmd_new_set_lsa(struct cxl_memdev *memdev,
+		void *buf, unsigned int offset, unsigned int length);
 
 #ifdef __cplusplus
 } /* extern "C" */

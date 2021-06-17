@@ -60,4 +60,8 @@ LIBCXL_4 {
 global:
 	cxl_memdev_get_lsa_size;
 	cxl_memdev_is_active;
+	cxl_cmd_new_set_lsa;
+	cxl_memdev_zero_lsa;
+	cxl_memdev_set_lsa;
+	cxl_memdev_get_lsa;
 } LIBCXL_3;
