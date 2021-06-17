@@ -19,7 +19,10 @@ endif
 
 man1_MANS = \
 	cxl.1 \
-	cxl-list.1
+	cxl-list.1 \
+	cxl-read-labels.1 \
+	cxl-write-labels.1 \
+	cxl-zero-labels.1
 
 EXTRA_DIST = $(man1_MANS)
 

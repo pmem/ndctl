@@ -1,0 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0
+
+DESCRIPTION
+-----------
+The region label area is a small persistent partition of capacity
+available on some CXL memory devices. The label area is used to
+and configure or determine the set of memory devices participating
+in different interleave sets.
