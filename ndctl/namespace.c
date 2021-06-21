@@ -9,7 +9,6 @@
 #include <limits.h>
 #include <syslog.h>
 
-#include <ndctl.h>
 #include "action.h"
 #include "namespace.h"
 #include <sys/stat.h>
@@ -20,10 +19,13 @@
 #include <util/size.h>
 #include <util/json.h>
 #include <json-c/json.h>
-#include <util/filter.h>
+#include <ndctl/ndctl.h>
 #include <ndctl/libndctl.h>
 #include <util/parse-options.h>
 #include <ccan/minmax/minmax.h>
+
+#include "filter.h"
+#include "json.h"
 
 static bool verbose;
 static bool force;

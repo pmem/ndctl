@@ -7,13 +7,14 @@
 #include <limits.h>
 
 #include <util/json.h>
-#include <util/filter.h>
 #include <json-c/json.h>
 #include <ndctl/libndctl.h>
 #include <util/parse-options.h>
 #include <ccan/array_size/array_size.h>
 
-#include <ndctl.h>
+#include "ndctl.h"
+#include "filter.h"
+#include "json.h"
 
 static struct {
 	bool buses;

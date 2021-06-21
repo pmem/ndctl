@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0
 // Copyright (C) 2015-2020 Intel Corporation. All rights reserved.
 #include <limits.h>
-#include <util/json.h>
 #include <uuid/uuid.h>
 #include <json-c/json.h>
+#include <ndctl/ndctl.h>
 #include <ndctl/libndctl.h>
 #include <ccan/array_size/array_size.h>
-#include <ndctl.h>
+
+#include "json.h"
 
 static void smart_threshold_to_json(struct ndctl_dimm *dimm,
 		struct json_object *jhealth)

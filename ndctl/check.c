@@ -8,7 +8,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <ndctl.h>
 #include <limits.h>
 #include <stdbool.h>
 #include <sys/mman.h>
@@ -20,6 +19,7 @@
 #include <util/util.h>
 #include <util/bitmap.h>
 #include <util/fletcher.h>
+#include <ndctl/ndctl.h>
 #include <ndctl/libndctl.h>
 #include <ndctl/namespace.h>
 #include <ccan/endian/endian.h>

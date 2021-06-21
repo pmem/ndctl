@@ -19,13 +19,19 @@ ndctl_SOURCES = ndctl.c \
 		region.c \
 		dimm.c \
 		../util/log.c \
-		../util/filter.c \
-		../util/filter.h \
+		../daxctl/filter.c \
+		../daxctl/filter.h \
+		filter.c \
+		filter.h \
 		list.c \
 		../util/json.c \
 		../util/json.h \
-		util/json-smart.c \
-		util/keys.h \
+		../daxctl/json.c \
+		../daxctl/json.h \
+		json.c \
+		json.h \
+		json-smart.c \
+		keys.h \
 		inject-error.c \
 		inject-smart.c \
 		monitor.c \
@@ -36,7 +42,7 @@ ndctl_SOURCES = ndctl.c \
 		firmware-update.h
 
 if ENABLE_KEYUTILS
-ndctl_SOURCES += util/keys.c \
+ndctl_SOURCES += keys.c \
 		load-keys.c
 keys_configdir = $(ndctl_keysdir)
 keys_config_DATA = $(ndctl_keysreadme)

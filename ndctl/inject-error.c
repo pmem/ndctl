@@ -12,12 +12,11 @@
 #include <sys/types.h>
 #include <sys/ioctl.h>
 
-#include <ndctl.h>
 #include <util/log.h>
 #include <util/size.h>
 #include <util/json.h>
 #include <json-c/json.h>
-#include <util/filter.h>
+#include <ndctl/ndctl.h>
 #include <ndctl/libndctl.h>
 #include <util/parse-options.h>
 #include <ccan/array_size/array_size.h>
@@ -25,6 +24,9 @@
 
 #include <builtin.h>
 #include <test.h>
+
+#include "filter.h"
+#include "json.h"
 
 static bool verbose;
 static struct parameters {
