@@ -9,7 +9,9 @@ Makefile.in
 /aclocal.m4
 /autom4te.cache
 /build-aux
-/config.*
+/config.h
+/config.log
+/config.status
 /configure
 /libtool
 /stamp-h1
@@ -24,6 +26,7 @@ Documentation/ndctl/asciidoctor-extensions.rb
 Documentation/cxl/asciidoctor-extensions.rb
 Documentation/cxl/lib/asciidoctor-extensions.rb
 .dirstamp
+build/
 daxctl/config.h
 daxctl/daxctl
 daxctl/lib/libdaxctl.la
