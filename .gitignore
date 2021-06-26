@@ -23,7 +23,6 @@ Documentation/daxctl/asciidoctor-extensions.rb
 Documentation/ndctl/asciidoctor-extensions.rb
 Documentation/cxl/asciidoctor-extensions.rb
 Documentation/cxl/lib/asciidoctor-extensions.rb
-Documentation/ndctl/attrs.adoc
 .dirstamp
 daxctl/config.h
 daxctl/daxctl
