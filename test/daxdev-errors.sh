@@ -62,8 +62,8 @@ read sector len < /sys/bus/nd/devices/$region/badblocks
 echo "sector: $sector len: $len"
 
 # run the daxdev-errors test
-test -x ./daxdev-errors
-./daxdev-errors $busdev $region
+test -x $TEST_PATH/daxdev-errors
+$TEST_PATH/daxdev-errors $busdev $region
 
 # check badblocks, should be empty
 if read sector len < /sys/bus/platform/devices/nfit_test.0/$busdev/$region/badblocks; then

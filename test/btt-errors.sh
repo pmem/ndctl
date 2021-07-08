@@ -11,14 +11,12 @@ rc=77
 
 cleanup()
 {
-	rm -f $FILE
-	rm -f $MNT/$FILE
 	if grep -q "$MNT" /proc/mounts; then
 		umount $MNT
 	else
 		rc=77
 	fi
-	rmdir $MNT
+	rm -rf $MNT
 }
 
 force_raw()

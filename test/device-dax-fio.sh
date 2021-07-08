@@ -18,7 +18,7 @@ if ! fio --enghelp | grep -q "dev-dax"; then
 	exit 77
 fi
 
-dev=$(./dax-dev)
+dev=$($TEST_PATH/dax-dev)
 for align in 4k 2m 1g
 do
 	json=$($NDCTL create-namespace -m devdax -a $align -f -e $dev)

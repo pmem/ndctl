@@ -4,27 +4,32 @@
 # Global variables
 
 # NDCTL
-#
-if [ -f "../ndctl/ndctl" ] && [ -x "../ndctl/ndctl" ]; then
-	export NDCTL=../ndctl/ndctl
-elif [ -f "./ndctl/ndctl" ] && [ -x "./ndctl/ndctl" ]; then
-	export NDCTL=./ndctl/ndctl
-else
-	echo "Couldn't find an ndctl binary"
-	exit 1
+if [ -z $NDCTL ]; then
+	if [ -f "../ndctl/ndctl" ] && [ -x "../ndctl/ndctl" ]; then
+		export NDCTL=../ndctl/ndctl
+	elif [ -f "./ndctl/ndctl" ] && [ -x "./ndctl/ndctl" ]; then
+		export NDCTL=./ndctl/ndctl
+	else
+		echo "Couldn't find an ndctl binary"
+		exit 1
+	fi
 fi
 
 # DAXCTL
-#
-if [ -f "../daxctl/daxctl" ] && [ -x "../daxctl/daxctl" ]; then
-	export DAXCTL=../daxctl/daxctl
-elif [ -f "./daxctl/daxctl" ] && [ -x "./daxctl/daxctl" ]; then
-	export DAXCTL=./daxctl/daxctl
-else
-	echo "Couldn't find an daxctl binary"
-	exit 1
+if [ -z $DAXCTL ]; then
+	if [ -f "../daxctl/daxctl" ] && [ -x "../daxctl/daxctl" ]; then
+		export DAXCTL=../daxctl/daxctl
+	elif [ -f "./daxctl/daxctl" ] && [ -x "./daxctl/daxctl" ]; then
+		export DAXCTL=./daxctl/daxctl
+	else
+		echo "Couldn't find an daxctl binary"
+		exit 1
+	fi
 fi
 
+if [ -z $TEST_PATH ]; then
+	export TEST_PATH=.
+fi
 
 # NFIT_TEST_BUS[01]
 #

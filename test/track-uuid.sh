@@ -5,7 +5,7 @@
 blockdev=""
 rc=77
 
-. ./common
+. $(dirname $0)/common
 
 set -e
 trap 'err $LINENO' ERR

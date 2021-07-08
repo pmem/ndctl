@@ -24,7 +24,8 @@
 	__func__, __LINE__, strerror(errno))
 #define faili(i) fprintf(stderr, "%s: failed at: %d: %d (%s)\n", \
 	__func__, __LINE__, i, strerror(errno))
-#define TEST_FILE "test_dax_data"
+#define TEST_DIR "test_dax_mnt"
+#define TEST_FILE TEST_DIR "/test_dax_data"
 
 #define REGION_MEM_SIZE 4096*4
 #define REGION_PM_SIZE        4096*512
@@ -171,8 +172,14 @@ int test_dax_directio(int dax_fd, unsigned long align, void *dax_addr, off_t off
 		}
 		rc = -ENXIO;
 
+		rc = mkdir(TEST_DIR, 0600);
+		if (rc < 0 && errno != EEXIST) {
+			faili(i);
+			munmap(addr, 2 * align);
+			break;
+		}
 		fd2 = open(TEST_FILE, O_CREAT|O_TRUNC|O_DIRECT|O_RDWR,
-				DEFFILEMODE);
+				0600);
 		if (fd2 < 0) {
 			faili(i);
 			munmap(addr, 2*align);
