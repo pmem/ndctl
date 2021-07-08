@@ -454,4 +454,5 @@ LIBNDCTL_25 {
 
 LIBNDCTL_26 {
 	ndctl_bus_nfit_translate_spa;
+	ndctl_dimm_sizeof_namespace_index;
 } LIBNDCTL_25;

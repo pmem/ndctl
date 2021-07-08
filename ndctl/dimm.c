@@ -94,13 +94,18 @@ static struct json_object *dump_label_json(struct ndctl_dimm *dimm,
 	struct json_object *jarray = json_object_new_array();
 	struct json_object *jlabel = NULL;
 	struct namespace_label nslabel;
+	unsigned int nsindex_size;
 	unsigned int slot = -1;
 	ssize_t offset;
 
 	if (!jarray)
 		return NULL;
 
-	for (offset = NSINDEX_ALIGN * 2; offset < size;
+	nsindex_size = ndctl_dimm_sizeof_namespace_index(dimm);
+	if (nsindex_size == 0)
+		return NULL;
+
+	for (offset = nsindex_size * 2; offset < size;
 			offset += ndctl_dimm_sizeof_namespace_label(dimm)) {
 		ssize_t len = min_t(ssize_t,
 				ndctl_dimm_sizeof_namespace_label(dimm),
@@ -204,17 +209,23 @@ static struct json_object *dump_label_json(struct ndctl_dimm *dimm,
 	return jarray;
 }
 
-static struct json_object *dump_index_json(struct ndctl_cmd *cmd_read, ssize_t size)
+static struct json_object *dump_index_json(struct ndctl_dimm *dimm,
+		struct ndctl_cmd *cmd_read, ssize_t size)
 {
 	struct json_object *jarray = json_object_new_array();
 	struct json_object *jindex = NULL;
 	struct namespace_index nsindex;
+	unsigned int nsindex_size;
 	ssize_t offset;
 
 	if (!jarray)
 		return NULL;
 
-	for (offset = 0; offset < NSINDEX_ALIGN * 2; offset += NSINDEX_ALIGN) {
+	nsindex_size = ndctl_dimm_sizeof_namespace_index(dimm);
+	if (nsindex_size == 0)
+		return NULL;
+
+	for (offset = 0; offset < nsindex_size * 2; offset += nsindex_size) {
 		ssize_t len = min_t(ssize_t, sizeof(nsindex), size - offset);
 		struct json_object *jobj;
 
@@ -288,7 +299,7 @@ static struct json_object *dump_json(struct ndctl_dimm *dimm,
 		goto err;
 	json_object_object_add(jdimm, "dev", jobj);
 
-	jindex = dump_index_json(cmd_read, size);
+	jindex = dump_index_json(dimm, cmd_read, size);
 	if (!jindex)
 		goto err;
 	json_object_object_add(jdimm, "index", jindex);

@@ -256,6 +256,11 @@ static int __label_validate(struct nvdimm_data *ndd)
 	return -EINVAL;
 }
 
+NDCTL_EXPORT unsigned int ndctl_dimm_sizeof_namespace_index(struct ndctl_dimm *dimm)
+{
+	return sizeof_namespace_index(&dimm->ndd);
+}
+
 /*
  * If the dimm labels have not been previously validated this routine
  * will make up a default size. Otherwise, it will pick the size based
