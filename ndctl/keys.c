@@ -13,7 +13,6 @@
 #include <keyutils.h>
 #include <syslog.h>
 
-#include <ndctl/config.h>
 #include <ndctl/ndctl.h>
 #include <ndctl/libndctl.h>
 
