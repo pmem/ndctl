@@ -126,7 +126,7 @@ test_conf_file()
 {
 	monitor_dimms=$(get_monitor_dimm)
 	conf_file=$(mktemp)
-	echo "dimm = $monitor_dimms" > $conf_file
+	echo -e "[monitor]\ndimm = $monitor_dimms" > $conf_file
 	start_monitor "-c $conf_file"
 	call_notify
 	check_result "$monitor_dimms"
