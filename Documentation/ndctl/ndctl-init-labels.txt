@@ -13,10 +13,9 @@ SYNOPSIS
 'ndctl init-labels' <nmem0> [<nmem1>..<nmemN>] [<options>]
 
 include::labels-description.txt[]
-By default, and in kernels prior to v4.10, the kernel only honors labels
-when a DIMM aliases PMEM and BLK capacity. Starting with v4.10 the
-kernel will honor labels for sub-dividing PMEM if all the DIMMs in an
-interleave set / region have a valid namespace index block.
+Starting with v4.10 the kernel will honor labels for sub-dividing PMEM
+if all the DIMMs in an interleave set / region have a valid namespace
+index block.
 
 This command can be used to initialize the namespace index block if it
 is missing or reinitialize it if it is damaged.  Note that

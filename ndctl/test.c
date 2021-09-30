@@ -58,16 +58,5 @@ int cmd_test(int argc, const char **argv, struct ndctl_ctx *ctx)
 	if (rc && rc != 77)
 		return rc;
 
-	rc = test_dpa_alloc(loglevel, test, ctx);
-	fprintf(stderr, "test-dpa-alloc: %s\n", result(rc));
-	if (rc && rc != 77)
-		return rc;
-
-	rc = test_parent_uuid(loglevel, test, ctx);
-	fprintf(stderr, "test-parent-uuid: %s\n", result(rc));
-
-	rc = test_multi_pmem(loglevel, test, ctx);
-	fprintf(stderr, "test-multi-pmem: %s\n", result(rc));
-
 	return ndctl_test_result(test, rc);
 }
