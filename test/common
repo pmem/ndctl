@@ -46,6 +46,21 @@ err()
 	exit $rc
 }
 
+reset()
+{
+	$NDCTL disable-region -b $NFIT_TEST_BUS0 all
+	$NDCTL zero-labels -b $NFIT_TEST_BUS0 all
+	$NDCTL enable-region -b $NFIT_TEST_BUS0 all
+}
+
+reset1()
+{
+	$NDCTL disable-region -b $NFIT_TEST_BUS1 all
+	$NDCTL zero-labels -b $NFIT_TEST_BUS1 all
+	$NDCTL enable-region -b $NFIT_TEST_BUS1 all
+}
+
+
 # check_min_kver
 # $1: Supported kernel version. format: X.Y
 #

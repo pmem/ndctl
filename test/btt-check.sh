@@ -39,13 +39,6 @@ create()
 	[ $size -gt 0 ] || err "$LINENO"
 }
 
-reset()
-{
-	$NDCTL disable-region -b $NFIT_TEST_BUS0 all
-	$NDCTL zero-labels -b $NFIT_TEST_BUS0 all
-	$NDCTL enable-region -b $NFIT_TEST_BUS0 all
-}
-
 # re-enable the BTT namespace, and do IO to it in an attempt to
 # verify it still comes up ok, and functions as expected
 post_repair_test()

@@ -37,13 +37,6 @@ create()
 	[ $size -gt 0 ] || err "$LINENO"
 }
 
-reset()
-{
-	$NDCTL disable-region -b $NFIT_TEST_BUS0 all
-	$NDCTL zero-labels -b $NFIT_TEST_BUS0 all
-	$NDCTL enable-region -b $NFIT_TEST_BUS0 all
-}
-
 check_status()
 {
 	local sector="$1"

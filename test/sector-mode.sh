@@ -15,13 +15,8 @@ ALIGN_SIZE=`getconf PAGESIZE`
 
 # setup (reset nfit_test dimms)
 modprobe nfit_test
-$NDCTL disable-region -b $NFIT_TEST_BUS0 all
-$NDCTL zero-labels -b $NFIT_TEST_BUS0 all
-$NDCTL enable-region -b $NFIT_TEST_BUS0 all
-
-$NDCTL disable-region -b $NFIT_TEST_BUS1 all
-$NDCTL zero-labels -b $NFIT_TEST_BUS1 all
-$NDCTL enable-region -b $NFIT_TEST_BUS1 all
+reset
+reset1
 
 rc=1
 query=". | sort_by(.size) | reverse | .[0].dev"
