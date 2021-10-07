@@ -1,0 +1,43 @@
+// SPDX-License-Identifier: LGPL-2.0
+
+cxl_new(3)
+==========
+
+NAME
+----
+cxl_new - Create a new library context object that acts as a handle for all
+library operations
+
+SYNOPSIS
+--------
+[verse]
+----
+#include <cxl/libcxl.h>
+
+int cxl_new(struct cxl_ctx **ctx);
+----
+
+DESCRIPTION
+-----------
+Instantiates a new library context, and stores an opaque pointer in ctx. The
+context is freed by linklibcxl:cxl_unref[3], i.e. cxl_new(3) implies an
+internal linklibcxl:cxl_ref[3].
+
+
+RETURN VALUE
+------------
+Returns 0 on success, and a negative errno on failure.
+Possible error codes are:
+
+ * -ENOMEM
+ * -ENXIO
+
+EXAMPLE
+-------
+See example usage in test/libcxl.c
+
+include::../../copyright.txt[]
+
+SEE ALSO
+--------
+linklibcxl:cxl_ref[3], linklibcxl:cxl_unref[3]

@@ -231,6 +231,7 @@ AC_CONFIG_FILES([
         Documentation/ndctl/Makefile
         Documentation/daxctl/Makefile
         Documentation/cxl/Makefile
+        Documentation/cxl/lib/Makefile
 ])
 
 AC_OUTPUT

@@ -4,6 +4,7 @@ ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
 SUBDIRS = . cxl/lib daxctl/lib ndctl/lib cxl ndctl daxctl
 if ENABLE_DOCS
 SUBDIRS += Documentation/ndctl Documentation/daxctl Documentation/cxl
+SUBDIRS += Documentation/cxl/lib
 endif
 SUBDIRS += test
 
