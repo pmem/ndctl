@@ -677,6 +677,297 @@ CXL_EXPORT const char *cxl_cmd_get_devname(struct cxl_cmd *cmd)
 	return cxl_memdev_get_devname(cmd->memdev);
 }
 
+static int cxl_cmd_validate_status(struct cxl_cmd *cmd, u32 id)
+{
+	if (cmd->send_cmd->id != id)
+		return -EINVAL;
+	if (cmd->status < 0)
+		return cmd->status;
+	return 0;
+}
+
+/* Helpers for health_info fields (no endian conversion) */
+#define cmd_get_field_u8(cmd, n, N, field)				\
+do {									\
+	struct cxl_cmd_##n *c =						\
+		(struct cxl_cmd_##n *)cmd->send_cmd->out.payload;	\
+	int rc = cxl_cmd_validate_status(cmd, CXL_MEM_COMMAND_ID_##N);	\
+	if (rc)								\
+		return rc;						\
+	return c->field;						\
+} while(0)
+
+#define cmd_get_field_u16(cmd, n, N, field)				\
+do {									\
+	struct cxl_cmd_##n *c =						\
+		(struct cxl_cmd_##n *)cmd->send_cmd->out.payload;	\
+	int rc = cxl_cmd_validate_status(cmd, CXL_MEM_COMMAND_ID_##N);	\
+	if (rc)								\
+		return rc;						\
+	return le16_to_cpu(c->field);					\
+} while(0)
+
+
+#define cmd_get_field_u32(cmd, n, N, field)				\
+do {									\
+	struct cxl_cmd_##n *c =						\
+		(struct cxl_cmd_##n *)cmd->send_cmd->out.payload;	\
+	int rc = cxl_cmd_validate_status(cmd, CXL_MEM_COMMAND_ID_##N);	\
+	if (rc)								\
+		return rc;						\
+	return le32_to_cpu(c->field);					\
+} while(0)
+
+
+#define cmd_get_field_u8_mask(cmd, n, N, field, mask)			\
+do {									\
+	struct cxl_cmd_##n *c =						\
+		(struct cxl_cmd_##n *)cmd->send_cmd->out.payload;	\
+	int rc = cxl_cmd_validate_status(cmd, CXL_MEM_COMMAND_ID_##N);	\
+	if (rc)								\
+		return rc;						\
+	return !!(c->field & mask);					\
+} while(0)
+
+CXL_EXPORT struct cxl_cmd *cxl_cmd_new_get_health_info(
+		struct cxl_memdev *memdev)
+{
+	return cxl_cmd_new_generic(memdev, CXL_MEM_COMMAND_ID_GET_HEALTH_INFO);
+}
+
+#define cmd_health_get_status_field(c, m)					\
+	cmd_get_field_u8_mask(c, get_health_info, GET_HEALTH_INFO, health_status, m)
+
+CXL_EXPORT int cxl_cmd_health_info_get_maintenance_needed(struct cxl_cmd *cmd)
+{
+	cmd_health_get_status_field(cmd,
+		CXL_CMD_HEALTH_INFO_STATUS_MAINTENANCE_NEEDED_MASK);
+}
+
+CXL_EXPORT int cxl_cmd_health_info_get_performance_degraded(struct cxl_cmd *cmd)
+{
+	cmd_health_get_status_field(cmd,
+		CXL_CMD_HEALTH_INFO_STATUS_PERFORMANCE_DEGRADED_MASK);
+}
+
+CXL_EXPORT int cxl_cmd_health_info_get_hw_replacement_needed(struct cxl_cmd *cmd)
+{
+	cmd_health_get_status_field(cmd,
+		CXL_CMD_HEALTH_INFO_STATUS_HW_REPLACEMENT_NEEDED_MASK);
+}
+
+#define cmd_health_check_media_field(cmd, f)					\
+do {										\
+	struct cxl_cmd_get_health_info *c =					\
+		(struct cxl_cmd_get_health_info *)cmd->send_cmd->out.payload;	\
+	int rc = cxl_cmd_validate_status(cmd,					\
+			CXL_MEM_COMMAND_ID_GET_HEALTH_INFO);			\
+	if (rc)									\
+		return rc;							\
+	return (c->media_status == f);						\
+} while(0)
+
+CXL_EXPORT int cxl_cmd_health_info_get_media_normal(struct cxl_cmd *cmd)
+{
+	cmd_health_check_media_field(cmd,
+		CXL_CMD_HEALTH_INFO_MEDIA_STATUS_NORMAL);
+}
+
+CXL_EXPORT int cxl_cmd_health_info_get_media_not_ready(struct cxl_cmd *cmd)
+{
+	cmd_health_check_media_field(cmd,
+		CXL_CMD_HEALTH_INFO_MEDIA_STATUS_NOT_READY);
+}
+
+CXL_EXPORT int
+cxl_cmd_health_info_get_media_persistence_lost(struct cxl_cmd *cmd)
+{
+	cmd_health_check_media_field(cmd,
+		CXL_CMD_HEALTH_INFO_MEDIA_STATUS_PERSISTENCE_LOST);
+}
+
+CXL_EXPORT int cxl_cmd_health_info_get_media_data_lost(struct cxl_cmd *cmd)
+{
+	cmd_health_check_media_field(cmd,
+		CXL_CMD_HEALTH_INFO_MEDIA_STATUS_DATA_LOST);
+}
+
+CXL_EXPORT int
+cxl_cmd_health_info_get_media_powerloss_persistence_loss(struct cxl_cmd *cmd)
+{
+	cmd_health_check_media_field(cmd,
+		CXL_CMD_HEALTH_INFO_MEDIA_STATUS_POWERLOSS_PERSISTENCE_LOSS);
+}
+
+CXL_EXPORT int
+cxl_cmd_health_info_get_media_shutdown_persistence_loss(struct cxl_cmd *cmd)
+{
+	cmd_health_check_media_field(cmd,
+		CXL_CMD_HEALTH_INFO_MEDIA_STATUS_SHUTDOWN_PERSISTENCE_LOSS);
+}
+
+CXL_EXPORT int
+cxl_cmd_health_info_get_media_persistence_loss_imminent(struct cxl_cmd *cmd)
+{
+	cmd_health_check_media_field(cmd,
+		CXL_CMD_HEALTH_INFO_MEDIA_STATUS_PERSISTENCE_LOSS_IMMINENT);
+}
+
+CXL_EXPORT int
+cxl_cmd_health_info_get_media_powerloss_data_loss(struct cxl_cmd *cmd)
+{
+	cmd_health_check_media_field(cmd,
+		CXL_CMD_HEALTH_INFO_MEDIA_STATUS_POWERLOSS_DATA_LOSS);
+}
+
+CXL_EXPORT int
+cxl_cmd_health_info_get_media_shutdown_data_loss(struct cxl_cmd *cmd)
+{
+	cmd_health_check_media_field(cmd,
+		CXL_CMD_HEALTH_INFO_MEDIA_STATUS_SHUTDOWN_DATA_LOSS);
+}
+
+CXL_EXPORT int
+cxl_cmd_health_info_get_media_data_loss_imminent(struct cxl_cmd *cmd)
+{
+	cmd_health_check_media_field(cmd,
+		CXL_CMD_HEALTH_INFO_MEDIA_STATUS_DATA_LOSS_IMMINENT);
+}
+
+#define cmd_health_check_ext_field(cmd, fname, type)				\
+do {										\
+	struct cxl_cmd_get_health_info *c =					\
+		(struct cxl_cmd_get_health_info *)cmd->send_cmd->out.payload;	\
+	int rc = cxl_cmd_validate_status(cmd,					\
+			CXL_MEM_COMMAND_ID_GET_HEALTH_INFO);			\
+	if (rc)									\
+		return rc;							\
+	return (FIELD_GET(fname##_MASK, c->ext_status) ==			\
+		fname##_##type);						\
+} while(0)
+
+CXL_EXPORT int
+cxl_cmd_health_info_get_ext_life_used_normal(struct cxl_cmd *cmd)
+{
+	cmd_health_check_ext_field(cmd,
+		CXL_CMD_HEALTH_INFO_EXT_LIFE_USED, NORMAL);
+}
+
+CXL_EXPORT int
+cxl_cmd_health_info_get_ext_life_used_warning(struct cxl_cmd *cmd)
+{
+	cmd_health_check_ext_field(cmd,
+		CXL_CMD_HEALTH_INFO_EXT_LIFE_USED, WARNING);
+}
+
+CXL_EXPORT int
+cxl_cmd_health_info_get_ext_life_used_critical(struct cxl_cmd *cmd)
+{
+	cmd_health_check_ext_field(cmd,
+		CXL_CMD_HEALTH_INFO_EXT_LIFE_USED, CRITICAL);
+}
+
+CXL_EXPORT int
+cxl_cmd_health_info_get_ext_temperature_normal(struct cxl_cmd *cmd)
+{
+	cmd_health_check_ext_field(cmd,
+		CXL_CMD_HEALTH_INFO_EXT_TEMPERATURE, NORMAL);
+}
+
+CXL_EXPORT int
+cxl_cmd_health_info_get_ext_temperature_warning(struct cxl_cmd *cmd)
+{
+	cmd_health_check_ext_field(cmd,
+		CXL_CMD_HEALTH_INFO_EXT_TEMPERATURE, WARNING);
+}
+
+CXL_EXPORT int
+cxl_cmd_health_info_get_ext_temperature_critical(struct cxl_cmd *cmd)
+{
+	cmd_health_check_ext_field(cmd,
+		CXL_CMD_HEALTH_INFO_EXT_TEMPERATURE, CRITICAL);
+}
+
+CXL_EXPORT int
+cxl_cmd_health_info_get_ext_corrected_volatile_normal(struct cxl_cmd *cmd)
+{
+	cmd_health_check_ext_field(cmd,
+		CXL_CMD_HEALTH_INFO_EXT_CORRECTED_VOLATILE, NORMAL);
+}
+
+CXL_EXPORT int
+cxl_cmd_health_info_get_ext_corrected_volatile_warning(struct cxl_cmd *cmd)
+{
+	cmd_health_check_ext_field(cmd,
+		CXL_CMD_HEALTH_INFO_EXT_CORRECTED_VOLATILE, WARNING);
+}
+
+CXL_EXPORT int
+cxl_cmd_health_info_get_ext_corrected_persistent_normal(struct cxl_cmd *cmd)
+{
+	cmd_health_check_ext_field(cmd,
+		CXL_CMD_HEALTH_INFO_EXT_CORRECTED_PERSISTENT, NORMAL);
+}
+
+CXL_EXPORT int
+cxl_cmd_health_info_get_ext_corrected_persistent_warning(struct cxl_cmd *cmd)
+{
+	cmd_health_check_ext_field(cmd,
+		CXL_CMD_HEALTH_INFO_EXT_CORRECTED_PERSISTENT, WARNING);
+}
+
+static int health_info_get_life_used_raw(struct cxl_cmd *cmd)
+{
+	cmd_get_field_u8(cmd, get_health_info, GET_HEALTH_INFO,
+				life_used);
+}
+
+CXL_EXPORT int cxl_cmd_health_info_get_life_used(struct cxl_cmd *cmd)
+{
+	int rc = health_info_get_life_used_raw(cmd);
+
+	if (rc < 0)
+		return rc;
+	if (rc == CXL_CMD_HEALTH_INFO_LIFE_USED_NOT_IMPL)
+		return -EOPNOTSUPP;
+	return rc;
+}
+
+static int health_info_get_temperature_raw(struct cxl_cmd *cmd)
+{
+	cmd_get_field_u16(cmd, get_health_info, GET_HEALTH_INFO,
+				 temperature);
+}
+
+CXL_EXPORT int cxl_cmd_health_info_get_temperature(struct cxl_cmd *cmd)
+{
+	int rc = health_info_get_temperature_raw(cmd);
+
+	if (rc < 0)
+		return rc;
+	if (rc == CXL_CMD_HEALTH_INFO_TEMPERATURE_NOT_IMPL)
+		return -EOPNOTSUPP;
+	return rc;
+}
+
+CXL_EXPORT int cxl_cmd_health_info_get_dirty_shutdowns(struct cxl_cmd *cmd)
+{
+	cmd_get_field_u32(cmd, get_health_info, GET_HEALTH_INFO,
+				 dirty_shutdowns);
+}
+
+CXL_EXPORT int cxl_cmd_health_info_get_volatile_errors(struct cxl_cmd *cmd)
+{
+	cmd_get_field_u32(cmd, get_health_info, GET_HEALTH_INFO,
+				 volatile_errors);
+}
+
+CXL_EXPORT int cxl_cmd_health_info_get_pmem_errors(struct cxl_cmd *cmd)
+{
+	cmd_get_field_u32(cmd, get_health_info, GET_HEALTH_INFO,
+				 pmem_errors);
+}
+
 CXL_EXPORT struct cxl_cmd *cxl_cmd_new_identify(struct cxl_memdev *memdev)
 {
 	return cxl_cmd_new_generic(memdev, CXL_MEM_COMMAND_ID_IDENTIFY);
