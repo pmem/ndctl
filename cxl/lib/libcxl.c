@@ -1036,6 +1036,42 @@ CXL_EXPORT struct cxl_cmd *cxl_cmd_new_raw(struct cxl_memdev *memdev,
 	return cmd;
 }
 
+CXL_EXPORT struct cxl_cmd *cxl_cmd_new_read_label(struct cxl_memdev *memdev,
+		unsigned int offset, unsigned int length)
+{
+	struct cxl_cmd_get_lsa_in *get_lsa;
+	struct cxl_cmd *cmd;
+
+	cmd = cxl_cmd_new_generic(memdev, CXL_MEM_COMMAND_ID_GET_LSA);
+	if (!cmd)
+		return NULL;
+
+	get_lsa = (struct cxl_cmd_get_lsa_in *)cmd->send_cmd->in.payload;
+	get_lsa->offset = cpu_to_le32(offset);
+	get_lsa->length = cpu_to_le32(length);
+	return cmd;
+}
+
+CXL_EXPORT ssize_t cxl_cmd_read_label_get_payload(struct cxl_cmd *cmd,
+		void *buf, unsigned int length)
+{
+	struct cxl_cmd_get_lsa_in *get_lsa;
+	void *payload;
+	int rc;
+
+	rc = cxl_cmd_validate_status(cmd, CXL_MEM_COMMAND_ID_GET_LSA);
+	if (rc)
+		return rc;
+
+	get_lsa = (struct cxl_cmd_get_lsa_in *)cmd->send_cmd->in.payload;
+	if (length > le32_to_cpu(get_lsa->length))
+		return -EINVAL;
+
+	payload = (void *)cmd->send_cmd->out.payload;
+	memcpy(buf, payload, length);
+	return length;
+}
+
 CXL_EXPORT int cxl_cmd_submit(struct cxl_cmd *cmd)
 {
 	struct cxl_memdev *memdev = cmd->memdev;

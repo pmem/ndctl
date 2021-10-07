@@ -95,6 +95,10 @@ int cxl_cmd_health_info_get_temperature(struct cxl_cmd *cmd);
 int cxl_cmd_health_info_get_dirty_shutdowns(struct cxl_cmd *cmd);
 int cxl_cmd_health_info_get_volatile_errors(struct cxl_cmd *cmd);
 int cxl_cmd_health_info_get_pmem_errors(struct cxl_cmd *cmd);
+struct cxl_cmd *cxl_cmd_new_read_label(struct cxl_memdev *memdev,
+		unsigned int offset, unsigned int length);
+ssize_t cxl_cmd_read_label_get_payload(struct cxl_cmd *cmd, void *buf,
+		unsigned int length);
 
 #ifdef __cplusplus
 } /* extern "C" */

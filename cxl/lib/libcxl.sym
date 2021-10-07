@@ -62,6 +62,8 @@ global:
 	cxl_cmd_health_info_get_dirty_shutdowns;
 	cxl_cmd_health_info_get_volatile_errors;
 	cxl_cmd_health_info_get_pmem_errors;
+	cxl_cmd_new_read_label;
+	cxl_cmd_read_label_get_payload;
 local:
         *;
 };
