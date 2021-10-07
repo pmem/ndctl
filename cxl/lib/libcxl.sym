@@ -66,6 +66,10 @@ global:
 	cxl_cmd_read_label_get_payload;
 	cxl_memdev_get_label_size;
 	cxl_memdev_nvdimm_bridge_active;
+	cxl_cmd_new_write_label;
+	cxl_memdev_zero_label;
+	cxl_memdev_write_label;
+	cxl_memdev_read_label;
 local:
         *;
 };

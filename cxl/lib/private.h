@@ -87,6 +87,12 @@ struct cxl_cmd_get_lsa_in {
 	le32 length;
 } __attribute__((packed));
 
+struct cxl_cmd_set_lsa {
+	le32 offset;
+	le32 rsvd;
+	unsigned char lsa_data[0];
+} __attribute__ ((packed));
+
 struct cxl_cmd_get_health_info {
 	u8 health_status;
 	u8 media_status;

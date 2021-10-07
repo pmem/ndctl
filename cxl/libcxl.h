@@ -44,6 +44,12 @@ unsigned long long cxl_memdev_get_ram_size(struct cxl_memdev *memdev);
 const char *cxl_memdev_get_firmware_verison(struct cxl_memdev *memdev);
 size_t cxl_memdev_get_label_size(struct cxl_memdev *memdev);
 int cxl_memdev_nvdimm_bridge_active(struct cxl_memdev *memdev);
+int cxl_memdev_zero_label(struct cxl_memdev *memdev, size_t length,
+		size_t offset);
+int cxl_memdev_read_label(struct cxl_memdev *memdev, void *buf, size_t length,
+		size_t offset);
+int cxl_memdev_write_label(struct cxl_memdev *memdev, void *buf, size_t length,
+		size_t offset);
 
 #define cxl_memdev_foreach(ctx, memdev) \
         for (memdev = cxl_memdev_get_first(ctx); \
@@ -101,6 +107,8 @@ struct cxl_cmd *cxl_cmd_new_read_label(struct cxl_memdev *memdev,
 		unsigned int offset, unsigned int length);
 ssize_t cxl_cmd_read_label_get_payload(struct cxl_cmd *cmd, void *buf,
 		unsigned int length);
+struct cxl_cmd *cxl_cmd_new_write_label(struct cxl_memdev *memdev,
+		void *buf, unsigned int offset, unsigned int length);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -1197,3 +1197,161 @@ CXL_EXPORT int cxl_cmd_get_out_size(struct cxl_cmd *cmd)
 {
 	return cmd->send_cmd->out.size;
 }
+
+CXL_EXPORT struct cxl_cmd *cxl_cmd_new_write_label(struct cxl_memdev *memdev,
+		void *lsa_buf, unsigned int offset, unsigned int length)
+{
+	struct cxl_ctx *ctx = cxl_memdev_get_ctx(memdev);
+	struct cxl_cmd_set_lsa *set_lsa;
+	struct cxl_cmd *cmd;
+	int rc;
+
+	cmd = cxl_cmd_new_generic(memdev, CXL_MEM_COMMAND_ID_SET_LSA);
+	if (!cmd)
+		return NULL;
+
+	/* this will allocate 'in.payload' */
+	rc = cxl_cmd_set_input_payload(cmd, NULL, sizeof(*set_lsa) + length);
+	if (rc) {
+		err(ctx, "%s: cmd setup failed: %s\n",
+			cxl_memdev_get_devname(memdev), strerror(-rc));
+		goto out_fail;
+	}
+	set_lsa = (struct cxl_cmd_set_lsa *)cmd->send_cmd->in.payload;
+	set_lsa->offset = cpu_to_le32(offset);
+	memcpy(set_lsa->lsa_data, lsa_buf, length);
+
+	return cmd;
+
+out_fail:
+	cxl_cmd_unref(cmd);
+	return NULL;
+}
+
+enum lsa_op {
+	LSA_OP_GET,
+	LSA_OP_SET,
+	LSA_OP_ZERO,
+};
+
+static int __lsa_op(struct cxl_memdev *memdev, int op, void *buf,
+		size_t length, size_t offset)
+{
+	const char *devname = cxl_memdev_get_devname(memdev);
+	struct cxl_ctx *ctx = cxl_memdev_get_ctx(memdev);
+	void *zero_buf = NULL;
+	struct cxl_cmd *cmd;
+	ssize_t ret_len;
+	int rc = 0;
+
+	switch (op) {
+	case LSA_OP_GET:
+		cmd = cxl_cmd_new_read_label(memdev, offset, length);
+		if (!cmd)
+			return -ENOMEM;
+		rc = cxl_cmd_set_output_payload(cmd, buf, length);
+		if (rc) {
+			err(ctx, "%s: cmd setup failed: %s\n",
+			    cxl_memdev_get_devname(memdev), strerror(-rc));
+			goto out;
+		}
+		break;
+	case LSA_OP_ZERO:
+		zero_buf = calloc(1, length);
+		if (!zero_buf)
+			return -ENOMEM;
+		buf = zero_buf;
+		/* fall through */
+	case LSA_OP_SET:
+		cmd = cxl_cmd_new_write_label(memdev, buf, offset, length);
+		if (!cmd) {
+			rc = -ENOMEM;
+			goto out_free;
+		}
+		break;
+	default:
+		return -EOPNOTSUPP;
+	}
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		err(ctx, "%s: cmd submission failed: %s\n",
+			devname, strerror(-rc));
+		goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		err(ctx, "%s: firmware status: %d\n",
+			devname, rc);
+		rc = -ENXIO;
+		goto out;
+	}
+
+	if (op == LSA_OP_GET) {
+		ret_len = cxl_cmd_read_label_get_payload(cmd, buf, length);
+		if (ret_len < 0) {
+			rc = ret_len;
+			goto out;
+		}
+	}
+
+out:
+	cxl_cmd_unref(cmd);
+out_free:
+	free(zero_buf);
+	return rc;
+
+}
+
+static int lsa_op(struct cxl_memdev *memdev, int op, void *buf,
+		size_t length, size_t offset)
+{
+	const char *devname = cxl_memdev_get_devname(memdev);
+	struct cxl_ctx *ctx = cxl_memdev_get_ctx(memdev);
+	size_t remaining = length, cur_len, cur_off = 0;
+	int label_iter_max, rc = 0;
+
+	if (op != LSA_OP_ZERO && buf == NULL) {
+		err(ctx, "%s: LSA buffer cannot be NULL\n", devname);
+		return -EINVAL;
+	}
+
+	if (length == 0)
+		return 0;
+
+	label_iter_max = memdev->payload_max - sizeof(struct cxl_cmd_set_lsa);
+	while (remaining) {
+		cur_len = min((size_t)label_iter_max, remaining);
+		rc = __lsa_op(memdev, op, buf + cur_off,
+				cur_len, offset + cur_off);
+		if (rc)
+			break;
+
+		remaining -= cur_len;
+		cur_off += cur_len;
+	}
+
+	if (rc && (op == LSA_OP_SET))
+		err(ctx, "%s: labels may be in an inconsistent state\n",
+			devname);
+	return rc;
+}
+
+CXL_EXPORT int cxl_memdev_zero_label(struct cxl_memdev *memdev, size_t length,
+		size_t offset)
+{
+	return lsa_op(memdev, LSA_OP_ZERO, NULL, length, offset);
+}
+
+CXL_EXPORT int cxl_memdev_write_label(struct cxl_memdev *memdev, void *buf,
+		size_t length, size_t offset)
+{
+	return lsa_op(memdev, LSA_OP_SET, buf, length, offset);
+}
+
+CXL_EXPORT int cxl_memdev_read_label(struct cxl_memdev *memdev, void *buf,
+		size_t length, size_t offset)
+{
+	return lsa_op(memdev, LSA_OP_GET, buf, length, offset);
+}
