@@ -148,7 +148,7 @@ do_tests()
 	verify_idx 0 1
 
 	# do the same with an old format namespace
-	reset
+	resetV
 	create_oldfmt_ns
 	verify_idx 0 2
 

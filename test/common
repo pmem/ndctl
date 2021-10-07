@@ -49,14 +49,21 @@ err()
 reset()
 {
 	$NDCTL disable-region -b $NFIT_TEST_BUS0 all
-	$NDCTL zero-labels -b $NFIT_TEST_BUS0 all
+	$NDCTL init-labels -f -b $NFIT_TEST_BUS0 all
+	$NDCTL enable-region -b $NFIT_TEST_BUS0 all
+}
+
+resetV()
+{
+	$NDCTL disable-region -b $NFIT_TEST_BUS0 all
+	$NDCTL init-labels -f -V 1.2 -b $NFIT_TEST_BUS0 all
 	$NDCTL enable-region -b $NFIT_TEST_BUS0 all
 }
 
 reset1()
 {
 	$NDCTL disable-region -b $NFIT_TEST_BUS1 all
-	$NDCTL zero-labels -b $NFIT_TEST_BUS1 all
+	$NDCTL init-labels -f -b $NFIT_TEST_BUS1 all
 	$NDCTL enable-region -b $NFIT_TEST_BUS1 all
 }
 
