@@ -19,6 +19,7 @@ enum util_json_flags {
 	UTIL_JSON_CONFIGURED	= (1 << 7),
 	UTIL_JSON_FIRMWARE	= (1 << 8),
 	UTIL_JSON_DAX_MAPPINGS	= (1 << 9),
+	UTIL_JSON_HEALTH	= (1 << 10),
 };
 
 struct json_object;

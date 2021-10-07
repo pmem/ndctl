@@ -48,6 +48,44 @@ OPTIONS
 --idle::
 	Include idle (not enabled / zero-sized) devices in the listing
 
+-H::
+--health::
+	Include health information in the memdev listing. Example listing:
+----
+# cxl list -m mem0 -H
+[
+  {
+    "memdev":"mem0",
+    "pmem_size":268435456,
+    "ram_size":268435456,
+    "health":{
+      "maintenance_needed":true,
+      "performance_degraded":true,
+      "hw_replacement_needed":true,
+      "media_normal":false,
+      "media_not_ready":false,
+      "media_persistence_lost":false,
+      "media_data_lost":true,
+      "media_powerloss_persistence_loss":false,
+      "media_shutdown_persistence_loss":false,
+      "media_persistence_loss_imminent":false,
+      "media_powerloss_data_loss":false,
+      "media_shutdown_data_loss":false,
+      "media_data_loss_imminent":false,
+      "ext_life_used":"normal",
+      "ext_temperature":"critical",
+      "ext_corrected_volatile":"warning",
+      "ext_corrected_persistent":"normal",
+      "life_used_percent":15,
+      "temperature":25,
+      "dirty_shutdowns":10,
+      "volatile_errors":20,
+      "pmem_errors":30
+    }
+  }
+]
+----
+
 include::human-option.txt[]
 
 include::verbose-option.txt[]
