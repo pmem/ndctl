@@ -10,6 +10,7 @@ config.h: $(srcdir)/Makefile.am
 cxl_SOURCES =\
 		cxl.c \
 		list.c \
+		memdev.c \
 		../util/json.c \
 		builtin.h
 

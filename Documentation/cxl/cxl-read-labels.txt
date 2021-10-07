@@ -1,0 +1,33 @@
+// SPDX-License-Identifier: GPL-2.0
+
+cxl-read-labels(1)
+==================
+
+NAME
+----
+cxl-read-labels - read out the label area on a CXL memdev
+
+SYNOPSIS
+--------
+[verse]
+'cxl read-labels' <mem0> [<mem1>..<memN>] [<options>]
+
+include::labels-description.txt[]
+This command dumps the raw binary data in a memdev's label area to stdout or a
+file.  In the multi-memdev case the data is concatenated.
+
+OPTIONS
+-------
+include::labels-options.txt[]
+
+-o::
+--output::
+	output file
+
+include::../copyright.txt[]
+
+SEE ALSO
+--------
+linkcxl:cxl-write-labels[1],
+linkcxl:cxl-zero-labels[1],
+CXL-2.0 9.13.2
