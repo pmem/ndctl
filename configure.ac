@@ -222,12 +222,15 @@ AC_CONFIG_HEADERS(config.h)
 AC_CONFIG_FILES([
         Makefile
         daxctl/lib/Makefile
+        cxl/lib/Makefile
         ndctl/lib/Makefile
         ndctl/Makefile
         daxctl/Makefile
+        cxl/Makefile
         test/Makefile
         Documentation/ndctl/Makefile
         Documentation/daxctl/Makefile
+        Documentation/cxl/Makefile
 ])
 
 AC_OUTPUT

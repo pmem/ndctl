@@ -9,6 +9,7 @@
 #include <json-c/printbuf.h>
 #include <ndctl/libndctl.h>
 #include <daxctl/libdaxctl.h>
+#include <cxl/libcxl.h>
 #include <ccan/array_size/array_size.h>
 #include <ccan/short_types/short_types.h>
 #include <ndctl.h>
@@ -1439,4 +1440,29 @@ struct json_object *util_badblock_rec_to_json(u64 block, u64 count,
  err:
 	json_object_put(jerr);
 	return NULL;
+}
+
+struct json_object *util_cxl_memdev_to_json(struct cxl_memdev *memdev,
+		unsigned long flags)
+{
+	const char *devname = cxl_memdev_get_devname(memdev);
+	struct json_object *jdev, *jobj;
+
+	jdev = json_object_new_object();
+	if (!devname || !jdev)
+		return NULL;
+
+	jobj = json_object_new_string(devname);
+	if (jobj)
+		json_object_object_add(jdev, "memdev", jobj);
+
+	jobj = util_json_object_size(cxl_memdev_get_pmem_size(memdev), flags);
+	if (jobj)
+		json_object_object_add(jdev, "pmem_size", jobj);
+
+	jobj = util_json_object_size(cxl_memdev_get_ram_size(memdev), flags);
+	if (jobj)
+		json_object_object_add(jdev, "ram_size", jobj);
+
+	return jdev;
 }

@@ -1,0 +1,59 @@
+// SPDX-License-Identifier: GPL-2.0
+
+cxl-list(1)
+===========
+
+NAME
+----
+cxl-list - List CXL capable memory devices, and their attributes in json.
+
+SYNOPSIS
+--------
+[verse]
+'cxl list' [<options>]
+
+Walk the CXL capable device hierarchy in the system and list all device
+instances along with some of their major attributes.
+
+EXAMPLE
+-------
+----
+# cxl list --memdevs
+{
+  "memdev":"mem0",
+  "pmem_size":268435456,
+  "ram_size":0,
+}
+----
+
+OPTIONS
+-------
+-m::
+--memdev=::
+	Specify a cxl memory device name to filter the listing. For example:
+----
+# cxl list --memdev=mem0
+{
+  "memdev":"mem0",
+  "pmem_size":268435456,
+  "ram_size":0,
+}
+----
+
+-M::
+--memdevs::
+	Include CXL memory devices in the listing
+
+-i::
+--idle::
+	Include idle (not enabled / zero-sized) devices in the listing
+
+include::human-option.txt[]
+
+include::verbose-option.txt[]
+
+include::../copyright.txt[]
+
+SEE ALSO
+--------
+linkcxl:ndctl-list[1]

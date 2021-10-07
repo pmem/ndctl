@@ -1,0 +1,25 @@
+LIBCXL_1 {
+global:
+	cxl_get_userdata;
+	cxl_set_userdata;
+	cxl_get_private_data;
+	cxl_set_private_data;
+	cxl_ref;
+	cxl_get_log_priority;
+	cxl_set_log_fn;
+	cxl_unref;
+	cxl_set_log_priority;
+	cxl_new;
+	cxl_memdev_get_first;
+	cxl_memdev_get_next;
+	cxl_memdev_get_id;
+	cxl_memdev_get_devname;
+	cxl_memdev_get_major;
+	cxl_memdev_get_minor;
+	cxl_memdev_get_ctx;
+	cxl_memdev_get_pmem_size;
+	cxl_memdev_get_ram_size;
+	cxl_memdev_get_firmware_verison;
+local:
+        *;
+};
