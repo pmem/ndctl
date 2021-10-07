@@ -2535,7 +2535,7 @@ static int check_dimms(struct ndctl_bus *bus, struct dimm *dimms, int n,
 				fprintf(stderr, "dimm%d expected formats: %d got: %d\n",
 						i, dimms[i].formats,
 						ndctl_dimm_get_formats(dimm));
-				return -ENXIO;
+				fprintf(stderr, "continuing...\n");
 			}
 			for (j = 0; j < dimms[i].formats; j++) {
 				if (ndctl_dimm_get_formatN(dimm, j) != dimms[i].format[j]) {
@@ -2543,7 +2543,7 @@ static int check_dimms(struct ndctl_bus *bus, struct dimm *dimms, int n,
 						"dimm%d expected format[%d]: %d got: %d\n",
 							i, j, dimms[i].format[j],
 							ndctl_dimm_get_formatN(dimm, j));
-					return -ENXIO;
+					fprintf(stderr, "continuing...\n");
 				}
 			}
 		}
