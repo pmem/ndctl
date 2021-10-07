@@ -45,11 +45,19 @@ struct cxl_ctx {
 	void *private_data;
 };
 
+static void free_bridge(struct cxl_nvdimm_bridge *bridge)
+{
+	free(bridge->dev_buf);
+	free(bridge->dev_path);
+	free(bridge);
+}
+
 static void free_memdev(struct cxl_memdev *memdev, struct list_head *head)
 {
 	if (head)
 		list_del_from(head, &memdev->list);
 	kmod_module_unref(memdev->module);
+	free_bridge(memdev->bridge);
 	free(memdev->firmware_version);
 	free(memdev->dev_buf);
 	free(memdev->dev_path);
@@ -205,6 +213,40 @@ CXL_EXPORT void cxl_set_log_priority(struct cxl_ctx *ctx, int priority)
 	ctx->ctx.log_priority = priority;
 }
 
+static void *add_cxl_bridge(void *parent, int id, const char *br_base)
+{
+	const char *devname = devpath_to_devname(br_base);
+	struct cxl_memdev *memdev = parent;
+	struct cxl_ctx *ctx = memdev->ctx;
+	struct cxl_nvdimm_bridge *bridge;
+
+	dbg(ctx, "%s: bridge_base: \'%s\'\n", devname, br_base);
+
+	bridge = calloc(1, sizeof(*bridge));
+	if (!bridge)
+		goto err_dev;
+	bridge->id = id;
+
+	bridge->dev_path = strdup(br_base);
+	if (!bridge->dev_path)
+		goto err_read;
+
+	bridge->dev_buf = calloc(1, strlen(br_base) + 50);
+	if (!bridge->dev_buf)
+		goto err_read;
+	bridge->buf_len = strlen(br_base) + 50;
+
+	memdev->bridge = bridge;
+	return bridge;
+
+ err_read:
+	free(bridge->dev_buf);
+	free(bridge->dev_path);
+	free(bridge);
+ err_dev:
+	return NULL;
+}
+
 static void *add_cxl_memdev(void *parent, int id, const char *cxlmem_base)
 {
 	const char *devname = devpath_to_devname(cxlmem_base);
@@ -270,6 +312,8 @@ static void *add_cxl_memdev(void *parent, int id, const char *cxlmem_base)
 	if (!memdev->dev_buf)
 		goto err_read;
 	memdev->buf_len = strlen(cxlmem_base) + 50;
+
+	sysfs_device_parse(ctx, cxlmem_base, "pmem", memdev, add_cxl_bridge);
 
 	cxl_memdev_foreach(ctx, memdev_dup)
 		if (memdev_dup->id == memdev->id) {
@@ -360,6 +404,35 @@ CXL_EXPORT const char *cxl_memdev_get_firmware_verison(struct cxl_memdev *memdev
 CXL_EXPORT size_t cxl_memdev_get_label_size(struct cxl_memdev *memdev)
 {
 	return memdev->lsa_size;
+}
+
+static int is_enabled(const char *drvpath)
+{
+	struct stat st;
+
+	if (lstat(drvpath, &st) < 0 || !S_ISLNK(st.st_mode))
+		return 0;
+	else
+		return 1;
+}
+
+CXL_EXPORT int cxl_memdev_nvdimm_bridge_active(struct cxl_memdev *memdev)
+{
+	struct cxl_ctx *ctx = cxl_memdev_get_ctx(memdev);
+	struct cxl_nvdimm_bridge *bridge = memdev->bridge;
+	char *path = bridge->dev_buf;
+	int len = bridge->buf_len;
+
+	if (!bridge)
+		return 0;
+
+	if (snprintf(path, len, "%s/driver", bridge->dev_path) >= len) {
+		err(ctx, "%s: nvdimm bridge buffer too small!\n",
+				cxl_memdev_get_devname(memdev));
+		return 0;
+	}
+
+	return is_enabled(path);
 }
 
 CXL_EXPORT void cxl_cmd_unref(struct cxl_cmd *cmd)
