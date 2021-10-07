@@ -647,5 +647,114 @@ _daxctl()
 	__daxctl_main
 }
 
+### cxl-cli ###
+
+__cxl_get_devs()
+{
+	local opts=("--memdevs" "$*")
+	cxl list "${opts[@]}" | grep -E "^\s*\"memdev\":" | cut -d'"' -f4
+}
+
+__cxlcomp()
+{
+	local i=0
+
+	COMPREPLY=( $( compgen -W "$1" -- "$2" ) )
+	for cword in "${COMPREPLY[@]}"; do
+		if [[ "$cword" == @(--memdev|--offset|--size|--input|--output) ]]; then
+			COMPREPLY[$i]="${cword}="
+		else
+			COMPREPLY[$i]="${cword} "
+		fi
+		((i++))
+	done
+}
+
+__cxl_comp_options()
+{
+
+	local cur=$1
+	local opts
+
+	if [[ "$cur" == *=* ]]; then
+		local cur_subopt=${cur%%=*}
+		local cur_arg=${cur##*=}
+		case $cur_subopt in
+		--memdev)
+			opts="$(__cxl_get_devs -i)"
+			;;
+		*)
+			return
+			;;
+		esac
+		__cxlcomp "$opts" "$cur_arg"
+	fi
+}
+
+__cxl_comp_non_option_args()
+{
+	local subcmd=$1
+	local cur=$2
+	local opts
+
+	case $subcmd in
+	read-labels)
+		;&
+	write-labels)
+		;&
+	zero-labels)
+		opts="$(__cxl_get_devs -i) all"
+		;;
+	*)
+		return
+		;;
+	esac
+	__cxlcomp "$opts" "$cur"
+}
+
+__cxl_main()
+{
+	local cmd subcmd
+
+	cmd=${words[0]}
+	COMPREPLY=()
+
+	# Skip options backward and find the last cxl command
+	__nd_common_prev_skip_opts
+	subcmd=$prev_skip_opts
+	# List cxl subcommands or long options
+	if [ -z $subcmd ]; then
+		if [[ $cur == --* ]]; then
+			cmds="--version --help --list-cmds"
+		else
+			cmds=$($cmd --list-cmds)
+		fi
+		__cxlcomp "$cmds" "$cur"
+	else
+		# List long option names
+		if [[ $cur == --* ]];  then
+			opts=$($cmd $subcmd --list-opts)
+			__cxlcomp "$opts" "$cur"
+			__cxl_comp_options "$cur"
+		else
+			[ -z "$subcmd" ] && return
+			__cxl_comp_non_option_args "$subcmd" "$cur"
+		fi
+	fi
+}
+
+type cxl &>/dev/null &&
+_cxl()
+{
+	local cur words cword prev
+	if [ $preload_get_comp_words_by_ref = "true" ]; then
+		_get_comp_words_by_ref -n =: cur words cword prev
+	else
+		__nd_common_get_comp_words_by_ref -n =: cur words cword prev
+	fi
+	__cxl_main
+}
+
 complete -o nospace -F _ndctl ndctl
 complete -o nospace -F _daxctl daxctl
+complete -o nospace -F _cxl cxl
