@@ -4,6 +4,9 @@
 #define _LIBCXL_PRIVATE_H_
 
 #include <libkmod.h>
+#include <cxl/cxl_mem.h>
+#include <ccan/endian/endian.h>
+#include <ccan/short_types/short_types.h>
 
 #define CXL_EXPORT __attribute__ ((visibility("default")))
 
@@ -19,6 +22,36 @@ struct cxl_memdev {
 	unsigned long long ram_size;
 	int payload_max;
 	struct kmod_module *module;
+};
+
+enum cxl_cmd_query_status {
+	CXL_CMD_QUERY_NOT_RUN = 0,
+	CXL_CMD_QUERY_OK,
+	CXL_CMD_QUERY_UNSUPPORTED,
+};
+
+/**
+ * struct cxl_cmd - CXL memdev command
+ * @memdev: the memory device to which the command is being sent
+ * @query_cmd: structure for the Linux 'Query commands' ioctl
+ * @send_cmd: structure for the Linux 'Send command' ioctl
+ * @input_payload: buffer for input payload managed by libcxl
+ * @output_payload: buffer for output payload managed by libcxl
+ * @refcount: reference for passing command buffer around
+ * @query_status: status from query_commands
+ * @query_idx: index of 'this' command in the query_commands array
+ * @status: command return status from the device
+ */
+struct cxl_cmd {
+	struct cxl_memdev *memdev;
+	struct cxl_mem_query_commands *query_cmd;
+	struct cxl_send_command *send_cmd;
+	void *input_payload;
+	void *output_payload;
+	int refcount;
+	int query_status;
+	int query_idx;
+	int status;
 };
 
 static inline int check_kmod(struct kmod_ctx *kmod_ctx)

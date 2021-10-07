@@ -48,6 +48,17 @@ const char *cxl_memdev_get_firmware_verison(struct cxl_memdev *memdev);
              memdev != NULL; \
              memdev = cxl_memdev_get_next(memdev))
 
+struct cxl_cmd;
+const char *cxl_cmd_get_devname(struct cxl_cmd *cmd);
+struct cxl_cmd *cxl_cmd_new_raw(struct cxl_memdev *memdev, int opcode);
+int cxl_cmd_set_input_payload(struct cxl_cmd *cmd, void *in, int size);
+int cxl_cmd_set_output_payload(struct cxl_cmd *cmd, void *out, int size);
+void cxl_cmd_ref(struct cxl_cmd *cmd);
+void cxl_cmd_unref(struct cxl_cmd *cmd);
+int cxl_cmd_submit(struct cxl_cmd *cmd);
+int cxl_cmd_get_mbox_status(struct cxl_cmd *cmd);
+int cxl_cmd_get_out_size(struct cxl_cmd *cmd);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

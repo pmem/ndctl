@@ -20,6 +20,15 @@ global:
 	cxl_memdev_get_pmem_size;
 	cxl_memdev_get_ram_size;
 	cxl_memdev_get_firmware_verison;
+	cxl_cmd_get_devname;
+	cxl_cmd_new_raw;
+	cxl_cmd_set_input_payload;
+	cxl_cmd_set_output_payload;
+	cxl_cmd_ref;
+	cxl_cmd_unref;
+	cxl_cmd_submit;
+	cxl_cmd_get_mbox_status;
+	cxl_cmd_get_out_size;
 local:
         *;
 };
