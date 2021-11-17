@@ -31,6 +31,7 @@ AC_PREFIX_DEFAULT([/usr])
 
 AC_PROG_SED
 AC_PROG_MKDIR_P
+AC_PROG_LN_S
 
 AC_ARG_ENABLE([docs],
         AS_HELP_STRING([--disable-docs],

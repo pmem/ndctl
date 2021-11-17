@@ -49,6 +49,9 @@ sles/ndctl.spec: sles/header ndctl.spec.in Makefile.am version.m4
 if ENABLE_BASH_COMPLETION
 bashcompletiondir = $(BASH_COMPLETION_DIR)
 dist_bashcompletion_DATA = contrib/ndctl
+install-data-hook:
+	$(LN_S) -f $(BASH_COMPLETION_DIR)/ndctl $(DESTDIR)/$(BASH_COMPLETION_DIR)/daxctl
+	$(LN_S) -f $(BASH_COMPLETION_DIR)/ndctl $(DESTDIR)/$(BASH_COMPLETION_DIR)/cxl
 endif
 
 modprobe_file = contrib/nvdimm-security.conf

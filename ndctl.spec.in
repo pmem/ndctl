@@ -140,7 +140,7 @@ make check
 %license LICENSES/preferred/GPL-2.0 LICENSES/other/MIT LICENSES/other/CC0-1.0
 %{_bindir}/ndctl
 %{_mandir}/man1/ndctl*
-%{bashcompdir}/
+%{bashcompdir}/ndctl
 %{_unitdir}/ndctl-monitor.service
 %{_sysconfdir}/ndctl/keys/keys.readme
 %{_sysconfdir}/modprobe.d/nvdimm-security.conf
@@ -153,12 +153,14 @@ make check
 %{_bindir}/daxctl
 %{_mandir}/man1/daxctl*
 %{_datadir}/daxctl/daxctl.conf
+%{bashcompdir}/daxctl
 
 %files -n cxl-cli
 %defattr(-,root,root)
 %license LICENSES/preferred/GPL-2.0 LICENSES/other/MIT LICENSES/other/CC0-1.0
 %{_bindir}/cxl
 %{_mandir}/man1/cxl*
+%{bashcompdir}/cxl
 
 %files -n LNAME
 %defattr(-,root,root)
