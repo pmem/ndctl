@@ -42,6 +42,54 @@ static void set_str_val(const char **value, const char *val)
 	*value = strbuf_detach(&buf, NULL);
 }
 
+static const char *search_section_kv(dictionary *d, const struct config *c)
+{
+	int i;
+
+	for (i = 0; i < iniparser_getnsec(d); i++) {
+		const char *cur_sec_full = iniparser_getsecname(d, i);
+		char *cur_sec = strdup(cur_sec_full);
+		const char *search_val, *ret_val;
+		const char *delim = " \t\n\r";
+		char *save, *cur, *query;
+
+		if (!cur_sec)
+			return NULL;
+		if (!c->section || !c->search_key || !c->search_val || !c->get_key) {
+			fprintf(stderr, "warning: malformed config query, skipping\n");
+			return NULL;
+		}
+
+		cur = strtok_r(cur_sec, delim, &save);
+		if ((cur == NULL) || (strcmp(cur, c->section) != 0))
+			goto out_sec;
+
+		if (asprintf(&query, "%s:%s", cur_sec_full, c->search_key) < 0)
+			goto out_sec;
+		search_val = iniparser_getstring(d, query, NULL);
+		if (!search_val)
+			goto out_query;
+		if (strcmp(search_val, c->search_val) != 0)
+			goto out_query;
+
+		/* we're now in a matching section */
+		free(query);
+		if (asprintf(&query, "%s:%s", cur_sec_full, c->get_key) < 0)
+			goto out_sec;
+		ret_val = iniparser_getstring(d, query, NULL);
+		free(query);
+		free(cur_sec);
+		return ret_val;
+
+out_query:
+		free(query);
+out_sec:
+		free(cur_sec);
+	}
+
+	return NULL;
+}
+
 static int parse_config_file(const char *config_file,
 			const struct config *configs)
 {
@@ -62,6 +110,9 @@ static int parse_config_file(const char *config_file,
 					iniparser_getstring(dic,
 					configs->key, configs->defval));
 			break;
+		case CONFIG_SEARCH_SECTION:
+			set_str_val((const char **)configs->value,
+					search_section_kv(dic, configs));
 		case MONITOR_CALLBACK:
 		case CONFIG_END:
 			break;
