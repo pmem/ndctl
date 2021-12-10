@@ -199,6 +199,10 @@ ndctl_keysreadme=keys.readme
 AC_SUBST([ndctl_keysdir])
 AC_SUBST([ndctl_keysreadme])
 
+AC_CHECK_HEADERS([iniparser.h],,[
+		  AC_MSG_ERROR([iniparser.h not found, install iniparser-devel, libiniparser-dev, or so])
+		 ])
+
 my_CFLAGS="\
 -Wall \
 -Wchar-subscripts \

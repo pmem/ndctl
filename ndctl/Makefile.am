@@ -56,7 +56,8 @@ ndctl_LDADD =\
 	../libutil.a \
 	$(UUID_LIBS) \
 	$(KMOD_LIBS) \
-	$(JSON_LIBS)
+	$(JSON_LIBS) \
+	-liniparser
 
 if ENABLE_KEYUTILS
 ndctl_LDADD += -lkeyutils
