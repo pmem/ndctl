@@ -171,9 +171,10 @@ fi
 AC_SUBST([systemd_unitdir])
 AM_CONDITIONAL([ENABLE_SYSTEMD_UNITS], [test "x$with_systemd" = "xyes"])
 
-ndctl_monitorconfdir=${sysconfdir}/ndctl
+ndctl_confdir=${sysconfdir}/ndctl.conf.d
+ndctl_conf=ndctl.conf
 ndctl_monitorconf=monitor.conf
-AC_SUBST([ndctl_monitorconfdir])
+AC_SUBST([ndctl_confdir])
 AC_SUBST([ndctl_monitorconf])
 
 daxctl_modprobe_datadir=${datadir}/daxctl

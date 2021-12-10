@@ -265,6 +265,22 @@ NDCTL_EXPORT void ndctl_set_userdata(struct ndctl_ctx *ctx, void *userdata)
 	ctx->userdata = userdata;
 }
 
+NDCTL_EXPORT int ndctl_set_config_path(struct ndctl_ctx *ctx, char *config_path)
+{
+	if ((!ctx) || (!config_path))
+		return -EINVAL;
+	ctx->config_path = config_path;
+
+	return 0;
+}
+
+NDCTL_EXPORT const char *ndctl_get_config_path(struct ndctl_ctx *ctx)
+{
+	if (ctx == NULL)
+		return NULL;
+	return ctx->config_path;
+}
+
 /**
  * ndctl_new - instantiate a new library context
  * @ctx: context to establish
@@ -326,6 +342,10 @@ NDCTL_EXPORT int ndctl_new(struct ndctl_ctx **ctx)
 	c->udev_queue = udev_queue_new(udev);
 	if (!c->udev_queue)
 		err(c, "failed to retrieve udev queue\n");
+
+	rc = ndctl_set_config_path(c, NDCTL_CONF_DIR);
+	if (rc)
+		dbg(c, "Unable to set config path: %s\n", strerror(-rc));
 
 	c->kmod_ctx = kmod_ctx;
 	c->daxctl_ctx = daxctl_ctx;

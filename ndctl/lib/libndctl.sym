@@ -454,4 +454,6 @@ LIBNDCTL_25 {
 
 LIBNDCTL_26 {
 	ndctl_bus_nfit_translate_spa;
+	ndctl_set_config_path;
+	ndctl_get_config_path;
 } LIBNDCTL_25;
