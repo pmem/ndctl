@@ -22,6 +22,7 @@ daxctl_SOURCES =\
 
 daxctl_LDADD =\
 	lib/libdaxctl.la \
+	../ndctl/lib/libndctl.la \
 	../libutil.a \
 	$(UUID_LIBS) \
 	$(KMOD_LIBS) \
