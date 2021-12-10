@@ -175,6 +175,7 @@ ndctl_confdir=${sysconfdir}/ndctl.conf.d
 ndctl_conf=ndctl.conf
 ndctl_monitorconf=monitor.conf
 AC_SUBST([ndctl_confdir])
+AC_SUBST([ndctl_conf])
 AC_SUBST([ndctl_monitorconf])
 
 daxctl_modprobe_datadir=${datadir}/daxctl
