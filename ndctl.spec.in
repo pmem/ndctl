@@ -129,6 +129,7 @@ make check
 %{_datadir}/daxctl/daxctl.conf
 %{_unitdir}/daxdev-reconfigure@.service
 %config %{_udevrulesdir}/90-daxctl-device.rules
+%config(noreplace) %{_sysconfdir}/daxctl.conf.d/daxctl.example.conf
 
 %files -n LNAME
 %defattr(-,root,root)
