@@ -59,7 +59,7 @@ CLEANFILES = $(man1_MANS)
 .ONESHELL:
 attrs.adoc: $(srcdir)/Makefile.am
 	$(AM_V_GEN) cat <<- EOF >$@
-		:ndctl_monitorconfdir: $(ndctl_monitorconfdir)
+		:ndctl_confdir: $(ndctl_confdir)
 		:ndctl_monitorconf: $(ndctl_monitorconf)
 		:ndctl_keysdir: $(ndctl_keysdir)
 		EOF
