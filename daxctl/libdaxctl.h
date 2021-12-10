@@ -28,6 +28,8 @@ int daxctl_get_log_priority(struct daxctl_ctx *ctx);
 void daxctl_set_log_priority(struct daxctl_ctx *ctx, int priority);
 void daxctl_set_userdata(struct daxctl_ctx *ctx, void *userdata);
 void *daxctl_get_userdata(struct daxctl_ctx *ctx);
+int daxctl_set_config_path(struct daxctl_ctx *ctx, char *config_path);
+const char *daxctl_get_config_path(struct daxctl_ctx *ctx);
 
 struct daxctl_region;
 struct daxctl_region *daxctl_new_region(struct daxctl_ctx *ctx, int id,

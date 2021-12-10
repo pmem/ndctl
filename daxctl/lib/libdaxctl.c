@@ -37,6 +37,7 @@ struct daxctl_ctx {
 	struct log_ctx ctx;
 	int refcount;
 	void *userdata;
+	const char *config_path;
 	int regions_init;
 	struct list_head regions;
 	struct kmod_ctx *kmod_ctx;
@@ -66,6 +67,22 @@ DAXCTL_EXPORT void daxctl_set_userdata(struct daxctl_ctx *ctx, void *userdata)
 	if (ctx == NULL)
 		return;
 	ctx->userdata = userdata;
+}
+
+DAXCTL_EXPORT int daxctl_set_config_path(struct daxctl_ctx *ctx,
+					 char *config_path)
+{
+	if ((!ctx) || (!config_path))
+		return -EINVAL;
+	ctx->config_path = config_path;
+	return 0;
+}
+
+DAXCTL_EXPORT const char *daxctl_get_config_path(struct daxctl_ctx *ctx)
+{
+	if (ctx == NULL)
+		return NULL;
+	return ctx->config_path;
 }
 
 /**
@@ -99,6 +116,9 @@ DAXCTL_EXPORT int daxctl_new(struct daxctl_ctx **ctx)
 	*ctx = c;
 	list_head_init(&c->regions);
 	c->kmod_ctx = kmod_ctx;
+	rc = daxctl_set_config_path(c, DAXCTL_CONF_DIR);
+	if (rc)
+		dbg(c, "Unable to set config path: %s\n", strerror(-rc));
 
 	return 0;
 out:

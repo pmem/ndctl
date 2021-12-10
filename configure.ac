@@ -178,6 +178,9 @@ AC_SUBST([ndctl_confdir])
 AC_SUBST([ndctl_conf])
 AC_SUBST([ndctl_monitorconf])
 
+daxctl_confdir=${sysconfdir}/daxctl.conf.d
+AC_SUBST([daxctl_confdir])
+
 daxctl_modprobe_datadir=${datadir}/daxctl
 daxctl_modprobe_data=daxctl.conf
 AC_SUBST([daxctl_modprobe_datadir])

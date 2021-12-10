@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 
+include::attrs.adoc[]
+
 daxctl-reconfigure-device(1)
 ============================
 
@@ -249,6 +251,12 @@ system-ram conversion.
 ndctl create-namespace --mode=devdax | \
 	jq -r "\"[reconfigure-device $(uuidgen)]\", \"nvdimm.uuid = \(.uuid)\", \"mode = system-ram\"" >> $config_path
 ----
+
+The default location for daxctl config files is under {daxctl_confdir}/,
+and any file with a '.conf' suffix at this location is considered. It is
+acceptable to have multiple files containing ini-style config sections,
+but the {section, subsection} tuple must be unique across all config files
+under {daxctl_confdir}/.
 
 include::../copyright.txt[]
 
