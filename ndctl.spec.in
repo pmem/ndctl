@@ -117,7 +117,8 @@ make check
 %{_sysconfdir}/ndctl/keys/keys.readme
 %{_sysconfdir}/modprobe.d/nvdimm-security.conf
 
-%config(noreplace) %{_sysconfdir}/ndctl/monitor.conf
+%config(noreplace) %{_sysconfdir}/ndctl.conf.d/monitor.conf
+%config(noreplace) %{_sysconfdir}/ndctl.conf.d/ndctl.conf
 
 %files -n daxctl
 %defattr(-,root,root)
