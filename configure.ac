@@ -160,7 +160,7 @@ AC_CHECK_FUNCS([ \
 
 AC_ARG_WITH([systemd],
 	AS_HELP_STRING([--with-systemd],
-		[Enable systemd functionality (monitor). @<:@default=yes@:>@]),
+		[Enable systemd functionality. @<:@default=yes@:>@]),
 	[], [with_systemd=yes])
 
 if test "x$with_systemd" = "xyes"; then
@@ -185,6 +185,13 @@ daxctl_modprobe_datadir=${datadir}/daxctl
 daxctl_modprobe_data=daxctl.conf
 AC_SUBST([daxctl_modprobe_datadir])
 AC_SUBST([daxctl_modprobe_data])
+
+AC_ARG_WITH(udevrulesdir,
+    [AS_HELP_STRING([--with-udevrulesdir=DIR], [udev rules.d directory])],
+    [UDEVRULESDIR="$withval"],
+    [UDEVRULESDIR='${prefix}/lib/udev/rules.d']
+)
+AC_SUBST(UDEVRULESDIR)
 
 AC_ARG_WITH([keyutils],
 	    AS_HELP_STRING([--with-keyutils],

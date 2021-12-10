@@ -1,0 +1,8 @@
+[Unit]
+Description=Automatic daxctl device reconfiguration
+Documentation=man:daxctl-reconfigure-device(1)
+
+[Service]
+Type=forking
+GuessMainPID=false
+ExecStart=/bin/sh -c "exec daxctl reconfigure-device --check-config %I"

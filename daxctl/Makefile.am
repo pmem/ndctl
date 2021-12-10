@@ -28,3 +28,10 @@ daxctl_LDADD =\
 	$(KMOD_LIBS) \
 	$(JSON_LIBS) \
 	-liniparser
+
+udevrulesdir = $(UDEVRULESDIR)
+udevrules_DATA = 90-daxctl-device.rules
+
+if ENABLE_SYSTEMD_UNITS
+systemd_unit_DATA = daxdev-reconfigure@.service
+endif
