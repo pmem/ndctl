@@ -1,9 +1,10 @@
 include Makefile.am.in
 
 ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
-SUBDIRS = . daxctl/lib ndctl/lib ndctl daxctl
+SUBDIRS = . cxl/lib daxctl/lib ndctl/lib cxl ndctl daxctl
 if ENABLE_DOCS
-SUBDIRS += Documentation/ndctl Documentation/daxctl
+SUBDIRS += Documentation/ndctl Documentation/daxctl Documentation/cxl
+SUBDIRS += Documentation/cxl/lib
 endif
 SUBDIRS += test
 
@@ -22,17 +23,21 @@ CLEANFILES += $(noinst_SCRIPTS)
 
 do_rhel_subst = sed -e 's,VERSION,$(VERSION),g' \
             -e 's,DAX_DNAME,daxctl-devel,g' \
+            -e 's,CXL_DNAME,cxl-devel,g' \
             -e 's,DNAME,ndctl-devel,g' \
             -e '/^%defattr.*/d' \
 	    -e 's,DAX_LNAME,daxctl-libs,g' \
+	    -e 's,CXL_LNAME,cxl-libs,g' \
 	    -e 's,LNAME,ndctl-libs,g'
 
 do_sles_subst = sed -e 's,VERSION,$(VERSION),g' \
             -e 's,DAX_DNAME,libdaxctl-devel,g' \
+            -e 's,CXL_DNAME,libcxl-devel,g' \
             -e 's,DNAME,libndctl-devel,g' \
             -e 's,%license,%doc,g' \
             -e 's,\(^License:.*GPL\)v2,\1-2.0,g' \
             -e "s,DAX_LNAME,libdaxctl$$(($(LIBDAXCTL_CURRENT) - $(LIBDAXCTL_AGE))),g" \
+            -e "s,CXL_LNAME,libcxl$$(($(LIBCXL_CURRENT) - $(LIBCXL_AGE))),g" \
             -e "s,LNAME,libndctl$$(($(LIBNDCTL_CURRENT) - $(LIBNDCTL_AGE))),g"
 
 rhel/ndctl.spec: ndctl.spec.in Makefile.am version.m4
@@ -44,6 +49,9 @@ sles/ndctl.spec: sles/header ndctl.spec.in Makefile.am version.m4
 if ENABLE_BASH_COMPLETION
 bashcompletiondir = $(BASH_COMPLETION_DIR)
 dist_bashcompletion_DATA = contrib/ndctl
+install-data-hook:
+	$(LN_S) -f $(BASH_COMPLETION_DIR)/ndctl $(DESTDIR)/$(BASH_COMPLETION_DIR)/daxctl
+	$(LN_S) -f $(BASH_COMPLETION_DIR)/ndctl $(DESTDIR)/$(BASH_COMPLETION_DIR)/cxl
 endif
 
 modprobe_file = contrib/nvdimm-security.conf
@@ -87,4 +95,7 @@ libutil_a_SOURCES = \
 	util/filter.h \
 	util/bitmap.h
 
-nobase_include_HEADERS = daxctl/libdaxctl.h
+nobase_include_HEADERS = \
+	daxctl/libdaxctl.h \
+	cxl/libcxl.h \
+	cxl/cxl_mem.h

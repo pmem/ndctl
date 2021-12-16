@@ -19,6 +19,7 @@ enum util_json_flags {
 	UTIL_JSON_CONFIGURED	= (1 << 7),
 	UTIL_JSON_FIRMWARE	= (1 << 8),
 	UTIL_JSON_DAX_MAPPINGS	= (1 << 9),
+	UTIL_JSON_HEALTH	= (1 << 10),
 };
 
 struct json_object;
@@ -55,4 +56,7 @@ struct json_object *util_dimm_health_to_json(struct ndctl_dimm *dimm);
 struct json_object *util_dimm_firmware_to_json(struct ndctl_dimm *dimm,
 		unsigned long flags);
 struct json_object *util_region_capabilities_to_json(struct ndctl_region *region);
+struct cxl_memdev;
+struct json_object *util_cxl_memdev_to_json(struct cxl_memdev *memdev,
+		unsigned long flags);
 #endif /* __NDCTL_JSON_H__ */

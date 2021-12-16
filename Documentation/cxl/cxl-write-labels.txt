@@ -1,0 +1,32 @@
+// SPDX-License-Identifier: GPL-2.0
+
+cxl-write-labels(1)
+===================
+
+NAME
+----
+cxl-write-labels - write data to the label area on a memdev
+
+SYNOPSIS
+--------
+[verse]
+'cxl write-labels <mem> [-i <filename>]'
+
+include::labels-description.txt[]
+Read data from the input filename, or stdin, and write it to the given
+<mem> device. Note that the device must not be active in any region, or
+actively registered with the nvdimm subsystem. If it is, the kernel will
+not allow write access to the device's label data area.
+
+OPTIONS
+-------
+include::labels-options.txt[]
+-i::
+--input::
+	input file
+
+SEE ALSO
+--------
+linkcxl:cxl-read-labels[1],
+linkcxl:cxl-zero-labels[1],
+CXL-2.0 9.13.2

@@ -8,6 +8,7 @@ Source0:	https://github.com/pmem/%{name}/archive/v%{version}.tar.gz#/%{name}-%{v
 
 Requires:	LNAME%{?_isa} = %{version}-%{release}
 Requires:	DAX_LNAME%{?_isa} = %{version}-%{release}
+Requires:	CXL_LNAME%{?_isa} = %{version}-%{release}
 BuildRequires:	autoconf
 %if 0%{?rhel} < 9
 BuildRequires:	asciidoc
@@ -54,6 +55,24 @@ the Linux kernel Device-DAX facility. This facility enables DAX mappings
 of performance / feature differentiated memory without need of a
 filesystem.
 
+%package -n cxl-cli
+Summary:	Manage CXL devices
+License:	GPLv2
+Requires:	CXL_LNAME%{?_isa} = %{version}-%{release}
+
+%description -n cxl-cli
+The cxl utility provides enumeration and provisioning commands for
+the Linux kernel CXL devices.
+
+%package -n CXL_DNAME
+Summary:	Development files for libcxl
+License:	LGPLv2
+Requires:	CXL_LNAME%{?_isa} = %{version}-%{release}
+
+%description -n CXL_DNAME
+This package contains libraries and header files for developing applications
+that use libcxl, a library for enumerating and communicating with CXL devices.
+
 %package -n DAX_DNAME
 Summary:	Development files for libdaxctl
 License:	LGPLv2
@@ -84,6 +103,13 @@ Device DAX is a facility for establishing DAX mappings of performance /
 feature-differentiated memory. DAX_LNAME provides an enumeration /
 control API for these devices.
 
+%package -n CXL_LNAME
+Summary:	Management library for CXL devices
+License:	LGPLv2
+
+%description -n CXL_LNAME
+libcxl is a library for enumerating and communicating with CXL devices.
+
 
 %prep
 %setup -q ndctl-%{version}
@@ -105,6 +131,8 @@ make check
 
 %ldconfig_scriptlets -n DAX_LNAME
 
+%ldconfig_scriptlets -n CXL_LNAME
+
 %define bashcompdir %(pkg-config --variable=completionsdir bash-completion)
 
 %files
@@ -112,7 +140,7 @@ make check
 %license LICENSES/preferred/GPL-2.0 LICENSES/other/MIT LICENSES/other/CC0-1.0
 %{_bindir}/ndctl
 %{_mandir}/man1/ndctl*
-%{bashcompdir}/
+%{bashcompdir}/ndctl
 %{_unitdir}/ndctl-monitor.service
 %{_sysconfdir}/ndctl/keys/keys.readme
 %{_sysconfdir}/modprobe.d/nvdimm-security.conf
@@ -125,6 +153,14 @@ make check
 %{_bindir}/daxctl
 %{_mandir}/man1/daxctl*
 %{_datadir}/daxctl/daxctl.conf
+%{bashcompdir}/daxctl
+
+%files -n cxl-cli
+%defattr(-,root,root)
+%license LICENSES/preferred/GPL-2.0 LICENSES/other/MIT LICENSES/other/CC0-1.0
+%{_bindir}/cxl
+%{_mandir}/man1/cxl*
+%{bashcompdir}/cxl
 
 %files -n LNAME
 %defattr(-,root,root)
@@ -137,6 +173,12 @@ make check
 %doc README.md
 %license LICENSES/preferred/LGPL-2.1 LICENSES/other/MIT LICENSES/other/CC0-1.0
 %{_libdir}/libdaxctl.so.*
+
+%files -n CXL_LNAME
+%defattr(-,root,root)
+%doc README.md
+%license LICENSES/preferred/LGPL-2.1 LICENSES/other/MIT LICENSES/other/CC0-1.0
+%{_libdir}/libcxl.so.*
 
 %files -n DNAME
 %defattr(-,root,root)
@@ -151,6 +193,15 @@ make check
 %{_includedir}/daxctl/
 %{_libdir}/libdaxctl.so
 %{_libdir}/pkgconfig/libdaxctl.pc
+
+%files -n CXL_DNAME
+%defattr(-,root,root)
+%license LICENSES/preferred/LGPL-2.1
+%{_includedir}/cxl/
+%{_libdir}/libcxl.so
+%{_libdir}/pkgconfig/libcxl.pc
+%{_mandir}/man3/cxl*
+%{_mandir}/man3/libcxl.3.gz
 
 
 %changelog

@@ -31,6 +31,7 @@ AC_PREFIX_DEFAULT([/usr])
 
 AC_PROG_SED
 AC_PROG_MKDIR_P
+AC_PROG_LN_S
 
 AC_ARG_ENABLE([docs],
         AS_HELP_STRING([--disable-docs],
@@ -222,12 +223,16 @@ AC_CONFIG_HEADERS(config.h)
 AC_CONFIG_FILES([
         Makefile
         daxctl/lib/Makefile
+        cxl/lib/Makefile
         ndctl/lib/Makefile
         ndctl/Makefile
         daxctl/Makefile
+        cxl/Makefile
         test/Makefile
         Documentation/ndctl/Makefile
         Documentation/daxctl/Makefile
+        Documentation/cxl/Makefile
+        Documentation/cxl/lib/Makefile
 ])
 
 AC_OUTPUT

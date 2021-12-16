@@ -1,0 +1,339 @@
+#!/bin/bash -eE
+
+this_script="docsurgeon"
+script_dir="$(cd "$(dirname "$(readlink -e "${BASH_SOURCE[0]}")")" && pwd)"
+env_file="${script_dir}/.env"
+if [ -e "$env_file" ]; then
+	# shellcheck source=.env
+	. "$env_file"
+fi
+
+sources_file="${script_dir}/.sources"
+
+parser_generator="${script_dir}/${this_script}_parser_generator.m4"
+parser_lib="${script_dir}/${this_script}_parser.sh"
+if [ ! -e "$parser_lib" ] || [ "$parser_generator" -nt "$parser_lib" ]; then
+	if command -V argbash > /dev/null; then
+		argbash --strip user-content "$parser_generator" -o "$parser_lib"
+	else
+		echo "error: please install argbash" >&2
+		exit 1
+	fi
+fi
+
+if [[ $1 != "bin" ]]; then
+	# shellcheck source=docsurgeon_parser.sh
+	. "${script_dir}/${this_script}_parser.sh" || { echo "Couldn't find $parser_lib" >&2; exit 1; }
+fi
+
+# some script defaults - override using '.env'
+docbase="Documentation"
+copyright_cli="// SPDX-License-Identifier: GPL-2.0"
+copyright_footer_cli="include::../copyright.txt[]"
+copyright_lib="// SPDX-License-Identifier: LGPL-2.0"
+copyright_footer_lib="include::../../copyright.txt[]"
+
+# List of files we're creating, to be edited/renamed later
+# This starts out blank, and is filled in as we go by gen_*() functions
+declare -a outfiles
+
+cleanup()
+{
+	if [ ${#outfiles[@]} -gt 0 ]; then
+		rm -f "${outfiles[@]}"
+	fi
+	set +x
+}
+
+trap cleanup EXIT
+
+auto_detect_params()
+{
+	fs=""
+	module=""
+	section=""
+
+	# if module and section were explicitly specified, respect them
+	if [[ $_arg_module ]] && [[ $_arg_section ]]; then
+		return
+	fi
+
+	# check if names are self-consistent, and determine 'fs'
+	for name in ${_arg_name[@]}; do
+		if [[ ! $fs ]]; then
+			if [[ $name == *-* ]]; then
+				fs="-"
+			elif [[ $name == *_* ]]; then
+				fs="_"
+			else
+				# can't autodetect section
+				return
+			fi
+		fi
+		if [[ $fs == "-" ]] && [[ $name == *_* ]]; then
+			die "can't auto-detect params with mixed-style names"
+		fi
+		if [[ $fs == "_" ]] && [[ $name == *-* ]]; then
+			die "can't auto-detect params with mixed-style names"
+		fi
+	done
+
+	# try to detect module name
+	for name in ${_arg_name[@]}; do
+		str=${name%%$fs*}
+		if [[ $module ]]; then
+			if [[ $str != $module ]]; then
+				die "Can't autodetect module because of mixed names ($str and $module)"
+			fi
+		else
+			module="$str"
+		fi
+	done
+
+	# try to detect section number
+	case "$fs" in
+	-)
+		section=1
+		;;
+	_)
+		section=3
+		;;
+	*)
+		die "Unknown fs, can't autodetect section number"
+		;;
+	esac
+
+	if [[ $module ]]; then
+		_arg_module="$module"
+	fi
+	if [[ $section ]]; then
+		_arg_section="$section"
+	fi
+}
+
+process_options_logic()
+{
+	if [[ $_arg_debug == "on" ]]; then
+		set -x
+	fi
+
+	auto_detect_params
+}
+
+gen_underline()
+{
+	name="$1"
+	char="$2"
+	num="${#name}"
+
+	printf -v tmpstring "%-${num}s" " "
+	echo "${tmpstring// /$char}"
+}
+
+gen_header()
+{
+	printf "\n%s\n%s\n" "$1" "$(gen_underline "$1" "=")"
+}
+
+gen_section()
+{
+	printf "\n%s\n%s\n" "$1" "$(gen_underline "$1" "-")"
+}
+
+gen_section_name()
+{
+	name="$1"
+
+	gen_section "NAME"
+	cat <<- EOF
+		$name - 
+	EOF
+}
+
+gen_section_synopsis_1()
+{
+	name="$1"
+
+	gen_section "SYNOPSIS"
+	cat <<- EOF
+		[verse]
+		'$_arg_module ${name#*-} [<options>]'
+	EOF
+}
+
+gen_section_synopsis_3()
+{
+	name="$1"
+
+	gen_section "SYNOPSIS"
+	cat <<- EOF
+		[verse]
+		----
+		#include <$_arg_module/lib$_arg_module.h>
+
+		<type> $name();
+		----
+	EOF
+}
+
+gen_section_example_1()
+{
+	name="$1"
+
+	gen_section "EXAMPLE"
+	cat <<- EOF
+		----
+		# $_arg_module ${name#*-}
+		----
+	EOF
+}
+
+gen_section_example_3()
+{
+	name="$1"
+
+	gen_section "EXAMPLE"
+	cat <<- EOF
+		See example usage in test/lib$_arg_module.c
+	EOF
+}
+
+gen_section_options_1()
+{
+	gen_section "OPTIONS"
+cat << EOF
+-o::
+--option::
+	Description
+EOF
+
+	if [[ $_arg_human_option == "on" ]]; then
+		printf "\n%s\n" "include::human-option.txt[]"
+	fi
+	if [[ $_arg_verbose_option == "on" ]]; then
+		printf "\n%s\n" "include::verbose-option.txt[]"
+	fi
+}
+
+gen_section_seealso_1()
+{
+	gen_section "SEE ALSO"
+	cat <<- EOF
+	link$_arg_module:$_arg_module-list[$_arg_section],
+	EOF
+}
+
+gen_section_seealso_3()
+{
+	gen_section "SEE ALSO"
+	cat <<- EOF
+	linklib$_arg_module:${_arg_module}_other_API[$_arg_section],
+	EOF
+}
+
+gen_cli()
+{
+	name="$1"
+	path="$docbase/$_arg_module"
+	if [ ! -d "$path" ]; then
+		die "Not found: $path"
+	fi
+
+	tmp="$(mktemp -p "$path" "$name.txt.XXXX")"
+	outfiles+=("$tmp")
+
+	# Start template generation
+	printf "%s\n" "$copyright_cli" > "$tmp"
+	gen_header "$name" >> "$tmp"
+	gen_section_name "$name" >> "$tmp"
+	gen_section_synopsis_1 "$name" >> "$tmp"
+	gen_section "DESCRIPTION" >> "$tmp"
+	gen_section_example_1 "$name" >> "$tmp"
+	gen_section_options_1 >> "$tmp"
+	printf "\n%s\n" "$copyright_footer_cli" >> "$tmp"
+	gen_section_seealso_1 >> "$tmp"
+}
+
+gen_lib()
+{
+	name="$1"
+	path="$docbase/$_arg_module/lib"
+	if [ ! -d "$path" ]; then
+		die "Not found: $path"
+	fi
+
+	tmp="$(mktemp -p "$path" "$name.txt.XXXX")"
+	outfiles+=("$tmp")
+
+	# Start template generation
+	printf "%s\n" "$copyright_lib" > "$tmp"
+	gen_header "$name($_arg_section)" >> "$tmp"
+	gen_section_name "$name" >> "$tmp"
+	gen_section_synopsis_3 "$name" >> "$tmp"
+	gen_section "DESCRIPTION" >> "$tmp"
+	gen_section "RETURN VALUE" >> "$tmp"
+	gen_section_example_3 "$name" >> "$tmp"
+	printf "\n%s\n" "$copyright_footer_lib" >> "$tmp"
+	gen_section_seealso_3 >> "$tmp"
+}
+
+gen_man()
+{
+	name="$1"
+	case "$_arg_section" in
+	1)
+		gen_cli "$name"
+		;;
+	3)
+		gen_lib "$name"
+		;;
+	*)
+		die "Unknown section: $_arg_section"
+		;;
+	esac
+}
+
+gen_include()
+{
+	echo "in gen_include"
+}
+
+main()
+{
+	process_options_logic
+
+	cmd="$_arg_command"
+	case "$cmd" in
+	gen-man)
+		for name in ${_arg_name[@]}; do
+			gen_man "$name"
+		done
+		;;
+	gen-include)
+		for name in ${_arg_name[@]}; do
+			gen_include
+		done
+		;;
+	*)
+		die "Unknown command: $cmd"
+		;;
+	esac
+
+	if [[ $_arg_dump == "on" ]]; then
+		for file in ${outfiles[@]}; do
+			echo "${file##*/}"
+			cat "$file"
+			rm "$file"
+		done
+	elif [ ${#outfiles[@]} -gt 0 ]; then
+		if [[ $_arg_edit = "on" ]]; then
+			vim -p "${outfiles[@]}"
+		fi
+
+		for file in ${outfiles[@]}; do
+			mv "$file" "${file%.*}"
+		done
+	fi
+}
+
+main "$@"

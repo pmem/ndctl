@@ -1,0 +1,17 @@
+// SPDX-License-Identifier: GPL-2.0
+
+<memory device(s)>::
+include::memdev-option.txt[]
+
+-s::
+--size=::
+	Limit the operation to the given number of bytes. A size of 0
+	indicates to operate over the entire label capacity.
+
+-O::
+--offset=::
+	Begin the operation at the given offset into the label area.
+
+-v::
+	Turn on verbose debug messages in the library (if libcxl was built with
+	logging and debug enabled).

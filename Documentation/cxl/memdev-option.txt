@@ -1,0 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0
+A 'memX' device name, or a memdev id number. Restrict the operation to
+the specified memdev(s). The keyword 'all' can be specified to indicate
+the lack of any restriction.

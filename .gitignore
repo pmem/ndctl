@@ -14,11 +14,16 @@ Makefile.in
 /libtool
 /stamp-h1
 *.1
+*.3
 Documentation/daxctl/asciidoc.conf
 Documentation/ndctl/asciidoc.conf
-Documentation/ndctl/attrs.adoc
+Documentation/cxl/asciidoc.conf
+Documentation/cxl/lib/asciidoc.conf
 Documentation/daxctl/asciidoctor-extensions.rb
 Documentation/ndctl/asciidoctor-extensions.rb
+Documentation/cxl/asciidoctor-extensions.rb
+Documentation/cxl/lib/asciidoctor-extensions.rb
+Documentation/ndctl/attrs.adoc
 .dirstamp
 daxctl/config.h
 daxctl/daxctl

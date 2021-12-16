@@ -29,6 +29,8 @@ struct daxctl_dev *util_daxctl_dev_filter(struct daxctl_dev *dev,
 		const char *ident);
 struct daxctl_region *util_daxctl_region_filter(struct daxctl_region *region,
 		const char *ident);
+struct cxl_memdev *util_cxl_memdev_filter(struct cxl_memdev *memdev,
+		const char *ident);
 
 enum ndctl_namespace_mode util_nsmode(const char *mode);
 const char *util_nsmode_name(enum ndctl_namespace_mode mode);

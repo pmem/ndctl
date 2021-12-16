@@ -10,16 +10,19 @@
 enum program {
 	PROG_NDCTL,
 	PROG_DAXCTL,
+	PROG_CXL,
 };
 
 struct ndctl_ctx;
 struct daxctl_ctx;
+struct cxl_ctx;
 
 struct cmd_struct {
 	const char *cmd;
 	union {
 		int (*n_fn)(int, const char **, struct ndctl_ctx *ctx);
 		int (*d_fn)(int, const char **, struct daxctl_ctx *ctx);
+		int (*c_fn)(int, const char **, struct cxl_ctx *ctx);
 	};
 };
 
