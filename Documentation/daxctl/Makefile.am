@@ -33,11 +33,20 @@ EXTRA_DIST = $(man1_MANS)
 
 CLEANFILES = $(man1_MANS)
 
+.ONESHELL:
+attrs.adoc: $(srcdir)/Makefile.am
+	$(AM_V_GEN) cat <<- EOF >$@
+		:daxctl_confdir: $(daxctl_confdir)
+		:daxctl_conf: $(daxctl_conf)
+		:ndctl_keysdir: $(ndctl_keysdir)
+		EOF
+
 XML_DEPS = \
 	../../version.m4 \
 	../copyright.txt \
 	Makefile \
-	$(CONFFILE)
+	$(CONFFILE) \
+	attrs.adoc
 
 RM ?= rm -f
 

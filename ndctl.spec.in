@@ -27,6 +27,7 @@ BuildRequires:	pkgconfig(json-c)
 BuildRequires:	pkgconfig(bash-completion)
 BuildRequires:	pkgconfig(systemd)
 BuildRequires:	keyutils-libs-devel
+BuildRequires:	systemd-rpm-macros
 
 %description
 Utility library for managing the "libnvdimm" subsystem.  The "libnvdimm"
@@ -145,7 +146,8 @@ make check
 %{_sysconfdir}/ndctl/keys/keys.readme
 %{_sysconfdir}/modprobe.d/nvdimm-security.conf
 
-%config(noreplace) %{_sysconfdir}/ndctl/monitor.conf
+%config(noreplace) %{_sysconfdir}/ndctl.conf.d/monitor.conf
+%config(noreplace) %{_sysconfdir}/ndctl.conf.d/ndctl.conf
 
 %files -n daxctl
 %defattr(-,root,root)
@@ -154,6 +156,9 @@ make check
 %{_mandir}/man1/daxctl*
 %{_datadir}/daxctl/daxctl.conf
 %{bashcompdir}/daxctl
+%{_unitdir}/daxdev-reconfigure@.service
+%config %{_udevrulesdir}/90-daxctl-device.rules
+%config(noreplace) %{_sysconfdir}/daxctl.conf.d/daxctl.example.conf
 
 %files -n cxl-cli
 %defattr(-,root,root)

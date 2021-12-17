@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 
+include::attrs.adoc[]
+
 daxctl-reconfigure-device(1)
 ============================
 
@@ -211,6 +213,15 @@ include::region-option.txt[]
 	brought online automatically and immediately with the 'online_movable'
 	policy. Use this option to disable the automatic onlining behavior.
 
+-C::
+--check-config::
+	Get reconfiguration parameters from the global daxctl config file.
+	This is typically used when daxctl-reconfigure-device is called from
+	a systemd-udevd device unit file. The reconfiguration proceeds only
+	if the match parameters in a 'reconfigure-device' section of the
+	config match the dax device specified on the command line. See the
+	'PERSISTENT RECONFIGURATION' section for more details.
+
 include::movable-options.txt[]
 
 -f::
@@ -231,6 +242,70 @@ include::movable-options.txt[]
 include::human-option.txt[]
 
 include::verbose-option.txt[]
+
+PERSISTENT RECONFIGURATION
+--------------------------
+
+The 'mode' of a daxctl device is not persistent across reboots by default. This
+is because the device itself does not hold any metadata that hints at what mode
+it was set to, or is intended to be used. The default mode for such a device
+on boot is 'devdax'.
+
+The administrator may set policy such that certain dax devices are always
+reconfigured into a target configuration every boot. This is accomplished via a
+daxctl config file.
+
+The config file may have multiple sections influencing different aspects of
+daxctl operation. The section of interest for persistent reconfiguration is
+'reconfigure-device'. The format of this is as follows:
+
+----
+[reconfigure-device <unique_subsection_name>]
+nvdimm.uuid = <NVDIMM namespace uuid>
+mode = <desired reconfiguration mode> (default: system-ram)
+online = <true|false> (default: true)
+movable = <true|false> (default: true)
+----
+
+Here is an example of a config snippet for managing three devdax namespaces,
+one is left in devdax mode, the second is changed to system-ram mode with
+default options (online, movable), and the third is set to system-ram mode,
+the memory is onlined, but not movable.
+
+Note that the 'subsection name' can be arbitrary, and is only used to
+identify a specific config section. It does not have to match the 'device
+name' (e.g. 'dax0.0' etc).
+
+----
+[reconfigure-device dax0]
+nvdimm.uuid = ed93e918-e165-49d8-921d-383d7b9660c5
+mode = devdax
+
+[reconfigure-device dax1]
+nvdimm.uuid = f36d02ff-1d9f-4fb9-a5b9-8ceb10a00fe3
+mode = system-ram
+
+[reconfigure-device dax2]
+nvdimm.uuid = f36d02ff-1d9f-4fb9-a5b9-8ceb10a00fe3
+mode = system-ram
+online = true
+movable = false
+----
+
+The following example can be used to create a devdax mode namespace, and
+simultaneously add the newly created namespace to the config file for
+system-ram conversion.
+
+----
+ndctl create-namespace --mode=devdax | \
+	jq -r "\"[reconfigure-device $(uuidgen)]\", \"nvdimm.uuid = \(.uuid)\", \"mode = system-ram\"" >> $config_path
+----
+
+The default location for daxctl config files is under {daxctl_confdir}/,
+and any file with a '.conf' suffix at this location is considered. It is
+acceptable to have multiple files containing ini-style config sections,
+but the {section, subsection} tuple must be unique across all config files
+under {daxctl_confdir}/.
 
 include::../copyright.txt[]
 

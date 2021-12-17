@@ -161,7 +161,7 @@ AC_CHECK_FUNCS([ \
 
 AC_ARG_WITH([systemd],
 	AS_HELP_STRING([--with-systemd],
-		[Enable systemd functionality (monitor). @<:@default=yes@:>@]),
+		[Enable systemd functionality. @<:@default=yes@:>@]),
 	[], [with_systemd=yes])
 
 if test "x$with_systemd" = "xyes"; then
@@ -172,15 +172,27 @@ fi
 AC_SUBST([systemd_unitdir])
 AM_CONDITIONAL([ENABLE_SYSTEMD_UNITS], [test "x$with_systemd" = "xyes"])
 
-ndctl_monitorconfdir=${sysconfdir}/ndctl
+ndctl_confdir=${sysconfdir}/ndctl.conf.d
+ndctl_conf=ndctl.conf
 ndctl_monitorconf=monitor.conf
-AC_SUBST([ndctl_monitorconfdir])
+AC_SUBST([ndctl_confdir])
+AC_SUBST([ndctl_conf])
 AC_SUBST([ndctl_monitorconf])
+
+daxctl_confdir=${sysconfdir}/daxctl.conf.d
+AC_SUBST([daxctl_confdir])
 
 daxctl_modprobe_datadir=${datadir}/daxctl
 daxctl_modprobe_data=daxctl.conf
 AC_SUBST([daxctl_modprobe_datadir])
 AC_SUBST([daxctl_modprobe_data])
+
+AC_ARG_WITH(udevrulesdir,
+    [AS_HELP_STRING([--with-udevrulesdir=DIR], [udev rules.d directory])],
+    [UDEVRULESDIR="$withval"],
+    [UDEVRULESDIR='${prefix}/lib/udev/rules.d']
+)
+AC_SUBST(UDEVRULESDIR)
 
 AC_ARG_WITH([keyutils],
 	    AS_HELP_STRING([--with-keyutils],
@@ -199,6 +211,10 @@ ndctl_keysdir=${sysconfdir}/ndctl/keys
 ndctl_keysreadme=keys.readme
 AC_SUBST([ndctl_keysdir])
 AC_SUBST([ndctl_keysreadme])
+
+AC_CHECK_HEADERS([iniparser.h],,[
+		  AC_MSG_ERROR([iniparser.h not found, install iniparser-devel, libiniparser-dev, or so])
+		 ])
 
 my_CFLAGS="\
 -Wall \

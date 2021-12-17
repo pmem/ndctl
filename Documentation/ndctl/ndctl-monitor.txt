@@ -21,8 +21,8 @@ objects and dumping the json format notifications to syslog, standard
 output or a logfile.
 
 The objects to monitor and smart events to notify can be selected by
-setting options and/or the configuration file at
-{ndctl_monitorconfdir}/{ndctl_monitorconf}
+setting options and/or configuration files with .conf suffix under
+{ndctl_confdir}
 
 Both, the values in configuration file and in options will work. If
 there is a conflict, the values in options will override the values in
@@ -81,8 +81,8 @@ will not work if "--daemon" is specified.
 
 -c::
 --config-file=::
-	Provide the config file to use. This overrides the default config
-	typically found in {ndctl_monitorconfdir}
+	Provide the config file(s) to use. This overrides the default config
+	typically found in {ndctl_confdir}
 
 --daemon::
 	Run a monitor as a daemon.

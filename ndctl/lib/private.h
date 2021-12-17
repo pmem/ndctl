@@ -129,6 +129,7 @@ struct ndctl_ctx {
 	int regions_init;
 	void *userdata;
 	struct list_head busses;
+	const char *config_path;
 	int busses_init;
 	struct udev *udev;
 	struct udev_queue *udev_queue;

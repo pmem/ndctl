@@ -96,4 +96,6 @@ LIBDAXCTL_9 {
 global:
 	daxctl_dev_will_auto_online_memory;
 	daxctl_dev_has_online_memory;
+	daxctl_set_config_path;
+	daxctl_get_config_path;
 } LIBDAXCTL_8;
