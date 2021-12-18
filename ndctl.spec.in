@@ -28,6 +28,7 @@ BuildRequires:	pkgconfig(bash-completion)
 BuildRequires:	pkgconfig(systemd)
 BuildRequires:	keyutils-libs-devel
 BuildRequires:	systemd-rpm-macros
+BuildRequires:	iniparser-devel
 
 %description
 Utility library for managing the "libnvdimm" subsystem.  The "libnvdimm"
