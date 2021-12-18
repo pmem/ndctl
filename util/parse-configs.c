@@ -57,7 +57,7 @@ static const char *search_section_kv(dictionary *d, const struct config *c)
 			return NULL;
 		if (!c->section || !c->search_key || !c->search_val || !c->get_key) {
 			fprintf(stderr, "warning: malformed config query, skipping\n");
-			return NULL;
+			goto out_sec;
 		}
 
 		cur = strtok_r(cur_sec, delim, &save);
