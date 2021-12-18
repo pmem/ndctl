@@ -4,7 +4,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <iniparser/iniparser.h>
+#include <iniparser.h>
 #include <sys/stat.h>
 #include <util/parse-configs.h>
 #include <util/strbuf.h>
