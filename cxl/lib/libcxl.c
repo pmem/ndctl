@@ -420,11 +420,14 @@ CXL_EXPORT int cxl_memdev_nvdimm_bridge_active(struct cxl_memdev *memdev)
 {
 	struct cxl_ctx *ctx = cxl_memdev_get_ctx(memdev);
 	struct cxl_nvdimm_bridge *bridge = memdev->bridge;
-	char *path = bridge->dev_buf;
-	int len = bridge->buf_len;
+	char *path;
+	int len;
 
 	if (!bridge)
 		return 0;
+
+	path = bridge->dev_buf;
+	len = bridge->buf_len;
 
 	if (snprintf(path, len, "%s/driver", bridge->dev_path) >= len) {
 		err(ctx, "%s: nvdimm bridge buffer too small!\n",
