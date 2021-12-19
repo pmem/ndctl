@@ -3,14 +3,12 @@ title: ndctl
 layout: pmdk
 ---
 
-NAME
-====
+# NAME
 
 daxctl-list - dump the platform Device-DAX regions, devices, and
 attributes in json.
 
-SYNOPSIS
-========
+# SYNOPSIS
 
 >     daxctl list [<options>]
 
@@ -23,8 +21,7 @@ list* with no options is equivalent to:
 
 >     daxctl list --devices
 
-EXAMPLE
-=======
+# EXAMPLE
 
     # daxctl list --regions --devices
 
@@ -38,8 +35,7 @@ EXAMPLE
       ]
     }
 
-OPTIONS
-=======
+# OPTIONS
 
 `-r; --region=`  
 A device-dax region is a contiguous range of memory that hosts one or
@@ -48,9 +44,9 @@ instance id. The keyword *all* can be specified to carry out the
 operation on every region in the system.
 
 `-d; --dev=`  
-Specify a dax device name, \<region id\>.\<instance id\> tuple, or
-keyword *all* to filter the listing. For example to list the first
-device instance in region1:
+Specify a dax device name, \<region id>.\<instance id> tuple, or keyword
+*all* to filter the listing. For example to list the first device
+instance in region1:
 
 <!-- -->
 
@@ -93,8 +89,7 @@ converted to hexadecimal strings. Example:
       "size":"30.57 GiB (32.83 GB)"
     }
 
-COPYRIGHT
-=========
+# COPYRIGHT
 
 Copyright © 2016 - 2020, Intel Corporation. License GPLv2: GNU GPL
 version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you

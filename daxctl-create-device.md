@@ -3,18 +3,15 @@ title: ndctl
 layout: pmdk
 ---
 
-NAME
-====
+# NAME
 
 daxctl-create-device - Create a devdax device
 
-SYNOPSIS
-========
+# SYNOPSIS
 
 >     daxctl create-device [<options>]
 
-EXAMPLES
-========
+# EXAMPLES
 
 -   Creates dax0.1 with 4G of size
 
@@ -62,19 +59,17 @@ EXAMPLES
       "mode":"devdax"
     }
 
-DESCRIPTION
-===========
+# DESCRIPTION
 
 Creates dax device in *devdax* mode in dynamic regions. The resultant
 can also be convereted to the *system-ram* mode which arranges for the
 dax range to be hot-plugged into the system as regular memory.
 
 *daxctl create-device* expects that the BIOS or kernel defines a range
-in the EFI memory map with EFI\_MEMORY\_SP. The resultant ranges mean
-that it’s 100% capacity is reserved for applications.
+in the EFI memory map with EFI_MEMORY_SP. The resultant ranges mean that
+it’s 100% capacity is reserved for applications.
 
-OPTIONS
-=======
+# OPTIONS
 
 `-r; --region=`  
 Restrict the operation to devices belonging to the specified region(s).
@@ -123,15 +118,13 @@ converted to hexadecimal strings.
 `-v; --verbose`  
 Emit more debug messages
 
-COPYRIGHT
-=========
+# COPYRIGHT
 
 Copyright © 2016 - 2020, Intel Corporation. License GPLv2: GNU GPL
 version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
 are free to change and redistribute it. There is NO WARRANTY, to the
 extent permitted by law.
 
-SEE ALSO
-========
+# SEE ALSO
 
 [daxctl-list](daxctl-list.md),[daxctl-reconfigure-device](daxctl-reconfigure-device.md),[daxctl-destroy-device](daxctl-destroy-device.md)

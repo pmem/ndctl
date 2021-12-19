@@ -3,27 +3,23 @@ title: ndctl
 layout: pmdk
 ---
 
-NAME
-====
+# NAME
 
 ndctl-freeze-security - Set the given DIMM(s) to reject future security
 operations
 
-SYNOPSIS
-========
+# SYNOPSIS
 
 >     ndctl freeze-security <nmem0> [<nmem1>..<nmemN>] [<options>]
 
-DESCRIPTION
-===========
+# DESCRIPTION
 
 Prevent any further security operations on the given DIMMs until the
 next reboot. This is used in scenarios where the administrator has taken
 all expected security actions for the current boot and wants the DIMM to
 enforce / lock the current state.
 
-EXAMPLES
-========
+# EXAMPLES
 
     $ ndctl list -d nmem0
     [
@@ -51,10 +47,9 @@ EXAMPLES
       },
     ]
 
-OPTIONS
-=======
+# OPTIONS
 
-\<dimm\>  
+\<dimm>  
 A *nmemX* device name, or a dimm id number. Restrict the operation to
 the specified dimm(s). The keyword *all* can be specified to indicate
 the lack of any restriction, however this is the same as not supplying a
@@ -69,8 +64,7 @@ supplying a --bus option at all.
 `-v; --verbose`  
 Emit debug messages.
 
-THEORY OF OPERATION
-===================
+# THEORY OF OPERATION
 
 The Intel Device Specific Methods (DSM) specification v1.7 and v1.8
 \[1\] introduced the following security management operations: enable
@@ -122,8 +116,7 @@ needs to be disabled.
 
 The following sub-sections describe specifics of each security feature.
 
-UNLOCK
-------
+## UNLOCK
 
 Unlock is performed by the kernel, however a preparation step must
 happen before the unlock DSM can be issued by the kernel. It is expected
@@ -149,8 +142,7 @@ freeze the security and disallow any further security configuration
 changes. A kernel module parameter is available to override this
 behavior.
 
-SETUP USER PASSPHRASE
----------------------
+## SETUP USER PASSPHRASE
 
 To setup the passphrase for a DIMM, it is expected that the *kek* to be
 used is present in the kernel’s user keyring. The *kek* encrypts the
@@ -161,8 +153,7 @@ encryption, a binary blob of the passphrase is written to the passphrase
 blob storage directory (/etc/ndctl/keys). The user is responsible for
 backing up the passphrase blobs to a secure location.
 
-UPDATE USER PASSPHRASE
-----------------------
+## UPDATE USER PASSPHRASE
 
 The update user passphrase operation uses the same DSM command as enable
 user passphrase. Most of the work is done on the key management side.
@@ -182,24 +173,21 @@ following operations are performed for *update-passphrase*:
 
 6.  Remove old passphrase and the passphrase blob from the keyring.
 
-REMOVE USER PASSPHRASE
-----------------------
+## REMOVE USER PASSPHRASE
 
 The *key-ID* for the passphrase to be removed is written to sysfs. The
 kernel then sends the DSM to disable security, and the passphrase is
 then removed from the keyring, and the associated passphrase blob is
 deleted.
 
-CRYPTO (SECURE) ERASE
----------------------
+## CRYPTO (SECURE) ERASE
 
 This operation is similar to remove-passphrase. The kernel issues a
 WBINVD instruction before and after the operation to ensure no data
 corruption from a stale CPU cache. Use ndctl’s sanitize-dimm command
 with the `--crypto-erase` option to perform this operation.
 
-OVERWRITE
----------
+## OVERWRITE
 
 This is invoked using `--overwrite` option for ndctl *sanitize-dimm*.
 The overwrite operation wipes the entire NVDIMM. The operation can take
@@ -212,23 +200,20 @@ instruction is issued by the kernel. If both --crypto-erase and
 --overwrite options are supplied, then crypto-erase is performed before
 overwrite.
 
-SECURITY FREEZE
----------------
+## SECURITY FREEZE
 
 This operation does not require a passphrase. This will cause any
 security command other than a status query to be locked out until the
 next boot.
 
-MASTER PASSPHRASE SETUP, UPDATE, and CRYPTO ERASE
--------------------------------------------------
+## MASTER PASSPHRASE SETUP, UPDATE, and CRYPTO ERASE
 
 These operations are similar to the user passphrase enable and update.
 The only difference is that a different passphrase is used. The master
 passphrase has no relation to the master key (*kek*) which is used for
 encryption of either passphrase.
 
-COPYRIGHT
-=========
+# COPYRIGHT
 
 Copyright © 2016 - 2020, Intel Corporation. License GPLv2: GNU GPL
 version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you

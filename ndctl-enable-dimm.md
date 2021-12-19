@@ -3,18 +3,15 @@ title: ndctl
 layout: pmdk
 ---
 
-NAME
-====
+# NAME
 
 ndctl-enable-dimm - enable one more dimms
 
-SYNOPSIS
-========
+# SYNOPSIS
 
 >     ndctl enable-dimm <dimm> [<options>]
 
-DESCRIPTION
-===========
+# DESCRIPTION
 
 A generic DIMM device object, named /dev/nmemX, is registered for each
 memory device indicated in the ACPI NFIT table, or other platform NVDIMM
@@ -30,10 +27,9 @@ Disabling a DIMM, after all the regions it is a member of have been
 disabled, allows userspace to manually update the label data to be
 consumed when the DIMM is next enabled.
 
-OPTIONS
-=======
+# OPTIONS
 
-\<dimm\>  
+\<dimm>  
 A *nmemX* device name, or a dimm id number. Restrict the operation to
 the specified dimm(s). The keyword *all* can be specified to indicate
 the lack of any restriction, however this is the same as not supplying a
@@ -45,15 +41,13 @@ operation to the specified bus(es). The keyword *all* can be specified
 to indicate the lack of any restriction, however this is the same as not
 supplying a --bus option at all.
 
-COPYRIGHT
-=========
+# COPYRIGHT
 
 Copyright © 2016 - 2020, Intel Corporation. License GPLv2: GNU GPL
 version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
 are free to change and redistribute it. There is NO WARRANTY, to the
 extent permitted by law.
 
-SEE ALSO
-========
+# SEE ALSO
 
 [ndctl-disable-dimm](ndctl-disable-dimm.md)

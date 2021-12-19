@@ -3,19 +3,16 @@ title: ndctl
 layout: pmdk
 ---
 
-NAME
-====
+# NAME
 
 ndctl-init-labels - initialize the label data area on a dimm or set of
 dimms
 
-SYNOPSIS
-========
+# SYNOPSIS
 
 >     ndctl init-labels <nmem0> [<nmem1>..<nmemN>] [<options>]
 
-DESCRIPTION
-===========
+# DESCRIPTION
 
 The namespace label area is a small persistent partition of capacity
 available on some NVDIMM devices. The label area is used to resolve
@@ -30,8 +27,7 @@ is missing or reinitialize it if it is damaged. Note that
 reinitialization effectively destroys all existing namespace labels on
 the DIMM.
 
-EXAMPLE
-=======
+# EXAMPLE
 
 Find the DIMMs that comprise a given region:
 
@@ -77,10 +73,9 @@ Create a namespace in that region:
 
     # ndctl create-namespace --region=region1
 
-OPTIONS
-=======
+# OPTIONS
 
-\<memory device(s)\>  
+\<memory device(s)>  
 A *nmemX* device name, or a dimm id number. Restrict the operation to
 the specified dimm(s). The keyword *all* can be specified to indicate
 the lack of any restriction, however this is the same as not supplying a
@@ -112,16 +107,14 @@ namespaces on the dimm.
 Initialize with a specific version of labels from the namespace label
 specification. Defaults to 1.1
 
-COPYRIGHT
-=========
+# COPYRIGHT
 
 Copyright © 2016 - 2020, Intel Corporation. License GPLv2: GNU GPL
 version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
 are free to change and redistribute it. There is NO WARRANTY, to the
 extent permitted by law.
 
-SEE ALSO
-========
+# SEE ALSO
 
 [ndctl-create-namespace](ndctl-create-namespace.md) , [UEFI NVDIMM Label
 Protocol](http://www.uefi.org/sites/default/files/resources/UEFI_Spec_2_7.pdf)

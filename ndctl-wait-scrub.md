@@ -3,19 +3,16 @@ title: ndctl
 layout: pmdk
 ---
 
-NAME
-====
+# NAME
 
 ndctl-wait-scrub - wait for an Address Range Scrub (ARS) operation to
 complete
 
-SYNOPSIS
-========
+# SYNOPSIS
 
 >     ndctl wait-scrub [<bus-id> <bus-id2> …​ <bus-idN>] [<options>]
 
-DESCRIPTION
-===========
+# DESCRIPTION
 
 NVDIMM Address Range Scrub is a capability provided by platform firmware
 that allows for the discovery of memory errors by system software. It
@@ -30,8 +27,7 @@ character is emitted along with the current count. The *ndctl
 wait-scrub* operation waits for *scrub*, across all specified buses, to
 indicate not in-progress at least once.
 
-EXAMPLE
-=======
+# EXAMPLE
 
 Wait for scrub on all nvdimm buses in the system. The json listing
 report at the end only includes the buses that support ARS operations.
@@ -56,22 +52,19 @@ system, the command reports whether ARS support is available.
     # ndctl wait-scrub e820
     error waiting for scrub completion: Operation not supported
 
-OPTIONS
-=======
+# OPTIONS
 
 `-v; --verbose`  
 Emit debug messages for the ARS wait process
 
-COPYRIGHT
-=========
+# COPYRIGHT
 
 Copyright © 2016 - 2020, Intel Corporation. License GPLv2: GNU GPL
 version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
 are free to change and redistribute it. There is NO WARRANTY, to the
 extent permitted by law.
 
-SEE ALSO
-========
+# SEE ALSO
 
 [ndctl-start-scrub](ndctl-start-scrub.md) , [ACPI 6.2 Specification Section 9.20.7.2 Address
 Range Scrubbing (ARS)

@@ -3,18 +3,15 @@ title: ndctl
 layout: pmdk
 ---
 
-NAME
-====
+# NAME
 
 daxctl-destroy-device - Destroy a devdax device
 
-SYNOPSIS
-========
+# SYNOPSIS
 
 >     daxctl destroy-device <dax0.0> [<dax1.0>…​<daxY.Z>] [<options>]
 
-EXAMPLES
-========
+# EXAMPLES
 
 -   Destroys dax0.1
 
@@ -34,13 +31,11 @@ EXAMPLES
     # daxctl destroy-device -r 0 all
     destroyed 2 devices
 
-DESCRIPTION
-===========
+# DESCRIPTION
 
 Destroys a dax device in *devdax* mode.
 
-OPTIONS
-=======
+# OPTIONS
 
 `-r; --region=`  
 Restrict the operation to devices belonging to the specified region(s).
@@ -61,15 +56,13 @@ converted to hexadecimal strings.
 `-v; --verbose`  
 Emit more debug messages
 
-COPYRIGHT
-=========
+# COPYRIGHT
 
 Copyright © 2016 - 2020, Intel Corporation. License GPLv2: GNU GPL
 version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
 are free to change and redistribute it. There is NO WARRANTY, to the
 extent permitted by law.
 
-SEE ALSO
-========
+# SEE ALSO
 
 [daxctl-list](daxctl-list.md),[daxctl-reconfigure-device](daxctl-reconfigure-device.md),[daxctl-create-device](daxctl-create-device.md)

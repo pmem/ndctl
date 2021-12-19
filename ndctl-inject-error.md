@@ -3,18 +3,15 @@ title: ndctl
 layout: pmdk
 ---
 
-NAME
-====
+# NAME
 
 ndctl-inject-error - inject media errors at a namespace offset
 
-SYNOPSIS
-========
+# SYNOPSIS
 
 >     ndctl inject-error <namespace> [<options>]
 
-THEORY OF OPERATION
-===================
+# THEORY OF OPERATION
 
 The capacity of an NVDIMM REGION (contiguous span of persistent memory)
 is accessed via one or more NAMESPACE devices. REGION is the Linux term
@@ -32,16 +29,18 @@ the kernel’s *memmap=ss!nn* command line option (see the nvdimm wiki on
 kernel.org), or NVDIMMs without a valid *namespace index* in their label
 area.
 
-> **Note**
->
-> Label-less namespaces lack many of the features of their label-rich
-> cousins. For example, their size cannot be modified, or they cannot be
-> fully *destroyed* (i.e. the space reclaimed). A destroy operation will
-> zero any mode-specific metadata. Finally, for create-namespace
-> operations on label-less namespaces, ndctl bypasses the region
-> capacity availability checks, and always satisfies the request using
-> the full region capacity. The only reconfiguration operation supported
-> on a label-less namespace is changing its *mode*.
+<div class="note">
+
+Label-less namespaces lack many of the features of their label-rich
+cousins. For example, their size cannot be modified, or they cannot be
+fully *destroyed* (i.e. the space reclaimed). A destroy operation will
+zero any mode-specific metadata. Finally, for create-namespace
+operations on label-less namespaces, ndctl bypasses the region capacity
+availability checks, and always satisfies the request using the full
+region capacity. The only reconfiguration operation supported on a
+label-less namespace is changing its *mode*.
+
+</div>
 
 A namespace can be provisioned to operate in one of 4 modes, *fsdax*,
 *devdax*, *sector*, and *raw*. Here are the expected usage models for
@@ -83,21 +82,22 @@ features related to error handling.
 
 By default, injecting an error actually only injects an error to the
 first *n* bytes of the block, where *n* is the output of
-ndctl\_cmd\_ars\_cap\_get\_size(). In other words, we only inject one
-*ars\_unit* per sector. This is sufficient for Linux to mark the whole
+ndctl_cmd_ars_cap_get_size(). In other words, we only inject one
+*ars_unit* per sector. This is sufficient for Linux to mark the whole
 sector as bad, and will show up as such in the various *badblocks* lists
 in the kernel. If multiple blocks are being injected, only the first *n*
 bytes of each block specified will be injected as errors. This can be
 overridden by the --saturate option, which will force the entire block
 to be injected as an error.
 
-> **Warning**
->
-> These commands are DANGEROUS and can cause data loss. They are only
-> provided for testing and debugging purposes.
+<div class="warning">
 
-EXAMPLES
-========
+These commands are DANGEROUS and can cause data loss. They are only
+provided for testing and debugging purposes.
+
+</div>
+
+# EXAMPLES
 
 Inject errors in namespace0.0 at block 12 for 2 blocks (i.e. 12, 13)
 
@@ -111,8 +111,7 @@ Uninject errors at block 12 for 2 blocks on namespace0.0
 
 >     ndctl inject-error --uninject --block=12 --count=2 namespace0.0
 
-OPTIONS
-=======
+# OPTIONS
 
 `-B; --block=`  
 Namespace block offset in 512 byte sized blocks where the error is to be
@@ -185,15 +184,13 @@ operation to the specified bus(es). The keyword *all* can be specified
 to indicate the lack of any restriction, however this is the same as not
 supplying a --bus option at all.
 
-COPYRIGHT
-=========
+# COPYRIGHT
 
 Copyright © 2016 - 2020, Intel Corporation. License GPLv2: GNU GPL
 version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
 are free to change and redistribute it. There is NO WARRANTY, to the
 extent permitted by law.
 
-SEE ALSO
-========
+# SEE ALSO
 
 [ndctl-list](ndctl-list.md) ,

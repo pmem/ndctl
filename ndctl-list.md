@@ -3,14 +3,12 @@ title: ndctl
 layout: pmdk
 ---
 
-NAME
-====
+# NAME
 
 ndctl-list - dump the platform nvdimm device topology and attributes in
 json
 
-SYNOPSIS
-========
+# SYNOPSIS
 
 >     ndctl list [<options>]
 
@@ -23,8 +21,7 @@ default, *ndctl list* with no options is equivalent to:
 
 >     ndctl list --namespaces --bus=all --region=all
 
-EXAMPLE
-=======
+# EXAMPLE
 
     # ndctl list --buses --namespaces
 
@@ -57,8 +54,7 @@ EXAMPLE
       ]
     }
 
-OPTIONS
-=======
+# OPTIONS
 
 `-r; --region=`  
 A *regionX* device name, or a region id number. Restrict the operation
@@ -201,10 +197,10 @@ modes and variable properties like sector sizes and alignments.
 
 `-M; --media-errors`  
 Include media errors (badblocks) in the listing. Note that the
-*badblock\_count* property is included in the listing by default when
-the count is non-zero, otherwise it is hidden. Also, if the namespace is
-in *sector* mode the *badblocks* listing is not included and
-*badblock\_count* property may include blocks that are located in
+*badblock_count* property is included in the listing by default when the
+count is non-zero, otherwise it is hidden. Also, if the namespace is in
+*sector* mode the *badblocks* listing is not included and
+*badblock_count* property may include blocks that are located in
 metadata, or unused capacity in the namespace. Convert a *sector*
 namespace into *raw* mode to list precise *badblocks* offsets.
 
@@ -237,7 +233,7 @@ and can be used to override omitted flags for showing specific
 information.  
 
 -   **-v** In addition to the enabled namespaces default output, show
-    the numa\_node, raw\_uuid, and bad block media errors.  
+    the numa_node, raw_uuid, and bad block media errors.  
 
 -   **-vv** Everything *-v* provides, plus automatically enable --dimms,
     --buses, and --regions.  
@@ -318,28 +314,25 @@ data. Convert other numeric fields into hexadecimal strings.
       "badblock_count":8
     }
 
-ENVIRONMENT VARIABLES
-=====================
+# ENVIRONMENT VARIABLES
 
-*NDCTL\_LIST\_LINT*  
+*NDCTL_LIST_LINT*  
 A bug in the "ndctl list" output needs to be fixed with care for other
 tooling that may have developed a dependency on the buggy behavior. The
-NDCTL\_LIST\_LINT variable is an opt-in to apply fixes, and not regress
+NDCTL_LIST_LINT variable is an opt-in to apply fixes, and not regress
 previously shipped behavior by default. This environment variable
 applies the following fixups:
 
 -   Fix "ndctl list -Rv" to only show region objects and not include
     namespace objects. ::
 
-COPYRIGHT
-=========
+# COPYRIGHT
 
 Copyright © 2016 - 2020, Intel Corporation. License GPLv2: GNU GPL
 version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
 are free to change and redistribute it. There is NO WARRANTY, to the
 extent permitted by law.
 
-SEE ALSO
-========
+# SEE ALSO
 
 [ndctl-create-namespace](ndctl-create-namespace.md)

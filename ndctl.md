@@ -3,18 +3,15 @@ title: ndctl
 layout: pmdk
 ---
 
-NAME
-====
+# NAME
 
 ndctl - Manage "libnvdimm" subsystem devices (Non-volatile Memory)
 
-SYNOPSIS
-========
+# SYNOPSIS
 
 >     ndctl [--version] [--help] [OPTIONS] COMMAND [ARGS]
 
-OPTIONS
-=======
+# OPTIONS
 
 `-v; --version`  
 Display ndctl version.
@@ -22,8 +19,7 @@ Display ndctl version.
 `-h; --help`  
 Run ndctl help command.
 
-DESCRIPTION
-===========
+# DESCRIPTION
 
 ndctl is utility for managing the "libnvdimm" kernel subsystem. The
 "libnvdimm" subsystem defines a kernel device model and control message
@@ -33,16 +29,14 @@ tool include, provisioning capacity (namespaces), as well as
 enumerating/enabling/disabling the devices (dimms, regions, namespaces)
 associated with an NVDIMM bus.
 
-COPYRIGHT
-=========
+# COPYRIGHT
 
 Copyright © 2016 - 2020, Intel Corporation. License GPLv2: GNU GPL
 version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
 are free to change and redistribute it. There is NO WARRANTY, to the
 extent permitted by law.
 
-SEE ALSO
-========
+# SEE ALSO
 
 [ndctl-create-namespace](ndctl-create-namespace.md) , [ndctl-destroy-namespace](ndctl-destroy-namespace.md) ,
 [ndctl-check-namespace](ndctl-check-namespace.md) , [ndctl-enable-region](ndctl-enable-region.md) , [ndctl-disable-region](ndctl-disable-region.md) ,

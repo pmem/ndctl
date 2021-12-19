@@ -3,18 +3,15 @@ title: ndctl
 layout: pmdk
 ---
 
-NAME
-====
+# NAME
 
 ndctl-update-firmware - update the firmware the given device
 
-SYNOPSIS
-========
+# SYNOPSIS
 
 >     ndctl update-firmware <dimm> [<options>]
 
-DESCRIPTION
-===========
+# DESCRIPTION
 
 Provide a generic interface for updating NVDIMM firmware. The use of
 this depends on support for the NVDIMM "family" in libndctl, the kernel
@@ -35,10 +32,9 @@ update is enabled. For example:
 >       }
 >     }
 
-OPTIONS
-=======
+# OPTIONS
 
-\<dimm\>  
+\<dimm>  
 A *nmemX* device name, or a dimm id number. Restrict the operation to
 the specified dimm(s). The keyword *all* can be specified to indicate
 the lack of any restriction, however this is the same as not supplying a
@@ -71,8 +67,7 @@ accepted.
 `-v; --verbose`  
 Emit debug messages for the namespace check process.
 
-COPYRIGHT
-=========
+# COPYRIGHT
 
 Copyright © 2016 - 2020, Intel Corporation. License GPLv2: GNU GPL
 version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you

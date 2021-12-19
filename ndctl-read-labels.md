@@ -3,18 +3,15 @@ title: ndctl
 layout: pmdk
 ---
 
-NAME
-====
+# NAME
 
 ndctl-read-labels - read out the label area on a dimm or set of dimms
 
-SYNOPSIS
-========
+# SYNOPSIS
 
 >     ndctl read-labels <nmem0> [<nmem1>..<nmemN>] [<options>]
 
-DESCRIPTION
-===========
+# DESCRIPTION
 
 The namespace label area is a small persistent partition of capacity
 available on some NVDIMM devices. The label area is used to resolve
@@ -23,10 +20,9 @@ boundaries. This command dumps the raw binary data in a dimm’s label
 area to stdout or a file. In the multi-dimm case the data is
 concatenated.
 
-OPTIONS
-=======
+# OPTIONS
 
-\<memory device(s)\>  
+\<memory device(s)>  
 A *nmemX* device name, or a dimm id number. Restrict the operation to
 the specified dimm(s). The keyword *all* can be specified to indicate
 the lack of any restriction, however this is the same as not supplying a
@@ -66,16 +62,14 @@ enable json output and convert number formats to human readable strings,
 for example show the size in terms of "KB", "MB", "GB", etc instead of a
 signed 64-bit numbers per the JSON interchange format (implies --json).
 
-COPYRIGHT
-=========
+# COPYRIGHT
 
 Copyright © 2016 - 2020, Intel Corporation. License GPLv2: GNU GPL
 version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
 are free to change and redistribute it. There is NO WARRANTY, to the
 extent permitted by law.
 
-SEE ALSO
-========
+# SEE ALSO
 
 [UEFI NVDIMM Label
 Protocol](http://www.uefi.org/sites/default/files/resources/UEFI_Spec_2_7.pdf)

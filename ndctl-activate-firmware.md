@@ -3,13 +3,11 @@ title: ndctl
 layout: pmdk
 ---
 
-NAME
-====
+# NAME
 
 ndctl-activate-firmware - activate staged firmware on memory devices
 
-SYNOPSIS
-========
+# SYNOPSIS
 
 >     ndctl activate-firmware [<bus-id> <bus-id2> …​ <bus-idN>] [<options>]
 
@@ -26,7 +24,7 @@ new firmware binaries, but if the platform supports FWA it will
 additionally arm the devices for activation. Then *ndctl
 activate-firmware* may attempt to activate the firmware live. However,
 if the platform indicates that the memory controller will be taken
-off-line for the duration of the update "activate\_method == suspend"
+off-line for the duration of the update "activate_method == suspend"
 then the default policy for firmware activation is to inject a truncated
 hibernate cycle to freeze devices and applications before the hard
 quiesce is injected by the platform, and then resume the system.
@@ -38,8 +36,7 @@ platform injected quiesce period. This option should only be used
 explicit knowledge that the platform quiesce time will not trigger
 completion timeout violations for any devices in the system.
 
-EXAMPLES
-========
+# EXAMPLES
 
 Check for any buses that support activation without triggering an
 activation:
@@ -97,8 +94,7 @@ method:
       }
     ]
 
-OPTIONS
-=======
+# OPTIONS
 
 `-n; --dry-run`  
 Perform all actions related to activation including honoring --idle and
@@ -115,11 +111,11 @@ specifying --no-idle.
 
 `-f; --force`  
 The activation method defaults to the reported
-"bus.firmware.activate\_method" property. When the method is "live" then
+"bus.firmware.activate_method" property. When the method is "live" then
 this --force option is ignored. When the method is "reset" no runtime
 activation is attempted. When the method is "suspend" this option
 indicates to the driver to bypass the hibernate cycle to activate
-firmware. in the bus When the reported "activate\_method" is "suspend"
+firmware. in the bus When the reported "activate_method" is "suspend"
 the kernel driver may support overriding the suspend requirement and
 instead issue the firmware-activation live. **CAUTION** this may lead to
 undefined system behavior if device completion timeouts are violated for
@@ -128,16 +124,14 @@ in-flight memory operations.
 `-v; --verbose`  
 Emit debug messages for the firmware activation procedure
 
-COPYRIGHT
-=========
+# COPYRIGHT
 
 Copyright © 2016 - 2020, Intel Corporation. License GPLv2: GNU GPL
 version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
 are free to change and redistribute it. There is NO WARRANTY, to the
 extent permitted by law.
 
-SEE ALSO
-========
+# SEE ALSO
 
 [ndctl-update-firmware](ndctl-update-firmware.md) , [Intel Optane PMem DSM
 Interface](https://pmem.io/documents/IntelOptanePMem_DSM_Interface-V2.0.pdf)

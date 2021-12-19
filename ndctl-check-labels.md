@@ -3,19 +3,16 @@ title: ndctl
 layout: pmdk
 ---
 
-NAME
-====
+# NAME
 
 ndctl-check-labels - determine if the given dimms have a valid namespace
 index block
 
-SYNOPSIS
-========
+# SYNOPSIS
 
 >     ndctl check-labels <nmem0> [<nmem1>..<nmemN>] [<options>]
 
-DESCRIPTION
-===========
+# DESCRIPTION
 
 The namespace label area is a small persistent partition of capacity
 available on some NVDIMM devices. The label area is used to resolve
@@ -24,10 +21,9 @@ boundaries. In addition to checking if a label area has a valid index
 block, running this command in verbose mode reports the reason the index
 block is deemed invalid.
 
-OPTIONS
-=======
+# OPTIONS
 
-\<memory device(s)\>  
+\<memory device(s)>  
 A *nmemX* device name, or a dimm id number. Restrict the operation to
 the specified dimm(s). The keyword *all* can be specified to indicate
 the lack of any restriction, however this is the same as not supplying a
@@ -50,16 +46,14 @@ supplying a --bus option at all.
 Turn on verbose debug messages in the library (if ndctl was built with
 logging and debug enabled).
 
-COPYRIGHT
-=========
+# COPYRIGHT
 
 Copyright © 2016 - 2020, Intel Corporation. License GPLv2: GNU GPL
 version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
 are free to change and redistribute it. There is NO WARRANTY, to the
 extent permitted by law.
 
-SEE ALSO
-========
+# SEE ALSO
 
 [UEFI NVDIMM Label
 Protocol](http://www.uefi.org/sites/default/files/resources/UEFI_Spec_2_7.pdf)

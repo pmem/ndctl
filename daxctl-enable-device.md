@@ -3,18 +3,15 @@ title: ndctl
 layout: pmdk
 ---
 
-NAME
-====
+# NAME
 
 daxctl-enable-device - Enable a devdax device
 
-SYNOPSIS
-========
+# SYNOPSIS
 
 >     daxctl enable-device <dax0.0> [<dax1.0>…​<daxY.Z>] [<options>]
 
-EXAMPLES
-========
+# EXAMPLES
 
 -   Enables dax0.1
 
@@ -30,13 +27,11 @@ EXAMPLES
     # daxctl enable-device -r 0 all
     enabled 3 devices
 
-DESCRIPTION
-===========
+# DESCRIPTION
 
 Enables a dax device in *devdax* mode.
 
-OPTIONS
-=======
+# OPTIONS
 
 `-r; --region=`  
 Restrict the operation to devices belonging to the specified region(s).
@@ -57,15 +52,13 @@ converted to hexadecimal strings.
 `-v; --verbose`  
 Emit more debug messages
 
-COPYRIGHT
-=========
+# COPYRIGHT
 
 Copyright © 2016 - 2020, Intel Corporation. License GPLv2: GNU GPL
 version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
 are free to change and redistribute it. There is NO WARRANTY, to the
 extent permitted by law.
 
-SEE ALSO
-========
+# SEE ALSO
 
 [daxctl-list](daxctl-list.md),[daxctl-reconfigure-device](daxctl-reconfigure-device.md),[daxctl-create-device](daxctl-create-device.md)

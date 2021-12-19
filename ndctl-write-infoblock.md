@@ -3,18 +3,15 @@ title: ndctl
 layout: pmdk
 ---
 
-NAME
-====
+# NAME
 
 ndctl-write-infoblock - generate and write an infoblock
 
-SYNOPSIS
-========
+# SYNOPSIS
 
 >     ndctl write-infoblock [<namespaceX.Y> | -o <file> | --stdout] [<options>]
 
-DESCRIPTION
-===========
+# DESCRIPTION
 
 As described in the theory of operation section of
 [ndctl-create-namespace](ndctl-create-namespace.md) , the raw capacity of a namespace may
@@ -28,17 +25,17 @@ The generated block can be written to an existing namespace (provided
 that namespace is not presently active), written to a file, or piped to
 standard-out.
 
-> **Warning**
->
-> This command is a debug facility that can generate image files with
-> valid infoblocks, but also invalid infoblocks for testing the kernel.
-> Use the --offset and --align options with care. Namely --offset must
-> match the actual physical address offset of the namespace it is
-> applied to, and --align must be one of the architectures supported
-> page sizes.
+<div class="warning">
 
-EXAMPLE
-=======
+This command is a debug facility that can generate image files with
+valid infoblocks, but also invalid infoblocks for testing the kernel.
+Use the --offset and --align options with care. Namely --offset must
+match the actual physical address offset of the namespace it is applied
+to, and --align must be one of the architectures supported page sizes.
+
+</div>
+
+# EXAMPLE
 
 >     ndctl write-infoblock -s 1T -c | ndctl read-infoblock -j
 >     wrote 1 infoblock
@@ -62,10 +59,9 @@ EXAMPLE
 >     ]
 >     read 1 infoblock
 
-OPTIONS
-=======
+# OPTIONS
 
-\<namespace(s)\>  
+\<namespace(s)>  
 One or more *namespaceX.Y* device names. The keyword *all* can be
 specified to operate on every namespace in the system, optionally
 filtered by bus id (see --bus= option), or region id (see --region=
@@ -117,16 +113,14 @@ to the specified region(s). The keyword *all* can be specified to
 indicate the lack of any restriction, however this is the same as not
 supplying a --region option at all.
 
-COPYRIGHT
-=========
+# COPYRIGHT
 
 Copyright © 2016 - 2020, Intel Corporation. License GPLv2: GNU GPL
 version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
 are free to change and redistribute it. There is NO WARRANTY, to the
 extent permitted by law.
 
-SEE ALSO
-========
+# SEE ALSO
 
 [ndctl-create-namespace](ndctl-create-namespace.md) , [UEFI NVDIMM Label
 Protocol](http://www.uefi.org/sites/default/files/resources/UEFI_Spec_2_7.pdf)

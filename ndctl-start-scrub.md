@@ -3,18 +3,15 @@ title: ndctl
 layout: pmdk
 ---
 
-NAME
-====
+# NAME
 
 ndctl-start-scrub - start an Address Range Scrub (ARS) operation
 
-SYNOPSIS
-========
+# SYNOPSIS
 
 >     ndctl start-scrub [<bus-id> <bus-id2> …​ <bus-idN>] [<options>]
 
-DESCRIPTION
-===========
+# DESCRIPTION
 
 NVDIMM Address Range Scrub is a capability provided by platform firmware
 that allows for the discovery of memory errors by system software. It
@@ -28,8 +25,7 @@ operation starts an ARS, across all specified buses, and the kernel in
 turn proceeds to scrub every persistent memory address region on the
 specified buses.
 
-EXAMPLE
-=======
+# EXAMPLE
 
 Start a scrub on all nvdimm buses in the system. The json listing report
 only includes the buses that support ARS operations.
@@ -54,22 +50,19 @@ system, the command reports whether ARS support is available.
     # ndctl start-scrub e820
     error starting scrub: Operation not supported
 
-OPTIONS
-=======
+# OPTIONS
 
 `-v; --verbose`  
 Emit debug messages for the ARS start process
 
-COPYRIGHT
-=========
+# COPYRIGHT
 
 Copyright © 2016 - 2020, Intel Corporation. License GPLv2: GNU GPL
 version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
 are free to change and redistribute it. There is NO WARRANTY, to the
 extent permitted by law.
 
-SEE ALSO
-========
+# SEE ALSO
 
 [ndctl-wait-scrub](ndctl-wait-scrub.md) , [ACPI 6.2 Specification Section 9.20.7.2 Address
 Range Scrubbing (ARS)

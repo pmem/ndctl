@@ -3,19 +3,16 @@ title: ndctl
 layout: pmdk
 ---
 
-NAME
-====
+# NAME
 
 daxctl-online-memory - Online the memory for a device that is in
 system-ram mode
 
-SYNOPSIS
-========
+# SYNOPSIS
 
 >     daxctl online-memory <dax0.0> [<dax1.0>…​<daxY.Z>] [<options>]
 
-EXAMPLES
-========
+# EXAMPLES
 
 -   Reconfigure dax0.0 to system-ram mode, don’t online the memory
 
@@ -46,8 +43,7 @@ EXAMPLES
     dax0.0: 61 new sections onlined
     onlined memory for 1 device
 
-DESCRIPTION
-===========
+# DESCRIPTION
 
 Online the memory sections associated with a device that has been
 converted to the system-ram mode. If one or more blocks are already
@@ -59,8 +55,7 @@ used with the *--no-online* option to skip onlining memory sections
 immediately after the reconfigure. In these scenarios, the memory can be
 onlined at a later time using *daxctl-online-memory*.
 
-OPTIONS
-=======
+# OPTIONS
 
 `-r; --region=`  
 Restrict the operation to devices belonging to the specified region(s).
@@ -86,15 +81,13 @@ converted to hexadecimal strings.
 `-v; --verbose`  
 Emit more debug messages
 
-COPYRIGHT
-=========
+# COPYRIGHT
 
 Copyright © 2016 - 2020, Intel Corporation. License GPLv2: GNU GPL
 version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
 are free to change and redistribute it. There is NO WARRANTY, to the
 extent permitted by law.
 
-SEE ALSO
-========
+# SEE ALSO
 
 [daxctl-reconfigure-device](daxctl-reconfigure-device.md),[daxctl-offline-memory](daxctl-offline-memory.md)

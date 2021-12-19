@@ -3,18 +3,15 @@ title: ndctl
 layout: pmdk
 ---
 
-NAME
-====
+# NAME
 
 ndctl-clear-errors - clear all errors (badblocks) on the given namespace
 
-SYNOPSIS
-========
+# SYNOPSIS
 
 >     ndctl clear-errors <namespace> [<options>]
 
-DESCRIPTION
-===========
+# DESCRIPTION
 
 A namespace may have one or more *media errors*, either known to the
 kernel or in a latent state. These error locations, or *badblocks* can
@@ -37,18 +34,22 @@ being prepared for use as *system-ram*. In such cases, it may be
 desirable to clear any errors on the namespace prior to switching its
 mode to prevent disruptive machine checks due to poison consumption.
 
-> **Note**
->
-> **Only** use this command when the data on the namespace is
-> immaterial. For any blocks that are cleared via this command, any data
-> on the blocks in question will be lost, and replaced with content that
-> is implementation (platform) defined, and unpredictable.
+<div class="note">
 
-> **Warning**
->
-> This is a DANGEROUS command, and should only be used after fully
-> understanding its implications and consequences. This WILL erase your
-> data.
+**Only** use this command when the data on the namespace is immaterial.
+For any blocks that are cleared via this command, any data on the blocks
+in question will be lost, and replaced with content that is
+implementation (platform) defined, and unpredictable.
+
+</div>
+
+<div class="warning">
+
+This is a DANGEROUS command, and should only be used after fully
+understanding its implications and consequences. This WILL erase your
+data.
+
+</div>
 
 For namespaces in one of *fsdax* or *devdax* modes, this command will
 only consider the *data* area for error clearing. Namespace metadata,
@@ -57,15 +58,16 @@ the full available capacity of the namespace is considered for error
 clearing. Namespaces that are in *sector* mode are not supported, and
 will be skipped.
 
-> **Note**
->
-> It is expected that the command is run with the namespace *enabled*. A
-> namespace in the *disabled* state will appear as, and will be treated
-> as a *raw* namespace, and error clearing will be performed for the
-> full available capacity of the namespace, including any potential
-> metadata areas. If there happen to be errors in the metadata area,
-> clearing them may result in unpredictable outcomes. You have been
-> warned!
+<div class="note">
+
+It is expected that the command is run with the namespace *enabled*. A
+namespace in the *disabled* state will appear as, and will be treated as
+a *raw* namespace, and error clearing will be performed for the full
+available capacity of the namespace, including any potential metadata
+areas. If there happen to be errors in the metadata area, clearing them
+may result in unpredictable outcomes. You have been warned!
+
+</div>
 
 Known errors are ones that the kernel has encountered before, either via
 a previous scrub, or by an attempted read from those locations. These
@@ -76,13 +78,14 @@ in question. By default, the ndctl-clear-errors command only clears
 known errors. This can be overridden using the *--scrub* option to clear
 **all** errors.
 
-> **Note**
->
-> If a scrub is in progress when the command is called, it will
-> unconditionally wait for it to complete.
+<div class="note">
 
-EXAMPLES
-========
+If a scrub is in progress when the command is called, it will
+unconditionally wait for it to complete.
+
+</div>
+
+# EXAMPLES
 
 Clear errors on namespace 0.0
 
@@ -93,18 +96,19 @@ for latent errors
 
 >         ndctl clear-errors --scrub --region=region1 all
 
-OPTIONS
-=======
+# OPTIONS
 
 `-s; --scrub`  
 Perform a *scrub* on the bus prior to clearing errors. This allows for
 the clearing of any latent media errors in addition to errors the kernel
 already knows about.
 
-> **Note**
->
-> This will cause the command to start and wait for a full scrub, and
-> this can potentially be a very long-running operation.
+<div class="note">
+
+This will cause the command to start and wait for a full scrub, and this
+can potentially be a very long-running operation.
+
+</div>
 
 `-v; --verbose`  
 Emit debug messages.
@@ -121,15 +125,13 @@ operation to the specified bus(es). The keyword *all* can be specified
 to indicate the lack of any restriction, however this is the same as not
 supplying a --bus option at all.
 
-COPYRIGHT
-=========
+# COPYRIGHT
 
 Copyright © 2016 - 2020, Intel Corporation. License GPLv2: GNU GPL
 version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
 are free to change and redistribute it. There is NO WARRANTY, to the
 extent permitted by law.
 
-SEE ALSO
-========
+# SEE ALSO
 
 [ndctl-start-scrub](ndctl-start-scrub.md) , [ndctl-list](ndctl-list.md)

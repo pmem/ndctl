@@ -3,18 +3,15 @@ title: ndctl
 layout: pmdk
 ---
 
-NAME
-====
+# NAME
 
 ndctl-create-namespace - provision or reconfigure a namespace
 
-SYNOPSIS
-========
+# SYNOPSIS
 
 >     ndctl create-namespace [<options>]
 
-THEORY OF OPERATION
-===================
+# THEORY OF OPERATION
 
 The capacity of an NVDIMM REGION (contiguous span of persistent memory)
 is accessed via one or more NAMESPACE devices. REGION is the Linux term
@@ -32,16 +29,18 @@ the kernel’s *memmap=ss!nn* command line option (see the nvdimm wiki on
 kernel.org), or NVDIMMs without a valid *namespace index* in their label
 area.
 
-> **Note**
->
-> Label-less namespaces lack many of the features of their label-rich
-> cousins. For example, their size cannot be modified, or they cannot be
-> fully *destroyed* (i.e. the space reclaimed). A destroy operation will
-> zero any mode-specific metadata. Finally, for create-namespace
-> operations on label-less namespaces, ndctl bypasses the region
-> capacity availability checks, and always satisfies the request using
-> the full region capacity. The only reconfiguration operation supported
-> on a label-less namespace is changing its *mode*.
+<div class="note">
+
+Label-less namespaces lack many of the features of their label-rich
+cousins. For example, their size cannot be modified, or they cannot be
+fully *destroyed* (i.e. the space reclaimed). A destroy operation will
+zero any mode-specific metadata. Finally, for create-namespace
+operations on label-less namespaces, ndctl bypasses the region capacity
+availability checks, and always satisfies the request using the full
+region capacity. The only reconfiguration operation supported on a
+label-less namespace is changing its *mode*.
+
+</div>
 
 A namespace can be provisioned to operate in one of 4 modes, *fsdax*,
 *devdax*, *sector*, and *raw*. Here are the expected usage models for
@@ -77,8 +76,7 @@ these modes:
     compatible with other operating systems, but again, does not support
     DAX operation.
 
-EXAMPLES
-========
+# EXAMPLES
 
 Create a maximally sized pmem namespace in *fsdax* mode (the default)
 
@@ -88,8 +86,7 @@ Convert namespace0.0 to *sector* mode
 
 >     ndctl create-namespace -f -e namespace0.0 --mode=sector
 
-OPTIONS
-=======
+# OPTIONS
 
 `-t; --type=`  
 Create a *pmem* or *blk* namespace (subject to available capacity). A
@@ -176,19 +173,19 @@ size.
 Reconfigure an existing namespace. This option is a shortcut for the
 following sequence:
 
--   Read all parameters from @victim\_namespace
+-   Read all parameters from @victim_namespace
 
--   Destroy @victim\_namespace
+-   Destroy @victim_namespace
 
--   Create @new\_namespace merging old parameters with new ones :: Note
+-   Create @new_namespace merging old parameters with new ones :: Note
     that the major implication of a destroy-create cycle is that data
-    from @victim\_namespace is not preserved in @new\_namespace. The
-    attributes transferred from @victim\_namespace are the geometry,
+    from @victim_namespace is not preserved in @new_namespace. The
+    attributes transferred from @victim_namespace are the geometry,
     mode, and name (not uuid without --uuid=). No attempt is made to
-    preserve the data and any old data that is visible in
-    @new\_namespace is by coincidence not convention. "Backup and
-    restore" is the only reliable method to populate @new\_namespace
-    with data from @victim\_namespace.
+    preserve the data and any old data that is visible in @new_namespace
+    is by coincidence not convention. "Backup and restore" is the only
+    reliable method to populate @new_namespace with data
+    from @victim_namespace.
 
 `-u; --uuid=`  
 This option is not recommended as a new uuid should be generated every
@@ -290,16 +287,14 @@ operation to the specified bus(es). The keyword *all* can be specified
 to indicate the lack of any restriction, however this is the same as not
 supplying a --bus option at all.
 
-COPYRIGHT
-=========
+# COPYRIGHT
 
 Copyright © 2016 - 2020, Intel Corporation. License GPLv2: GNU GPL
 version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
 are free to change and redistribute it. There is NO WARRANTY, to the
 extent permitted by law.
 
-SEE ALSO
-========
+# SEE ALSO
 
 [ndctl-zero-labels](ndctl-zero-labels.md) , [ndctl-init-labels](ndctl-init-labels.md) , [ndctl-disable-namespace](ndctl-disable-namespace.md) ,
 [ndctl-enable-namespace](ndctl-enable-namespace.md) , [UEFI NVDIMM Label

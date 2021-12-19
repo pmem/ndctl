@@ -3,18 +3,15 @@ title: ndctl
 layout: pmdk
 ---
 
-NAME
-====
+# NAME
 
 ndctl-destroy-namespace - destroy the given namespace(s)
 
-SYNOPSIS
-========
+# SYNOPSIS
 
 >     ndctl destroy-namespace <namespace> [<options>]
 
-THEORY OF OPERATION
-===================
+# THEORY OF OPERATION
 
 The capacity of an NVDIMM REGION (contiguous span of persistent memory)
 is accessed via one or more NAMESPACE devices. REGION is the Linux term
@@ -32,16 +29,18 @@ the kernel’s *memmap=ss!nn* command line option (see the nvdimm wiki on
 kernel.org), or NVDIMMs without a valid *namespace index* in their label
 area.
 
-> **Note**
->
-> Label-less namespaces lack many of the features of their label-rich
-> cousins. For example, their size cannot be modified, or they cannot be
-> fully *destroyed* (i.e. the space reclaimed). A destroy operation will
-> zero any mode-specific metadata. Finally, for create-namespace
-> operations on label-less namespaces, ndctl bypasses the region
-> capacity availability checks, and always satisfies the request using
-> the full region capacity. The only reconfiguration operation supported
-> on a label-less namespace is changing its *mode*.
+<div class="note">
+
+Label-less namespaces lack many of the features of their label-rich
+cousins. For example, their size cannot be modified, or they cannot be
+fully *destroyed* (i.e. the space reclaimed). A destroy operation will
+zero any mode-specific metadata. Finally, for create-namespace
+operations on label-less namespaces, ndctl bypasses the region capacity
+availability checks, and always satisfies the request using the full
+region capacity. The only reconfiguration operation supported on a
+label-less namespace is changing its *mode*.
+
+</div>
 
 A namespace can be provisioned to operate in one of 4 modes, *fsdax*,
 *devdax*, *sector*, and *raw*. Here are the expected usage models for
@@ -77,10 +76,9 @@ these modes:
     compatible with other operating systems, but again, does not support
     DAX operation.
 
-OPTIONS
-=======
+# OPTIONS
 
-\<namespace\>  
+\<namespace>  
 A *namespaceX.Y* device name. The keyword *all* can be specified to
 carry out the operation on every namespace in the system, optionally
 filtered by region (see --region=option)
@@ -108,15 +106,13 @@ the namespace is mounted then the *disable namespace* and *destroy
 namespace* operations will be aborted. The namespace must be unmounted
 before being destroyed.
 
-COPYRIGHT
-=========
+# COPYRIGHT
 
 Copyright © 2016 - 2020, Intel Corporation. License GPLv2: GNU GPL
 version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
 are free to change and redistribute it. There is NO WARRANTY, to the
 extent permitted by law.
 
-SEE ALSO
-========
+# SEE ALSO
 
 [ndctl-create-namespace](ndctl-create-namespace.md)

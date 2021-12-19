@@ -3,18 +3,15 @@ title: ndctl
 layout: pmdk
 ---
 
-NAME
-====
+# NAME
 
 ndctl-check-namespace - check namespace metadata consistency
 
-SYNOPSIS
-========
+# SYNOPSIS
 
 >     ndctl check-namespace <namespace> [<options>]
 
-DESCRIPTION
-===========
+# DESCRIPTION
 
 A namespace in the *sector* mode will have metadata on it to describe
 the kernel BTT (Block Translation Table). The check-namespace command
@@ -24,8 +21,7 @@ also attempt to repair it, if it has enough information to do so.
 The namespace being checked has to be disabled before initiating a check
 on it as a precautionary measure. The --force option can override this.
 
-EXAMPLES
-========
+# EXAMPLES
 
 Check a namespace (only report errors)
 
@@ -37,8 +33,7 @@ Check a namespace, and perform repairs if possible
 >     ndctl disable-namespace namespace0.0
 >     ndctl check-namespace --repair namespace0.0
 
-OPTIONS
-=======
+# OPTIONS
 
 `-R; --repair`  
 Perform metadata repairs if possible. Without this option, the raw
@@ -74,16 +69,14 @@ operation to the specified bus(es). The keyword *all* can be specified
 to indicate the lack of any restriction, however this is the same as not
 supplying a --bus option at all.
 
-COPYRIGHT
-=========
+# COPYRIGHT
 
 Copyright © 2016 - 2020, Intel Corporation. License GPLv2: GNU GPL
 version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
 are free to change and redistribute it. There is NO WARRANTY, to the
 extent permitted by law.
 
-SEE ALSO
-========
+# SEE ALSO
 
 [ndctl-disable-namespace](ndctl-disable-namespace.md) , [ndctl-enable-namespace](ndctl-enable-namespace.md) , [UEFI NVDIMM Label
 Protocol](http://www.uefi.org/sites/default/files/resources/UEFI_Spec_2_7.pdf)

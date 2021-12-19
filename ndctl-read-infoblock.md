@@ -3,19 +3,16 @@ title: ndctl
 layout: pmdk
 ---
 
-NAME
-====
+# NAME
 
 ndctl-read-infoblock - read and optionally parse the info-block a
 namespace
 
-SYNOPSIS
-========
+# SYNOPSIS
 
 >     ndctl read-infoblock <namespace0.0> [<namespace1.0>..<namespaceN.Y>] [<options>]
 
-DESCRIPTION
-===========
+# DESCRIPTION
 
 As described in the theory of operation section of
 [ndctl-create-namespace](ndctl-create-namespace.md) , the raw capacity of a namespace may
@@ -30,8 +27,7 @@ Note that unlike a partition table info-block is not exposed by default,
 so the namespace needs to be disabled before the info-block can be
 accessed.
 
-EXAMPLE
-=======
+# EXAMPLE
 
 >     ndctl disable-namespace namespace0.0
 >     disabled 1 namespace
@@ -53,10 +49,9 @@ EXAMPLE
 >       }
 >     ]
 
-OPTIONS
-=======
+# OPTIONS
 
-\<namespace(s)\>  
+\<namespace(s)>  
 One or more *namespaceX.Y* device names. The keyword *all* can be
 specified to operate on every namespace in the system, optionally
 filtered by bus id (see --bus= option), or region id (see --region=
@@ -84,16 +79,14 @@ to the specified region(s). The keyword *all* can be specified to
 indicate the lack of any restriction, however this is the same as not
 supplying a --region option at all.
 
-COPYRIGHT
-=========
+# COPYRIGHT
 
 Copyright © 2016 - 2020, Intel Corporation. License GPLv2: GNU GPL
 version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
 are free to change and redistribute it. There is NO WARRANTY, to the
 extent permitted by law.
 
-SEE ALSO
-========
+# SEE ALSO
 
 [ndctl-create-namespace](ndctl-create-namespace.md) , [UEFI NVDIMM Label
 Protocol](http://www.uefi.org/sites/default/files/resources/UEFI_Spec_2_7.pdf)

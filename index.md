@@ -3,7 +3,7 @@ title: ndctl
 layout: pmdk
 ---
 [View the Project on GitHub](https://github.com/pmem/ndctl)  
-**Generated from [ndctl-71.1](https://github.com/pmem/ndctl/releases/tag/v71.1) [[tree]](https://github.com/pmem/ndctl/tree/v71.1)**  
+**Generated from [ndctl-72](https://github.com/pmem/ndctl/releases/tag/v72) [[tree]](https://github.com/pmem/ndctl/tree/v72)**  
 
 ---
 
@@ -54,3 +54,16 @@ layout: pmdk
 * [daxctl-offline-memory](daxctl-offline-memory.md)
 * [daxctl-online-memory](daxctl-online-memory.md)
 * [daxctl-reconfigure-device](daxctl-reconfigure-device.md)
+
+---
+#### cxl-cli man pages
+* [cxl](cxl.md)
+* [cxl-list](cxl-list.md)
+* [cxl-read-labels](cxl-read-labels.md)
+* [cxl-write-labels](cxl-write-labels.md)
+* [cxl-zero-labels](cxl-zero-labels.md)
+
+---
+#### libcxl man pages
+* [libcxl](libcxl.md)
+* [cxl_new](cxl_new.md)

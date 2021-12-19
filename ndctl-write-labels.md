@@ -3,31 +3,27 @@ title: ndctl
 layout: pmdk
 ---
 
-NAME
-====
+# NAME
 
 ndctl-write-labels - write data to the label area on a dimm
 
-SYNOPSIS
-========
+# SYNOPSIS
 
 >     ndctl write-labels <nmem> [-i <filename>]
 
-DESCRIPTION
-===========
+# DESCRIPTION
 
 The namespace label area is a small persistent partition of capacity
 available on some NVDIMM devices. The label area is used to resolve
 aliasing between *pmem* and *blk* capacity by delineating namespace
 boundaries. Read data from the input filename, or stdin, and write it to
-the given \<nmem\> device. Note that the device must not be active in
-any region, otherwise the kernel will not allow write access to the
-device’s label data area.
+the given \<nmem> device. Note that the device must not be active in any
+region, otherwise the kernel will not allow write access to the device’s
+label data area.
 
-OPTIONS
-=======
+# OPTIONS
 
-\<memory device(s)\>  
+\<memory device(s)>  
 A *nmemX* device name, or a dimm id number. Restrict the operation to
 the specified dimm(s). The keyword *all* can be specified to indicate
 the lack of any restriction, however this is the same as not supplying a
@@ -53,8 +49,7 @@ logging and debug enabled).
 `-i; --input`  
 input file
 
-SEE ALSO
-========
+# SEE ALSO
 
 [UEFI NVDIMM Label
 Protocol](http://www.uefi.org/sites/default/files/resources/UEFI_Spec_2_7.pdf)
