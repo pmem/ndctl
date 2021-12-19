@@ -38,6 +38,7 @@ fi
 pushd "$ndir" >/dev/null
 test -d "Documentation/ndctl" || badtree
 test -d "Documentation/daxctl" || badtree
+test -d "Documentation/cxl" || badtree
 
 # build the asciidoc config
 build_ver=""
@@ -48,7 +49,10 @@ build_tree()
 	./configure --enable-asciidoctor
 	make -C Documentation/ndctl attrs.adoc
 	make -C Documentation/ndctl asciidoctor-extensions.rb
+	make -C Documentation/daxctl attrs.adoc
 	make -C Documentation/daxctl asciidoctor-extensions.rb
+	make -C Documentation/cxl asciidoctor-extensions.rb
+	make -C Documentation/cxl/lib asciidoctor-extensions.rb
 	build_ver=$(git describe HEAD --tags)
 	build_tag=${build_type}-${build_ver#v}
 }
@@ -63,7 +67,8 @@ man_to_md()
 
 	test -f "$file" || return 1
 	fname=$(basename $file)
-	[[ "$fname" == ndctl*.txt ]] || [[ "$fname" == daxctl*.txt ]] || return 0
+	[[ "$fname" == ndctl*.txt ]] || [[ "$fname" == daxctl*.txt ]] || \
+		[[ "$fname" == cxl*.txt ]] || [[ "$fname" == libcxl*.txt ]] || return 0
 	cfg=$(dirname $file)/asciidoc.conf
 	out="md/${fname/%.txt/.md}"
 	cat <<- EOF > $out
@@ -75,24 +80,34 @@ man_to_md()
 	EOF
 	# sed replacements key:
 	# 1. replace ndctl-<>1 with url to that page in markdown format
-	# 2. replace 'ndctl-<>\[1\]' special case in daxctl*.md pages
+	# 2. replace 'ndctl-<>\[1\]' special case in daxctl*.md and cxl pages
 	# 3. remove 'linkdaxctl:'
-	# 4. replace daxctl-<>1 with url to that page in markdown format
-	# 5. enclose the option names in literal `` blocks
-	# 6. same as 2, but for non option arguments (e.g. <dimm>)
+	# 4. remove 'linkcxl:'
+	# 5. remove 'linklibcxl:'
+	# 6. replace daxctl-<>1 with url to that page in markdown format
+	# 7. replace cxl-.*1 with url to that page in markdown format
+	# 8. replace cxl_.*3 with url to that page in markdown format
+	# 9. enclose the option names in literal `` blocks
+	# 10. same as 2, but for non option arguments (e.g. <dimm>)
 	asciidoctor -b docbook5 \
 			-I $ndir/Documentation/ndctl \
 			-I $ndir/Documentation/daxctl \
+			-I $ndir/Documentation/cxl \
+			-I $ndir/Documentation/cxl/lib \
 			-r asciidoctor-extensions \
 			-amansource=ndctl \
 			-amanmanual="ndctl Manual" \
 			-andctl_version=$build_ver \
 			-o- $file | \
-		pandoc -f docbook -t markdown_github | \
+		pandoc -f docbook -t gfm | \
 		sed -e 's/\(ndctl-[a-z-]*\)1/[\1](\1.md)/g' | \
 		sed -e 's/\(ndctl-[a-z-]*\)\\\[1\\\]/[\1](\1.md)/g' | \
 		sed -e "s/linkdaxctl://g" | \
+		sed -e "s/linkcxl://g" | \
+		sed -e "s/linklibcxl://g" | \
 		sed -e 's/\(daxctl[a-z-]*\)\\\[1\\\]/[\1](\1.md)/g' | \
+		sed -e 's/\(cxl-[a-z-]*\)\\\[1\\\]/[\1](\1.md)/g' | \
+		sed -e 's/\(cxl_[a-z_]*\)\\\[3\\\]/[\1](\1.md)/g' | \
 		sed -e 's/^\([-]\{1,2\}.*\)  $/`\1`  /g' | \
 		sed -e 's/^&lt;/`</g' -e 's/&gt;  $/>`  /g' \
 			>> $out
@@ -105,9 +120,19 @@ man_to_md()
 
 mkdir -p md
 for file in $ndir/Documentation/ndctl/*.txt; do
+	test -f "$file" || continue
 	man_to_md $file
 done
 for file in $ndir/Documentation/daxctl/*.txt; do
+	test -f "$file" || continue
+	man_to_md $file
+done
+for file in $ndir/Documentation/cxl/*.txt; do
+	test -f "$file" || continue
+	man_to_md $file
+done
+for file in $ndir/Documentation/cxl/lib/*.txt; do
+	test -f "$file" || continue
 	man_to_md $file
 done
 popd >/dev/null
@@ -132,6 +157,7 @@ cat <<- EOF > index.md
 EOF
 
 for file in ./ndctl-*.md; do
+	test -f "$file" || continue
 	file=$(basename $file)
 	printf "* [${file%%.*}](${file})\n" >> index.md
 done
@@ -144,6 +170,33 @@ cat <<- EOF >> index.md
 EOF
 
 for file in ./daxctl-*.md; do
+	test -f "$file" || continue
+	file=$(basename $file)
+	printf "* [${file%%.*}](${file})\n" >> index.md
+done
+
+cat <<- EOF >> index.md
+
+	---
+	#### cxl-cli man pages
+	* [cxl](cxl.md)
+EOF
+
+for file in ./cxl-*.md; do
+	test -f "$file" || continue
+	file=$(basename $file)
+	printf "* [${file%%.*}](${file})\n" >> index.md
+done
+
+cat <<- EOF >> index.md
+
+	---
+	#### libcxl man pages
+	* [libcxl](libcxl.md)
+EOF
+
+for file in ./cxl_*.md; do
+	test -f "$file" || continue
 	file=$(basename $file)
 	printf "* [${file%%.*}](${file})\n" >> index.md
 done
