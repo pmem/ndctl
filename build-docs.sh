@@ -101,7 +101,7 @@ man_to_md()
 			-o- $file | \
 		pandoc -f docbook -t gfm | \
 		sed -e 's/\(ndctl-[a-z-]*\)1/[\1](\1.md)/g' | \
-		sed -e 's/\(ndctl-[a-z-]*\)\\\[1\\\]/[\1](\1.md)/g' | \
+		sed -e 's/\(ndctl[a-z-]*\)\\\[1\\\]/[\1](\1.md)/g' | \
 		sed -e "s/linkdaxctl://g" | \
 		sed -e "s/linkcxl://g" | \
 		sed -e "s/linklibcxl://g" | \

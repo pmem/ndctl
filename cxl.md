@@ -33,4 +33,4 @@ extent permitted by law.
 
 # SEE ALSO
 
-ndctl\[1\]
+[ndctl](ndctl.md)
