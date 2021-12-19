@@ -106,7 +106,7 @@ man_to_md()
 		sed -e "s/linkcxl://g" | \
 		sed -e "s/linklibcxl://g" | \
 		sed -e 's/\(daxctl[a-z-]*\)\\\[1\\\]/[\1](\1.md)/g' | \
-		sed -e 's/\(cxl-[a-z-]*\)\\\[1\\\]/[\1](\1.md)/g' | \
+		sed -e 's/\(cxl[a-z-]*\)\\\[1\\\]/[\1](\1.md)/g' | \
 		sed -e 's/\(cxl_[a-z_]*\)\\\[3\\\]/[\1](\1.md)/g' | \
 		sed -e 's/^\([-]\{1,2\}.*\)  $/`\1`  /g' | \
 		sed -e 's/^&lt;/`</g' -e 's/&gt;  $/>`  /g' \

@@ -59,4 +59,4 @@ extent permitted by law.
 
 # SEE ALSO
 
-cxl\[1\]
+[cxl](cxl.md)
