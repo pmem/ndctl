@@ -18,8 +18,7 @@ sles_spec2 = custom_target('ndctl.spec.in',
 
 sles_spec3 = custom_target('ndctl.spec',
   command : [
-    'sed', '-e', 's,MESON,1,g',
-           '-e', 's,DAX_DNAME,libdaxctl-devel,g',
+    'sed', '-e', 's,DAX_DNAME,libdaxctl-devel,g',
            '-e', 's,CXL_DNAME,libcxl-devel,g',
            '-e', 's,DNAME,libndctl-devel,g',
            '-e', 's,%license,%doc,g',

@@ -7,8 +7,7 @@ rhel_spec1 = vcs_tag(
 
 rhel_spec2 = custom_target('ndctl.spec',
   command : [
-    'sed', '-e', 's,MESON,1,g',
-	   '-e', 's,DAX_DNAME,daxctl-devel,g',
+    'sed', '-e', 's,DAX_DNAME,daxctl-devel,g',
 	   '-e', 's,CXL_DNAME,cxl-devel,g',
 	   '-e', 's,DNAME,ndctl-devel,g',
 	   '-e', '/^%defattr.*/d',
