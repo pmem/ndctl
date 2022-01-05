@@ -261,8 +261,8 @@ retry:
 		ndctl_bus_foreach(nd_ctx, bus) {
 			struct ndctl_region *region;
 
-			if (strncmp(ndctl_bus_get_provider(bus),
-						"nfit_test", 9) != 0)
+			if (strcmp(ndctl_bus_get_provider(bus),
+				   "nfit_test.0") != 0)
 				continue;
 			ndctl_region_foreach(bus, region)
 				ndctl_region_disable_invalidate(region);
@@ -280,5 +280,30 @@ retry:
 			NULL, NULL, NULL, NULL);
 	if (rc)
 		kmod_unref(*ctx);
-	return rc;
+
+	if (!nd_ctx)
+		return rc;
+
+	ndctl_bus_foreach (nd_ctx, bus) {
+		struct ndctl_region *region;
+		struct ndctl_dimm *dimm;
+
+		if (strcmp(ndctl_bus_get_provider(bus), "nfit_test.0") != 0)
+			continue;
+
+		ndctl_region_foreach (bus, region)
+			ndctl_region_disable_invalidate(region);
+
+		ndctl_dimm_foreach (bus, dimm) {
+			ndctl_dimm_read_label_index(dimm);
+			ndctl_dimm_init_labels(dimm, NDCTL_NS_VERSION_1_2);
+			ndctl_dimm_disable(dimm);
+			ndctl_dimm_enable(dimm);
+		}
+
+		ndctl_region_foreach (bus, region)
+			ndctl_region_enable(region);
+	}
+
+	return 0;
 }

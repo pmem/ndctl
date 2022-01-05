@@ -2587,17 +2587,41 @@ static int check_dimms(struct ndctl_bus *bus, struct dimm *dimms, int n,
 	return 0;
 }
 
-static void reset_bus(struct ndctl_bus *bus)
+enum dimm_reset {
+	DIMM_INIT,
+	DIMM_ZERO,
+};
+
+static int reset_dimms(struct ndctl_bus *bus, enum dimm_reset reset)
+{
+	struct ndctl_dimm *dimm;
+	int rc = 0;
+
+	ndctl_dimm_foreach(bus, dimm) {
+		if (reset == DIMM_ZERO)
+			ndctl_dimm_zero_labels(dimm);
+		else {
+			ndctl_dimm_read_label_index(dimm);
+			ndctl_dimm_init_labels(dimm, NDCTL_NS_VERSION_1_2);
+		}
+		ndctl_dimm_disable(dimm);
+		rc = ndctl_dimm_enable(dimm);
+		if (rc)
+			break;
+	}
+
+	return rc;
+}
+
+static void reset_bus(struct ndctl_bus *bus, enum dimm_reset reset)
 {
 	struct ndctl_region *region;
-	struct ndctl_dimm *dimm;
 
 	/* disable all regions so that set_config_data commands are permitted */
 	ndctl_region_foreach(bus, region)
 		ndctl_region_disable_invalidate(region);
 
-	ndctl_dimm_foreach(bus, dimm)
-		ndctl_dimm_zero_labels(dimm);
+	reset_dimms(bus, reset);
 
 	/* set regions back to their default state */
 	ndctl_region_foreach(bus, region)
@@ -2608,7 +2632,6 @@ static int do_test0(struct ndctl_ctx *ctx, struct ndctl_test *test)
 {
 	struct ndctl_bus *bus = ndctl_bus_get_by_provider(ctx, NFIT_PROVIDER0);
 	struct ndctl_region *region;
-	struct ndctl_dimm *dimm;
 	int rc;
 
 	if (!bus)
@@ -2625,13 +2648,10 @@ static int do_test0(struct ndctl_ctx *ctx, struct ndctl_test *test)
 	if (rc)
 		return rc;
 
-	ndctl_dimm_foreach(bus, dimm) {
-		rc = ndctl_dimm_zero_labels(dimm);
-		if (rc < 0) {
-			fprintf(stderr, "failed to zero %s\n",
-					ndctl_dimm_get_devname(dimm));
-			return rc;
-		}
+	rc = reset_dimms(bus, DIMM_INIT);
+	if (rc < 0) {
+		fprintf(stderr, "failed to reset dimms\n");
+		return rc;
 	}
 
 	/*
@@ -2649,14 +2669,14 @@ static int do_test0(struct ndctl_ctx *ctx, struct ndctl_test *test)
 		rc = check_regions(bus, regions0, ARRAY_SIZE(regions0), DAX);
 		if (rc)
 			return rc;
-		reset_bus(bus);
+		reset_bus(bus, DIMM_INIT);
 	}
 
 	if (ndctl_test_attempt(test, KERNEL_VERSION(4, 8, 0))) {
 		rc = check_regions(bus, regions0, ARRAY_SIZE(regions0), PFN);
 		if (rc)
 			return rc;
-		reset_bus(bus);
+		reset_bus(bus, DIMM_INIT);
 	}
 
 	return check_regions(bus, regions0, ARRAY_SIZE(regions0), BTT);
@@ -2671,6 +2691,7 @@ static int do_test1(struct ndctl_ctx *ctx, struct ndctl_test *test)
 		return -ENXIO;
 
 	ndctl_bus_wait_probe(bus);
+	reset_bus(bus, DIMM_ZERO);
 
 	/*
 	 * Starting with v4.10 the dimm on nfit_test.1 gets a unique
