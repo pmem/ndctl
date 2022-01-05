@@ -8,6 +8,7 @@
 #include <limits.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <uuid/uuid.h>
 #include <sys/sysmacros.h>
 #include <util/size.h>
 #include <util/json.h>
