@@ -35,7 +35,7 @@ daxctl/lib/libdaxctl.pc
 ndctl/config.h
 ndctl/lib/libndctl.pc
 ndctl/ndctl
-rhel/
+rhel/ndctl.spec
 sles/ndctl.spec
 version.m4
 *.swp

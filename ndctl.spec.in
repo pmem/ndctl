@@ -6,14 +6,20 @@ License:	GPLv2
 Url:		https://github.com/pmem/ndctl
 Source0:	https://github.com/pmem/%{name}/archive/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
 
+%define with_meson MESON
 Requires:	LNAME%{?_isa} = %{version}-%{release}
 Requires:	DAX_LNAME%{?_isa} = %{version}-%{release}
 Requires:	CXL_LNAME%{?_isa} = %{version}-%{release}
 BuildRequires:	autoconf
 %if 0%{?rhel} < 9
 BuildRequires:	asciidoc
+%if !%{with_meson}
 %define asciidoc --disable-asciidoctor
+%endif
 %else
+%if %{with_meson}
+%define asciidoctor -Dasciidoctor=enabled
+%endif
 BuildRequires:	rubygem-asciidoctor
 %endif
 BuildRequires:	xmlto
@@ -29,6 +35,10 @@ BuildRequires:	pkgconfig(systemd)
 BuildRequires:	keyutils-libs-devel
 BuildRequires:	systemd-rpm-macros
 BuildRequires:	iniparser-devel
+
+%if %{with_meson}
+BuildRequires:	meson
+%endif
 
 %description
 Utility library for managing the "libnvdimm" subsystem.  The "libnvdimm"
@@ -117,17 +127,30 @@ libcxl is a library for enumerating and communicating with CXL devices.
 %setup -q ndctl-%{version}
 
 %build
+%if %{with_meson}
+%meson %{?asciidoctor} -Dversion-tag=%{version}
+%meson_build
+%else
 echo %{version} > version
 ./autogen.sh
 %configure --disable-static --disable-silent-rules %{?asciidoc}
 make %{?_smp_mflags}
+%endif
 
 %install
+%if %{with_meson}
+%meson_install
+%else
 %make_install
 find $RPM_BUILD_ROOT -name '*.la' -exec rm -f {} ';'
+%endif
 
 %check
+%if %{with_meson}
+%meson_test
+%else
 make check
+%endif
 
 %ldconfig_scriptlets -n LNAME
 

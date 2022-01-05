@@ -278,3 +278,9 @@ if get_option('docs').enabled()
 endif
 subdir('test')
 subdir('contrib')
+
+# only support spec file generation from git builds
+if version_tag == ''
+  subdir('rhel')
+  subdir('sles')
+endif
