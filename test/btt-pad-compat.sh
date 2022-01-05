@@ -37,13 +37,6 @@ create()
 	fi
 }
 
-reset()
-{
-	$NDCTL disable-region -b $NFIT_TEST_BUS0 all
-	$NDCTL zero-labels -b $NFIT_TEST_BUS0 all
-	$NDCTL enable-region -b $NFIT_TEST_BUS0 all
-}
-
 verify_idx()
 {
 	idx0="$1"

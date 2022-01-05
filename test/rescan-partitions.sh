@@ -25,13 +25,6 @@ check_min_kver "4.16" || do_skip "may not contain fixes for partition rescanning
 check_prereq "parted"
 check_prereq "blockdev"
 
-reset()
-{
-	$NDCTL disable-region -b $NFIT_TEST_BUS0 all
-	$NDCTL zero-labels -b $NFIT_TEST_BUS0 all
-	$NDCTL enable-region -b $NFIT_TEST_BUS0 all
-}
-
 test_mode()
 {
 	local mode="$1"

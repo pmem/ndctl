@@ -19,13 +19,6 @@ trap 'err $LINENO' ERR
 
 check_min_kver "4.15" || do_skip "kernel $KVER may not support monitor service"
 
-init()
-{
-	$NDCTL disable-region -b $NFIT_TEST_BUS0 all
-	$NDCTL zero-labels -b $NFIT_TEST_BUS0 all
-	$NDCTL enable-region -b $NFIT_TEST_BUS0 all
-}
-
 start_monitor()
 {
 	logfile=$(mktemp)
@@ -112,7 +105,7 @@ test_filter_region()
 
 test_filter_namespace()
 {
-	init
+	reset
 	monitor_namespace=$($NDCTL create-namespace -b $smart_supported_bus | jq -r .dev)
 	monitor_dimms=$(get_monitor_dimm "-n $monitor_namespace")
 	start_monitor "-n $monitor_namespace"
@@ -170,7 +163,7 @@ do_tests()
 
 modprobe nfit_test
 rc=1
-init
+reset
 set_smart_supported_bus
 do_tests
 _cleanup

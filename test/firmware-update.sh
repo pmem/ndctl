@@ -10,11 +10,9 @@ image="update-fw.img"
 
 trap 'err $LINENO' ERR
 
-reset()
+fwupd_reset()
 {
-	$NDCTL disable-region -b $NFIT_TEST_BUS0 all
-	$NDCTL zero-labels -b $NFIT_TEST_BUS0 all
-	$NDCTL enable-region -b $NFIT_TEST_BUS0 all
+	reset
 	if [ -f $image ]; then
 		rm -f $image
 	fi
@@ -73,7 +71,7 @@ do_tests()
 check_min_kver "4.16" || do_skip "may lack firmware update test handling"
 
 modprobe nfit_test
-reset
+fwupd_reset
 detect
 rc=1
 do_tests
