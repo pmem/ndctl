@@ -8,7 +8,7 @@ SKIP=77
 FAIL=1
 SUCCESS=0
 
-. ./common
+. $(dirname $0)/common
 
 check_min_kver "5.3" || do_skip "may lack align sub-section hotplug support"
 
@@ -30,7 +30,7 @@ cleanup() {
 	if mountpoint -q $MNT; then
 		umount $MNT
 	fi
-	rmdir $MNT
+	rm -rf $MNT
 	# opportunistic cleanup, not fatal if these fail
 	namespaces=$($NDCTL list -N | jq -r ".[] | select(.name==\"$NAME\") | .dev")
 	for i in $namespaces

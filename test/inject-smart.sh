@@ -170,7 +170,7 @@ check_prereq "jq"
 modprobe nfit_test
 rc=1
 
-jlist=$(./list-smart-dimm -b $bus)
+jlist=$($TEST_PATH/list-smart-dimm -b $bus)
 dimm="$(jq '.[]."dev"?, ."dev"?' <<< $jlist | sort | head -1 | xargs)"
 test -n "$dimm"
 

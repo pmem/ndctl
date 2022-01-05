@@ -31,7 +31,7 @@ start_monitor()
 set_smart_supported_bus()
 {
 	smart_supported_bus=$NFIT_TEST_BUS0
-	monitor_dimms=$(./list-smart-dimm -b $smart_supported_bus | jq -r .[0].dev)
+	monitor_dimms=$($TEST_PATH/list-smart-dimm -b $smart_supported_bus | jq -r .[0].dev)
 	if [ -z $monitor_dimms ]; then
 		smart_supported_bus=$NFIT_TEST_BUS1
 	fi
@@ -39,14 +39,14 @@ set_smart_supported_bus()
 
 get_monitor_dimm()
 {
-	jlist=$(./list-smart-dimm -b $smart_supported_bus $1)
+	jlist=$($TEST_PATH/list-smart-dimm -b $smart_supported_bus $1)
 	monitor_dimms=$(jq '.[]."dev"?, ."dev"?' <<<$jlist | sort | uniq | xargs)
 	echo $monitor_dimms
 }
 
 call_notify()
 {
-	./smart-notify $smart_supported_bus
+	$TEST_PATH/smart-notify $smart_supported_bus
 	sync; sleep 3
 }
 

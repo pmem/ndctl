@@ -15,13 +15,13 @@ cleanup() {
 	else
 		rc=77
 	fi
-	rmdir $MNT
+	rm -rf $MNT
 	exit $rc
 }
 
 run_test() {
 	rc=0
-	if ! trace-cmd record -e fs_dax:dax_pmd_fault_done ./dax-pmd $MNT/$FILE; then
+	if ! trace-cmd record -e fs_dax:dax_pmd_fault_done $TEST_PATH/dax-pmd $MNT/$FILE; then
 		rc=$?
 		if [ "$rc" -ne 77 ] && [ "$rc" -ne 0 ]; then
 			cleanup "$1"
@@ -104,7 +104,7 @@ set -e
 mkdir -p $MNT
 trap 'err $LINENO cleanup' ERR
 
-dev=$(./dax-dev)
+dev=$($TEST_PATH/dax-dev)
 json=$($NDCTL list -N -n $dev)
 eval $(json2var <<< "$json")
 rc=1

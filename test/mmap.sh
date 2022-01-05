@@ -7,7 +7,7 @@
 MNT=test_mmap_mnt
 FILE=image
 DEV=""
-TEST=./mmap
+TEST=$TEST_PATH/mmap
 rc=77
 
 cleanup() {
@@ -17,7 +17,7 @@ cleanup() {
 	else
 		rc=77
 	fi
-	rmdir $MNT
+	rm -rf $MNT
 	exit $rc
 }
 
@@ -49,7 +49,7 @@ set -e
 mkdir -p $MNT
 trap 'err $LINENO cleanup' ERR
 
-dev=$(./dax-dev)
+dev=$($TEST_PATH/dax-dev)
 json=$($NDCTL list -N -n $dev)
 eval $(json2var <<< "$json")
 DEV="/dev/${blockdev}"
