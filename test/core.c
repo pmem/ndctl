@@ -120,7 +120,6 @@ int ndctl_test_init(struct kmod_ctx **ctx, struct kmod_module **mod,
 		"nfit",
 		"device_dax",
 		"dax_pmem",
-		"dax_pmem_core",
 		"dax_pmem_compat",
 		"libnvdimm",
 		"nd_btt",
@@ -180,29 +179,27 @@ int ndctl_test_init(struct kmod_ctx **ctx, struct kmod_module **mod,
 		/*
 		 * Skip device-dax bus-model modules on pre-v5.1
 		 */
-		if ((strcmp(name, "dax_pmem_core") == 0
-				|| strcmp(name, "dax_pmem_compat") == 0)
-				&& !ndctl_test_attempt(test,
-					KERNEL_VERSION(5, 1, 0)))
+		if ((strcmp(name, "dax_pmem_compat") == 0) &&
+		    !ndctl_test_attempt(test, KERNEL_VERSION(5, 1, 0)))
 			continue;
 
 retry:
 		rc = kmod_module_new_from_name(*ctx, name, mod);
-
-		/*
-		 * dax_pmem_compat is not required, missing is ok,
-		 * present-but-production is not ok.
-		 */
-		if (rc && strcmp(name, "dax_pmem_compat") == 0)
-			continue;
-
 		if (rc) {
-			log_err(&log_ctx, "%s.ko: missing\n", name);
+			log_err(&log_ctx, "failed to interrogate %s.ko\n",
+				name);
 			break;
 		}
 
 		path = kmod_module_get_path(*mod);
 		if (!path) {
+			/*
+			 * dax_pmem_compat is not required, missing is
+			 * ok, present-but-production is not ok.
+			 */
+			if (strcmp(name, "dax_pmem_compat") == 0)
+				continue;
+
 			if (family != NVDIMM_FAMILY_INTEL &&
 			    (strcmp(name, "nfit") == 0 ||
 			     strcmp(name, "nd_e820") == 0))
