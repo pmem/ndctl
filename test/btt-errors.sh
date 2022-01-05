@@ -45,7 +45,7 @@ trap 'err $LINENO cleanup' ERR
 
 # setup (reset nfit_test dimms)
 modprobe nfit_test
-reset
+resetV
 
 rc=1
 
@@ -124,7 +124,7 @@ dd if=$MNT/$FILE of=/dev/null iflag=direct bs=4096 count=1
 
 # reset everything to get a clean log
 if grep -q "$MNT" /proc/mounts; then umount $MNT; fi
-reset
+resetV
 dev="x"
 json=$($NDCTL create-namespace -b $NFIT_TEST_BUS0 -t pmem -m sector)
 eval "$(echo "$json" | json2var)"
