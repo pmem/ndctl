@@ -56,14 +56,6 @@ EXTRA_DIST = $(man1_MANS)
 
 CLEANFILES = $(man1_MANS)
 
-.ONESHELL:
-attrs.adoc: $(srcdir)/Makefile.am
-	$(AM_V_GEN) cat <<- EOF >$@
-		:ndctl_confdir: $(ndctl_confdir)
-		:ndctl_monitorconf: $(ndctl_monitorconf)
-		:ndctl_keysdir: $(ndctl_keysdir)
-		EOF
-
 XML_DEPS = \
 	../../version.m4 \
 	Makefile \
@@ -76,8 +68,7 @@ XML_DEPS = \
 	xable-namespace-options.txt \
 	ars-description.txt \
 	labels-description.txt \
-	labels-options.txt \
-	attrs.adoc
+	labels-options.txt
 
 RM ?= rm -f
 
@@ -88,6 +79,9 @@ if USE_ASCIIDOCTOR
 		$(ASCIIDOC) -b manpage -d manpage -acompat-mode \
 		-I. -rasciidoctor-extensions \
 		-amansource=ndctl -amanmanual="ndctl Manual" \
+		-andctl_confdir=$(ndctl_confdir) \
+		-andctl_monitorconf=$(ndctl_monitorconf) \
+		-andctl_keysdir=$(ndctl_keysdir) \
 		-andctl_version=$(VERSION) -o $@+ $< && \
 		mv $@+ $@
 
@@ -96,6 +90,9 @@ else
 %.xml: %.txt $(XML_DEPS)
 	$(AM_V_GEN)$(RM) $@+ $@ && \
 		$(ASCIIDOC) -b docbook -d manpage -f asciidoc.conf \
+		-andctl_confdir=$(ndctl_confdir) \
+		-andctl_monitorconf=$(ndctl_monitorconf) \
+		-andctl_keysdir=$(ndctl_keysdir) \
 		--unsafe -andctl_version=$(VERSION) -o $@+ $< && \
 		mv $@+ $@
 

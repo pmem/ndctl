@@ -33,20 +33,11 @@ EXTRA_DIST = $(man1_MANS)
 
 CLEANFILES = $(man1_MANS)
 
-.ONESHELL:
-attrs.adoc: $(srcdir)/Makefile.am
-	$(AM_V_GEN) cat <<- EOF >$@
-		:daxctl_confdir: $(daxctl_confdir)
-		:daxctl_conf: $(daxctl_conf)
-		:ndctl_keysdir: $(ndctl_keysdir)
-		EOF
-
 XML_DEPS = \
 	../../version.m4 \
 	../copyright.txt \
 	Makefile \
-	$(CONFFILE) \
-	attrs.adoc
+	$(CONFFILE)
 
 RM ?= rm -f
 
@@ -57,6 +48,9 @@ if USE_ASCIIDOCTOR
 		$(ASCIIDOC) -b manpage -d manpage -acompat-mode \
 		-I. -rasciidoctor-extensions \
 		-amansource=daxctl -amanmanual="daxctl Manual" \
+		-adaxctl_confdir=$(daxctl_confdir) \
+		-adaxctl_conf=$(daxctl_conf) \
+		-andctl_keysdir=$(ndctl_keysdir) \
 		-andctl_version=$(VERSION) -o $@+ $< && \
 		mv $@+ $@
 
@@ -65,6 +59,9 @@ else
 %.xml: %.txt $(XML_DEPS)
 	$(AM_V_GEN)$(RM) $@+ $@ && \
 		$(ASCIIDOC) -b docbook -d manpage -f asciidoc.conf \
+		-adaxctl_confdir=$(daxctl_confdir) \
+		-adaxctl_conf=$(daxctl_conf) \
+		-andctl_keysdir=$(ndctl_keysdir) \
 		--unsafe -adaxctl_version=$(VERSION) -o $@+ $< && \
 		mv $@+ $@
 
