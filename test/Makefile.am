@@ -80,12 +80,19 @@ testcore =\
 libndctl_SOURCES = libndctl.c $(testcore)
 libndctl_LDADD = $(LIBNDCTL_LIB) $(UUID_LIBS) $(KMOD_LIBS)
 
+namespace_core =\
+	../ndctl/namespace.c \
+	../ndctl/filter.c \
+	../ndctl/check.c \
+	../util/json.c \
+	../ndctl/json.c \
+	../daxctl/filter.c \
+	../daxctl/json.c
+
 dsm_fail_SOURCES =\
 	dsm-fail.c \
 	$(testcore) \
-	../ndctl/namespace.c \
-	../ndctl/check.c \
-	../util/json.c
+	$(namespace_core)
 
 dsm_fail_LDADD = $(LIBNDCTL_LIB) \
 		$(KMOD_LIBS) \
@@ -122,9 +129,7 @@ device_dax_SOURCES = \
 		dax-dev.c \
 		dax-pmd.c \
 		$(testcore) \
-		../ndctl/namespace.c \
-		../ndctl/check.c \
-		../util/json.c
+		$(namespace_core)
 
 if ENABLE_POISON
 dax_pmd_SOURCES += dax-poison.c
@@ -153,7 +158,10 @@ smart_listen_LDADD = $(LIBNDCTL_LIB)
 
 list_smart_dimm_SOURCES = \
 		list-smart-dimm.c \
-		../util/json.c
+		../ndctl/filter.c \
+		../util/json.c \
+		../ndctl/json.c
+
 list_smart_dimm_LDADD = \
 		$(LIBNDCTL_LIB) \
 		$(JSON_LIBS) \

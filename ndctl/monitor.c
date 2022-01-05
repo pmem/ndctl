@@ -7,7 +7,6 @@
 #include <time.h>
 #include <dirent.h>
 #include <util/json.h>
-#include <util/filter.h>
 #include <util/util.h>
 #include <util/parse-options.h>
 #include <util/parse-configs.h>
@@ -26,6 +25,9 @@
 #define ENABLE_DEBUG
 #endif
 #include <util/log.h>
+
+#include "filter.h"
+#include "json.h"
 
 static struct monitor {
 	const char *log;

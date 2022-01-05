@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0 */
 /* Copyright (C) 2015-2020 Intel Corporation. All rights reserved. */
-#ifndef _UTIL_FILTER_H_
-#define _UTIL_FILTER_H_
+#ifndef _NDCTL_UTIL_FILTER_H_
+#define _NDCTL_UTIL_FILTER_H_
 #include <stdbool.h>
 #include <ccan/list/list.h>
 
@@ -24,12 +24,6 @@ struct ndctl_dimm *util_dimm_filter_by_region(struct ndctl_dimm *dimm,
 struct ndctl_dimm *util_dimm_filter_by_namespace(struct ndctl_dimm *dimm,
 		const char *ident);
 struct ndctl_region *util_region_filter_by_namespace(struct ndctl_region *region,
-		const char *ident);
-struct daxctl_dev *util_daxctl_dev_filter(struct daxctl_dev *dev,
-		const char *ident);
-struct daxctl_region *util_daxctl_region_filter(struct daxctl_region *region,
-		const char *ident);
-struct cxl_memdev *util_cxl_memdev_filter(struct cxl_memdev *memdev,
 		const char *ident);
 
 enum ndctl_namespace_mode util_nsmode(const char *mode);
@@ -89,4 +83,4 @@ struct util_filter_params {
 struct ndctl_ctx;
 int util_filter_walk(struct ndctl_ctx *ctx, struct util_filter_ctx *fctx,
 		struct util_filter_params *param);
-#endif
+#endif /* _NDCTL_UTIL_FILTER_H_ */

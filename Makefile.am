@@ -86,7 +86,6 @@ libutil_a_SOURCES = \
 	util/help.c \
 	util/strbuf.c \
 	util/wrapper.c \
-	util/filter.c \
 	util/bitmap.c \
 	util/abspath.c \
 	util/iomem.c \

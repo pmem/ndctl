@@ -12,6 +12,9 @@ cxl_SOURCES =\
 		list.c \
 		memdev.c \
 		../util/json.c \
+		json.c \
+		filter.c \
+		filter.h \
 		builtin.h
 
 cxl_LDADD =\

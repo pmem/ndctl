@@ -6,11 +6,13 @@
 #include <unistd.h>
 #include <limits.h>
 #include <util/json.h>
-#include <util/filter.h>
 #include <json-c/json.h>
 #include <daxctl/libdaxctl.h>
 #include <util/parse-options.h>
 #include <ccan/array_size/array_size.h>
+
+#include "filter.h"
+#include "json.h"
 
 static struct {
 	bool devs;

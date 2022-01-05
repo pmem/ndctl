@@ -6,11 +6,13 @@
 #include <unistd.h>
 #include <limits.h>
 #include <util/json.h>
-#include <util/filter.h>
 #include <json-c/json.h>
 #include <cxl/libcxl.h>
 #include <util/parse-options.h>
 #include <ccan/array_size/array_size.h>
+
+#include "json.h"
+#include "filter.h"
 
 static struct {
 	bool memdevs;

@@ -6,11 +6,12 @@
 #include <unistd.h>
 #include <limits.h>
 #include <util/log.h>
-#include <util/filter.h>
 #include <cxl/libcxl.h>
 #include <util/parse-options.h>
 #include <ccan/minmax/minmax.h>
 #include <ccan/array_size/array_size.h>
+
+#include "filter.h"
 
 struct action_context {
 	FILE *f_out;

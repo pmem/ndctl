@@ -5,9 +5,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "action.h"
-#include <util/filter.h>
 #include <util/parse-options.h>
 #include <ndctl/libndctl.h>
+
+#include "filter.h"
 
 static struct {
 	const char *bus;

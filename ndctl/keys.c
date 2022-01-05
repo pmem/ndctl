@@ -13,10 +13,11 @@
 #include <keyutils.h>
 #include <syslog.h>
 
-#include <ndctl.h>
 #include <ndctl/config.h>
+#include <ndctl/ndctl.h>
 #include <ndctl/libndctl.h>
-#include <util/keys.h>
+
+#include "keys.h"
 
 static int get_key_path(struct ndctl_dimm *dimm, char *path,
 		enum ndctl_key_type key_type)

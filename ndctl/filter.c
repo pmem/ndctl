@@ -9,10 +9,9 @@
 #include <util/util.h>
 #include <sys/types.h>
 #include <ndctl/ndctl.h>
-#include <util/filter.h>
 #include <ndctl/libndctl.h>
-#include <daxctl/libdaxctl.h>
-#include <cxl/libcxl.h>
+
+#include "filter.h"
 
 struct ndctl_bus *util_bus_filter(struct ndctl_bus *bus, const char *__ident)
 {
@@ -301,61 +300,6 @@ struct ndctl_region *util_region_filter_by_namespace(struct ndctl_region *region
 	ndctl_namespace_foreach(region, ndns)
 		if (util_namespace_filter(ndns, ident))
 			return region;
-	return NULL;
-}
-
-struct daxctl_dev *util_daxctl_dev_filter(struct daxctl_dev *dev,
-		const char *ident)
-{
-	struct daxctl_region *region = daxctl_dev_get_region(dev);
-	int region_id, dev_id;
-
-	if (!ident || strcmp(ident, "all") == 0)
-		return dev;
-
-	if (strcmp(ident, daxctl_dev_get_devname(dev)) == 0)
-		return dev;
-
-	if (sscanf(ident, "%d.%d", &region_id, &dev_id) == 2
-			&& daxctl_region_get_id(region) == region_id
-			&& daxctl_dev_get_id(dev) == dev_id)
-		return dev;
-
-	return NULL;
-}
-
-struct daxctl_region *util_daxctl_region_filter(struct daxctl_region *region,
-		const char *ident)
-{
-	int region_id;
-
-	if (!ident || strcmp(ident, "all") == 0)
-		return region;
-
-	if ((sscanf(ident, "%d", &region_id) == 1
-			|| sscanf(ident, "region%d", &region_id) == 1)
-			&& daxctl_region_get_id(region) == region_id)
-		return region;
-
-	return NULL;
-}
-
-struct cxl_memdev *util_cxl_memdev_filter(struct cxl_memdev *memdev,
-					  const char *ident)
-{
-	int memdev_id;
-
-	if (!ident || strcmp(ident, "all") == 0)
-		return memdev;
-
-	if (strcmp(ident, cxl_memdev_get_devname(memdev)) == 0)
-		return memdev;
-
-	if ((sscanf(ident, "%d", &memdev_id) == 1
-			|| sscanf(ident, "mem%d", &memdev_id) == 1)
-			&& cxl_memdev_get_id(memdev) == memdev_id)
-		return memdev;
-
 	return NULL;
 }
 

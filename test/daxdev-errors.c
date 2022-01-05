@@ -23,7 +23,7 @@
 #include <daxctl/libdaxctl.h>
 #include <ccan/array_size/array_size.h>
 #include <ndctl/libndctl.h>
-#include <ndctl.h>
+#include <ndctl/ndctl.h>
 
 #define fail() fprintf(stderr, "%s: failed at: %d\n", __func__, __LINE__)
 
