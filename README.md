@@ -110,7 +110,6 @@ override dax_pmem * extra
 override dax_pmem_core * extra
 override dax_pmem_compat * extra
 override libnvdimm * extra
-override nd_blk * extra
 override nd_btt * extra
 override nd_e820 * extra
 override nd_pmem * extra

@@ -3,9 +3,6 @@ include $(top_srcdir)/Makefile.am.in
 TESTS =\
 	libndctl \
 	dsm-fail \
-	dpa-alloc \
-	parent-uuid \
-	multi-pmem \
 	create.sh \
 	clear.sh \
 	pmem-errors.sh \
@@ -13,7 +10,6 @@ TESTS =\
 	multi-dax.sh \
 	btt-check.sh \
 	label-compat.sh \
-	blk-exhaust.sh \
 	sector-mode.sh \
 	inject-error.sh \
 	btt-errors.sh \
@@ -35,9 +31,6 @@ EXTRA_DIST += $(TESTS) common \
 check_PROGRAMS =\
 	libndctl \
 	dsm-fail \
-	dpa-alloc \
-	parent-uuid \
-	multi-pmem \
 	dax-errors \
 	smart-notify \
 	smart-listen \
@@ -48,7 +41,6 @@ check_PROGRAMS =\
 
 if ENABLE_DESTRUCTIVE
 TESTS +=\
-	blk-ns \
 	pmem-ns \
 	sub-section.sh \
 	dax-dev \
@@ -68,7 +60,6 @@ TESTS += security.sh
 endif
 
 check_PROGRAMS +=\
-	blk-ns \
 	pmem-ns \
 	dax-dev \
 	dax-pmd \
@@ -108,17 +99,8 @@ ack_shutdown_count_set_SOURCES =\
 
 ack_shutdown_count_set_LDADD = $(LIBNDCTL_LIB) $(KMOD_LIBS)
 
-blk_ns_SOURCES = blk_namespaces.c $(testcore)
-blk_ns_LDADD = $(LIBNDCTL_LIB) $(KMOD_LIBS) $(UUID_LIBS)
-
 pmem_ns_SOURCES = pmem_namespaces.c $(testcore)
 pmem_ns_LDADD = $(LIBNDCTL_LIB) $(KMOD_LIBS) $(UUID_LIBS)
-
-dpa_alloc_SOURCES = dpa-alloc.c $(testcore)
-dpa_alloc_LDADD = $(LIBNDCTL_LIB) $(UUID_LIBS) $(KMOD_LIBS)
-
-parent_uuid_SOURCES = parent-uuid.c $(testcore)
-parent_uuid_LDADD = $(LIBNDCTL_LIB) $(UUID_LIBS) $(KMOD_LIBS)
 
 dax_dev_SOURCES = dax-dev.c $(testcore)
 dax_dev_LDADD = $(LIBNDCTL_LIB) $(KMOD_LIBS)
@@ -168,19 +150,6 @@ smart_notify_SOURCES = smart-notify.c
 smart_notify_LDADD = $(LIBNDCTL_LIB)
 smart_listen_SOURCES = smart-listen.c
 smart_listen_LDADD = $(LIBNDCTL_LIB)
-
-multi_pmem_SOURCES = \
-		multi-pmem.c \
-		$(testcore) \
-		../ndctl/namespace.c \
-		../ndctl/check.c \
-		../util/json.c
-multi_pmem_LDADD = \
-		$(LIBNDCTL_LIB) \
-		$(JSON_LIBS) \
-		$(UUID_LIBS) \
-		$(KMOD_LIBS) \
-		../libutil.a
 
 list_smart_dimm_SOURCES = \
 		list-smart-dimm.c \

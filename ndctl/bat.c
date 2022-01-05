@@ -41,11 +41,6 @@ int cmd_bat(int argc, const char **argv, struct ndctl_ctx *ctx)
 		return EXIT_FAILURE;
 	}
 
-	rc = test_blk_namespaces(loglevel, test, ctx);
-	fprintf(stderr, "test_blk_namespaces: %s\n", rc ? "FAIL" : "PASS");
-	if (rc && rc != 77)
-		return rc;
-
 	rc = test_pmem_namespaces(loglevel, test, ctx);
 	fprintf(stderr, "test_pmem_namespaces: %s\n", rc ? "FAIL" : "PASS");
 	return ndctl_test_result(test, rc);

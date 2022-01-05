@@ -40,19 +40,6 @@ eval $(echo $json | json2var)
 # free capacity for blk creation
 $NDCTL destroy-namespace -f $dev
 
-# create blk
-dev="x"
-json=$($NDCTL create-namespace -b $NFIT_TEST_BUS0 -t blk -m raw -v)
-eval $(echo $json | json2var)
-[ $dev = "x" ] && echo "fail: $LINENO" && exit 1
-[ $mode != "raw" ] && echo "fail: $LINENO" &&  exit 1
-
-# convert blk to sector mode
-json=$($NDCTL create-namespace -m sector -l $SECTOR_SIZE -f -e $dev)
-eval $(echo $json | json2var)
-[ $sector_size != $SECTOR_SIZE ] && echo "fail: $LINENO" &&  exit 1
-[ $mode != "sector" ] && echo "fail: $LINENO" &&  exit 1
-
 _cleanup
 
 exit 0

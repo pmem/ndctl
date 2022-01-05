@@ -82,10 +82,6 @@ include::xable-bus-options.txt[]
 	'X.Y'. Limit the namespace list to the single identified device
 	if present.
 
--t::
---type=::
-	Filter listing by region type ('pmem' or 'blk')
-
 -m::
 --mode=::
 	Filter listing by the mode ('raw', 'fsdax', 'sector' or 'devdax')

@@ -26,7 +26,6 @@ int ndctl_test_init(struct kmod_ctx **ctx, struct kmod_module **mod,
 
 struct ndctl_ctx;
 int test_parent_uuid(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx);
-int test_multi_pmem(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx);
 int test_dax_directio(int dax_fd, unsigned long align, void *dax_addr, off_t offset);
 int test_dax_remap(struct ndctl_test *test, int dax_fd, unsigned long align, void *dax_addr,
 		off_t offset, bool fsdax);
@@ -40,9 +39,7 @@ static inline int test_dax_poison(struct ndctl_test *test, int dax_fd,
 	return 0;
 }
 #endif
-int test_dpa_alloc(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx);
 int test_dsm_fail(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx);
 int test_libndctl(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx);
-int test_blk_namespaces(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx);
 int test_pmem_namespaces(int loglevel, struct ndctl_test *test, struct ndctl_ctx *ctx);
 #endif /* __TEST_H__ */

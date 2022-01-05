@@ -45,8 +45,7 @@ endif
 EXTRA_DIST += keys.readme monitor.conf ndctl-monitor.service ndctl.conf
 
 if ENABLE_DESTRUCTIVE
-ndctl_SOURCES += ../test/blk_namespaces.c \
-		 ../test/pmem_namespaces.c
+ndctl_SOURCES += ../test/pmem_namespaces.c
 ndctl_SOURCES += bat.c
 endif
 
@@ -67,9 +66,6 @@ if ENABLE_TEST
 ndctl_SOURCES += ../test/libndctl.c \
 		 ../test/dsm-fail.c \
 		 ../util/sysfs.c \
-		 ../test/dpa-alloc.c \
-		 ../test/parent-uuid.c \
-		 ../test/multi-pmem.c \
 		 ../test/core.c \
 		 test.c
 endif
