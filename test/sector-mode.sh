@@ -15,20 +15,15 @@ ALIGN_SIZE=`getconf PAGESIZE`
 
 # setup (reset nfit_test dimms)
 modprobe nfit_test
-$NDCTL disable-region -b $NFIT_TEST_BUS0 all
-$NDCTL zero-labels -b $NFIT_TEST_BUS0 all
-$NDCTL enable-region -b $NFIT_TEST_BUS0 all
-
-$NDCTL disable-region -b $NFIT_TEST_BUS1 all
-$NDCTL zero-labels -b $NFIT_TEST_BUS1 all
-$NDCTL enable-region -b $NFIT_TEST_BUS1 all
+reset
+reset1
 
 rc=1
-query=". | sort_by(.size) | reverse | .[0].dev"
-NAMESPACE=$($NDCTL list -b $NFIT_TEST_BUS1 -N | jq -r "$query")
-REGION=$($NDCTL list -R --namespace=$NAMESPACE | jq -r "(.[]) | .dev")
+query=". | sort_by(.available_size) | reverse | .[0].dev"
+REGION=$($NDCTL list -R -b $NFIT_TEST_BUS1 | jq -r "$query")
 echo 0 > /sys/bus/nd/devices/$REGION/read_only
-$NDCTL create-namespace --no-autolabel -e $NAMESPACE -m sector -f -l 4K
+echo $ALIGN_SIZE > /sys/bus/nd/devices/$REGION/align
+NAMESPACE=$($NDCTL create-namespace --no-autolabel -r $REGION -m sector -f -l 4K | jq -r ".dev")
 $NDCTL create-namespace --no-autolabel -e $NAMESPACE -m dax -f -a $ALIGN_SIZE
 $NDCTL create-namespace --no-autolabel -e $NAMESPACE -m sector -f -l 4K
 

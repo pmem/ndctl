@@ -10,14 +10,12 @@ rc=77
 
 cleanup()
 {
-	rm -f $FILE
-	rm -f $MNT/$FILE
 	if [ -n "$blockdev" ]; then
 		umount /dev/$blockdev
 	else
 		rc=77
 	fi
-	rmdir $MNT
+	rm -rf $MNT
 }
 
 check_min_kver "4.7" || do_skip "may lack dax error handling"
@@ -28,9 +26,7 @@ trap 'err $LINENO cleanup' ERR
 
 # setup (reset nfit_test dimms)
 modprobe nfit_test
-$NDCTL disable-region -b $NFIT_TEST_BUS0 all
-$NDCTL zero-labels -b $NFIT_TEST_BUS0 all
-$NDCTL enable-region -b $NFIT_TEST_BUS0 all
+reset
 
 rc=1
 
@@ -84,8 +80,8 @@ echo $start_sect 8 > /sys/block/$blockdev/badblocks
 dd if=$MNT/$FILE of=/dev/null iflag=direct bs=4096 count=1 && err $LINENO || true
 
 # run the dax-errors test
-test -x ./dax-errors
-./dax-errors $MNT/$FILE
+test -x $TEST_PATH/dax-errors
+$TEST_PATH/dax-errors $MNT/$FILE
 
 # TODO: disable this check till we have clear-on-write in the kernel
 #if read sector len < /sys/block/$blockdev/badblocks; then

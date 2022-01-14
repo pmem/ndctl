@@ -15,9 +15,7 @@ trap 'err $LINENO' ERR
 
 # setup (reset nfit_test dimms)
 modprobe nfit_test
-$NDCTL disable-region -b $NFIT_TEST_BUS0 all
-$NDCTL zero-labels -b $NFIT_TEST_BUS0 all
-$NDCTL enable-region -b $NFIT_TEST_BUS0 all
+reset
 
 rc=1
 
@@ -64,8 +62,8 @@ read sector len < /sys/bus/nd/devices/$region/badblocks
 echo "sector: $sector len: $len"
 
 # run the daxdev-errors test
-test -x ./daxdev-errors
-./daxdev-errors $busdev $region
+test -x $TEST_PATH/daxdev-errors
+$TEST_PATH/daxdev-errors $busdev $region
 
 # check badblocks, should be empty
 if read sector len < /sys/bus/platform/devices/nfit_test.0/$busdev/$region/badblocks; then

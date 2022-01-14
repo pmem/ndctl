@@ -10,9 +10,9 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <util/log.h>
-#include <ndctl.h>
+#include <ndctl/ndctl.h>
 #include <ndctl/libndctl.h>
-#include <lib/private.h>
+#include "private.h"
 #include "papr.h"
 
 /* Utility logging maros for simplify logging */

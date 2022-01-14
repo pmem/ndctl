@@ -3,11 +3,13 @@
 #include <stdio.h>
 #include <errno.h>
 #include <util/json.h>
-#include <util/filter.h>
 #include <json-c/json.h>
 #include <ndctl/libndctl.h>
 #include <util/parse-options.h>
-#include <ndctl.h>
+
+#include <ndctl/filter.h>
+#include <ndctl/ndctl.h>
+#include <ndctl/json.h>
 
 struct util_filter_params param;
 static int did_fail;

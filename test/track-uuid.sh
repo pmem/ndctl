@@ -5,16 +5,14 @@
 blockdev=""
 rc=77
 
-. ./common
+. $(dirname $0)/common
 
 set -e
 trap 'err $LINENO' ERR
 
 # setup (reset nfit_test dimms)
 modprobe nfit_test
-$NDCTL disable-region -b $NFIT_TEST_BUS0 all
-$NDCTL zero-labels -b $NFIT_TEST_BUS0 all
-$NDCTL enable-region -b $NFIT_TEST_BUS0 all
+reset
 
 rc=1
 

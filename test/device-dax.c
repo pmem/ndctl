@@ -20,7 +20,7 @@
 #include <daxctl/libdaxctl.h>
 #include <ccan/array_size/array_size.h>
 
-#include <builtin.h>
+#include <ndctl/builtin.h>
 #include <test.h>
 
 static sigjmp_buf sj_env;

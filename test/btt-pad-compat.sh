@@ -37,13 +37,6 @@ create()
 	fi
 }
 
-reset()
-{
-	$NDCTL disable-region -b $NFIT_TEST_BUS0 all
-	$NDCTL zero-labels -b $NFIT_TEST_BUS0 all
-	$NDCTL enable-region -b $NFIT_TEST_BUS0 all
-}
-
 verify_idx()
 {
 	idx0="$1"
@@ -155,7 +148,7 @@ do_tests()
 	verify_idx 0 1
 
 	# do the same with an old format namespace
-	reset
+	resetV
 	create_oldfmt_ns
 	verify_idx 0 2
 

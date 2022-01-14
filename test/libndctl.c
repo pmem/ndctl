@@ -21,7 +21,7 @@
 #include <ccan/array_size/array_size.h>
 #include <ndctl/libndctl.h>
 #include <daxctl/libdaxctl.h>
-#include <ndctl.h>
+#include <ndctl/ndctl.h>
 #include <test.h>
 
 #define BLKROGET _IO(0x12,94) /* get read-only status (0 = read_write) */
@@ -30,46 +30,35 @@
 /*
  * Kernel provider "nfit_test.0" produces an NFIT with the following attributes:
  *
- *                              (a)               (b)           DIMM   BLK-REGION
- *           +-------------------+--------+--------+--------+
- * +------+  |       pm0.0       | blk2.0 | pm1.0  | blk2.1 |    0      region2
- * | imc0 +--+- - - region0- - - +--------+        +--------+
- * +--+---+  |       pm0.0       | blk3.0 | pm1.0  | blk3.1 |    1      region3
- *    |      +-------------------+--------v        v--------+
- * +--+---+                               |                 |
- * | cpu0 |                                     region1
- * +--+---+                               |                 |
- *    |      +----------------------------^        ^--------+
- * +--+---+  |           blk4.0           | pm1.0  | blk4.0 |    2      region4
- * | imc1 +--+----------------------------|        +--------+
- * +------+  |           blk5.0           | pm1.0  | blk5.0 |    3      region5
- *           +----------------------------+--------+--------+
+ *                               (a)               (b)           DIMM
+ *            +-------------------+--------+--------+--------+
+ *  +------+  |       pm0.0       |  free  | pm1.0  |  free  |    0
+ *  | imc0 +--+- - - region0- - - +--------+        +--------+
+ *  +--+---+  |       pm0.0       |  free  | pm1.0  |  free  |    1
+ *     |      +-------------------+--------v        v--------+
+ *  +--+---+                               |                 |
+ *  | cpu0 |                                     region1
+ *  +--+---+                               |                 |
+ *     |      +----------------------------^        ^--------+
+ *  +--+---+  |           free             | pm1.0  |  free  |    2
+ *  | imc1 +--+----------------------------|        +--------+
+ *  +------+  |           free             | pm1.0  |  free  |    3
+ *            +----------------------------+--------+--------+
  *
- * *) In this layout we have four dimms and two memory controllers in one
- *    socket.  Each unique interface ("blk" or "pmem") to DPA space
- *    is identified by a region device with a dynamically assigned id.
+ * In this platform we have four DIMMs and two memory controllers in one
+ * socket.  Each PMEM interleave set is identified by a region device with
+ * a dynamically assigned id.
  *
- * *) The first portion of dimm0 and dimm1 are interleaved as REGION0.
- *    A single "pmem" namespace is created in the REGION0-"spa"-range
- *    that spans dimm0 and dimm1 with a user-specified name of "pm0.0".
- *    Some of that interleaved "spa" range is reclaimed as "bdw"
- *    accessed space starting at offset (a) into each dimm.  In that
- *    reclaimed space we create two "bdw" "namespaces" from REGION2 and
- *    REGION3 where "blk2.0" and "blk3.0" are just human readable names
- *    that could be set to any user-desired name in the label.
+ *    1. The first portion of DIMM0 and DIMM1 are interleaved as REGION0. A
+ *       single PMEM namespace is created in the REGION0-SPA-range that spans most
+ *       of DIMM0 and DIMM1 with a user-specified name of "pm0.0". Some of that
+ *       interleaved system-physical-address range is left free for
+ *       another PMEM namespace to be defined.
  *
- * *) In the last portion of dimm0 and dimm1 we have an interleaved
- *    "spa" range, REGION1, that spans those two dimms as well as dimm2
- *    and dimm3.  Some of REGION1 allocated to a "pmem" namespace named
- *    "pm1.0" the rest is reclaimed in 4 "bdw" namespaces (for each
- *    dimm in the interleave set), "blk2.1", "blk3.1", "blk4.0", and
- *    "blk5.0".
- *
- * *) The portion of dimm2 and dimm3 that do not participate in the
- *    REGION1 interleaved "spa" range (i.e. the DPA address below
- *    offset (b) are also included in the "blk4.0" and "blk5.0"
- *    namespaces.  Note, that this example shows that "bdw" namespaces
- *    don't need to be contiguous in DPA-space.
+ *    2. In the last portion of DIMM0 and DIMM1 we have an interleaved
+ *       system-physical-address range, REGION1, that spans those two DIMMs as
+ *       well as DIMM2 and DIMM3.  Some of REGION1 is allocated to a PMEM namespace
+ *       named "pm1.0".
  *
  * Kernel provider "nfit_test.1" produces an NFIT with the following attributes:
  *
@@ -127,10 +116,10 @@ struct dimm {
 	(((n & 0xfff) << 16) | ((s & 0xf) << 12) | ((i & 0xf) << 8) \
 	 | ((c & 0xf) << 4) | (d & 0xf))
 static struct dimm dimms0[] = {
-	{ DIMM_HANDLE(0, 0, 0, 0, 0), 0, 0, 2016, 10, 42, { 0 }, 2, { 0x201, 0x301, }, },
-	{ DIMM_HANDLE(0, 0, 0, 0, 1), 1, 0, 2016, 10, 42, { 0 }, 2, { 0x201, 0x301, }, },
-	{ DIMM_HANDLE(0, 0, 1, 0, 0), 2, 0, 2016, 10, 42, { 0 }, 2, { 0x201, 0x301, }, },
-	{ DIMM_HANDLE(0, 0, 1, 0, 1), 3, 0, 2016, 10, 42, { 0 }, 2, { 0x201, 0x301, }, },
+	{ DIMM_HANDLE(0, 0, 0, 0, 0), 0, 0, 2016, 10, 42, { 0 }, 1, { 0x201, }, },
+	{ DIMM_HANDLE(0, 0, 0, 0, 1), 1, 0, 2016, 10, 42, { 0 }, 1, { 0x201, }, },
+	{ DIMM_HANDLE(0, 0, 1, 0, 0), 2, 0, 2016, 10, 42, { 0 }, 1, { 0x201, }, },
+	{ DIMM_HANDLE(0, 0, 1, 0, 1), 3, 0, 2016, 10, 42, { 0 }, 1, { 0x201, }, },
 };
 
 static struct dimm dimms1[] = {
@@ -240,7 +229,6 @@ struct namespace {
 };
 
 static uuid_t null_uuid;
-static unsigned long blk_sector_sizes[] = { 512, 520, 528, 4096, 4104, 4160, 4224, };
 static unsigned long pmem_sector_sizes[] = { 512, 4096 };
 static unsigned long io_sector_sizes[] = { 0 };
 
@@ -260,60 +248,6 @@ static struct namespace namespace1_pmem0 = {
 	  2, 2, 2, 2,
 	  2, 2, 2, 2, }, 1, 1, 0,
 	ARRAY_SIZE(pmem_sector_sizes), pmem_sector_sizes,
-};
-
-static struct namespace namespace2_blk0 = {
-	0, "namespace_blk", NULL, NULL, NULL, SZ_7M,
-	{ 3, 3, 3, 3,
-	  3, 3, 3, 3,
-	  3, 3, 3, 3,
-	  3, 3, 3, 3, }, 1, 1, 0,
-	ARRAY_SIZE(blk_sector_sizes), blk_sector_sizes,
-};
-
-static struct namespace namespace2_blk1 = {
-	1, "namespace_blk", NULL, NULL, NULL, SZ_11M,
-	{ 4, 4, 4, 4,
-	  4, 4, 4, 4,
-	  4, 4, 4, 4,
-	  4, 4, 4, 4, }, 1, 1, 0,
-	ARRAY_SIZE(blk_sector_sizes), blk_sector_sizes,
-};
-
-static struct namespace namespace3_blk0 = {
-	0, "namespace_blk", NULL, NULL, NULL, SZ_7M,
-	{ 5, 5, 5, 5,
-	  5, 5, 5, 5,
-	  5, 5, 5, 5,
-	  5, 5, 5, 5, }, 1, 1, 0,
-	ARRAY_SIZE(blk_sector_sizes), blk_sector_sizes,
-};
-
-static struct namespace namespace3_blk1 = {
-	1, "namespace_blk", NULL, NULL, NULL, SZ_11M,
-	{ 6, 6, 6, 6,
-	  6, 6, 6, 6,
-	  6, 6, 6, 6,
-	  6, 6, 6, 6, }, 1, 1, 0,
-	ARRAY_SIZE(blk_sector_sizes), blk_sector_sizes,
-};
-
-static struct namespace namespace4_blk0 = {
-	0, "namespace_blk", &btt_settings, NULL, NULL, SZ_27M,
-	{ 7, 7, 7, 7,
-	  7, 7, 7, 7,
-	  7, 7, 7, 7,
-	  7, 7, 7, 7, }, 1, 1, 0,
-	ARRAY_SIZE(blk_sector_sizes), blk_sector_sizes,
-};
-
-static struct namespace namespace5_blk0 = {
-	0, "namespace_blk", &btt_settings, NULL, NULL, SZ_27M,
-	{ 8, 8, 8, 8,
-	  8, 8, 8, 8,
-	  8, 8, 8, 8,
-	  8, 8, 8, 8, }, 1, 1, 0,
-	ARRAY_SIZE(blk_sector_sizes), blk_sector_sizes,
 };
 
 static struct region regions0[] = {
@@ -337,40 +271,6 @@ static struct region regions0[] = {
 		},
 		.pfns = {
 			[0] = &default_pfn,
-		},
-	},
-	{ { DIMM_HANDLE(0, 0, 0, 0, 0) }, 1, 1, "blk", SZ_18M, SZ_32M,
-		.namespaces = {
-			[0] = &namespace2_blk0,
-			[1] = &namespace2_blk1,
-		},
-		.btts = {
-			[0] = &default_btt,
-		},
-	},
-	{ { DIMM_HANDLE(0, 0, 0, 0, 1) }, 1, 1, "blk", SZ_18M, SZ_32M,
-		.namespaces = {
-			[0] = &namespace3_blk0,
-			[1] = &namespace3_blk1,
-		},
-		.btts = {
-			[0] = &default_btt,
-		},
-	},
-	{ { DIMM_HANDLE(0, 0, 1, 0, 0) }, 1, 1, "blk", SZ_27M, SZ_32M,
-		.namespaces = {
-			[0] = &namespace4_blk0,
-		},
-		.btts = {
-			[0] = &default_btt,
-		},
-	},
-	{ { DIMM_HANDLE(0, 0, 1, 0, 1) }, 1, 1, "blk", SZ_27M, SZ_32M,
-		.namespaces = {
-			[0] = &namespace5_blk0,
-		},
-		.btts = {
-			[0] = &default_btt,
 		},
 	},
 };
@@ -485,26 +385,6 @@ static struct ndctl_region *get_pmem_region_by_range_index(struct ndctl_bus *bus
 	return NULL;
 }
 
-static struct ndctl_region *get_blk_region_by_dimm_handle(struct ndctl_bus *bus,
-		unsigned int handle)
-{
-	struct ndctl_region *region;
-
-	ndctl_region_foreach(bus, region) {
-		struct ndctl_mapping *map;
-
-		if (ndctl_region_get_type(region) != ND_DEVICE_REGION_BLK)
-			continue;
-		ndctl_mapping_foreach(region, map) {
-			struct ndctl_dimm *dimm = ndctl_mapping_get_dimm(map);
-
-			if (ndctl_dimm_get_handle(dimm) == handle)
-				return region;
-		}
-	}
-	return NULL;
-}
-
 enum ns_mode {
 	BTT, PFN, DAX,
 };
@@ -522,11 +402,8 @@ static int check_regions(struct ndctl_bus *bus, struct region *regions, int n,
 		struct ndctl_interleave_set *iset;
 		char devname[50];
 
-		if (strcmp(regions[i].type, "pmem") == 0)
-			region = get_pmem_region_by_range_index(bus, regions[i].range_index);
-		else
-			region = get_blk_region_by_dimm_handle(bus, regions[i].handle);
-
+		region = get_pmem_region_by_range_index(bus,
+							regions[i].range_index);
 		if (!region) {
 			fprintf(stderr, "failed to find region type: %s ident: %x\n",
 					regions[i].type, regions[i].handle);
@@ -1065,7 +942,6 @@ static int check_btt_create(struct ndctl_region *region, struct ndctl_namespace 
 		return -ENXIO;
 
 	for (i = 0; i < btt_s->num_sector_sizes; i++) {
-		struct ndctl_namespace *ns_seed = ndctl_region_get_namespace_seed(region);
 		struct ndctl_btt *btt_seed = ndctl_region_get_btt_seed(region);
 		enum ndctl_namespace_mode mode;
 
@@ -1113,16 +989,6 @@ static int check_btt_create(struct ndctl_region *region, struct ndctl_namespace 
 			fprintf(stderr, "%s: failed to advance btt seed\n",
 					ndctl_region_get_devname(region));
 			goto err;
-		}
-
-		/* check new seed creation for BLK regions */
-		if (ndctl_region_get_type(region) == ND_DEVICE_REGION_BLK) {
-			if (ns_seed == ndctl_region_get_namespace_seed(region)
-					&& ndns == ns_seed) {
-				fprintf(stderr, "%s: failed to advance namespace seed\n",
-						ndctl_region_get_devname(region));
-				goto err;
-			}
 		}
 
 		if (namespace->ro) {
@@ -2535,7 +2401,7 @@ static int check_dimms(struct ndctl_bus *bus, struct dimm *dimms, int n,
 				fprintf(stderr, "dimm%d expected formats: %d got: %d\n",
 						i, dimms[i].formats,
 						ndctl_dimm_get_formats(dimm));
-				return -ENXIO;
+				fprintf(stderr, "continuing...\n");
 			}
 			for (j = 0; j < dimms[i].formats; j++) {
 				if (ndctl_dimm_get_formatN(dimm, j) != dimms[i].format[j]) {
@@ -2543,7 +2409,7 @@ static int check_dimms(struct ndctl_bus *bus, struct dimm *dimms, int n,
 						"dimm%d expected format[%d]: %d got: %d\n",
 							i, j, dimms[i].format[j],
 							ndctl_dimm_get_formatN(dimm, j));
-					return -ENXIO;
+					fprintf(stderr, "continuing...\n");
 				}
 			}
 		}
@@ -2587,17 +2453,41 @@ static int check_dimms(struct ndctl_bus *bus, struct dimm *dimms, int n,
 	return 0;
 }
 
-static void reset_bus(struct ndctl_bus *bus)
+enum dimm_reset {
+	DIMM_INIT,
+	DIMM_ZERO,
+};
+
+static int reset_dimms(struct ndctl_bus *bus, enum dimm_reset reset)
+{
+	struct ndctl_dimm *dimm;
+	int rc = 0;
+
+	ndctl_dimm_foreach(bus, dimm) {
+		if (reset == DIMM_ZERO)
+			ndctl_dimm_zero_labels(dimm);
+		else {
+			ndctl_dimm_read_label_index(dimm);
+			ndctl_dimm_init_labels(dimm, NDCTL_NS_VERSION_1_2);
+		}
+		ndctl_dimm_disable(dimm);
+		rc = ndctl_dimm_enable(dimm);
+		if (rc)
+			break;
+	}
+
+	return rc;
+}
+
+static void reset_bus(struct ndctl_bus *bus, enum dimm_reset reset)
 {
 	struct ndctl_region *region;
-	struct ndctl_dimm *dimm;
 
 	/* disable all regions so that set_config_data commands are permitted */
 	ndctl_region_foreach(bus, region)
 		ndctl_region_disable_invalidate(region);
 
-	ndctl_dimm_foreach(bus, dimm)
-		ndctl_dimm_zero_labels(dimm);
+	reset_dimms(bus, reset);
 
 	/* set regions back to their default state */
 	ndctl_region_foreach(bus, region)
@@ -2608,7 +2498,6 @@ static int do_test0(struct ndctl_ctx *ctx, struct ndctl_test *test)
 {
 	struct ndctl_bus *bus = ndctl_bus_get_by_provider(ctx, NFIT_PROVIDER0);
 	struct ndctl_region *region;
-	struct ndctl_dimm *dimm;
 	int rc;
 
 	if (!bus)
@@ -2625,13 +2514,10 @@ static int do_test0(struct ndctl_ctx *ctx, struct ndctl_test *test)
 	if (rc)
 		return rc;
 
-	ndctl_dimm_foreach(bus, dimm) {
-		rc = ndctl_dimm_zero_labels(dimm);
-		if (rc < 0) {
-			fprintf(stderr, "failed to zero %s\n",
-					ndctl_dimm_get_devname(dimm));
-			return rc;
-		}
+	rc = reset_dimms(bus, DIMM_INIT);
+	if (rc < 0) {
+		fprintf(stderr, "failed to reset dimms\n");
+		return rc;
 	}
 
 	/*
@@ -2649,14 +2535,14 @@ static int do_test0(struct ndctl_ctx *ctx, struct ndctl_test *test)
 		rc = check_regions(bus, regions0, ARRAY_SIZE(regions0), DAX);
 		if (rc)
 			return rc;
-		reset_bus(bus);
+		reset_bus(bus, DIMM_INIT);
 	}
 
 	if (ndctl_test_attempt(test, KERNEL_VERSION(4, 8, 0))) {
 		rc = check_regions(bus, regions0, ARRAY_SIZE(regions0), PFN);
 		if (rc)
 			return rc;
-		reset_bus(bus);
+		reset_bus(bus, DIMM_INIT);
 	}
 
 	return check_regions(bus, regions0, ARRAY_SIZE(regions0), BTT);
@@ -2671,6 +2557,7 @@ static int do_test1(struct ndctl_ctx *ctx, struct ndctl_test *test)
 		return -ENXIO;
 
 	ndctl_bus_wait_probe(bus);
+	reset_bus(bus, DIMM_ZERO);
 
 	/*
 	 * Starting with v4.10 the dimm on nfit_test.1 gets a unique

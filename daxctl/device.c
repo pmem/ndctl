@@ -8,10 +8,10 @@
 #include <limits.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <uuid/uuid.h>
 #include <sys/sysmacros.h>
 #include <util/size.h>
 #include <util/json.h>
-#include <util/filter.h>
 #include <json-c/json.h>
 #include <json-c/json_util.h>
 #include <ndctl/libndctl.h>
@@ -19,6 +19,9 @@
 #include <util/parse-options.h>
 #include <util/parse-configs.h>
 #include <ccan/array_size/array_size.h>
+
+#include "filter.h"
+#include "json.h"
 
 static struct {
 	const char *dev;

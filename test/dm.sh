@@ -8,7 +8,7 @@ SKIP=77
 FAIL=1
 SUCCESS=0
 
-. ./common
+. $(dirname $0)/common
 
 MNT=test_dax_mnt
 TEST_DM_PMEM=/dev/mapper/test_pmem
@@ -30,7 +30,7 @@ cleanup() {
 	if [ -L $TEST_DM_PMEM ]; then
 		dmsetup remove $TEST_DM_PMEM
 	fi
-	rmdir $MNT
+	rm -rf $MNT
 	# opportunistic cleanup, not fatal if these fail
 	namespaces=$($NDCTL list -N | jq -r ".[] | select(.name==\"$NAME\") | .dev")
 	for i in $namespaces

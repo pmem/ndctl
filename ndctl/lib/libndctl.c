@@ -20,10 +20,10 @@
 #include <ccan/array_size/array_size.h>
 #include <ccan/build_assert/build_assert.h>
 
-#include <ndctl.h>
 #include <util/util.h>
 #include <util/size.h>
 #include <util/sysfs.h>
+#include <ndctl/ndctl.h>
 #include <ndctl/libndctl.h>
 #include <ndctl/namespace.h>
 #include <daxctl/libdaxctl.h>

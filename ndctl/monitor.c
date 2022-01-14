@@ -7,12 +7,10 @@
 #include <time.h>
 #include <dirent.h>
 #include <util/json.h>
-#include <util/filter.h>
 #include <util/util.h>
 #include <util/parse-options.h>
 #include <util/parse-configs.h>
 #include <util/strbuf.h>
-#include <ndctl/config.h>
 #include <ndctl/ndctl.h>
 #include <ndctl/libndctl.h>
 #include <sys/epoll.h>
@@ -26,6 +24,9 @@
 #define ENABLE_DEBUG
 #endif
 #include <util/log.h>
+
+#include "filter.h"
+#include "json.h"
 
 static struct monitor {
 	const char *log;

@@ -14,7 +14,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
-#include <builtin.h>
+#include <ndctl/builtin.h>
 #include <util/strbuf.h>
 #include <util/parse-options.h>
 

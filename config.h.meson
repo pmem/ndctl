@@ -1,0 +1,151 @@
+/* Debug messages. */
+#mesondefine ENABLE_DEBUG
+
+/* destructive functional tests support */
+#mesondefine ENABLE_DESTRUCTIVE
+
+/* Documentation / man pages. */
+#mesondefine ENABLE_DOCS
+
+/* Enable keyutils support */
+#mesondefine ENABLE_KEYUTILS
+
+/* System logging. */
+#mesondefine ENABLE_LOGGING
+
+/* ndctl test poison support */
+#mesondefine ENABLE_POISON
+
+/* ndctl test support */
+#mesondefine ENABLE_TEST
+
+/* Define to 1 if big-endian-arch */
+#mesondefine HAVE_BIG_ENDIAN
+
+/* Define to 1 if you have the declaration of `BUS_MCEERR_AR', and to 0 if you
+   don't. */
+#mesondefine HAVE_DECL_BUS_MCEERR_AR
+
+/* Define to 1 if you have the declaration of `MAP_SHARED_VALIDATE', and to 0
+   if you don't. */
+#mesondefine HAVE_DECL_MAP_SHARED_VALIDATE
+
+/* Define to 1 if you have the declaration of `MAP_SYNC', and to 0 if you
+   don't. */
+#mesondefine HAVE_DECL_MAP_SYNC
+
+/* Define to 1 if you have the <dlfcn.h> header file. */
+#mesondefine HAVE_DLFCN_H
+
+/* Define to 1 if you have the <inttypes.h> header file. */
+#mesondefine HAVE_INTTYPES_H
+
+/* Define to 1 if you have the <keyutils.h> header file. */
+#mesondefine HAVE_KEYUTILS_H
+
+/* Define to 1 if you have the <linux/version.h> header file. */
+#mesondefine HAVE_LINUX_VERSION_H
+
+/* Define to 1 if little-endian-arch */
+#mesondefine HAVE_LITTLE_ENDIAN
+
+/* Define to 1 if you have the <memory.h> header file. */
+#mesondefine HAVE_MEMORY_H
+
+/* Define to 1 if you have the `secure_getenv' function. */
+#mesondefine HAVE_SECURE_GETENV
+
+/* Define to 1 if you have statement expressions. */
+#mesondefine HAVE_STATEMENT_EXPR
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#mesondefine HAVE_STDINT_H
+
+/* Define to 1 if you have the <stdlib.h> header file. */
+#mesondefine HAVE_STDLIB_H
+
+/* Define to 1 if you have the <strings.h> header file. */
+#mesondefine HAVE_STRINGS_H
+
+/* Define to 1 if you have the <string.h> header file. */
+#mesondefine HAVE_STRING_H
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#mesondefine HAVE_SYS_STAT_H
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#mesondefine HAVE_SYS_TYPES_H
+
+/* Define to 1 if typeof works with your compiler. */
+#mesondefine HAVE_TYPEOF
+
+/* Define to 1 if you have the <unistd.h> header file. */
+#mesondefine HAVE_UNISTD_H
+
+/* Define to 1 if using libuuid */
+#mesondefine HAVE_UUID
+
+/* Define to 1 if you have the `__secure_getenv' function. */
+#mesondefine HAVE___SECURE_GETENV
+
+/* Define to the sub-directory where libtool stores uninstalled libraries. */
+#mesondefine LT_OBJDIR
+
+/* Name of package */
+#mesondefine PACKAGE
+
+/* Define to the address where bug reports for this package should be sent. */
+#mesondefine PACKAGE_BUGREPORT
+
+/* Define to the full name of this package. */
+#mesondefine PACKAGE_NAME
+
+/* Define to the full name and version of this package. */
+#mesondefine PACKAGE_STRING
+
+/* Define to the one symbol short name of this package. */
+#mesondefine PACKAGE_TARNAME
+
+/* Define to the home page for this package. */
+#mesondefine PACKAGE_URL
+
+/* Define to the version of this package. */
+#mesondefine PACKAGE_VERSION
+
+/* Define to 1 if you have the ANSI C header files. */
+#mesondefine STDC_HEADERS
+
+/* Version number of package */
+#mesondefine VERSION
+
+/* Number of bits in a file offset, on hosts where this is settable. */
+#mesondefine _FILE_OFFSET_BITS
+
+/* Define for large files, on AIX-style hosts. */
+#mesondefine _LARGE_FILES
+
+/* Define to 1 if on MINIX. */
+#mesondefine _MINIX
+
+/* Define to 2 if the system does not provide POSIX.1 features except with
+   this defined. */
+#mesondefine _POSIX_1_SOURCE
+
+/* Define to 1 if you need to in order for `stat' and other things to work. */
+#mesondefine _POSIX_SOURCE
+
+/* Define to __typeof__ if your compiler spells it that way. */
+#mesondefine typeof
+
+/* Define to enable GNU Source Extensions */
+#mesondefine _GNU_SOURCE
+
+/* Locations to install configuration files, key config, man pages, etc.. */
+#mesondefine NDCTL_CONF_FILE
+#mesondefine NDCTL_CONF_DIR
+#mesondefine DAXCTL_CONF_DIR
+#mesondefine NDCTL_KEYS_DIR
+#mesondefine NDCTL_MAN_PATH
+#mesondefine DAXCTL_MODPROBE_DATA
+#mesondefine DAXCTL_MODPROBE_INSTALL
+#mesondefine PREFIX

@@ -4,27 +4,32 @@
 # Global variables
 
 # NDCTL
-#
-if [ -f "../ndctl/ndctl" ] && [ -x "../ndctl/ndctl" ]; then
-	export NDCTL=../ndctl/ndctl
-elif [ -f "./ndctl/ndctl" ] && [ -x "./ndctl/ndctl" ]; then
-	export NDCTL=./ndctl/ndctl
-else
-	echo "Couldn't find an ndctl binary"
-	exit 1
+if [ -z $NDCTL ]; then
+	if [ -f "../ndctl/ndctl" ] && [ -x "../ndctl/ndctl" ]; then
+		export NDCTL=../ndctl/ndctl
+	elif [ -f "./ndctl/ndctl" ] && [ -x "./ndctl/ndctl" ]; then
+		export NDCTL=./ndctl/ndctl
+	else
+		echo "Couldn't find an ndctl binary"
+		exit 1
+	fi
 fi
 
 # DAXCTL
-#
-if [ -f "../daxctl/daxctl" ] && [ -x "../daxctl/daxctl" ]; then
-	export DAXCTL=../daxctl/daxctl
-elif [ -f "./daxctl/daxctl" ] && [ -x "./daxctl/daxctl" ]; then
-	export DAXCTL=./daxctl/daxctl
-else
-	echo "Couldn't find an daxctl binary"
-	exit 1
+if [ -z $DAXCTL ]; then
+	if [ -f "../daxctl/daxctl" ] && [ -x "../daxctl/daxctl" ]; then
+		export DAXCTL=../daxctl/daxctl
+	elif [ -f "./daxctl/daxctl" ] && [ -x "./daxctl/daxctl" ]; then
+		export DAXCTL=./daxctl/daxctl
+	else
+		echo "Couldn't find an daxctl binary"
+		exit 1
+	fi
 fi
 
+if [ -z $TEST_PATH ]; then
+	export TEST_PATH=.
+fi
 
 # NFIT_TEST_BUS[01]
 #
@@ -45,6 +50,28 @@ err()
 	[ -n "$2" ] && "$2"
 	exit $rc
 }
+
+reset()
+{
+	$NDCTL disable-region -b $NFIT_TEST_BUS0 all
+	$NDCTL init-labels -f -b $NFIT_TEST_BUS0 all
+	$NDCTL enable-region -b $NFIT_TEST_BUS0 all
+}
+
+resetV()
+{
+	$NDCTL disable-region -b $NFIT_TEST_BUS0 all
+	$NDCTL init-labels -f -V 1.2 -b $NFIT_TEST_BUS0 all
+	$NDCTL enable-region -b $NFIT_TEST_BUS0 all
+}
+
+reset1()
+{
+	$NDCTL disable-region -b $NFIT_TEST_BUS1 all
+	$NDCTL init-labels -f -b $NFIT_TEST_BUS1 all
+	$NDCTL enable-region -b $NFIT_TEST_BUS1 all
+}
+
 
 # check_min_kver
 # $1: Supported kernel version. format: X.Y

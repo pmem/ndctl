@@ -120,10 +120,8 @@ int ndctl_test_init(struct kmod_ctx **ctx, struct kmod_module **mod,
 		"nfit",
 		"device_dax",
 		"dax_pmem",
-		"dax_pmem_core",
 		"dax_pmem_compat",
 		"libnvdimm",
-		"nd_blk",
 		"nd_btt",
 		"nd_e820",
 		"nd_pmem",
@@ -181,29 +179,27 @@ int ndctl_test_init(struct kmod_ctx **ctx, struct kmod_module **mod,
 		/*
 		 * Skip device-dax bus-model modules on pre-v5.1
 		 */
-		if ((strcmp(name, "dax_pmem_core") == 0
-				|| strcmp(name, "dax_pmem_compat") == 0)
-				&& !ndctl_test_attempt(test,
-					KERNEL_VERSION(5, 1, 0)))
+		if ((strcmp(name, "dax_pmem_compat") == 0) &&
+		    !ndctl_test_attempt(test, KERNEL_VERSION(5, 1, 0)))
 			continue;
 
 retry:
 		rc = kmod_module_new_from_name(*ctx, name, mod);
-
-		/*
-		 * dax_pmem_compat is not required, missing is ok,
-		 * present-but-production is not ok.
-		 */
-		if (rc && strcmp(name, "dax_pmem_compat") == 0)
-			continue;
-
 		if (rc) {
-			log_err(&log_ctx, "%s.ko: missing\n", name);
+			log_err(&log_ctx, "failed to interrogate %s.ko\n",
+				name);
 			break;
 		}
 
 		path = kmod_module_get_path(*mod);
 		if (!path) {
+			/*
+			 * dax_pmem_compat is not required, missing is
+			 * ok, present-but-production is not ok.
+			 */
+			if (strcmp(name, "dax_pmem_compat") == 0)
+				continue;
+
 			if (family != NVDIMM_FAMILY_INTEL &&
 			    (strcmp(name, "nfit") == 0 ||
 			     strcmp(name, "nd_e820") == 0))
@@ -261,8 +257,8 @@ retry:
 		ndctl_bus_foreach(nd_ctx, bus) {
 			struct ndctl_region *region;
 
-			if (strncmp(ndctl_bus_get_provider(bus),
-						"nfit_test", 9) != 0)
+			if (strcmp(ndctl_bus_get_provider(bus),
+				   "nfit_test.0") != 0)
 				continue;
 			ndctl_region_foreach(bus, region)
 				ndctl_region_disable_invalidate(region);
@@ -280,5 +276,30 @@ retry:
 			NULL, NULL, NULL, NULL);
 	if (rc)
 		kmod_unref(*ctx);
-	return rc;
+
+	if (!nd_ctx)
+		return rc;
+
+	ndctl_bus_foreach (nd_ctx, bus) {
+		struct ndctl_region *region;
+		struct ndctl_dimm *dimm;
+
+		if (strcmp(ndctl_bus_get_provider(bus), "nfit_test.0") != 0)
+			continue;
+
+		ndctl_region_foreach (bus, region)
+			ndctl_region_disable_invalidate(region);
+
+		ndctl_dimm_foreach (bus, dimm) {
+			ndctl_dimm_read_label_index(dimm);
+			ndctl_dimm_init_labels(dimm, NDCTL_NS_VERSION_1_2);
+			ndctl_dimm_disable(dimm);
+			ndctl_dimm_enable(dimm);
+		}
+
+		ndctl_region_foreach (bus, region)
+			ndctl_region_enable(region);
+	}
+
+	return 0;
 }

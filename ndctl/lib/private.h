@@ -14,8 +14,9 @@
 #include <ccan/list/list.h>
 #include <ccan/array_size/array_size.h>
 
-#include <ndctl.h>
+#include <ndctl/ndctl.h>
 #include <ndctl/libndctl.h>
+#include <ndctl/libndctl-nfit.h>
 #include <ccan/endian/endian.h>
 #include <ccan/short_types/short_types.h>
 #include "intel.h"
@@ -23,7 +24,6 @@
 #include "msft.h"
 #include "hyperv.h"
 #include "papr.h"
-#include "libndctl-nfit.h"
 
 struct nvdimm_data {
 	struct ndctl_cmd *cmd_read;

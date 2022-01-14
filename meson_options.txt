@@ -1,0 +1,25 @@
+option('version-tag', type : 'string',
+       description : 'override the git version string')
+option('docs', type : 'feature', value : 'enabled')
+option('asciidoctor', type : 'feature', value : 'enabled')
+option('systemd', type : 'feature', value : 'enabled')
+option('keyutils', type : 'feature', value : 'enabled',
+  description : 'enable nvdimm device passphrase management')
+option('test', type : 'feature', value : 'disabled',
+  description : 'enable shipping tests in ndctl')
+option('destructive', type : 'feature', value : 'disabled',
+  description : 'enable tests that may clobber live system resources')
+option('poison', type : 'feature', value : 'enabled',
+  description : 'enable tests that inject poison / memory-failure')
+option('logging', type : 'feature', value : 'enabled',
+  description : 'enable log infrastructure')
+option('dbg', type : 'feature', value : 'enabled',
+  description : 'enable dbg messages')
+option('rootprefix', type : 'string',
+       description : '''override the root prefix [default '/' if split-usr and '/usr' otherwise]''')
+option('rootlibdir', type : 'string',
+       description : '''[/usr]/lib/x86_64-linux-gnu or such''')
+option('pkgconfiglibdir', type : 'string', value : '',
+       description : 'directory for standard pkg-config files')
+option('bashcompletiondir', type : 'string',
+       description : '''${datadir}/bash-completion/completions''')

@@ -10,7 +10,7 @@ trap 'cleanup $LINENO' ERR
 cleanup()
 {
 	printf "Error at line %d\n" "$1"
-	[[ $testdev ]] && reset
+	[[ $testdev ]] && reset_dax
 	exit $rc
 }
 
@@ -70,7 +70,7 @@ reset_dev()
 	"$DAXCTL" enable-device "$testdev"
 }
 
-reset()
+reset_dax()
 {
 	test -n "$testdev"
 
