@@ -9,11 +9,14 @@ Build
 =====
 
 ```
-./autogen.sh
-./configure CFLAGS='-g -O2' --prefix=/usr --sysconfdir=/etc --libdir=/usr/lib64
-make
-make check
-sudo make install
+meson setup build;
+meson compile -C build;
+```
+
+Optionally, to install:
+
+```
+meson install -C build
 ```
 
 There are a number of packages required for the build steps that may not
@@ -34,7 +37,7 @@ https://nvdimm.wiki.kernel.org/start
 
 Unit Tests
 ==========
-The unit tests run by `make check` require the nfit_test.ko module to be
+The unit tests run by `meson test` require the nfit_test.ko module to be
 loaded.  To build and install nfit_test.ko:
 
 1. Obtain the kernel source.  For example,  
@@ -78,8 +81,16 @@ loaded.  To build and install nfit_test.ko:
    sudo make modules_install
    ```
 
-1. Now run `make check` in the ndctl source directory, or `ndctl test`,
-   if ndctl was built with `--enable-test`.
+1. Now run `meson test -C build` in the ndctl source directory, or `ndctl test`,
+   if ndctl was built with `-Dtest=enabled` as a configuration option to meson.
+
+1. To run the 'destructive' set of tests that may clobber existing pmem
+   configurations and data, configure meson with the destructive option after the
+   `meson setup` step:
+
+   ```
+   meson configure -Dtest=enabled -Ddestructive=enabled build;
+   ```
 
 Troubleshooting
 ===============
@@ -87,9 +98,9 @@ Troubleshooting
 The unit tests will validate that the environment is set up correctly
 before they try to run. If the platform is misconfigured, i.e. the unit
 test modules are not available, or the test versions of the modules are
-superseded by the "in-tree/production" version of the modules `make
-check` will skip tests and report a message like the following in
-test/test-suite.log:  
+superseded by the "in-tree/production" version of the modules `meson
+test` will skip tests and report a message like the following in
+`build/meson-logs/testlog.txt`
 
 ```
 SKIP: libndctl
