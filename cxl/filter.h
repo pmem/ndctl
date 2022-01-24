@@ -42,6 +42,12 @@ struct cxl_port *util_cxl_port_filter(struct cxl_port *port, const char *ident,
 				      enum cxl_port_filter_mode mode);
 struct cxl_endpoint *util_cxl_endpoint_filter(struct cxl_endpoint *endpoint,
 					      const char *__ident);
+struct cxl_target *util_cxl_target_filter_by_memdev(struct cxl_target *target,
+						    const char *ident,
+						    const char *serial);
+struct cxl_dport *util_cxl_dport_filter_by_memdev(struct cxl_dport *dport,
+						  const char *ident,
+						  const char *serial);
 int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *param);
 bool cxl_filter_has(const char *needle, const char *__filter);
 #endif /* _CXL_UTIL_FILTER_H_ */

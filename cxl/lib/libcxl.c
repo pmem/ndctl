@@ -1527,6 +1527,11 @@ CXL_EXPORT int cxl_dport_get_id(struct cxl_dport *dport)
 	return dport->id;
 }
 
+CXL_EXPORT struct cxl_port *cxl_dport_get_port(struct cxl_dport *dport)
+{
+	return dport->port;
+}
+
 CXL_EXPORT bool cxl_dport_maps_memdev(struct cxl_dport *dport,
 				      struct cxl_memdev *memdev)
 {

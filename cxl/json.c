@@ -8,6 +8,7 @@
 #include <json-c/printbuf.h>
 #include <ccan/short_types/short_types.h>
 
+#include "filter.h"
 #include "json.h"
 
 static struct json_object *util_cxl_memdev_health_to_json(
@@ -241,9 +242,9 @@ struct json_object *util_cxl_memdev_to_json(struct cxl_memdev *memdev,
 	return jdev;
 }
 
-static struct json_object *util_cxl_dports_to_json(struct json_object *jport,
-						   struct cxl_port *port,
-						   unsigned long flags)
+void util_cxl_dports_append_json(struct json_object *jport,
+				 struct cxl_port *port, const char *ident,
+				 const char *serial, unsigned long flags)
 {
 	struct json_object *jobj, *jdports;
 	struct cxl_dport *dport;
@@ -251,7 +252,7 @@ static struct json_object *util_cxl_dports_to_json(struct json_object *jport,
 
 	val = cxl_port_get_nr_dports(port);
 	if (!val || !(flags & UTIL_JSON_TARGETS))
-		return jport;
+		return;
 
 	jobj = json_object_new_int(val);
 	if (jobj)
@@ -259,11 +260,14 @@ static struct json_object *util_cxl_dports_to_json(struct json_object *jport,
 
 	jdports = json_object_new_array();
 	if (!jdports)
-		return jport;
+		return;
 
 	cxl_dport_foreach(port, dport) {
 		struct json_object *jdport;
 		const char *phys_node;
+
+		if (!util_cxl_dport_filter_by_memdev(dport, ident, serial))
+			continue;
 
 		jdport = json_object_new_object();
 		if (!jdport)
@@ -289,8 +293,6 @@ static struct json_object *util_cxl_dports_to_json(struct json_object *jport,
 	}
 
 	json_object_object_add(jport, "dports", jdports);
-
-	return jport;
 }
 
 struct json_object *util_cxl_bus_to_json(struct cxl_bus *bus,
@@ -311,7 +313,7 @@ struct json_object *util_cxl_bus_to_json(struct cxl_bus *bus,
 	if (jobj)
 		json_object_object_add(jbus, "provider", jobj);
 
-	return util_cxl_dports_to_json(jbus, cxl_bus_get_port(bus), flags);
+	return jbus;
 }
 
 struct json_object *util_cxl_decoder_to_json(struct cxl_decoder *decoder,
@@ -320,8 +322,6 @@ struct json_object *util_cxl_decoder_to_json(struct cxl_decoder *decoder,
 	const char *devname = cxl_decoder_get_devname(decoder);
 	struct cxl_port *port = cxl_decoder_get_port(decoder);
 	struct json_object *jdecoder, *jobj;
-	struct json_object *jtargets;
-	struct cxl_target *target;
 	u64 val;
 
 	jdecoder = json_object_new_object();
@@ -375,9 +375,22 @@ struct json_object *util_cxl_decoder_to_json(struct cxl_decoder *decoder,
 					       jobj);
 	}
 
+	return jdecoder;
+}
+
+void util_cxl_targets_append_json(struct json_object *jdecoder,
+				  struct cxl_decoder *decoder,
+				  const char *ident, const char *serial,
+				  unsigned long flags)
+{
+	struct cxl_port *port = cxl_decoder_get_port(decoder);
+	struct json_object *jobj, *jtargets;
+	struct cxl_target *target;
+	int val;
+
 	/* Endpoints don't have targets, they *are* targets */
 	if (cxl_port_is_endpoint(port))
-		return jdecoder;
+		return;
 
 	val = cxl_decoder_get_nr_targets(decoder);
 	jobj = json_object_new_int(val);
@@ -386,16 +399,21 @@ struct json_object *util_cxl_decoder_to_json(struct cxl_decoder *decoder,
 
 	if (!(flags & UTIL_JSON_TARGETS) ||
 	    !cxl_decoder_get_nr_targets(decoder))
-		return jdecoder;
+		return;
 
 	jtargets = json_object_new_array();
 	if (!jtargets)
-		return jdecoder;
+		return;
 
 	cxl_target_foreach(decoder, target) {
-		struct json_object *jtarget = json_object_new_object();
+		struct json_object *jtarget;
 		const char *phys_node;
+		const char *devname;
 
+		if (!util_cxl_target_filter_by_memdev(target, ident, serial))
+			continue;
+
+		jtarget = json_object_new_object();
 		if (!jtarget)
 			continue;
 
@@ -425,9 +443,6 @@ struct json_object *util_cxl_decoder_to_json(struct cxl_decoder *decoder,
 	}
 
 	json_object_object_add(jdecoder, "targets", jtargets);
-
-	return jdecoder;
-
 }
 
 static struct json_object *__util_cxl_port_to_json(struct cxl_port *port,
@@ -455,7 +470,7 @@ static struct json_object *__util_cxl_port_to_json(struct cxl_port *port,
 			json_object_object_add(jport, "state", jobj);
 	}
 
-	return util_cxl_dports_to_json(jport, port, flags);
+	return jport;
 }
 
 struct json_object *util_cxl_port_to_json(struct cxl_port *port,

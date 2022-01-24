@@ -152,6 +152,7 @@ global:
 	cxl_dport_get_devname;
 	cxl_dport_get_physical_node;
 	cxl_dport_get_id;
+	cxl_dport_get_port;
 	cxl_port_get_dport_by_memdev;
 	cxl_dport_maps_memdev;
 } LIBCXL_1;

@@ -435,6 +435,48 @@ util_cxl_decoder_filter_by_memdev(struct cxl_decoder *decoder,
 	return NULL;
 }
 
+struct cxl_target *util_cxl_target_filter_by_memdev(struct cxl_target *target,
+						    const char *ident,
+						    const char *serial)
+{
+	struct cxl_decoder *decoder = cxl_target_get_decoder(target);
+	struct cxl_ctx *ctx = cxl_decoder_get_ctx(decoder);
+	struct cxl_memdev *memdev;
+
+	if (!ident && !serial)
+		return target;
+
+	cxl_memdev_foreach(ctx, memdev) {
+		if (!util_cxl_memdev_filter(memdev, ident, serial))
+			continue;
+		if (cxl_target_maps_memdev(target, memdev))
+			return target;
+	}
+
+	return NULL;
+}
+
+struct cxl_dport *util_cxl_dport_filter_by_memdev(struct cxl_dport *dport,
+						  const char *ident,
+						  const char *serial)
+{
+	struct cxl_port *port = cxl_dport_get_port(dport);
+	struct cxl_ctx *ctx = cxl_port_get_ctx(port);
+	struct cxl_memdev *memdev;
+
+	if (!ident && !serial)
+		return dport;
+
+	cxl_memdev_foreach (ctx, memdev) {
+		if (!util_cxl_memdev_filter(memdev, ident, serial))
+			continue;
+		if (cxl_dport_maps_memdev(dport, memdev))
+			return dport;
+	}
+
+	return NULL;
+}
+
 static bool __memdev_filter_by_decoder(struct cxl_memdev *memdev,
 				       struct cxl_port *port, const char *ident)
 {
@@ -639,6 +681,9 @@ static void walk_decoders(struct cxl_port *port, struct cxl_filter_params *p,
 			dbg(p, "decoder object allocation failure\n");
 			continue;
 		}
+		util_cxl_targets_append_json(jdecoder, decoder,
+					     p->memdev_filter, p->serial_filter,
+					     flags);
 		json_object_array_add(jdecoders, jdecoder);
 	}
 }
@@ -756,6 +801,9 @@ walk_child_ports(struct cxl_port *parent_port, struct cxl_filter_params *p,
 				err(p, "%s: failed to list\n", devname);
 				continue;
 			}
+			util_cxl_dports_append_json(jport, port,
+						    p->memdev_filter,
+						    p->serial_filter, flags);
 			json_object_array_add(jports, jport);
 			jchildports = json_object_new_array();
 			if (!jchildports) {
@@ -914,6 +962,9 @@ int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *p)
 				dbg(p, "bus object allocation failure\n");
 				continue;
 			}
+			util_cxl_dports_append_json(jbus, port,
+						    p->memdev_filter,
+						    p->serial_filter, flags);
 			json_object_array_add(jbuses, jbus);
 			if (p->ports) {
 				jchildports = json_object_new_array();

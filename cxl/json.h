@@ -15,4 +15,11 @@ struct json_object *util_cxl_endpoint_to_json(struct cxl_endpoint *endpoint,
 					      unsigned long flags);
 struct json_object *util_cxl_decoder_to_json(struct cxl_decoder *decoder,
 					     unsigned long flags);
+void util_cxl_targets_append_json(struct json_object *jdecoder,
+				  struct cxl_decoder *decoder,
+				  const char *ident, const char *serial,
+				  unsigned long flags);
+void util_cxl_dports_append_json(struct json_object *jport,
+				 struct cxl_port *port, const char *ident,
+				 const char *serial, unsigned long flags);
 #endif /* __CXL_UTIL_JSON_H__ */
