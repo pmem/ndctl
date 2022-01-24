@@ -13,6 +13,7 @@
 #include "filter.h"
 
 static struct cxl_filter_params param;
+static bool debug;
 
 static const struct option options[] = {
 	OPT_STRING('m', "memdev", &param.memdev_filter, "memory device name(s)",
@@ -35,6 +36,9 @@ static const struct option options[] = {
 		    "use human friendly number formats "),
 	OPT_BOOLEAN('H', "health", &param.health,
 		    "include memory device health information "),
+#ifdef ENABLE_DEBUG
+	OPT_BOOLEAN(0, "debug", &debug, "debug list walk"),
+#endif
 	OPT_END(),
 };
 
@@ -84,9 +88,14 @@ int cmd_list(int argc, const char **argv, struct cxl_ctx *ctx)
 	}
 
 	log_init(&param.ctx, "cxl list", "CXL_LIST_LOG");
+	if (debug) {
+		cxl_set_log_priority(ctx, LOG_DEBUG);
+		param.ctx.log_priority = LOG_DEBUG;
+	}
 
 	if (cxl_filter_has(param.port_filter, "root") && param.ports)
 		param.buses = true;
 
+	dbg(&param, "walk topology\n");
 	return cxl_filter_walk(ctx, &param);
 }

@@ -387,6 +387,7 @@ int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *p)
 	if (!jports)
 		goto err;
 
+	dbg(p, "walk memdevs\n");
 	cxl_memdev_foreach(ctx, memdev) {
 		struct json_object *jdev;
 
@@ -403,6 +404,7 @@ int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *p)
 		}
 	}
 
+	dbg(p, "walk buses\n");
 	cxl_bus_foreach(ctx, bus) {
 		struct json_object *jbus = NULL;
 		struct json_object *jchildports = NULL;
@@ -431,6 +433,7 @@ int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *p)
 			}
 		}
 walk_children:
+		dbg(p, "walk ports\n");
 		walk_child_ports(port, p, pick_array(jchildports, jports),
 				 flags);
 		cond_add_put_array_suffix(jbus, "ports", devname, jchildports);

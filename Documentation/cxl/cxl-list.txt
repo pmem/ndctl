@@ -200,9 +200,11 @@ OPTIONS
 	descendants of the individual ports that match the filter. By default
 	all descendant objects are listed.
 
-include::human-option.txt[]
+--debug::
+	If the cxl tool was built with debug enabled, turn on debug
+	messages.
 
-include::verbose-option.txt[]
+include::human-option.txt[]
 
 include::../copyright.txt[]
 
