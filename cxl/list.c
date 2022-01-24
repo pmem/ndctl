@@ -36,6 +36,11 @@ static const struct option options[] = {
 		   "filter by CXL endpoint device name(s)"),
 	OPT_BOOLEAN('E', "endpoints", &param.endpoints,
 		    "include CXL endpoint info"),
+	OPT_STRING('d', "decoder", &param.decoder_filter,
+		   "decoder device name",
+		   "filter by CXL decoder device name(s) / class"),
+	OPT_BOOLEAN('D', "decoders", &param.decoders,
+		    "include CXL decoder info"),
 	OPT_BOOLEAN('i', "idle", &param.idle, "include disabled devices"),
 	OPT_BOOLEAN('u', "human", &param.human,
 		    "use human friendly number formats "),
@@ -50,7 +55,7 @@ static const struct option options[] = {
 static int num_list_flags(void)
 {
 	return !!param.memdevs + !!param.buses + !!param.ports +
-	       !!param.endpoints;
+	       !!param.endpoints + !!param.decoders;
 }
 
 int cmd_list(int argc, const char **argv, struct cxl_ctx *ctx)
@@ -82,6 +87,8 @@ int cmd_list(int argc, const char **argv, struct cxl_ctx *ctx)
 			param.ports = true;
 		if (param.endpoint_filter)
 			param.endpoints = true;
+		if (param.decoder_filter)
+			param.decoders = true;
 		if (num_list_flags() == 0) {
 			/*
 			 * TODO: We likely want to list regions by default if

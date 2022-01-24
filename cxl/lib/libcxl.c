@@ -63,8 +63,17 @@ static void free_memdev(struct cxl_memdev *memdev, struct list_head *head)
 	free(memdev->firmware_version);
 	free(memdev->dev_buf);
 	free(memdev->dev_path);
-	free(memdev->host);
+	free(memdev->host_path);
 	free(memdev);
+}
+
+static void free_decoder(struct cxl_decoder *decoder, struct list_head *head)
+{
+	if (head)
+		list_del_from(head, &decoder->list);
+	free(decoder->dev_buf);
+	free(decoder->dev_path);
+	free(decoder);
 }
 
 static void free_port(struct cxl_port *port, struct list_head *head);
@@ -73,6 +82,7 @@ static void __free_port(struct cxl_port *port, struct list_head *head)
 {
 	struct cxl_port *child, *_c;
 	struct cxl_endpoint *endpoint, *_e;
+	struct cxl_decoder *decoder, *_d;
 
 	if (head)
 		list_del_from(head, &port->list);
@@ -80,6 +90,8 @@ static void __free_port(struct cxl_port *port, struct list_head *head)
 		free_port(child, &port->child_ports);
 	list_for_each_safe(&port->endpoints, endpoint, _e, port.list)
 		free_endpoint(endpoint, &port->endpoints);
+	list_for_each_safe(&port->decoders, decoder, _d, list)
+		free_decoder(decoder, &port->decoders);
 	kmod_module_unref(port->module);
 	free(port->dev_buf);
 	free(port->dev_path);
@@ -298,9 +310,9 @@ static void *add_cxl_memdev(void *parent, int id, const char *cxlmem_base)
 	char *path = calloc(1, strlen(cxlmem_base) + 100);
 	struct cxl_ctx *ctx = parent;
 	struct cxl_memdev *memdev, *memdev_dup;
-	char *host, *rpath = NULL;
 	char buf[SYSFS_ATTR_SIZE];
 	struct stat st;
+	char *host;
 
 	if (!path)
 		return NULL;
@@ -358,21 +370,13 @@ static void *add_cxl_memdev(void *parent, int id, const char *cxlmem_base)
 	if (!memdev->dev_path)
 		goto err_read;
 
-	rpath = realpath(cxlmem_base, NULL);
-	if (!rpath)
+	memdev->host_path = realpath(cxlmem_base, NULL);
+	if (!memdev->host_path)
 		goto err_read;
-	host = strrchr(rpath, '/');
-	if (host) {
-		host[0] = '\0';
-		host = strrchr(rpath, '/');
-	}
+	host = strrchr(memdev->host_path, '/');
 	if (!host)
 		goto err_read;
-	memdev->host = strdup(host + 1);
-	if (!memdev->host)
-		goto err_read;
-	free(rpath);
-	rpath = NULL;
+	host[0] = '\0';
 
 	sprintf(path, "%s/firmware_version", cxlmem_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
@@ -404,8 +408,8 @@ static void *add_cxl_memdev(void *parent, int id, const char *cxlmem_base)
 	free(memdev->firmware_version);
 	free(memdev->dev_buf);
 	free(memdev->dev_path);
+	free(memdev->host_path);
 	free(memdev);
-	free(rpath);
  err_dev:
 	free(path);
 	return NULL;
@@ -463,7 +467,7 @@ CXL_EXPORT const char *cxl_memdev_get_devname(struct cxl_memdev *memdev)
 
 CXL_EXPORT const char *cxl_memdev_get_host(struct cxl_memdev *memdev)
 {
-	return memdev->host;
+	return devpath_to_devname(memdev->host_path);
 }
 
 CXL_EXPORT struct cxl_bus *cxl_memdev_get_bus(struct cxl_memdev *memdev)
@@ -679,9 +683,11 @@ static int cxl_port_init(struct cxl_port *port, struct cxl_port *parent_port,
 	port->ctx = ctx;
 	port->type = type;
 	port->parent = parent_port;
+	port->type = type;
 
 	list_head_init(&port->child_ports);
 	list_head_init(&port->endpoints);
+	list_head_init(&port->decoders);
 
 	port->dev_path = strdup(cxlport_base);
 	if (!port->dev_path)
@@ -840,6 +846,207 @@ cxl_endpoint_get_memdev(struct cxl_endpoint *endpoint)
 		}
 
 	return NULL;
+}
+
+static void *add_cxl_decoder(void *parent, int id, const char *cxldecoder_base)
+{
+	const char *devname = devpath_to_devname(cxldecoder_base);
+	char *path = calloc(1, strlen(cxldecoder_base) + 100);
+	struct cxl_decoder *decoder, *decoder_dup;
+	struct cxl_port *port = parent;
+	struct cxl_ctx *ctx = cxl_port_get_ctx(port);
+	char buf[SYSFS_ATTR_SIZE];
+	size_t i;
+
+	dbg(ctx, "%s: base: \'%s\'\n", devname, cxldecoder_base);
+
+	if (!path)
+		return NULL;
+
+	decoder = calloc(1, sizeof(*decoder));
+	if (!decoder)
+		goto err;
+
+	decoder->id = id;
+	decoder->ctx = ctx;
+	decoder->port = port;
+
+	decoder->dev_path = strdup(cxldecoder_base);
+	if (!decoder->dev_path)
+		goto err;
+
+	decoder->dev_buf = calloc(1, strlen(cxldecoder_base) + 50);
+	if (!decoder->dev_buf)
+		goto err;
+	decoder->buf_len = strlen(cxldecoder_base) + 50;
+
+	sprintf(path, "%s/start", cxldecoder_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		decoder->start = ULLONG_MAX;
+	else
+		decoder->start = strtoull(buf, NULL, 0);
+
+	sprintf(path, "%s/size", cxldecoder_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		decoder->size = ULLONG_MAX;
+	else
+		decoder->size = strtoull(buf, NULL, 0);
+
+	switch (port->type) {
+	case CXL_PORT_SWITCH:
+	case CXL_PORT_ENDPOINT:
+		decoder->pmem_capable = true;
+		decoder->volatile_capable = true;
+		decoder->mem_capable = true;
+		decoder->accelmem_capable = true;
+		sprintf(path, "%s/locked", cxldecoder_base);
+		if (sysfs_read_attr(ctx, path, buf) == 0)
+			decoder->locked = !!strtoul(buf, NULL, 0);
+		sprintf(path, "%s/target_type", cxldecoder_base);
+		if (sysfs_read_attr(ctx, path, buf) == 0) {
+			if (strcmp(buf, "accelerator") == 0)
+				decoder->target_type =
+					CXL_DECODER_TTYPE_ACCELERATOR;
+			if (strcmp(buf, "expander") == 0)
+				decoder->target_type =
+					CXL_DECODER_TTYPE_EXPANDER;
+		}
+		break;
+	case CXL_PORT_ROOT: {
+		struct cxl_decoder_flag {
+			char *name;
+			bool *flag;
+		} flags[] = {
+			{ "cap_type2", &decoder->accelmem_capable },
+			{ "cap_type3", &decoder->mem_capable },
+			{ "cap_ram", &decoder->volatile_capable },
+			{ "cap_pmem", &decoder->pmem_capable },
+			{ "locked", &decoder->locked },
+		};
+
+		for (i = 0; i < ARRAY_SIZE(flags); i++) {
+			struct cxl_decoder_flag *flag = &flags[i];
+
+			sprintf(path, "%s/%s", cxldecoder_base, flag->name);
+			if (sysfs_read_attr(ctx, path, buf) == 0)
+				*(flag->flag) = !!strtoul(buf, NULL, 0);
+		}
+		break;
+	}
+	}
+
+	cxl_decoder_foreach(port, decoder_dup)
+		if (decoder_dup->id == decoder->id) {
+			free_decoder(decoder, NULL);
+			return decoder_dup;
+		}
+
+	list_add(&port->decoders, &decoder->list);
+
+	return decoder;
+err:
+	free(decoder->dev_path);
+	free(decoder->dev_buf);
+	free(decoder);
+	free(path);
+	return NULL;
+}
+
+static void cxl_decoders_init(struct cxl_port *port)
+{
+	struct cxl_ctx *ctx = cxl_port_get_ctx(port);
+	char *decoder_fmt;
+
+	if (port->decoders_init)
+		return;
+
+	if (asprintf(&decoder_fmt, "decoder%d.", cxl_port_get_id(port)) < 0) {
+		err(ctx, "%s: failed to add decoder(s)\n",
+		    cxl_port_get_devname(port));
+		return;
+	}
+
+	port->decoders_init = 1;
+
+	sysfs_device_parse(ctx, port->dev_path, decoder_fmt, port,
+			   add_cxl_decoder);
+
+	free(decoder_fmt);
+}
+
+CXL_EXPORT struct cxl_decoder *cxl_decoder_get_first(struct cxl_port *port)
+{
+	cxl_decoders_init(port);
+
+	return list_top(&port->decoders, struct cxl_decoder, list);
+}
+
+CXL_EXPORT struct cxl_decoder *cxl_decoder_get_next(struct cxl_decoder *decoder)
+{
+	struct cxl_port *port = decoder->port;
+
+	return list_next(&port->decoders, decoder, list);
+}
+
+CXL_EXPORT struct cxl_ctx *cxl_decoder_get_ctx(struct cxl_decoder *decoder)
+{
+	return decoder->ctx;
+}
+
+CXL_EXPORT int cxl_decoder_get_id(struct cxl_decoder *decoder)
+{
+	return decoder->id;
+}
+
+CXL_EXPORT struct cxl_port *cxl_decoder_get_port(struct cxl_decoder *decoder)
+{
+	return decoder->port;
+}
+
+CXL_EXPORT unsigned long long cxl_decoder_get_resource(struct cxl_decoder *decoder)
+{
+	return decoder->start;
+}
+
+CXL_EXPORT unsigned long long cxl_decoder_get_size(struct cxl_decoder *decoder)
+{
+	return decoder->size;
+}
+
+CXL_EXPORT enum cxl_decoder_target_type
+cxl_decoder_get_target_type(struct cxl_decoder *decoder)
+{
+	return decoder->target_type;
+}
+
+CXL_EXPORT bool cxl_decoder_is_pmem_capable(struct cxl_decoder *decoder)
+{
+	return decoder->pmem_capable;
+}
+
+CXL_EXPORT bool cxl_decoder_is_volatile_capable(struct cxl_decoder *decoder)
+{
+	return decoder->volatile_capable;
+}
+
+CXL_EXPORT bool cxl_decoder_is_mem_capable(struct cxl_decoder *decoder)
+{
+	return decoder->mem_capable;
+}
+
+CXL_EXPORT bool cxl_decoder_is_accelmem_capable(struct cxl_decoder *decoder)
+{
+	return decoder->accelmem_capable;
+}
+
+CXL_EXPORT bool cxl_decoder_is_locked(struct cxl_decoder *decoder)
+{
+	return decoder->locked;
+}
+
+CXL_EXPORT const char *cxl_decoder_get_devname(struct cxl_decoder *decoder)
+{
+	return devpath_to_devname(decoder->dev_path);
 }
 
 static void *add_cxl_port(void *parent, int id, const char *cxlport_base)

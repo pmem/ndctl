@@ -179,6 +179,7 @@ struct cxl_bus *cxl_bus_get_first(struct cxl_ctx *ctx);
 struct cxl_bus *cxl_bus_get_next(struct cxl_bus *bus);
 struct cxl_ctx *cxl_bus_get_ctx(struct cxl_bus *bus);
 struct cxl_bus *cxl_memdev_get_bus(struct cxl_memdev *memdev);
+struct cxl_bus *cxl_port_get_bus(struct cxl_port *port);
 struct cxl_bus *cxl_endpoint_get_bus(struct cxl_endpoint *endpoint);
 
 #define cxl_bus_foreach(ctx, bus)                                           \
@@ -215,9 +216,9 @@ struct cxl_port *cxl_bus_get_port(struct cxl_bus *bus);
 struct cxl_port *cxl_port_get_first(struct cxl_port *parent);
 struct cxl_port *cxl_port_get_next(struct cxl_port *port);
 struct cxl_port *cxl_port_get_parent(struct cxl_port *port);
-struct cxl_bus *cxl_port_get_bus(struct cxl_port *port);
 struct cxl_ctx *cxl_port_get_ctx(struct cxl_port *port);
 const char *cxl_port_get_host(struct cxl_port *port);
+struct cxl_port *cxl_decoder_get_port(struct cxl_decoder *decoder);
 
 #define cxl_port_foreach(parent, port)                                      \
        for (port = cxl_port_get_first(parent); port != NULL;                \
@@ -283,6 +284,73 @@ const char *cxl_endpoint_get_devname(struct cxl_endpoint *endpoint);
 int cxl_endpoint_get_id(struct cxl_endpoint *endpoint);
 int cxl_endpoint_is_enabled(struct cxl_endpoint *endpoint);
 ----
+
+DECODERS
+--------
+Decoder objects are associated with the "HDM Decoder Capability"
+published in Port devices and CXL capable PCIe endpoints. The kernel
+additionally models platform firmware described CXL memory ranges (like
+the ACPI CEDT.CFMWS) as static decoder objects. They route System
+Physical Addresses through a port topology to an endpoint decoder that
+does the final translation from SPA to DPA (system-physical-address to
+device-local-physical-address).
+
+=== DECODER: Enumeration
+----
+struct cxl_decoder *cxl_decoder_get_first(struct cxl_port *port);
+struct cxl_decoder *cxl_decoder_get_next(struct cxl_decoder *decoder);
+struct cxl_ctx *cxl_decoder_get_ctx(struct cxl_decoder *decoder);
+
+#define cxl_decoder_foreach(port, decoder)                                  \
+       for (decoder = cxl_decoder_get_first(port); decoder != NULL;         \
+            decoder = cxl_decoder_get_next(decoder))
+----
+The definition of a CXL port in libcxl is an object that hosts one or
+more CXL decoder objects.
+
+=== DECODER: Attributes
+----
+unsigned long long cxl_decoder_get_resource(struct cxl_decoder *decoder);
+unsigned long long cxl_decoder_get_size(struct cxl_decoder *decoder);
+const char *cxl_decoder_get_devname(struct cxl_decoder *decoder);
+int cxl_decoder_get_id(struct cxl_decoder *decoder);
+
+enum cxl_decoder_target_type {
+       CXL_DECODER_TTYPE_UNKNOWN,
+       CXL_DECODER_TTYPE_EXPANDER,
+       CXL_DECODER_TTYPE_ACCELERATOR,
+};
+
+cxl_decoder_get_target_type(struct cxl_decoder *decoder);
+bool cxl_decoder_is_pmem_capable(struct cxl_decoder *decoder);
+bool cxl_decoder_is_volatile_capable(struct cxl_decoder *decoder);
+bool cxl_decoder_is_mem_capable(struct cxl_decoder *decoder);
+bool cxl_decoder_is_accelmem_capable(struct cxl_decoder *decoder);
+bool cxl_decoder_is_locked(struct cxl_decoder *decoder);
+----
+The kernel protects the enumeration of the physical address layout of
+the system. Without CAP_SYS_ADMIN cxl_decoder_get_resource() returns
+ULLONG_MAX to indicate that the address information was not retrievable.
+Otherwise, cxl_decoder_get_resource() returns the currently programmed
+value of the base of the decoder's decode range. A zero-sized decoder
+indicates a disabled decoder.
+
+Root level decoders only support limited set of memory types in their
+address range. The cxl_decoder_is_<memtype>_capable() helpers identify
+what is supported. Switch level decoders, in contrast are capable of
+routing any memory type, i.e. they just forward along the memory type
+support from their parent port. Endpoint decoders follow the
+capabilities of their host memory device.
+
+The capabilities of a decoder are not to be confused with their type /
+mode.  The type ultimately depends on the endpoint. For example an
+accelerator requires all decoders in its ancestry to be set to
+CXL_DECODER_TTYPE_ACCELERATOR, and conversely plain memory expander
+devices require CXL_DECODER_TTYPE_EXPANDER.
+
+Platform firmware may setup the CXL decode hierarchy before the OS
+boots, and may additionally require that the OS not change the decode
+settings. This property is indicated by the cxl_decoder_is_locked() API.
 
 include::../../copyright.txt[]
 

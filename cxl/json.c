@@ -262,6 +262,68 @@ struct json_object *util_cxl_bus_to_json(struct cxl_bus *bus,
 	return jbus;
 }
 
+struct json_object *util_cxl_decoder_to_json(struct cxl_decoder *decoder,
+					     unsigned long flags)
+{
+	const char *devname = cxl_decoder_get_devname(decoder);
+	struct cxl_port *port = cxl_decoder_get_port(decoder);
+	struct json_object *jdecoder, *jobj;
+	u64 val;
+
+	jdecoder = json_object_new_object();
+	if (!jdecoder)
+		return NULL;
+
+	jobj = json_object_new_string(devname);
+	if (jobj)
+		json_object_object_add(jdecoder, "decoder", jobj);
+
+	val = cxl_decoder_get_resource(decoder);
+	if (val < ULLONG_MAX) {
+		jobj = util_json_object_hex(val, flags);
+		if (jobj)
+			json_object_object_add(jdecoder, "resource", jobj);
+	}
+
+	val = cxl_decoder_get_size(decoder);
+	if (val < ULLONG_MAX) {
+		jobj = util_json_object_size(val, flags);
+		if (jobj)
+			json_object_object_add(jdecoder, "size", jobj);
+	}
+
+	if (val == 0) {
+		jobj = json_object_new_string("disabled");
+		if (jobj)
+			json_object_object_add(jdecoder, "state", jobj);
+	}
+
+	if (cxl_port_is_root(port) && cxl_decoder_is_mem_capable(decoder)) {
+		if (cxl_decoder_is_pmem_capable(decoder)) {
+			jobj = json_object_new_boolean(true);
+			if (jobj)
+				json_object_object_add(jdecoder, "pmem_capable",
+						       jobj);
+		}
+		if (cxl_decoder_is_volatile_capable(decoder)) {
+			jobj = json_object_new_boolean(true);
+			if (jobj)
+				json_object_object_add(
+					jdecoder, "volatile_capable", jobj);
+		}
+	}
+
+	if (cxl_port_is_root(port) &&
+	    cxl_decoder_is_accelmem_capable(decoder)) {
+		jobj = json_object_new_boolean(true);
+		if (jobj)
+			json_object_object_add(jdecoder, "accelmem_capable",
+					       jobj);
+	}
+
+	return jdecoder;
+}
+
 static struct json_object *__util_cxl_port_to_json(struct cxl_port *port,
 						   const char *name_key,
 						   unsigned long flags)

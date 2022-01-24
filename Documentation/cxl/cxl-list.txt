@@ -5,7 +5,7 @@ cxl-list(1)
 
 NAME
 ----
-cxl-list - List CXL capable memory devices, and their attributes in json.
+cxl-list - List platform CXL objects, and their attributes, in json.
 
 SYNOPSIS
 --------
@@ -29,6 +29,10 @@ The potential top-level array names and their nesting properties are:
 "endpoints":: nest under ports or buses (if ports are not emitted)
 "memdevs":: nest under endpoints or ports (if endpoints are not
    emitted) or buses (if endpoints and ports are not emitted)
+"root decoders":: nest under buses
+"port decoders":: nest under ports, or buses (if ports are not emitted)
+"endpoint decoders":: nest under endpoints, or ports (if endpoints are
+   not emitted) or buses (if endpoints and ports are not emitted)
 
 Filters can by specifed as either a single identidier, a space separated
 quoted string, or a comma separated list. When multiple filter
@@ -253,6 +257,18 @@ OPTIONS
 --endpoint::
 	Specify CXL endpoint device name(s), or device id(s) to filter
 	the emitted endpoint(s).
+
+-D::
+--decoders::
+	Include decoder objects (CXL Memory decode capability instances
+	in buses, ports, and endpoints) in the listing.
+
+-d::
+--decoder::
+	Specify CXL decoder device name(s), device id(s), or decoder type names
+	to filter the emitted decoder(s). The format for a decoder name is
+	"decoder<port_id>.<instance_id>". The possible decoder type names are
+	"root", "switch", or "endpoint", similar to the port filter syntax.
 
 --debug::
 	If the cxl tool was built with debug enabled, turn on debug

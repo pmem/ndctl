@@ -171,6 +171,17 @@ util_cxl_endpoint_filter_by_port(struct cxl_endpoint *endpoint,
 	return NULL;
 }
 
+static struct cxl_decoder *
+util_cxl_decoder_filter_by_port(struct cxl_decoder *decoder, const char *ident,
+				enum cxl_port_filter_mode mode)
+{
+	struct cxl_port *port = cxl_decoder_get_port(decoder);
+
+	if (util_cxl_port_filter(port, ident, mode))
+		return decoder;
+	return NULL;
+}
+
 static struct cxl_bus *util_cxl_bus_filter(struct cxl_bus *bus,
 					   const char *__ident)
 {
@@ -231,6 +242,16 @@ static struct cxl_port *util_cxl_port_filter_by_bus(struct cxl_port *port,
 	}
 
 	return NULL;
+}
+
+static struct cxl_decoder *
+util_cxl_decoder_filter_by_bus(struct cxl_decoder *decoder, const char *__ident)
+{
+	struct cxl_port *port = cxl_decoder_get_port(decoder);
+
+	if (!util_cxl_port_filter_by_bus(port, __ident))
+		return NULL;
+	return decoder;
 }
 
 static struct cxl_memdev *
@@ -357,6 +378,49 @@ static struct cxl_port *util_cxl_port_filter_by_memdev(struct cxl_port *port,
 	return NULL;
 }
 
+static struct cxl_decoder *util_cxl_decoder_filter(struct cxl_decoder *decoder,
+						   const char *__ident)
+{
+	struct cxl_port *port = cxl_decoder_get_port(decoder);
+	int pid, did;
+	char *ident, *save;
+	const char *name;
+
+	if (!__ident)
+		return decoder;
+
+	ident = strdup(__ident);
+	if (!ident)
+		return NULL;
+
+	for (name = strtok_r(ident, which_sep(__ident), &save); name;
+	     name = strtok_r(NULL, which_sep(__ident), &save)) {
+		if (strcmp(name, "all") == 0)
+			break;
+
+		if (strcmp(name, "root") == 0 && cxl_port_is_root(port))
+			break;
+		if (strcmp(name, "switch") == 0 && cxl_port_is_switch(port))
+			break;
+		if (strcmp(name, "endpoint") == 0 && cxl_port_is_endpoint(port))
+			break;
+
+		if ((sscanf(name, "%d.%d", &pid, &did) == 2 ||
+		     sscanf(name, "decoder%d.%d", &pid, &did) == 2) &&
+		    cxl_port_get_id(port) == pid &&
+		    cxl_decoder_get_id(decoder) == did)
+			break;
+
+		if (strcmp(name, cxl_decoder_get_devname(decoder)) == 0)
+			break;
+	}
+
+	free(ident);
+	if (name)
+		return decoder;
+	return NULL;
+}
+
 static unsigned long params_to_flags(struct cxl_filter_params *param)
 {
 	unsigned long flags = 0;
@@ -440,15 +504,44 @@ static struct json_object *pick_array(struct json_object *child,
 	return NULL;
 }
 
+static void walk_decoders(struct cxl_port *port, struct cxl_filter_params *p,
+			  struct json_object *jdecoders, unsigned long flags)
+{
+	struct cxl_decoder *decoder;
+
+	cxl_decoder_foreach(port, decoder) {
+		struct json_object *jdecoder;
+
+		if (!p->decoders)
+			continue;
+		if (!util_cxl_decoder_filter(decoder, p->decoder_filter))
+			continue;
+		if (!util_cxl_decoder_filter_by_bus(decoder, p->bus_filter))
+			continue;
+		if (!util_cxl_decoder_filter_by_port(decoder, p->port_filter,
+						     pf_mode(p)))
+			continue;
+		if (!p->idle && cxl_decoder_get_size(decoder) == 0)
+			continue;
+		jdecoder = util_cxl_decoder_to_json(decoder, flags);
+		if (!decoder) {
+			dbg(p, "decoder object allocation failure\n");
+			continue;
+		}
+		json_object_array_add(jdecoders, jdecoder);
+	}
+}
+
 static void walk_endpoints(struct cxl_port *port, struct cxl_filter_params *p,
 			   struct json_object *jeps, struct json_object *jdevs,
-			   unsigned long flags)
+			   struct json_object *jdecoders, unsigned long flags)
 {
 	struct cxl_endpoint *endpoint;
 
 	cxl_endpoint_foreach(port, endpoint) {
 		struct cxl_port *ep_port = cxl_endpoint_get_port(endpoint);
 		const char *devname = cxl_endpoint_get_devname(endpoint);
+		struct json_object *jchilddecoders = NULL;
 		struct json_object *jendpoint = NULL;
 		struct cxl_memdev *memdev;
 
@@ -495,14 +588,31 @@ static void walk_endpoints(struct cxl_port *port, struct cxl_filter_params *p,
 			else
 				json_object_array_add(jdevs, jobj);
 		}
+
+		if (p->decoders && p->endpoints) {
+			jchilddecoders = json_object_new_array();
+			if (!jchilddecoders) {
+				err(p,
+				    "%s: failed to enumerate child decoders\n",
+				    devname);
+				continue;
+			}
+		}
+
+		if (!p->decoders)
+			continue;
+		walk_decoders(cxl_endpoint_get_port(endpoint), p,
+			      pick_array(jchilddecoders, jdecoders), flags);
+		cond_add_put_array_suffix(jendpoint, "decoders", devname,
+					  jchilddecoders);
 	}
 }
 
-static void walk_child_ports(struct cxl_port *parent_port,
-			     struct cxl_filter_params *p,
-			     struct json_object *jports,
-			     struct json_object *jeps,
-			     struct json_object *jdevs, unsigned long flags)
+static void
+walk_child_ports(struct cxl_port *parent_port, struct cxl_filter_params *p,
+		 struct json_object *jports, struct json_object *jportdecoders,
+		 struct json_object *jeps, struct json_object *jepdecoders,
+		 struct json_object *jdevs, unsigned long flags)
 {
 	struct cxl_port *port;
 
@@ -512,6 +622,7 @@ static void walk_child_ports(struct cxl_port *parent_port,
 		struct json_object *jchilddevs = NULL;
 		struct json_object *jchildports = NULL;
 		struct json_object *jchildeps = NULL;
+		struct json_object *jchilddecoders = NULL;
 
 		if (!util_cxl_port_filter_by_memdev(port, p->memdev_filter,
 						    p->serial_filter))
@@ -555,19 +666,37 @@ static void walk_child_ports(struct cxl_port *parent_port,
 					continue;
 				}
 			}
+
+			if (p->decoders) {
+				jchilddecoders = json_object_new_array();
+				if (!jchilddecoders) {
+					err(p,
+					    "%s: failed to enumerate child decoders\n",
+					    devname);
+					continue;
+				}
+			}
 		}
 
 walk_children:
-		if (p->endpoints || p->memdevs)
+		if (p->endpoints || p->memdevs || p->decoders)
 			walk_endpoints(port, p, pick_array(jchildeps, jeps),
-				       pick_array(jchilddevs, jdevs), flags);
+				       pick_array(jchilddevs, jdevs),
+				       pick_array(jchilddecoders, jepdecoders),
+				       flags);
 
+		walk_decoders(port, p,
+			      pick_array(jchilddecoders, jportdecoders), flags);
 		walk_child_ports(port, p, pick_array(jchildports, jports),
+				 pick_array(jchilddecoders, jportdecoders),
 				 pick_array(jchildeps, jeps),
+				 pick_array(jchilddecoders, jepdecoders),
 				 pick_array(jchilddevs, jdevs), flags);
 		cond_add_put_array_suffix(jport, "ports", devname, jchildports);
 		cond_add_put_array_suffix(jport, "endpoints", devname,
 					  jchildeps);
+		cond_add_put_array_suffix(jport, "decoders", devname,
+					  jchilddecoders);
 		cond_add_put_array_suffix(jport, "memdevs", devname,
 					  jchilddevs);
 	}
@@ -578,6 +707,9 @@ int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *p)
 	struct json_object *jdevs = NULL, *jbuses = NULL, *jports = NULL;
 	struct json_object *jplatform = json_object_new_array();
 	unsigned long flags = params_to_flags(p);
+	struct json_object *jportdecoders = NULL;
+	struct json_object *jbusdecoders = NULL;
+	struct json_object *jepdecoders = NULL;
 	struct json_object *janondevs = NULL;
 	struct json_object *jeps = NULL;
 	struct cxl_memdev *memdev;
@@ -609,6 +741,18 @@ int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *p)
 	if (!jdevs)
 		goto err;
 
+	jbusdecoders = json_object_new_array();
+	if (!jbusdecoders)
+		goto err;
+
+	jportdecoders = json_object_new_array();
+	if (!jportdecoders)
+		goto err;
+
+	jepdecoders = json_object_new_array();
+	if (!jepdecoders)
+		goto err;
+
 	dbg(p, "walk memdevs\n");
 	cxl_memdev_foreach(ctx, memdev) {
 		struct json_object *janondev;
@@ -633,6 +777,7 @@ int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *p)
 	dbg(p, "walk buses\n");
 	cxl_bus_foreach(ctx, bus) {
 		struct json_object *jbus = NULL;
+		struct json_object *jchilddecoders = NULL;
 		struct json_object *jchildports = NULL;
 		struct json_object *jchilddevs = NULL;
 		struct json_object *jchildeps = NULL;
@@ -681,15 +826,33 @@ int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *p)
 					continue;
 				}
 			}
+			if (p->decoders) {
+				jchilddecoders = json_object_new_array();
+				if (!jchilddecoders) {
+					err(p,
+					    "%s: failed to enumerate child decoders\n",
+					    devname);
+					continue;
+				}
+			}
+
 		}
 walk_children:
+		dbg(p, "walk decoders\n");
+		walk_decoders(port, p, pick_array(jchilddecoders, jbusdecoders),
+			      flags);
+
 		dbg(p, "walk ports\n");
 		walk_child_ports(port, p, pick_array(jchildports, jports),
+				 pick_array(jchilddecoders, jportdecoders),
 				 pick_array(jchildeps, jeps),
+				 pick_array(jchilddecoders, jepdecoders),
 				 pick_array(jchilddevs, jdevs), flags);
 		cond_add_put_array_suffix(jbus, "ports", devname, jchildports);
 		cond_add_put_array_suffix(jbus, "endpoints", devname,
 					  jchildeps);
+		cond_add_put_array_suffix(jbus, "decoders", devname,
+					  jchilddecoders);
 		cond_add_put_array_suffix(jbus, "memdevs", devname, jchilddevs);
 	}
 
@@ -703,12 +866,24 @@ walk_children:
 		top_level_objs++;
 	if (json_object_array_length(jdevs))
 		top_level_objs++;
+	if (json_object_array_length(jbusdecoders))
+		top_level_objs++;
+	if (json_object_array_length(jportdecoders))
+		top_level_objs++;
+	if (json_object_array_length(jepdecoders))
+		top_level_objs++;
 
 	splice_array(p, janondevs, jplatform, "anon memdevs", top_level_objs > 1);
 	splice_array(p, jbuses, jplatform, "buses", top_level_objs > 1);
 	splice_array(p, jports, jplatform, "ports", top_level_objs > 1);
 	splice_array(p, jeps, jplatform, "endpoints", top_level_objs > 1);
 	splice_array(p, jdevs, jplatform, "memdevs", top_level_objs > 1);
+	splice_array(p, jbusdecoders, jplatform, "root decoders",
+		     top_level_objs > 1);
+	splice_array(p, jportdecoders, jplatform, "port decoders",
+		     top_level_objs > 1);
+	splice_array(p, jepdecoders, jplatform, "endpoint decoders",
+		     top_level_objs > 1);
 
 	util_display_json_array(stdout, jplatform, flags);
 
@@ -719,6 +894,9 @@ err:
 	json_object_put(jports);
 	json_object_put(jeps);
 	json_object_put(jdevs);
+	json_object_put(jbusdecoders);
+	json_object_put(jportdecoders);
+	json_object_put(jepdecoders);
 	json_object_put(jplatform);
 	return -ENOMEM;
 }

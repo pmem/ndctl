@@ -23,7 +23,7 @@ struct cxl_memdev {
 	int numa_node;
 	void *dev_buf;
 	size_t buf_len;
-	char *host;
+	char *host_path;
 	char *dev_path;
 	char *firmware_version;
 	struct cxl_ctx *ctx;
@@ -52,6 +52,7 @@ struct cxl_port {
 	char *uport;
 	int ports_init;
 	int endpoints_init;
+	int decoders_init;
 	struct cxl_ctx *ctx;
 	struct cxl_bus *bus;
 	enum cxl_port_type type;
@@ -60,6 +61,7 @@ struct cxl_port {
 	struct list_node list;
 	struct list_head child_ports;
 	struct list_head endpoints;
+	struct list_head decoders;
 };
 
 struct cxl_bus {
@@ -69,6 +71,33 @@ struct cxl_bus {
 struct cxl_endpoint {
 	struct cxl_port port;
 	struct cxl_memdev *memdev;
+};
+
+struct cxl_target {
+	struct list_node list;
+	struct cxl_decoder *decoder;
+	char *dev_path;
+	int id, position;
+};
+
+struct cxl_decoder {
+	struct cxl_port *port;
+	struct list_node list;
+	struct cxl_ctx *ctx;
+	u64 start;
+	u64 size;
+	void *dev_buf;
+	size_t buf_len;
+	char *dev_path;
+	int nr_targets;
+	int id;
+	bool pmem_capable;
+	bool volatile_capable;
+	bool mem_capable;
+	bool accelmem_capable;
+	bool locked;
+	enum cxl_decoder_target_type target_type;
+	struct list_head targets;
 };
 
 enum cxl_cmd_query_status {

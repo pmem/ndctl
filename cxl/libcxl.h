@@ -98,6 +98,34 @@ bool cxl_port_hosts_memdev(struct cxl_port *port, struct cxl_memdev *memdev);
 	for (port = cxl_port_get_first(parent); port != NULL;                  \
 	     port = cxl_port_get_next(port))
 
+struct cxl_decoder;
+struct cxl_decoder *cxl_decoder_get_first(struct cxl_port *port);
+struct cxl_decoder *cxl_decoder_get_next(struct cxl_decoder *decoder);
+unsigned long long cxl_decoder_get_resource(struct cxl_decoder *decoder);
+unsigned long long cxl_decoder_get_size(struct cxl_decoder *decoder);
+const char *cxl_decoder_get_devname(struct cxl_decoder *decoder);
+struct cxl_ctx *cxl_decoder_get_ctx(struct cxl_decoder *decoder);
+int cxl_decoder_get_id(struct cxl_decoder *decoder);
+struct cxl_port *cxl_decoder_get_port(struct cxl_decoder *decoder);
+
+enum cxl_decoder_target_type {
+	CXL_DECODER_TTYPE_UNKNOWN,
+	CXL_DECODER_TTYPE_EXPANDER,
+	CXL_DECODER_TTYPE_ACCELERATOR,
+};
+
+enum cxl_decoder_target_type
+cxl_decoder_get_target_type(struct cxl_decoder *decoder);
+bool cxl_decoder_is_pmem_capable(struct cxl_decoder *decoder);
+bool cxl_decoder_is_volatile_capable(struct cxl_decoder *decoder);
+bool cxl_decoder_is_mem_capable(struct cxl_decoder *decoder);
+bool cxl_decoder_is_accelmem_capable(struct cxl_decoder *decoder);
+bool cxl_decoder_is_locked(struct cxl_decoder *decoder);
+
+#define cxl_decoder_foreach(port, decoder)                                     \
+	for (decoder = cxl_decoder_get_first(port); decoder != NULL;           \
+	     decoder = cxl_decoder_get_next(decoder))
+
 struct cxl_endpoint;
 struct cxl_endpoint *cxl_endpoint_get_first(struct cxl_port *parent);
 struct cxl_endpoint *cxl_endpoint_get_next(struct cxl_endpoint *endpoint);
