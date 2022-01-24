@@ -191,6 +191,12 @@ OPTIONS
 # cxl list -B
 # cxl list -P -p root
 ----
+	Additionally, endpoint objects are also ports so the following commands
+	are also equivalent.
+----
+# cxl list -E
+# cxl list -P -p endpoint
+----
 	By default, only 'switch' ports are listed.
 
 -S::
@@ -199,6 +205,16 @@ OPTIONS
 	descendants of a port that matches the port filter, or only direct
 	descendants of the individual ports that match the filter. By default
 	all descendant objects are listed.
+
+-E::
+--endpoints::
+	Include endpoint objects (CXL Memory Device decoders) in the
+	listing.
+
+-e::
+--endpoint::
+	Specify CXL endpoint device name(s), or device id(s) to filter
+	the emitted endpoint(s).
 
 --debug::
 	If the cxl tool was built with debug enabled, turn on debug

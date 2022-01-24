@@ -11,7 +11,9 @@ struct cxl_filter_params {
 	const char *serial_filter;
 	const char *bus_filter;
 	const char *port_filter;
+	const char *endpoint_filter;
 	bool single;
+	bool endpoints;
 	bool memdevs;
 	bool ports;
 	bool buses;

@@ -11,4 +11,6 @@ struct json_object *util_cxl_bus_to_json(struct cxl_bus *bus,
 struct cxl_port;
 struct json_object *util_cxl_port_to_json(struct cxl_port *port,
 					  unsigned long flags);
+struct json_object *util_cxl_endpoint_to_json(struct cxl_endpoint *endpoint,
+					      unsigned long flags);
 #endif /* __CXL_UTIL_JSON_H__ */

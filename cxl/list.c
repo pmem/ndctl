@@ -31,6 +31,11 @@ static const struct option options[] = {
 	OPT_BOOLEAN('P', "ports", &param.ports, "include CXL port info"),
 	OPT_BOOLEAN('S', "single", &param.single,
 		    "skip listing descendant objects"),
+	OPT_STRING('e', "endpoint", &param.endpoint_filter,
+		   "endpoint device name",
+		   "filter by CXL endpoint device name(s)"),
+	OPT_BOOLEAN('E', "endpoints", &param.endpoints,
+		    "include CXL endpoint info"),
 	OPT_BOOLEAN('i', "idle", &param.idle, "include disabled devices"),
 	OPT_BOOLEAN('u', "human", &param.human,
 		    "use human friendly number formats "),
@@ -44,7 +49,8 @@ static const struct option options[] = {
 
 static int num_list_flags(void)
 {
-       return !!param.memdevs + !!param.buses + !!param.ports;
+	return !!param.memdevs + !!param.buses + !!param.ports +
+	       !!param.endpoints;
 }
 
 int cmd_list(int argc, const char **argv, struct cxl_ctx *ctx)
@@ -74,6 +80,8 @@ int cmd_list(int argc, const char **argv, struct cxl_ctx *ctx)
 			param.buses = true;
 		if (param.port_filter)
 			param.ports = true;
+		if (param.endpoint_filter)
+			param.endpoints = true;
 		if (num_list_flags() == 0) {
 			/*
 			 * TODO: We likely want to list regions by default if
@@ -95,6 +103,9 @@ int cmd_list(int argc, const char **argv, struct cxl_ctx *ctx)
 
 	if (cxl_filter_has(param.port_filter, "root") && param.ports)
 		param.buses = true;
+
+	if (cxl_filter_has(param.port_filter, "endpoint") && param.ports)
+		param.endpoints = true;
 
 	dbg(&param, "walk topology\n");
 	return cxl_filter_walk(ctx, &param);

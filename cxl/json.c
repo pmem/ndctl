@@ -243,8 +243,9 @@ struct json_object *util_cxl_bus_to_json(struct cxl_bus *bus,
 	return jbus;
 }
 
-struct json_object *util_cxl_port_to_json(struct cxl_port *port,
-					  unsigned long flags)
+static struct json_object *__util_cxl_port_to_json(struct cxl_port *port,
+						   const char *name_key,
+						   unsigned long flags)
 {
 	const char *devname = cxl_port_get_devname(port);
 	struct json_object *jport, *jobj;
@@ -255,7 +256,7 @@ struct json_object *util_cxl_port_to_json(struct cxl_port *port,
 
 	jobj = json_object_new_string(devname);
 	if (jobj)
-		json_object_object_add(jport, "port", jobj);
+		json_object_object_add(jport, name_key, jobj);
 
 	if (!cxl_port_is_enabled(port)) {
 		jobj = json_object_new_string("disabled");
@@ -264,4 +265,17 @@ struct json_object *util_cxl_port_to_json(struct cxl_port *port,
 	}
 
 	return jport;
+}
+
+struct json_object *util_cxl_port_to_json(struct cxl_port *port,
+					  unsigned long flags)
+{
+	return __util_cxl_port_to_json(port, "port", flags);
+}
+
+struct json_object *util_cxl_endpoint_to_json(struct cxl_endpoint *endpoint,
+					      unsigned long flags)
+{
+	return __util_cxl_port_to_json(cxl_endpoint_get_port(endpoint),
+				       "endpoint", flags);
 }

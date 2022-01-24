@@ -17,6 +17,7 @@ struct cxl_pmem {
 	char *dev_path;
 };
 
+struct cxl_endpoint;
 struct cxl_memdev {
 	int id, major, minor;
 	void *dev_buf;
@@ -32,11 +33,13 @@ struct cxl_memdev {
 	struct kmod_module *module;
 	struct cxl_pmem *pmem;
 	unsigned long long serial;
+	struct cxl_endpoint *endpoint;
 };
 
 enum cxl_port_type {
 	CXL_PORT_ROOT,
 	CXL_PORT_SWITCH,
+	CXL_PORT_ENDPOINT,
 };
 
 struct cxl_port {
@@ -46,6 +49,7 @@ struct cxl_port {
 	char *dev_path;
 	char *uport;
 	int ports_init;
+	int endpoints_init;
 	struct cxl_ctx *ctx;
 	struct cxl_bus *bus;
 	enum cxl_port_type type;
@@ -53,10 +57,16 @@ struct cxl_port {
 	struct kmod_module *module;
 	struct list_node list;
 	struct list_head child_ports;
+	struct list_head endpoints;
 };
 
 struct cxl_bus {
 	struct cxl_port port;
+};
+
+struct cxl_endpoint {
+	struct cxl_port port;
+	struct cxl_memdev *memdev;
 };
 
 enum cxl_cmd_query_status {

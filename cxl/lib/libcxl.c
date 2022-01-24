@@ -67,14 +67,18 @@ static void free_memdev(struct cxl_memdev *memdev, struct list_head *head)
 }
 
 static void free_port(struct cxl_port *port, struct list_head *head);
+static void free_endpoint(struct cxl_endpoint *endpoint, struct list_head *head);
 static void __free_port(struct cxl_port *port, struct list_head *head)
 {
 	struct cxl_port *child, *_c;
+	struct cxl_endpoint *endpoint, *_e;
 
 	if (head)
 		list_del_from(head, &port->list);
 	list_for_each_safe(&port->child_ports, child, _c, list)
 		free_port(child, &port->child_ports);
+	list_for_each_safe(&port->endpoints, endpoint, _e, port.list)
+		free_endpoint(endpoint, &port->endpoints);
 	kmod_module_unref(port->module);
 	free(port->dev_buf);
 	free(port->dev_path);
@@ -85,6 +89,12 @@ static void free_port(struct cxl_port *port, struct list_head *head)
 {
 	__free_port(port, head);
 	free(port);
+}
+
+static void free_endpoint(struct cxl_endpoint *endpoint, struct list_head *head)
+{
+	__free_port(&endpoint->port, head);
+	free(endpoint);
 }
 
 static void free_bus(struct cxl_bus *bus, struct list_head *head)
@@ -500,6 +510,7 @@ static int cxl_port_init(struct cxl_port *port, struct cxl_port *parent_port,
 	port->parent = parent_port;
 
 	list_head_init(&port->child_ports);
+	list_head_init(&port->endpoints);
 
 	port->dev_path = strdup(cxlport_base);
 	if (!port->dev_path)
@@ -527,6 +538,97 @@ err:
 	free(port->dev_buf);
 	free(path);
 	return -ENOMEM;
+}
+
+static void *add_cxl_endpoint(void *parent, int id, const char *cxlep_base)
+{
+	const char *devname = devpath_to_devname(cxlep_base);
+	struct cxl_endpoint *endpoint, *endpoint_dup;
+	struct cxl_port *port = parent;
+	struct cxl_ctx *ctx = cxl_port_get_ctx(port);
+	int rc;
+
+	dbg(ctx, "%s: base: \'%s\'\n", devname, cxlep_base);
+
+	endpoint = calloc(1, sizeof(*endpoint));
+	if (!endpoint)
+		return NULL;
+
+	rc = cxl_port_init(&endpoint->port, port, CXL_PORT_ENDPOINT, ctx, id,
+			   cxlep_base);
+	if (rc)
+		goto err;
+
+	cxl_endpoint_foreach(port, endpoint_dup)
+		if (endpoint_dup->port.id == endpoint->port.id) {
+			free_endpoint(endpoint, NULL);
+			return endpoint_dup;
+		}
+
+	list_add(&port->endpoints, &endpoint->port.list);
+	return endpoint;
+
+err:
+	free(endpoint);
+	return NULL;
+
+}
+
+static void cxl_endpoints_init(struct cxl_port *port)
+{
+	struct cxl_ctx *ctx = cxl_port_get_ctx(port);
+
+	if (port->endpoints_init)
+		return;
+
+	port->endpoints_init = 1;
+
+	sysfs_device_parse(ctx, port->dev_path, "endpoint", port,
+			   add_cxl_endpoint);
+}
+
+CXL_EXPORT struct cxl_ctx *cxl_endpoint_get_ctx(struct cxl_endpoint *endpoint)
+{
+	return endpoint->port.ctx;
+}
+
+CXL_EXPORT struct cxl_endpoint *cxl_endpoint_get_first(struct cxl_port *port)
+{
+	cxl_endpoints_init(port);
+
+	return list_top(&port->endpoints, struct cxl_endpoint, port.list);
+}
+
+CXL_EXPORT struct cxl_endpoint *cxl_endpoint_get_next(struct cxl_endpoint *endpoint)
+{
+	struct cxl_port *port = endpoint->port.parent;
+
+	return list_next(&port->endpoints, endpoint, port.list);
+}
+
+CXL_EXPORT const char *cxl_endpoint_get_devname(struct cxl_endpoint *endpoint)
+{
+	return devpath_to_devname(endpoint->port.dev_path);
+}
+
+CXL_EXPORT int cxl_endpoint_get_id(struct cxl_endpoint *endpoint)
+{
+	return endpoint->port.id;
+}
+
+CXL_EXPORT struct cxl_port *cxl_endpoint_get_parent(struct cxl_endpoint *endpoint)
+{
+	return endpoint->port.parent;
+}
+
+CXL_EXPORT struct cxl_port *cxl_endpoint_get_port(struct cxl_endpoint *endpoint)
+{
+	return &endpoint->port;
+}
+
+CXL_EXPORT int cxl_endpoint_is_enabled(struct cxl_endpoint *endpoint)
+{
+	return cxl_port_is_enabled(&endpoint->port);
 }
 
 static void *add_cxl_port(void *parent, int id, const char *cxlport_base)
@@ -617,6 +719,11 @@ CXL_EXPORT bool cxl_port_is_root(struct cxl_port *port)
 CXL_EXPORT bool cxl_port_is_switch(struct cxl_port *port)
 {
 	return port->type == CXL_PORT_SWITCH;
+}
+
+CXL_EXPORT bool cxl_port_is_endpoint(struct cxl_port *port)
+{
+	return port->type == CXL_PORT_ENDPOINT;
 }
 
 CXL_EXPORT struct cxl_bus *cxl_port_get_bus(struct cxl_port *port)

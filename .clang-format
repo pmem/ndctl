@@ -80,6 +80,7 @@ ForEachMacros:
   - 'cxl_memdev_foreach'
   - 'cxl_bus_foreach'
   - 'cxl_port_foreach'
+  - 'cxl_endpoint_foreach'
   - 'daxctl_dev_foreach'
   - 'daxctl_mapping_foreach'
   - 'daxctl_region_foreach'

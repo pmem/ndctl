@@ -47,8 +47,42 @@ bool cxl_filter_has(const char *__filter, const char *needle)
 	return false;
 }
 
+static struct cxl_endpoint *
+util_cxl_endpoint_filter(struct cxl_endpoint *endpoint, const char *__ident)
+{
+	char *ident, *save;
+	const char *arg;
+	int endpoint_id;
+
+	if (!__ident)
+		return endpoint;
+
+	ident = strdup(__ident);
+	if (!ident)
+		return NULL;
+
+	for (arg = strtok_r(ident, which_sep(__ident), &save); arg;
+	     arg = strtok_r(NULL, which_sep(__ident), &save)) {
+		if (strcmp(arg, "all") == 0)
+			break;
+
+		if ((sscanf(arg, "%d", &endpoint_id) == 1 ||
+		     sscanf(arg, "endpoint%d", &endpoint_id) == 1) &&
+		    cxl_endpoint_get_id(endpoint) == endpoint_id)
+			break;
+
+		if (strcmp(arg, cxl_endpoint_get_devname(endpoint)) == 0)
+			break;
+	}
+
+	free(ident);
+	if (arg)
+		return endpoint;
+	return NULL;
+}
+
 static struct cxl_port *__util_cxl_port_filter(struct cxl_port *port,
-					     const char *__ident)
+					       const char *__ident)
 {
 	char *ident, *save;
 	const char *arg;
@@ -70,6 +104,9 @@ static struct cxl_port *__util_cxl_port_filter(struct cxl_port *port,
 			break;
 
 		if (strcmp(arg, "switch") == 0 && cxl_port_is_switch(port))
+			break;
+
+		if (strcmp(arg, "endpoint") == 0 && cxl_port_is_endpoint(port))
 			break;
 
 		if ((sscanf(arg, "%d", &port_id) == 1 ||
@@ -112,6 +149,24 @@ static struct cxl_port *util_cxl_port_filter(struct cxl_port *port,
 			return NULL;
 		iter = cxl_port_get_parent(iter);
 	}
+
+	return NULL;
+}
+
+static struct cxl_endpoint *
+util_cxl_endpoint_filter_by_port(struct cxl_endpoint *endpoint,
+				 const char *ident,
+				 enum cxl_port_filter_mode mode)
+{
+	struct cxl_port *iter = cxl_endpoint_get_port(endpoint);
+
+	if (util_cxl_port_filter(iter, ident, CXL_PF_SINGLE))
+		return endpoint;
+	iter = cxl_port_get_parent(iter);
+	if (!iter)
+		return NULL;
+	if (util_cxl_port_filter(iter, ident, mode))
+		return endpoint;
 
 	return NULL;
 }
@@ -325,10 +380,34 @@ static struct json_object *pick_array(struct json_object *child,
 	return NULL;
 }
 
+static void walk_endpoints(struct cxl_port *port, struct cxl_filter_params *p,
+			   struct json_object *jeps, unsigned long flags)
+{
+	struct cxl_endpoint *endpoint;
+
+	cxl_endpoint_foreach(port, endpoint) {
+		struct cxl_port *ep_port = cxl_endpoint_get_port(endpoint);
+		struct json_object *jendpoint;
+
+		if (!util_cxl_endpoint_filter(endpoint, p->endpoint_filter))
+			continue;
+		if (!util_cxl_port_filter_by_bus(ep_port, p->bus_filter))
+			continue;
+		if (!util_cxl_endpoint_filter_by_port(endpoint, p->port_filter,
+						      pf_mode(p)))
+			continue;
+		if (!p->idle && !cxl_endpoint_is_enabled(endpoint))
+			continue;
+		jendpoint = util_cxl_endpoint_to_json(endpoint, flags);
+		if (jendpoint)
+			json_object_array_add(jeps, jendpoint);
+	}
+}
+
 static void walk_child_ports(struct cxl_port *parent_port,
 			     struct cxl_filter_params *p,
 			     struct json_object *jports,
-			     unsigned long flags)
+			     struct json_object *jeps, unsigned long flags)
 {
 	struct cxl_port *port;
 
@@ -336,6 +415,7 @@ static void walk_child_ports(struct cxl_port *parent_port,
 		const char *devname = cxl_port_get_devname(port);
 		struct json_object *jport = NULL;
 		struct json_object *jchildports = NULL;
+		struct json_object *jchildendpoints = NULL;
 
 		if (!util_cxl_port_filter(port, p->port_filter, pf_mode(p)))
 			goto walk_children;
@@ -343,21 +423,41 @@ static void walk_child_ports(struct cxl_port *parent_port,
 			goto walk_children;
 		if (!p->idle && !cxl_port_is_enabled(port))
 			continue;
-		if (p->ports)
+		if (p->ports) {
 			jport = util_cxl_port_to_json(port, flags);
-		if (!jport)
-			continue;
-		json_object_array_add(jports, jport);
-		jchildports = json_object_new_array();
-		if (!jchildports) {
-			err(p, "%s: failed to enumerate child ports\n",
-			    devname);
-			continue;
+			if (!jport) {
+				err(p, "%s: failed to list\n", devname);
+				continue;
+			}
+			json_object_array_add(jports, jport);
+			jchildports = json_object_new_array();
+			if (!jchildports) {
+				err(p, "%s: failed to enumerate child ports\n",
+				    devname);
+				continue;
+			}
 		}
+
+		if (p->ports && p->endpoints) {
+			jchildendpoints = json_object_new_array();
+			if (!jchildendpoints) {
+				err(p,
+				    "%s: failed to enumerate child endpoints\n",
+				    devname);
+				continue;
+			}
+		}
+
 walk_children:
+		if (p->endpoints)
+			walk_endpoints(port, p, pick_array(jchildendpoints, jeps),
+				       flags);
+
 		walk_child_ports(port, p, pick_array(jchildports, jports),
-				 flags);
+				 pick_array(jchildendpoints, jeps), flags);
 		cond_add_put_array_suffix(jport, "ports", devname, jchildports);
+		cond_add_put_array_suffix(jport, "endpoints", devname,
+					  jchildendpoints);
 	}
 }
 
@@ -366,6 +466,7 @@ int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *p)
 	struct json_object *jdevs = NULL, *jbuses = NULL, *jports = NULL;
 	struct json_object *jplatform = json_object_new_array();
 	unsigned long flags = params_to_flags(p);
+	struct json_object *jeps = NULL;
 	struct cxl_memdev *memdev;
 	int top_level_objs = 0;
 	struct cxl_bus *bus;
@@ -385,6 +486,10 @@ int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *p)
 
 	jports = json_object_new_array();
 	if (!jports)
+		goto err;
+
+	jeps = json_object_new_array();
+	if (!jeps)
 		goto err;
 
 	dbg(p, "walk memdevs\n");
@@ -408,6 +513,7 @@ int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *p)
 	cxl_bus_foreach(ctx, bus) {
 		struct json_object *jbus = NULL;
 		struct json_object *jchildports = NULL;
+		struct json_object *jchildeps = NULL;
 		struct cxl_port *port = cxl_bus_get_port(bus);
 		const char *devname = cxl_bus_get_devname(bus);
 
@@ -431,12 +537,23 @@ int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *p)
 					continue;
 				}
 			}
+			if (p->endpoints) {
+				jchildeps = json_object_new_array();
+				if (!jchildeps) {
+					err(p,
+					    "%s: failed to enumerate child endpoints\n",
+					    devname);
+					continue;
+				}
+			}
 		}
 walk_children:
 		dbg(p, "walk ports\n");
 		walk_child_ports(port, p, pick_array(jchildports, jports),
-				 flags);
+				 pick_array(jchildeps, jeps), flags);
 		cond_add_put_array_suffix(jbus, "ports", devname, jchildports);
+		cond_add_put_array_suffix(jbus, "endpoints", devname,
+					  jchildeps);
 	}
 
 	if (json_object_array_length(jdevs))
@@ -445,10 +562,13 @@ walk_children:
 		top_level_objs++;
 	if (json_object_array_length(jports))
 		top_level_objs++;
+	if (json_object_array_length(jeps))
+		top_level_objs++;
 
 	splice_array(p, jdevs, jplatform, "anon memdevs", top_level_objs > 1);
 	splice_array(p, jbuses, jplatform, "buses", top_level_objs > 1);
 	splice_array(p, jports, jplatform, "ports", top_level_objs > 1);
+	splice_array(p, jeps, jplatform, "endpoints", top_level_objs > 1);
 
 	util_display_json_array(stdout, jplatform, flags);
 
@@ -457,6 +577,7 @@ err:
 	json_object_put(jdevs);
 	json_object_put(jbuses);
 	json_object_put(jports);
+	json_object_put(jeps);
 	json_object_put(jplatform);
 	return -ENOMEM;
 }
