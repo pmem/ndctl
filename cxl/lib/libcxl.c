@@ -348,6 +348,12 @@ static void *add_cxl_memdev(void *parent, int id, const char *cxlmem_base)
 	else
 		memdev->serial = strtoull(buf, NULL, 0);
 
+	sprintf(path, "%s/numa_node", cxlmem_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		memdev->numa_node = -1;
+	else
+		memdev->numa_node = strtol(buf, NULL, 0);
+
 	memdev->dev_path = strdup(cxlmem_base);
 	if (!memdev->dev_path)
 		goto err_read;
@@ -443,6 +449,11 @@ CXL_EXPORT int cxl_memdev_get_id(struct cxl_memdev *memdev)
 CXL_EXPORT unsigned long long cxl_memdev_get_serial(struct cxl_memdev *memdev)
 {
 	return memdev->serial;
+}
+
+CXL_EXPORT int cxl_memdev_get_numa_node(struct cxl_memdev *memdev)
+{
+	return memdev->numa_node;
 }
 
 CXL_EXPORT const char *cxl_memdev_get_devname(struct cxl_memdev *memdev)

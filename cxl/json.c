@@ -190,6 +190,7 @@ struct json_object *util_cxl_memdev_to_json(struct cxl_memdev *memdev,
 	const char *devname = cxl_memdev_get_devname(memdev);
 	struct json_object *jdev, *jobj;
 	unsigned long long serial;
+	int numa_node;
 
 	jdev = json_object_new_object();
 	if (!jdev)
@@ -218,6 +219,13 @@ struct json_object *util_cxl_memdev_to_json(struct cxl_memdev *memdev,
 		jobj = util_json_object_hex(serial, flags);
 		if (jobj)
 			json_object_object_add(jdev, "serial", jobj);
+	}
+
+	numa_node = cxl_memdev_get_numa_node(memdev);
+	if (numa_node >= 0) {
+		jobj = json_object_new_int(numa_node);
+		if (jobj)
+			json_object_object_add(jdev, "numa_node", jobj);
 	}
 
 	jobj = json_object_new_string(cxl_memdev_get_host(memdev));

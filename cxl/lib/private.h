@@ -20,6 +20,7 @@ struct cxl_pmem {
 struct cxl_endpoint;
 struct cxl_memdev {
 	int id, major, minor;
+	int numa_node;
 	void *dev_buf;
 	size_t buf_len;
 	char *host;

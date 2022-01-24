@@ -71,6 +71,7 @@ unsigned long long cxl_memdev_get_ram_size(struct cxl_memdev *memdev);
 const char *cxl_memdev_get_firmware_verison(struct cxl_memdev *memdev);
 size_t cxl_memdev_get_label_size(struct cxl_memdev *memdev);
 int cxl_memdev_nvdimm_bridge_active(struct cxl_memdev *memdev);
+int cxl_memdev_get_numa_node(struct cxl_memdev *memdev);
 ----
 
 A memdev is given a kernel device name of the form "mem%d" where an id
@@ -88,6 +89,9 @@ cxl_memdev_get_{major,minor}().
 The 'pmem_size' and 'ram_size' attributes return the current
 provisioning of DPA (Device Physical Address / local capacity) in the
 device.
+
+cxl_memdev_get_numa_node() returns the affinitized CPU node number if
+available or -1 otherwise.
 
 === MEMDEV: Commands
 ----
