@@ -30,7 +30,7 @@ OPTIONS
 -------
 -m::
 --memdev=::
-	Specify a cxl memory device name to filter the listing. For example:
+	Specify CXL memory device name(s), or device id(s), to filter the listing. For example:
 ----
 # cxl list --memdev=mem0
 {
@@ -38,6 +38,25 @@ OPTIONS
   "pmem_size":268435456,
   "ram_size":0,
 }
+
+# cxl list -m "0 mem1 2"
+[
+  {
+    "memdev":"mem0",
+    "pmem_size":268435456,
+    "ram_size":0
+  },
+  {
+    "memdev":"mem2",
+    "pmem_size":268435456,
+    "ram_size":268435456
+  },
+  {
+    "memdev":"mem1",
+    "pmem_size":268435456,
+    "ram_size":268435456
+  }
+]
 ----
 
 -M::
