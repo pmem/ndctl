@@ -63,6 +63,7 @@ static void free_memdev(struct cxl_memdev *memdev, struct list_head *head)
 	free(memdev->firmware_version);
 	free(memdev->dev_buf);
 	free(memdev->dev_path);
+	free(memdev->host);
 	free(memdev);
 }
 
@@ -297,6 +298,7 @@ static void *add_cxl_memdev(void *parent, int id, const char *cxlmem_base)
 	char *path = calloc(1, strlen(cxlmem_base) + 100);
 	struct cxl_ctx *ctx = parent;
 	struct cxl_memdev *memdev, *memdev_dup;
+	char *host, *rpath = NULL;
 	char buf[SYSFS_ATTR_SIZE];
 	struct stat st;
 
@@ -350,6 +352,22 @@ static void *add_cxl_memdev(void *parent, int id, const char *cxlmem_base)
 	if (!memdev->dev_path)
 		goto err_read;
 
+	rpath = realpath(cxlmem_base, NULL);
+	if (!rpath)
+		goto err_read;
+	host = strrchr(rpath, '/');
+	if (host) {
+		host[0] = '\0';
+		host = strrchr(rpath, '/');
+	}
+	if (!host)
+		goto err_read;
+	memdev->host = strdup(host + 1);
+	if (!memdev->host)
+		goto err_read;
+	free(rpath);
+	rpath = NULL;
+
 	sprintf(path, "%s/firmware_version", cxlmem_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		goto err_read;
@@ -381,6 +399,7 @@ static void *add_cxl_memdev(void *parent, int id, const char *cxlmem_base)
 	free(memdev->dev_buf);
 	free(memdev->dev_path);
 	free(memdev);
+	free(rpath);
  err_dev:
 	free(path);
 	return NULL;
@@ -429,6 +448,11 @@ CXL_EXPORT unsigned long long cxl_memdev_get_serial(struct cxl_memdev *memdev)
 CXL_EXPORT const char *cxl_memdev_get_devname(struct cxl_memdev *memdev)
 {
 	return devpath_to_devname(memdev->dev_path);
+}
+
+CXL_EXPORT const char *cxl_memdev_get_host(struct cxl_memdev *memdev)
+{
+	return memdev->host;
 }
 
 CXL_EXPORT int cxl_memdev_get_major(struct cxl_memdev *memdev)

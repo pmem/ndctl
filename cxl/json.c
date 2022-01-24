@@ -219,6 +219,11 @@ struct json_object *util_cxl_memdev_to_json(struct cxl_memdev *memdev,
 		if (jobj)
 			json_object_object_add(jdev, "serial", jobj);
 	}
+
+	jobj = json_object_new_string(cxl_memdev_get_host(memdev));
+	if (jobj)
+		json_object_object_add(jdev, "host", jobj);
+
 	return jdev;
 }
 

@@ -40,6 +40,7 @@ kernel, or to send data or trigger kernel operations for a given device.
 struct cxl_memdev *cxl_memdev_get_first(struct cxl_ctx *ctx);
 struct cxl_memdev *cxl_memdev_get_next(struct cxl_memdev *memdev);
 struct cxl_ctx *cxl_memdev_get_ctx(struct cxl_memdev *memdev);
+const char *cxl_memdev_get_host(struct cxl_memdev *memdev)
 
 #define cxl_memdev_foreach(ctx, memdev) \
         for (memdev = cxl_memdev_get_first(ctx); \
@@ -53,6 +54,9 @@ CXL memdev instances are enumerated from the global library context
 memory device commands, see the port, decoder, and endpoint APIs to
 determine what if any CXL Memory Resources are reachable given a
 specific memdev.
+
+The host of a memdev is the PCIe Endpoint device that registered its CXL
+capabilities with the Linux CXL core.
 
 === MEMDEV: Attributes
 ----

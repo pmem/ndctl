@@ -77,6 +77,7 @@ local:
 LIBCXL_2 {
 global:
 	cxl_memdev_get_serial;
+	cxl_memdev_get_host;
 	cxl_bus_get_first;
 	cxl_bus_get_next;
 	cxl_bus_get_provider;

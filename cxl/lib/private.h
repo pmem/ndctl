@@ -22,6 +22,7 @@ struct cxl_memdev {
 	int id, major, minor;
 	void *dev_buf;
 	size_t buf_len;
+	char *host;
 	char *dev_path;
 	char *firmware_version;
 	struct cxl_ctx *ctx;
