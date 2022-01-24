@@ -82,7 +82,7 @@ struct json_object *util_json_object_size(unsigned long long size,
 struct json_object *util_json_object_hex(unsigned long long val,
 		unsigned long flags)
 {
-	struct json_object *jobj = json_object_new_int64(val);
+	struct json_object *jobj = util_json_new_u64(val);
 
 	if (jobj && (flags & UTIL_JSON_HUMAN))
 		json_object_set_serializer(jobj, display_hex, NULL, NULL);

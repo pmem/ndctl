@@ -190,7 +190,7 @@ struct json_object *util_daxctl_region_to_json(struct daxctl_region *region,
 
 	align = daxctl_region_get_align(region);
 	if (align < ULONG_MAX) {
-		jobj = json_object_new_int64(align);
+		jobj = util_json_new_u64(align);
 		if (!jobj)
 			goto err;
 		json_object_object_add(jregion, "align", jobj);

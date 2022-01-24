@@ -159,17 +159,17 @@ static struct json_object *util_cxl_memdev_health_to_json(
 	}
 
 	field = cxl_cmd_health_info_get_dirty_shutdowns(cmd);
-	jobj = json_object_new_int64(field);
+	jobj = util_json_new_u64(field);
 	if (jobj)
 		json_object_object_add(jhealth, "dirty_shutdowns", jobj);
 
 	field = cxl_cmd_health_info_get_volatile_errors(cmd);
-	jobj = json_object_new_int64(field);
+	jobj = util_json_new_u64(field);
 	if (jobj)
 		json_object_object_add(jhealth, "volatile_errors", jobj);
 
 	field = cxl_cmd_health_info_get_pmem_errors(cmd);
-	jobj = json_object_new_int64(field);
+	jobj = util_json_new_u64(field);
 	if (jobj)
 		json_object_object_add(jhealth, "pmem_errors", jobj);
 

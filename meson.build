@@ -241,6 +241,12 @@ foreach ident : ['secure_getenv', '__secure_getenv']
   conf.set10('HAVE_' + ident.to_upper(), cc.has_function(ident))
 endforeach
 
+conf.set10('HAVE_JSON_U64',
+  cc.has_function('json_object_new_uint64',
+    prefix : '''#include <json-c/json.h>''',
+    dependencies : json,
+  )
+)
 
 ndctlconf_dir = sysconfdir / 'ndctl.conf.d'
 ndctlconf = ndctlconf_dir / 'monitor.conf'

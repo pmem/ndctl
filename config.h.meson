@@ -88,6 +88,9 @@
 /* Define to 1 if you have the `__secure_getenv' function. */
 #mesondefine HAVE___SECURE_GETENV
 
+/* Define to 1 if you have json_object_new_uint64 in json-c */
+#mesondefine HAVE_JSON_U64
+
 /* Define to the sub-directory where libtool stores uninstalled libraries. */
 #mesondefine LT_OBJDIR
 
