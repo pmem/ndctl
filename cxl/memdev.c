@@ -248,7 +248,7 @@ static int memdev_action(int argc, const char **argv, struct cxl_ctx *ctx,
 			continue;
 
 		cxl_memdev_foreach (ctx, memdev) {
-			if (!util_cxl_memdev_filter(memdev, argv[i]))
+			if (!util_cxl_memdev_filter(memdev, argv[i], NULL))
 				continue;
 
 			if (action == action_write) {

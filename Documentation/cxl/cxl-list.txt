@@ -64,6 +64,10 @@ OPTIONS
 ]
 ----
 
+-s::
+--serial=::
+	Specify CXL memory device serial number(s) to filter the listing
+
 -M::
 --memdevs::
 	Include CXL memory devices in the listing

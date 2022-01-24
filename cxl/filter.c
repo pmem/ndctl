@@ -21,15 +21,45 @@ static const char *which_sep(const char *filter)
 	return " ";
 }
 
+static struct cxl_memdev *
+util_cxl_memdev_serial_filter(struct cxl_memdev *memdev, const char *__serials)
+{
+	unsigned long long serial = 0;
+	char *serials, *save, *end;
+	const char *arg;
+
+	if (!__serials)
+		return memdev;
+
+	serials = strdup(__serials);
+	if (!serials)
+		return NULL;
+
+	for (arg = strtok_r(serials, which_sep(__serials), &save); arg;
+	     arg = strtok_r(NULL, which_sep(__serials), &save)) {
+		serial = strtoull(arg, &end, 0);
+		if (!arg[0] || end[0] != 0)
+			continue;
+		if (cxl_memdev_get_serial(memdev) == serial)
+			break;
+	}
+
+	free(serials);
+	if (arg)
+		return memdev;
+	return NULL;
+}
+
 struct cxl_memdev *util_cxl_memdev_filter(struct cxl_memdev *memdev,
-					  const char *__ident)
+					  const char *__ident,
+					  const char *serials)
 {
 	char *ident, *save;
 	const char *name;
 	int memdev_id;
 
 	if (!__ident)
-		return memdev;
+		return util_cxl_memdev_serial_filter(memdev, serials);
 
 	ident = strdup(__ident);
 	if (!ident)
@@ -51,7 +81,7 @@ struct cxl_memdev *util_cxl_memdev_filter(struct cxl_memdev *memdev,
 
 	free(ident);
 	if (name)
-		return memdev;
+		return util_cxl_memdev_serial_filter(memdev, serials);
 	return NULL;
 }
 
@@ -82,7 +112,7 @@ int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *p)
 	cxl_memdev_foreach(ctx, memdev) {
 		struct json_object *jdev;
 
-		if (!util_cxl_memdev_filter(memdev, p->memdev_filter))
+		if (!util_cxl_memdev_filter(memdev, p->memdev_filter, p->serial_filter))
 			continue;
 		if (p->memdevs) {
 			jdev = util_cxl_memdev_to_json(memdev, flags);

@@ -8,6 +8,7 @@
 
 struct cxl_filter_params {
 	const char *memdev_filter;
+	const char *serial_filter;
 	bool memdevs;
 	bool idle;
 	bool human;
@@ -16,6 +17,7 @@ struct cxl_filter_params {
 };
 
 struct cxl_memdev *util_cxl_memdev_filter(struct cxl_memdev *memdev,
-					  const char *ident);
+					  const char *__ident,
+					  const char *serials);
 int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *param);
 #endif /* _CXL_UTIL_FILTER_H_ */

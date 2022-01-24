@@ -24,6 +24,8 @@ int cmd_list(int argc, const char **argv, struct cxl_ctx *ctx)
 	const struct option options[] = {
 		OPT_STRING('m', "memdev", &param.memdev_filter, "memory device name",
 			   "filter by CXL memory device name"),
+		OPT_STRING('s', "serial", &param.serial_filter, "memory device serial",
+			   "filter by CXL memory device serial number"),
 		OPT_BOOLEAN('M', "memdevs", &param.memdevs,
 			    "include CXL memory device info"),
 		OPT_BOOLEAN('i', "idle", &param.idle, "include disabled devices"),
@@ -47,7 +49,7 @@ int cmd_list(int argc, const char **argv, struct cxl_ctx *ctx)
 		usage_with_options(u, options);
 
 	if (num_list_flags() == 0) {
-		if (param.memdev_filter)
+		if (param.memdev_filter || param.serial_filter)
 			param.memdevs = true;
 		else {
 			/*
