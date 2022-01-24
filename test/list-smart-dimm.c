@@ -11,7 +11,7 @@
 #include <ndctl/ndctl.h>
 #include <ndctl/json.h>
 
-struct util_filter_params param;
+struct ndctl_filter_params param;
 static int did_fail;
 static int jflag = JSON_C_TO_STRING_PRETTY;
 
@@ -23,12 +23,12 @@ do { \
 } while (0)
 
 static bool filter_region(struct ndctl_region *region,
-		struct util_filter_ctx *ctx)
+		struct ndctl_filter_ctx *ctx)
 {
 	return true;
 }
 
-static void filter_dimm(struct ndctl_dimm *dimm, struct util_filter_ctx *ctx)
+static void filter_dimm(struct ndctl_dimm *dimm, struct ndctl_filter_ctx *ctx)
 {
 	struct list_filter_arg *lfa = ctx->list;
 	struct json_object *jdimm;
@@ -57,7 +57,7 @@ static void filter_dimm(struct ndctl_dimm *dimm, struct util_filter_ctx *ctx)
 	json_object_array_add(lfa->jdimms, jdimm);
 }
 
-static bool filter_bus(struct ndctl_bus *bus, struct util_filter_ctx *ctx)
+static bool filter_bus(struct ndctl_bus *bus, struct ndctl_filter_ctx *ctx)
 {
 	return true;
 }
@@ -89,7 +89,7 @@ int main(int argc, const char *argv[])
 		"list-smart-dimm [<options>]",
 		NULL
 	};
-	struct util_filter_ctx fctx = { 0 };
+	struct ndctl_filter_ctx fctx = { 0 };
 	struct list_filter_arg lfa = { 0 };
 
 	rc = ndctl_new(&ctx);
@@ -108,7 +108,7 @@ int main(int argc, const char *argv[])
 	fctx.list = &lfa;
 	lfa.flags = 0;
 
-	rc = util_filter_walk(ctx, &fctx, &param);
+	rc = ndctl_filter_walk(ctx, &fctx, &param);
 	if (rc)
 		return rc;
 

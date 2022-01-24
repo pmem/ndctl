@@ -55,7 +55,7 @@ static unsigned long listopts_to_flags(void)
 	return flags;
 }
 
-static struct util_filter_params param;
+static struct ndctl_filter_params param;
 
 static int did_fail;
 
@@ -234,7 +234,7 @@ static struct json_object *region_to_json(struct ndctl_region *region,
 }
 
 static void filter_namespace(struct ndctl_namespace *ndns,
-		struct util_filter_ctx *ctx)
+			     struct ndctl_filter_ctx *ctx)
 {
 	struct json_object *jndns;
 	struct list_filter_arg *lfa = ctx->list;
@@ -272,7 +272,7 @@ static void filter_namespace(struct ndctl_namespace *ndns,
 }
 
 static bool filter_region(struct ndctl_region *region,
-		struct util_filter_ctx *ctx)
+			  struct ndctl_filter_ctx *ctx)
 {
 	struct list_filter_arg *lfa = ctx->list;
 	struct json_object *jbus = lfa->jbus;
@@ -318,7 +318,7 @@ static bool filter_region(struct ndctl_region *region,
 	return true;
 }
 
-static void filter_dimm(struct ndctl_dimm *dimm, struct util_filter_ctx *ctx)
+static void filter_dimm(struct ndctl_dimm *dimm, struct ndctl_filter_ctx *ctx)
 {
 	struct list_filter_arg *lfa = ctx->list;
 	struct json_object *jdimm;
@@ -367,7 +367,7 @@ static void filter_dimm(struct ndctl_dimm *dimm, struct util_filter_ctx *ctx)
 	json_object_array_add(lfa->jdimms, jdimm);
 }
 
-static bool filter_bus(struct ndctl_bus *bus, struct util_filter_ctx *ctx)
+static bool filter_bus(struct ndctl_bus *bus, struct ndctl_filter_ctx *ctx)
 {
 	struct list_filter_arg *lfa = ctx->list;
 
@@ -489,7 +489,7 @@ int cmd_list(int argc, const char **argv, struct ndctl_ctx *ctx)
 		NULL
 	};
 	bool lint = !!secure_getenv("NDCTL_LIST_LINT");
-	struct util_filter_ctx fctx = { 0 };
+	struct ndctl_filter_ctx fctx = { 0 };
 	struct list_filter_arg lfa = { 0 };
 	int i, rc;
 
@@ -544,7 +544,7 @@ int cmd_list(int argc, const char **argv, struct ndctl_ctx *ctx)
 	fctx.list = &lfa;
 	lfa.flags = listopts_to_flags();
 
-	rc = util_filter_walk(ctx, &fctx, &param);
+	rc = ndctl_filter_walk(ctx, &fctx, &param);
 	if (rc)
 		return rc;
 

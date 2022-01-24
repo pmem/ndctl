@@ -49,7 +49,7 @@ struct monitor_dimm {
 	struct list_node list;
 };
 
-static struct util_filter_params param;
+static struct ndctl_filter_params param;
 
 static int did_fail;
 
@@ -264,12 +264,12 @@ out:
 }
 
 static bool filter_region(struct ndctl_region *region,
-		struct util_filter_ctx *fctx)
+			  struct ndctl_filter_ctx *fctx)
 {
 	return true;
 }
 
-static void filter_dimm(struct ndctl_dimm *dimm, struct util_filter_ctx *fctx)
+static void filter_dimm(struct ndctl_dimm *dimm, struct ndctl_filter_ctx *fctx)
 {
 	struct monitor_dimm *mdimm;
 	struct monitor_filter_arg *mfa = fctx->monitor;
@@ -317,7 +317,7 @@ static void filter_dimm(struct ndctl_dimm *dimm, struct util_filter_ctx *fctx)
 	return;
 }
 
-static bool filter_bus(struct ndctl_bus *bus, struct util_filter_ctx *fctx)
+static bool filter_bus(struct ndctl_bus *bus, struct ndctl_filter_ctx *fctx)
 {
 	return true;
 }
@@ -602,7 +602,7 @@ int cmd_monitor(int argc, const char **argv, struct ndctl_ctx *ctx)
 		CONF_END(),
 	};
 	const char *prefix = "./", *ndctl_configs;
-	struct util_filter_ctx fctx = { 0 };
+	struct ndctl_filter_ctx fctx = { 0 };
 	struct monitor_filter_arg mfa = { 0 };
 	int i, rc;
 
@@ -672,7 +672,7 @@ int cmd_monitor(int argc, const char **argv, struct ndctl_ctx *ctx)
 	mfa.maxfd_dimm = -1;
 	mfa.flags = 0;
 
-	rc = util_filter_walk(ctx, &fctx, &param);
+	rc = ndctl_filter_walk(ctx, &fctx, &param);
 	if (rc)
 		goto out;
 

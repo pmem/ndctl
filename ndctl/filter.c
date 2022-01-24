@@ -338,8 +338,8 @@ const char *util_nsmode_name(enum ndctl_namespace_mode mode)
 	return modes[mode];
 }
 
-int util_filter_walk(struct ndctl_ctx *ctx, struct util_filter_ctx *fctx,
-		struct util_filter_params *param)
+int ndctl_filter_walk(struct ndctl_ctx *ctx, struct ndctl_filter_ctx *fctx,
+		      struct ndctl_filter_params *param)
 {
 	struct ndctl_bus *bus;
 	unsigned int type = 0;
