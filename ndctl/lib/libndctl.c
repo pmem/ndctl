@@ -1665,10 +1665,6 @@ static enum ndctl_fwa_result fwa_result_to_result(const char *result)
 	return NDCTL_FWA_RESULT_INVALID;
 }
 
-static int ndctl_bind(struct ndctl_ctx *ctx, struct kmod_module *module,
-		const char *devname);
-static int ndctl_unbind(struct ndctl_ctx *ctx, const char *devpath);
-
 static int populate_dimm_attributes(struct ndctl_dimm *dimm,
 				    const char *dimm_base,
 				    const char *bus_prefix)
@@ -2305,7 +2301,7 @@ NDCTL_EXPORT int ndctl_dimm_disable(struct ndctl_dimm *dimm)
 	if (!ndctl_dimm_is_enabled(dimm))
 		return 0;
 
-	ndctl_unbind(ctx, dimm->dimm_path);
+	util_unbind(dimm->dimm_path, ctx);
 
 	if (ndctl_dimm_is_enabled(dimm)) {
 		err(ctx, "%s: failed to disable\n", devname);
@@ -2324,7 +2320,7 @@ NDCTL_EXPORT int ndctl_dimm_enable(struct ndctl_dimm *dimm)
 	if (ndctl_dimm_is_enabled(dimm))
 		return 0;
 
-	ndctl_bind(ctx, dimm->module, devname);
+	util_bind(devname, dimm->module, "nd", ctx);
 
 	if (!ndctl_dimm_is_enabled(dimm)) {
 		err(ctx, "%s: failed to enable\n", devname);
@@ -3573,7 +3569,7 @@ NDCTL_EXPORT int ndctl_region_enable(struct ndctl_region *region)
 	if (ndctl_region_is_enabled(region))
 		return 0;
 
-	ndctl_bind(ctx, region->module, devname);
+	util_bind(devname, region->module, "nd", ctx);
 
 	if (!ndctl_region_is_enabled(region)) {
 		err(ctx, "%s: failed to enable\n", devname);
@@ -3610,7 +3606,7 @@ static int ndctl_region_disable(struct ndctl_region *region, int cleanup)
 	if (!ndctl_region_is_enabled(region))
 		return 0;
 
-	ndctl_unbind(ctx, region->region_path);
+	util_unbind(region->region_path, ctx);
 
 	if (ndctl_region_is_enabled(region)) {
 		err(ctx, "%s: failed to disable\n", devname);
@@ -4373,81 +4369,6 @@ NDCTL_EXPORT struct badblock *ndctl_namespace_get_first_badblock(
 	return badblocks_iter_first(&ndns->bb_iter, ctx, path);
 }
 
-static int ndctl_bind(struct ndctl_ctx *ctx, struct kmod_module *module,
-		const char *devname)
-{
-	DIR *dir;
-	int rc = 0;
-	char path[200];
-	struct dirent *de;
-	const int len = sizeof(path);
-
-	if (!devname) {
-		err(ctx, "missing devname\n");
-		return -EINVAL;
-	}
-
-	if (module) {
-		rc = kmod_module_probe_insert_module(module,
-				KMOD_PROBE_APPLY_BLACKLIST, NULL, NULL, NULL,
-				NULL);
-		if (rc < 0) {
-			err(ctx, "%s: insert failure: %d\n", __func__, rc);
-			return rc;
-		}
-	}
-
-	if (snprintf(path, len, "/sys/bus/nd/drivers") >= len) {
-		err(ctx, "%s: buffer too small!\n", devname);
-		return -ENXIO;
-	}
-
-	dir = opendir(path);
-	if (!dir) {
-		err(ctx, "%s: opendir(\"%s\") failed\n", devname, path);
-		return -ENXIO;
-	}
-
-	while ((de = readdir(dir)) != NULL) {
-		char *drv_path;
-
-		if (de->d_ino == 0)
-			continue;
-		if (de->d_name[0] == '.')
-			continue;
-		if (asprintf(&drv_path, "%s/%s/bind", path, de->d_name) < 0) {
-			err(ctx, "%s: path allocation failure\n", devname);
-			continue;
-		}
-
-		rc = sysfs_write_attr_quiet(ctx, drv_path, devname);
-		free(drv_path);
-		if (rc == 0)
-			break;
-	}
-	closedir(dir);
-
-	if (rc) {
-		dbg(ctx, "%s: bind failed\n", devname);
-		return -ENXIO;
-	}
-	return 0;
-}
-
-static int ndctl_unbind(struct ndctl_ctx *ctx, const char *devpath)
-{
-	const char *devname = devpath_to_devname(devpath);
-	char path[200];
-	const int len = sizeof(path);
-
-	if (snprintf(path, len, "%s/driver/unbind", devpath) >= len) {
-		err(ctx, "%s: buffer too small!\n", devname);
-		return -ENXIO;
-	}
-
-	return sysfs_write_attr(ctx, path, devname);
-}
-
 static void *add_btt(void *parent, int id, const char *btt_base);
 static void *add_pfn(void *parent, int id, const char *pfn_base);
 static void *add_dax(void *parent, int id, const char *dax_base);
@@ -4533,7 +4454,7 @@ NDCTL_EXPORT int ndctl_namespace_enable(struct ndctl_namespace *ndns)
 	if (ndctl_namespace_is_enabled(ndns))
 		return 0;
 
-	rc = ndctl_bind(ctx, ndns->module, devname);
+	rc = util_bind(devname, ndns->module, "nd", ctx);
 
 	/*
 	 * Rescan now as successfully enabling a namespace device leads
@@ -4581,7 +4502,7 @@ NDCTL_EXPORT int ndctl_namespace_disable(struct ndctl_namespace *ndns)
 	if (!ndctl_namespace_is_enabled(ndns))
 		return 0;
 
-	ndctl_unbind(ctx, ndns->ndns_path);
+	util_unbind(ndns->ndns_path, ctx);
 
 	if (ndctl_namespace_is_enabled(ndns)) {
 		err(ctx, "%s: failed to disable\n", devname);
@@ -5420,7 +5341,7 @@ NDCTL_EXPORT int ndctl_btt_enable(struct ndctl_btt *btt)
 	if (ndctl_btt_is_enabled(btt))
 		return 0;
 
-	ndctl_bind(ctx, btt->module, devname);
+	util_bind(devname, btt->module, "nd", ctx);
 
 	if (!ndctl_btt_is_enabled(btt)) {
 		err(ctx, "%s: failed to enable\n", devname);
@@ -5457,7 +5378,7 @@ NDCTL_EXPORT int ndctl_btt_delete(struct ndctl_btt *btt)
 		return 0;
 	}
 
-	ndctl_unbind(ctx, btt->btt_path);
+	util_unbind(btt->btt_path, ctx);
 
 	rc = ndctl_btt_set_namespace(btt, NULL);
 	if (rc) {
@@ -5908,7 +5829,7 @@ NDCTL_EXPORT int ndctl_pfn_enable(struct ndctl_pfn *pfn)
 	if (ndctl_pfn_is_enabled(pfn))
 		return 0;
 
-	ndctl_bind(ctx, pfn->module, devname);
+	util_bind(devname, pfn->module, "nd", ctx);
 
 	if (!ndctl_pfn_is_enabled(pfn)) {
 		err(ctx, "%s: failed to enable\n", devname);
@@ -5945,7 +5866,7 @@ NDCTL_EXPORT int ndctl_pfn_delete(struct ndctl_pfn *pfn)
 		return 0;
 	}
 
-	ndctl_unbind(ctx, pfn->pfn_path);
+	util_unbind(pfn->pfn_path, ctx);
 
 	rc = ndctl_pfn_set_namespace(pfn, NULL);
 	if (rc) {
@@ -6101,7 +6022,7 @@ NDCTL_EXPORT int ndctl_dax_enable(struct ndctl_dax *dax)
 	if (ndctl_dax_is_enabled(dax))
 		return 0;
 
-	ndctl_bind(ctx, pfn->module, devname);
+	util_bind(devname, pfn->module, "nd", ctx);
 
 	if (!ndctl_dax_is_enabled(dax)) {
 		err(ctx, "%s: failed to enable\n", devname);
@@ -6132,7 +6053,7 @@ NDCTL_EXPORT int ndctl_dax_delete(struct ndctl_dax *dax)
 		return 0;
 	}
 
-	ndctl_unbind(ctx, pfn->pfn_path);
+	util_unbind(pfn->pfn_path, ctx);
 
 	rc = ndctl_dax_set_namespace(dax, NULL);
 	if (rc) {

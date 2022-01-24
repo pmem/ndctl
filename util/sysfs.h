@@ -35,4 +35,12 @@ struct kmod_module *__util_modalias_to_module(struct kmod_ctx *kmod_ctx,
 					      struct log_ctx *log);
 #define util_modalias_to_module(ctx, buf)                                      \
 	__util_modalias_to_module((ctx)->kmod_ctx, buf, &(ctx)->ctx)
+
+int __util_bind(const char *devname, struct kmod_module *module, const char *bus,
+	      struct log_ctx *ctx);
+#define util_bind(n, m, b, c) __util_bind(n, m, b, &(c)->ctx)
+
+int __util_unbind(const char *devpath, struct log_ctx *ctx);
+#define util_unbind(p, c) __util_unbind(p, &(c)->ctx)
+
 #endif /* __UTIL_SYSFS_H__ */
