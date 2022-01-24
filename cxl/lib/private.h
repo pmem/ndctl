@@ -34,14 +34,25 @@ struct cxl_memdev {
 	unsigned long long serial;
 };
 
+enum cxl_port_type {
+	CXL_PORT_ROOT,
+	CXL_PORT_SWITCH,
+};
+
 struct cxl_port {
 	int id;
 	void *dev_buf;
 	size_t buf_len;
 	char *dev_path;
 	char *uport;
+	int ports_init;
 	struct cxl_ctx *ctx;
+	struct cxl_bus *bus;
+	enum cxl_port_type type;
+	struct cxl_port *parent;
+	struct kmod_module *module;
 	struct list_node list;
+	struct list_head child_ports;
 };
 
 struct cxl_bus {

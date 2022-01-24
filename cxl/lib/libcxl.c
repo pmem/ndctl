@@ -66,13 +66,25 @@ static void free_memdev(struct cxl_memdev *memdev, struct list_head *head)
 	free(memdev);
 }
 
+static void free_port(struct cxl_port *port, struct list_head *head);
 static void __free_port(struct cxl_port *port, struct list_head *head)
 {
+	struct cxl_port *child, *_c;
+
 	if (head)
 		list_del_from(head, &port->list);
+	list_for_each_safe(&port->child_ports, child, _c, list)
+		free_port(child, &port->child_ports);
+	kmod_module_unref(port->module);
 	free(port->dev_buf);
 	free(port->dev_path);
 	free(port->uport);
+}
+
+static void free_port(struct cxl_port *port, struct list_head *head)
+{
+	__free_port(port, head);
+	free(port);
 }
 
 static void free_bus(struct cxl_bus *bus, struct list_head *head)
@@ -471,10 +483,12 @@ CXL_EXPORT int cxl_memdev_nvdimm_bridge_active(struct cxl_memdev *memdev)
 	return is_enabled(path);
 }
 
-static int cxl_port_init(struct cxl_port *port, struct cxl_ctx *ctx, int id,
+static int cxl_port_init(struct cxl_port *port, struct cxl_port *parent_port,
+			 enum cxl_port_type type, struct cxl_ctx *ctx, int id,
 			 const char *cxlport_base)
 {
 	char *path = calloc(1, strlen(cxlport_base) + 100);
+	char buf[SYSFS_ATTR_SIZE];
 	size_t rc;
 
 	if (!path)
@@ -482,6 +496,10 @@ static int cxl_port_init(struct cxl_port *port, struct cxl_ctx *ctx, int id,
 
 	port->id = id;
 	port->ctx = ctx;
+	port->type = type;
+	port->parent = parent_port;
+
+	list_head_init(&port->child_ports);
 
 	port->dev_path = strdup(cxlport_base);
 	if (!port->dev_path)
@@ -499,12 +517,145 @@ static int cxl_port_init(struct cxl_port *port, struct cxl_ctx *ctx, int id,
 	if (!port->uport)
 		goto err;
 
+	sprintf(path, "%s/modalias", cxlport_base);
+	if (sysfs_read_attr(ctx, path, buf) == 0)
+		port->module = util_modalias_to_module(ctx, buf);
+
 	return 0;
 err:
 	free(port->dev_path);
 	free(port->dev_buf);
 	free(path);
 	return -ENOMEM;
+}
+
+static void *add_cxl_port(void *parent, int id, const char *cxlport_base)
+{
+	const char *devname = devpath_to_devname(cxlport_base);
+	struct cxl_port *port, *port_dup;
+	struct cxl_port *parent_port = parent;
+	struct cxl_ctx *ctx = cxl_port_get_ctx(parent_port);
+	int rc;
+
+	dbg(ctx, "%s: base: \'%s\'\n", devname, cxlport_base);
+
+	port = calloc(1, sizeof(*port));
+	if (!port)
+		return NULL;
+
+	rc = cxl_port_init(port, parent_port, CXL_PORT_SWITCH, ctx, id,
+			   cxlport_base);
+	if (rc)
+		goto err;
+
+	cxl_port_foreach(parent_port, port_dup)
+		if (port_dup->id == port->id) {
+			free_port(port, NULL);
+			return port_dup;
+		}
+
+	list_add(&parent_port->child_ports, &port->list);
+	return port;
+
+err:
+	free(port);
+	return NULL;
+
+}
+
+static void cxl_ports_init(struct cxl_port *port)
+{
+	struct cxl_ctx *ctx = cxl_port_get_ctx(port);
+
+	if (port->ports_init)
+		return;
+
+	port->ports_init = 1;
+
+	sysfs_device_parse(ctx, port->dev_path, "port", port, add_cxl_port);
+}
+
+CXL_EXPORT struct cxl_ctx *cxl_port_get_ctx(struct cxl_port *port)
+{
+	return port->ctx;
+}
+
+CXL_EXPORT struct cxl_port *cxl_port_get_first(struct cxl_port *port)
+{
+	cxl_ports_init(port);
+
+	return list_top(&port->child_ports, struct cxl_port, list);
+}
+
+CXL_EXPORT struct cxl_port *cxl_port_get_next(struct cxl_port *port)
+{
+	struct cxl_port *parent_port = port->parent;
+
+	return list_next(&parent_port->child_ports, port, list);
+}
+
+CXL_EXPORT const char *cxl_port_get_devname(struct cxl_port *port)
+{
+	return devpath_to_devname(port->dev_path);
+}
+
+CXL_EXPORT int cxl_port_get_id(struct cxl_port *port)
+{
+	return port->id;
+}
+
+CXL_EXPORT struct cxl_port *cxl_port_get_parent(struct cxl_port *port)
+{
+	return port->parent;
+}
+
+CXL_EXPORT bool cxl_port_is_root(struct cxl_port *port)
+{
+	return port->type == CXL_PORT_ROOT;
+}
+
+CXL_EXPORT bool cxl_port_is_switch(struct cxl_port *port)
+{
+	return port->type == CXL_PORT_SWITCH;
+}
+
+CXL_EXPORT struct cxl_bus *cxl_port_get_bus(struct cxl_port *port)
+{
+	struct cxl_bus *bus;
+
+	if (!cxl_port_is_enabled(port))
+		return NULL;
+
+	if (port->bus)
+		return port->bus;
+
+	while (port->parent)
+		port = port->parent;
+
+	bus = container_of(port, typeof(*bus), port);
+	port->bus = bus;
+	return bus;
+}
+
+CXL_EXPORT int cxl_port_is_enabled(struct cxl_port *port)
+{
+	struct cxl_ctx *ctx = cxl_port_get_ctx(port);
+	char *path = port->dev_buf;
+	int len = port->buf_len;
+
+	if (snprintf(path, len, "%s/driver", port->dev_path) >= len) {
+		err(ctx, "%s: buffer too small!\n", cxl_port_get_devname(port));
+		return 0;
+	}
+
+	return is_enabled(path);
+}
+
+CXL_EXPORT struct cxl_bus *cxl_port_to_bus(struct cxl_port *port)
+{
+	if (!cxl_port_is_root(port))
+		return NULL;
+	return container_of(port, struct cxl_bus, port);
 }
 
 static void *add_cxl_bus(void *parent, int id, const char *cxlbus_base)
@@ -522,7 +673,7 @@ static void *add_cxl_bus(void *parent, int id, const char *cxlbus_base)
 		return NULL;
 
 	port = &bus->port;
-	rc = cxl_port_init(port, ctx, id, cxlbus_base);
+	rc = cxl_port_init(port, NULL, CXL_PORT_ROOT, ctx, id, cxlbus_base);
 	if (rc)
 		goto err;
 
@@ -577,6 +728,11 @@ CXL_EXPORT int cxl_bus_get_id(struct cxl_bus *bus)
 	struct cxl_port *port = &bus->port;
 
 	return port->id;
+}
+
+CXL_EXPORT struct cxl_port *cxl_bus_get_port(struct cxl_bus *bus)
+{
+	return &bus->port;
 }
 
 CXL_EXPORT const char *cxl_bus_get_provider(struct cxl_bus *bus)

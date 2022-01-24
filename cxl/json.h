@@ -8,4 +8,7 @@ struct json_object *util_cxl_memdev_to_json(struct cxl_memdev *memdev,
 struct cxl_bus;
 struct json_object *util_cxl_bus_to_json(struct cxl_bus *bus,
 					 unsigned long flags);
+struct cxl_port;
+struct json_object *util_cxl_port_to_json(struct cxl_port *port,
+					  unsigned long flags);
 #endif /* __CXL_UTIL_JSON_H__ */

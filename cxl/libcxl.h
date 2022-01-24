@@ -5,6 +5,7 @@
 
 #include <stdarg.h>
 #include <unistd.h>
+#include <stdbool.h>
 
 #ifdef HAVE_UUID
 #include <uuid/uuid.h>
@@ -63,10 +64,28 @@ struct cxl_bus *cxl_bus_get_next(struct cxl_bus *bus);
 const char *cxl_bus_get_provider(struct cxl_bus *bus);
 const char *cxl_bus_get_devname(struct cxl_bus *bus);
 int cxl_bus_get_id(struct cxl_bus *bus);
+struct cxl_port *cxl_bus_get_port(struct cxl_bus *bus);
 
 #define cxl_bus_foreach(ctx, bus)                                              \
 	for (bus = cxl_bus_get_first(ctx); bus != NULL;                        \
 	     bus = cxl_bus_get_next(bus))
+
+struct cxl_port;
+struct cxl_port *cxl_port_get_first(struct cxl_port *parent);
+struct cxl_port *cxl_port_get_next(struct cxl_port *port);
+const char *cxl_port_get_devname(struct cxl_port *port);
+int cxl_port_get_id(struct cxl_port *port);
+struct cxl_ctx *cxl_port_get_ctx(struct cxl_port *port);
+int cxl_port_is_enabled(struct cxl_port *port);
+struct cxl_port *cxl_port_get_parent(struct cxl_port *port);
+bool cxl_port_is_root(struct cxl_port *port);
+bool cxl_port_is_switch(struct cxl_port *port);
+struct cxl_bus *cxl_port_to_bus(struct cxl_port *port);
+struct cxl_bus *cxl_port_get_bus(struct cxl_port *port);
+
+#define cxl_port_foreach(parent, port)                                         \
+	for (port = cxl_port_get_first(parent); port != NULL;                  \
+	     port = cxl_port_get_next(port))
 
 struct cxl_cmd;
 const char *cxl_cmd_get_devname(struct cxl_cmd *cmd);

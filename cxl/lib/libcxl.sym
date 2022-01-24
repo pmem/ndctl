@@ -82,4 +82,16 @@ global:
 	cxl_bus_get_provider;
 	cxl_bus_get_devname;
 	cxl_bus_get_id;
+	cxl_bus_get_port;
+	cxl_port_get_first;
+	cxl_port_get_next;
+	cxl_port_get_devname;
+	cxl_port_get_id;
+	cxl_port_get_ctx;
+	cxl_port_is_enabled;
+	cxl_port_get_parent;
+	cxl_port_is_root;
+	cxl_port_is_switch;
+	cxl_port_to_bus;
+	cxl_port_get_bus;
 } LIBCXL_1;

@@ -10,7 +10,10 @@ struct cxl_filter_params {
 	const char *memdev_filter;
 	const char *serial_filter;
 	const char *bus_filter;
+	const char *port_filter;
+	bool single;
 	bool memdevs;
+	bool ports;
 	bool buses;
 	bool idle;
 	bool human;
@@ -22,4 +25,5 @@ struct cxl_memdev *util_cxl_memdev_filter(struct cxl_memdev *memdev,
 					  const char *__ident,
 					  const char *serials);
 int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *param);
+bool cxl_filter_has(const char *needle, const char *__filter);
 #endif /* _CXL_UTIL_FILTER_H_ */

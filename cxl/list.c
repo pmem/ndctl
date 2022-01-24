@@ -25,6 +25,11 @@ static const struct option options[] = {
 	OPT_STRING('b', "bus", &param.bus_filter, "bus device name",
 		   "filter by CXL bus device name(s)"),
 	OPT_BOOLEAN('B', "buses", &param.buses, "include CXL bus info"),
+	OPT_STRING('p', "port", &param.port_filter, "port device name",
+		   "filter by CXL port device name(s)"),
+	OPT_BOOLEAN('P', "ports", &param.ports, "include CXL port info"),
+	OPT_BOOLEAN('S', "single", &param.single,
+		    "skip listing descendant objects"),
 	OPT_BOOLEAN('i', "idle", &param.idle, "include disabled devices"),
 	OPT_BOOLEAN('u', "human", &param.human,
 		    "use human friendly number formats "),
@@ -35,7 +40,7 @@ static const struct option options[] = {
 
 static int num_list_flags(void)
 {
-       return !!param.memdevs + !!param.buses;
+       return !!param.memdevs + !!param.buses + !!param.ports;
 }
 
 int cmd_list(int argc, const char **argv, struct cxl_ctx *ctx)
@@ -53,11 +58,18 @@ int cmd_list(int argc, const char **argv, struct cxl_ctx *ctx)
 	if (argc)
 		usage_with_options(u, options);
 
+	if (param.single && !param.port_filter) {
+		error("-S/--single expects a port filter: -p/--port=\n");
+		usage_with_options(u, options);
+	}
+
 	if (num_list_flags() == 0) {
 		if (param.memdev_filter || param.serial_filter)
 			param.memdevs = true;
 		if (param.bus_filter)
 			param.buses = true;
+		if (param.port_filter)
+			param.ports = true;
 		if (num_list_flags() == 0) {
 			/*
 			 * TODO: We likely want to list regions by default if
@@ -72,6 +84,9 @@ int cmd_list(int argc, const char **argv, struct cxl_ctx *ctx)
 	}
 
 	log_init(&param.ctx, "cxl list", "CXL_LIST_LOG");
+
+	if (cxl_filter_has(param.port_filter, "root") && param.ports)
+		param.buses = true;
 
 	return cxl_filter_walk(ctx, &param);
 }

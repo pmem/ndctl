@@ -164,6 +164,48 @@ discovery order. The possible provider names are 'ACPI.CXL' and
 the kernel device names that are subject to change based on discovery
 order.
 
+PORTS
+-----
+CXL ports track the PCIe hierarchy between a platform firmware CXL root
+object, through CXL / PCIe Host Bridges, CXL / PCIe Root Ports, and CXL
+/ PCIe Switch Ports.
+
+=== PORT: Enumeration
+----
+struct cxl_port *cxl_bus_get_port(struct cxl_bus *bus);
+struct cxl_port *cxl_port_get_first(struct cxl_port *parent);
+struct cxl_port *cxl_port_get_next(struct cxl_port *port);
+struct cxl_port *cxl_port_get_parent(struct cxl_port *port);
+struct cxl_bus *cxl_port_get_bus(struct cxl_port *port);
+struct cxl_ctx *cxl_port_get_ctx(struct cxl_port *port);
+
+#define cxl_port_foreach(parent, port)                                      \
+       for (port = cxl_port_get_first(parent); port != NULL;                \
+            port = cxl_port_get_next(port))
+----
+A bus object encapsulates a CXL port object. Use cxl_bus_get_port() to
+use generic port APIs on root objects.
+
+Ports are hierarchical. All but the a root object have another CXL port
+as a parent object retrievable via cxl_port_get_parent().
+
+The root port of a hiearchy can be retrieved via any port instance in
+that hierarchy via cxl_port_get_bus().
+
+=== PORT: Attributes
+----
+const char *cxl_port_get_devname(struct cxl_port *port);
+int cxl_port_get_id(struct cxl_port *port);
+int cxl_port_is_enabled(struct cxl_port *port);
+bool cxl_port_is_root(struct cxl_port *port);
+bool cxl_port_is_switch(struct cxl_port *port);
+----
+The port type is communicated via cxl_port_is_<type>(). An 'enabled' port
+is one that has succeeded in discovering the CXL component registers in
+the host device and has enumerated its downstream ports. In order for a
+memdev to be enabled for CXL memory operation all CXL ports in its
+ancestry must also be enabled.
+
 include::../../copyright.txt[]
 
 SEE ALSO

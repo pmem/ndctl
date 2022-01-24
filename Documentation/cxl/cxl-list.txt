@@ -176,6 +176,30 @@ OPTIONS
 	names to filter the listing. The supported provider names are "ACPI.CXL"
 	and "cxl_test".
 
+-P::
+--ports::
+	Include port objects (CXL / PCIe root ports + Upstream Switch Ports) in
+	the listing.
+
+-p::
+--port=::
+	Specify CXL Port device name(s), device id(s), and or port type
+	names to filter the listing. The supported port type names are "root"
+	and "switch". Note that since a bus object is also a port, the following
+	two syntaxes are equivalent:
+----
+# cxl list -B
+# cxl list -P -p root
+----
+	By default, only 'switch' ports are listed.
+
+-S::
+--single::
+	Specify whether the listing should emit all the objects that are
+	descendants of a port that matches the port filter, or only direct
+	descendants of the individual ports that match the filter. By default
+	all descendant objects are listed.
+
 include::human-option.txt[]
 
 include::verbose-option.txt[]

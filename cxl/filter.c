@@ -21,6 +21,101 @@ static const char *which_sep(const char *filter)
 	return " ";
 }
 
+bool cxl_filter_has(const char *__filter, const char *needle)
+{
+	char *filter, *save;
+	const char *arg;
+
+	if (!needle)
+		return true;
+
+	if (!__filter)
+		return false;
+
+	filter = strdup(__filter);
+	if (!filter)
+		return false;
+
+	for (arg = strtok_r(filter, which_sep(__filter), &save); arg;
+	     arg = strtok_r(NULL, which_sep(__filter), &save))
+		if (strstr(arg, needle))
+			break;
+
+	free(filter);
+	if (arg)
+		return true;
+	return false;
+}
+
+static struct cxl_port *__util_cxl_port_filter(struct cxl_port *port,
+					     const char *__ident)
+{
+	char *ident, *save;
+	const char *arg;
+	int port_id;
+
+	if (!__ident)
+		return port;
+
+	ident = strdup(__ident);
+	if (!ident)
+		return NULL;
+
+	for (arg = strtok_r(ident, which_sep(__ident), &save); arg;
+	     arg = strtok_r(NULL, which_sep(__ident), &save)) {
+		if (strcmp(arg, "all") == 0)
+			break;
+
+		if (strcmp(arg, "root") == 0 && cxl_port_is_root(port))
+			break;
+
+		if (strcmp(arg, "switch") == 0 && cxl_port_is_switch(port))
+			break;
+
+		if ((sscanf(arg, "%d", &port_id) == 1 ||
+		     sscanf(arg, "port%d", &port_id) == 1) &&
+		    cxl_port_get_id(port) == port_id)
+			break;
+
+		if (strcmp(arg, cxl_port_get_devname(port)) == 0)
+			break;
+	}
+
+	free(ident);
+	if (arg)
+		return port;
+	return NULL;
+}
+
+enum cxl_port_filter_mode {
+	CXL_PF_SINGLE,
+	CXL_PF_ANCESTRY,
+};
+
+static enum cxl_port_filter_mode pf_mode(struct cxl_filter_params *p)
+{
+	if (p->single)
+		return CXL_PF_SINGLE;
+	return CXL_PF_ANCESTRY;
+}
+
+static struct cxl_port *util_cxl_port_filter(struct cxl_port *port,
+					     const char *ident,
+					     enum cxl_port_filter_mode mode)
+{
+	struct cxl_port *iter = port;
+
+	while (iter) {
+		if (__util_cxl_port_filter(iter, ident))
+			return port;
+		if (mode == CXL_PF_SINGLE)
+			return NULL;
+		iter = cxl_port_get_parent(iter);
+	}
+
+	return NULL;
+}
+
 static struct cxl_bus *util_cxl_bus_filter(struct cxl_bus *bus,
 					   const char *__ident)
 {
@@ -55,6 +150,31 @@ static struct cxl_bus *util_cxl_bus_filter(struct cxl_bus *bus,
 	free(ident);
 	if (arg)
 		return bus;
+	return NULL;
+}
+
+static struct cxl_port *util_cxl_port_filter_by_bus(struct cxl_port *port,
+						    const char *__ident)
+{
+	struct cxl_ctx *ctx = cxl_port_get_ctx(port);
+	struct cxl_bus *bus;
+
+	if (!__ident)
+		return port;
+
+	if (cxl_port_is_root(port)) {
+		bus = cxl_port_to_bus(port);
+		bus = util_cxl_bus_filter(bus, __ident);
+		return bus ? port : NULL;
+	}
+
+	cxl_bus_foreach(ctx, bus) {
+		if (!util_cxl_bus_filter(bus, __ident))
+			continue;
+		if (bus == cxl_port_get_bus(port))
+			return port;
+	}
+
 	return NULL;
 }
 
@@ -169,10 +289,82 @@ static void splice_array(struct cxl_filter_params *p, struct json_object *jobjs,
 	json_object_put(jobjs);
 }
 
+static bool cond_add_put_array(struct json_object *jobj, const char *key,
+			       struct json_object *array)
+{
+	if (jobj && array && json_object_array_length(array) > 0) {
+		json_object_object_add(jobj, key, array);
+		return true;
+	} else {
+		json_object_put(array);
+		return false;
+	}
+}
+
+static bool cond_add_put_array_suffix(struct json_object *jobj, const char *key,
+				      const char *suffix,
+				      struct json_object *array)
+{
+	char *name;
+	bool rc;
+
+	if (asprintf(&name, "%s:%s", key, suffix) < 0)
+		return false;
+	rc = cond_add_put_array(jobj, name, array);
+	free(name);
+	return rc;
+}
+
+static struct json_object *pick_array(struct json_object *child,
+				      struct json_object *container)
+{
+	if (child)
+		return child;
+	if (container)
+		return container;
+	return NULL;
+}
+
+static void walk_child_ports(struct cxl_port *parent_port,
+			     struct cxl_filter_params *p,
+			     struct json_object *jports,
+			     unsigned long flags)
+{
+	struct cxl_port *port;
+
+	cxl_port_foreach(parent_port, port) {
+		const char *devname = cxl_port_get_devname(port);
+		struct json_object *jport = NULL;
+		struct json_object *jchildports = NULL;
+
+		if (!util_cxl_port_filter(port, p->port_filter, pf_mode(p)))
+			goto walk_children;
+		if (!util_cxl_port_filter_by_bus(port, p->bus_filter))
+			goto walk_children;
+		if (!p->idle && !cxl_port_is_enabled(port))
+			continue;
+		if (p->ports)
+			jport = util_cxl_port_to_json(port, flags);
+		if (!jport)
+			continue;
+		json_object_array_add(jports, jport);
+		jchildports = json_object_new_array();
+		if (!jchildports) {
+			err(p, "%s: failed to enumerate child ports\n",
+			    devname);
+			continue;
+		}
+walk_children:
+		walk_child_ports(port, p, pick_array(jchildports, jports),
+				 flags);
+		cond_add_put_array_suffix(jport, "ports", devname, jchildports);
+	}
+}
+
 int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *p)
 {
+	struct json_object *jdevs = NULL, *jbuses = NULL, *jports = NULL;
 	struct json_object *jplatform = json_object_new_array();
-	struct json_object *jdevs = NULL, *jbuses = NULL;
 	unsigned long flags = params_to_flags(p);
 	struct cxl_memdev *memdev;
 	int top_level_objs = 0;
@@ -189,6 +381,10 @@ int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *p)
 
 	jbuses = json_object_new_array();
 	if (!jbuses)
+		goto err;
+
+	jports = json_object_new_array();
+	if (!jports)
 		goto err;
 
 	cxl_memdev_foreach(ctx, memdev) {
@@ -208,10 +404,15 @@ int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *p)
 	}
 
 	cxl_bus_foreach(ctx, bus) {
-		struct json_object *jbus;
+		struct json_object *jbus = NULL;
+		struct json_object *jchildports = NULL;
+		struct cxl_port *port = cxl_bus_get_port(bus);
+		const char *devname = cxl_bus_get_devname(bus);
 
 		if (!util_cxl_bus_filter(bus, p->bus_filter))
-			continue;
+			goto walk_children;
+		if (!util_cxl_port_filter(port, p->port_filter, pf_mode(p)))
+			goto walk_children;
 		if (p->buses) {
 			jbus = util_cxl_bus_to_json(bus, flags);
 			if (!jbus) {
@@ -219,16 +420,32 @@ int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *p)
 				continue;
 			}
 			json_object_array_add(jbuses, jbus);
+			if (p->ports) {
+				jchildports = json_object_new_array();
+				if (!jchildports) {
+					err(p,
+					    "%s: failed to enumerate child ports\n",
+					    devname);
+					continue;
+				}
+			}
 		}
+walk_children:
+		walk_child_ports(port, p, pick_array(jchildports, jports),
+				 flags);
+		cond_add_put_array_suffix(jbus, "ports", devname, jchildports);
 	}
 
 	if (json_object_array_length(jdevs))
 		top_level_objs++;
 	if (json_object_array_length(jbuses))
 		top_level_objs++;
+	if (json_object_array_length(jports))
+		top_level_objs++;
 
 	splice_array(p, jdevs, jplatform, "anon memdevs", top_level_objs > 1);
 	splice_array(p, jbuses, jplatform, "buses", top_level_objs > 1);
+	splice_array(p, jports, jplatform, "ports", top_level_objs > 1);
 
 	util_display_json_array(stdout, jplatform, flags);
 
@@ -236,6 +453,7 @@ int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *p)
 err:
 	json_object_put(jdevs);
 	json_object_put(jbuses);
+	json_object_put(jports);
 	json_object_put(jplatform);
 	return -ENOMEM;
 }
