@@ -73,3 +73,8 @@ global:
 local:
         *;
 };
+
+LIBCXL_2 {
+global:
+	cxl_memdev_get_serial;
+} LIBCXL_1;

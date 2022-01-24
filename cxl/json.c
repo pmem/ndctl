@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
-// Copyright (C) 2015-2020 Intel Corporation. All rights reserved.
+// Copyright (C) 2015-2021 Intel Corporation. All rights reserved.
+#include <limits.h>
 #include <util/json.h>
 #include <uuid/uuid.h>
 #include <cxl/libcxl.h>
@@ -188,6 +189,7 @@ struct json_object *util_cxl_memdev_to_json(struct cxl_memdev *memdev,
 {
 	const char *devname = cxl_memdev_get_devname(memdev);
 	struct json_object *jdev, *jobj;
+	unsigned long long serial;
 
 	jdev = json_object_new_object();
 	if (!jdev)
@@ -209,6 +211,13 @@ struct json_object *util_cxl_memdev_to_json(struct cxl_memdev *memdev,
 		jobj = util_cxl_memdev_health_to_json(memdev, flags);
 		if (jobj)
 			json_object_object_add(jdev, "health", jobj);
+	}
+
+	serial = cxl_memdev_get_serial(memdev);
+	if (serial < ULLONG_MAX) {
+		jobj = util_json_object_hex(serial, flags);
+		if (jobj)
+			json_object_object_add(jdev, "serial", jobj);
 	}
 	return jdev;
 }

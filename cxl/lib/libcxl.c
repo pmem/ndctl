@@ -296,6 +296,12 @@ static void *add_cxl_memdev(void *parent, int id, const char *cxlmem_base)
 	if (memdev->lsa_size == ULLONG_MAX)
 		goto err_read;
 
+	sprintf(path, "%s/serial", cxlmem_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		memdev->serial = ULLONG_MAX;
+	else
+		memdev->serial = strtoull(buf, NULL, 0);
+
 	memdev->dev_path = strdup(cxlmem_base);
 	if (!memdev->dev_path)
 		goto err_read;
@@ -369,6 +375,11 @@ CXL_EXPORT struct cxl_memdev *cxl_memdev_get_next(struct cxl_memdev *memdev)
 CXL_EXPORT int cxl_memdev_get_id(struct cxl_memdev *memdev)
 {
 	return memdev->id;
+}
+
+CXL_EXPORT unsigned long long cxl_memdev_get_serial(struct cxl_memdev *memdev)
+{
+	return memdev->serial;
 }
 
 CXL_EXPORT const char *cxl_memdev_get_devname(struct cxl_memdev *memdev)

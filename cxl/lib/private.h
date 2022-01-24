@@ -31,6 +31,7 @@ struct cxl_memdev {
 	size_t lsa_size;
 	struct kmod_module *module;
 	struct cxl_nvdimm_bridge *bridge;
+	unsigned long long serial;
 };
 
 enum cxl_cmd_query_status {

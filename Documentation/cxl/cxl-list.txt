@@ -41,22 +41,25 @@ OPTIONS
   "ram_size":0,
 }
 
-# cxl list -m "0 mem1 2"
+# cxl list -M --memdev="0 mem3 5"
 [
   {
     "memdev":"mem0",
     "pmem_size":268435456,
-    "ram_size":0
+    "ram_size":0,
+    "serial":0
   },
   {
-    "memdev":"mem2",
+    "memdev":"mem3",
     "pmem_size":268435456,
-    "ram_size":268435456
+    "ram_size":268435456,
+    "serial":2
   },
   {
-    "memdev":"mem1",
+    "memdev":"mem5",
     "pmem_size":268435456,
-    "ram_size":268435456
+    "ram_size":268435456,
+    "serial":4
   }
 ]
 ----
