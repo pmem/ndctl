@@ -44,8 +44,8 @@ would only list objects that are beneath port10 AND map mem0, mem1, OR
 mem2.
 
 Given that many topology queries seek to answer questions relative to a
-given memdev, buses, ports, and endpoints can be filtered by one or more
-memdevs. For example:
+given memdev, buses, ports, endpoints, and decoders can be filtered by
+one or more memdevs. For example:
 ----
 # cxl list -P -p switch,endpoint -m mem0
 [
@@ -269,6 +269,10 @@ OPTIONS
 	to filter the emitted decoder(s). The format for a decoder name is
 	"decoder<port_id>.<instance_id>". The possible decoder type names are
 	"root", "switch", or "endpoint", similar to the port filter syntax.
+
+-T::
+--targets::
+	Extend decoder listings with downstream port target information.
 
 --debug::
 	If the cxl tool was built with debug enabled, turn on debug

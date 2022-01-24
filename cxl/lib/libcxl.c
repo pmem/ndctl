@@ -67,10 +67,22 @@ static void free_memdev(struct cxl_memdev *memdev, struct list_head *head)
 	free(memdev);
 }
 
-static void free_decoder(struct cxl_decoder *decoder, struct list_head *head)
+static void free_target(struct cxl_target *target, struct list_head *head)
 {
 	if (head)
+		list_del_from(head, &target->list);
+	free(target->dev_path);
+	free(target);
+}
+
+static void free_decoder(struct cxl_decoder *decoder, struct list_head *head)
+{
+	struct cxl_target *target, *_t;
+
+	if (head)
 		list_del_from(head, &decoder->list);
+	list_for_each_safe(&decoder->targets, target, _t, list)
+		free_target(target, &decoder->targets);
 	free(decoder->dev_buf);
 	free(decoder->dev_path);
 	free(decoder);
@@ -856,6 +868,7 @@ static void *add_cxl_decoder(void *parent, int id, const char *cxldecoder_base)
 	struct cxl_port *port = parent;
 	struct cxl_ctx *ctx = cxl_port_get_ctx(port);
 	char buf[SYSFS_ATTR_SIZE];
+	char *target_id, *save;
 	size_t i;
 
 	dbg(ctx, "%s: base: \'%s\'\n", devname, cxldecoder_base);
@@ -870,6 +883,7 @@ static void *add_cxl_decoder(void *parent, int id, const char *cxldecoder_base)
 	decoder->id = id;
 	decoder->ctx = ctx;
 	decoder->port = port;
+	list_head_init(&decoder->targets);
 
 	decoder->dev_path = strdup(cxldecoder_base);
 	if (!decoder->dev_path)
@@ -934,6 +948,36 @@ static void *add_cxl_decoder(void *parent, int id, const char *cxldecoder_base)
 		break;
 	}
 	}
+
+	sprintf(path, "%s/target_list", cxldecoder_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		buf[0] = '\0';
+
+	for (i = 0, target_id = strtok_r(buf, ",", &save); target_id;
+	     target_id = strtok_r(NULL, ",", &save), i++) {
+		int did = strtoul(target_id, NULL, 0);
+		struct cxl_target *target = calloc(1, sizeof(*target));
+
+		if (!target)
+			break;
+
+		target->id = did;
+		target->position = i;
+		target->decoder = decoder;
+		sprintf(port->dev_buf, "%s/dport%d", port->dev_path, did);
+		target->dev_path = realpath(port->dev_buf, NULL);
+		if (!target->dev_path) {
+			free(target);
+			break;
+		}
+		dbg(ctx, "%s: target%ld %s\n", devname, i, target->dev_path);
+		list_add(&decoder->targets, &target->list);
+	}
+
+	if (target_id)
+		err(ctx, "%s: failed to parse target%ld\n",
+		    devpath_to_devname(cxldecoder_base), i);
+	decoder->nr_targets = i;
 
 	cxl_decoder_foreach(port, decoder_dup)
 		if (decoder_dup->id == decoder->id) {
@@ -1044,9 +1088,80 @@ CXL_EXPORT bool cxl_decoder_is_locked(struct cxl_decoder *decoder)
 	return decoder->locked;
 }
 
+CXL_EXPORT int cxl_decoder_get_nr_targets(struct cxl_decoder *decoder)
+{
+	return decoder->nr_targets;
+}
+
 CXL_EXPORT const char *cxl_decoder_get_devname(struct cxl_decoder *decoder)
 {
 	return devpath_to_devname(decoder->dev_path);
+}
+
+CXL_EXPORT struct cxl_target *cxl_target_get_first(struct cxl_decoder *decoder)
+{
+	return list_top(&decoder->targets, struct cxl_target, list);
+}
+
+CXL_EXPORT struct cxl_decoder *cxl_target_get_decoder(struct cxl_target *target)
+{
+	return target->decoder;
+}
+
+CXL_EXPORT struct cxl_target *cxl_target_get_next(struct cxl_target *target)
+{
+	struct cxl_decoder *decoder = cxl_target_get_decoder(target);
+
+	return list_next(&decoder->targets, target, list);
+}
+
+CXL_EXPORT const char *cxl_target_get_devname(struct cxl_target *target)
+{
+	return devpath_to_devname(target->dev_path);
+}
+
+CXL_EXPORT unsigned long cxl_target_get_id(struct cxl_target *target)
+{
+	return target->id;
+}
+
+CXL_EXPORT int cxl_target_get_position(struct cxl_target *target)
+{
+	return target->position;
+}
+
+CXL_EXPORT bool cxl_target_maps_memdev(struct cxl_target *target,
+					struct cxl_memdev *memdev)
+{
+	struct cxl_ctx *ctx = cxl_memdev_get_ctx(memdev);
+
+	dbg(ctx, "memdev: %s target: %s\n", memdev->host_path,
+	    target->dev_path);
+
+	return !!strstr(memdev->host_path, target->dev_path);
+}
+
+CXL_EXPORT struct cxl_target *
+cxl_decoder_get_target_by_memdev(struct cxl_decoder *decoder,
+				 struct cxl_memdev *memdev)
+{
+	struct cxl_target *target;
+
+	cxl_target_foreach(decoder, target)
+		if (cxl_target_maps_memdev(target, memdev))
+			return target;
+	return NULL;
+}
+
+CXL_EXPORT struct cxl_target *
+cxl_decoder_get_target_by_position(struct cxl_decoder *decoder, int position)
+{
+	struct cxl_target *target;
+
+	cxl_target_foreach(decoder, target)
+		if (target->position == position)
+			return target;
+	return NULL;
 }
 
 static void *add_cxl_port(void *parent, int id, const char *cxlport_base)

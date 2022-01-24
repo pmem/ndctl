@@ -16,6 +16,7 @@ struct cxl_filter_params {
 	bool single;
 	bool endpoints;
 	bool decoders;
+	bool targets;
 	bool memdevs;
 	bool ports;
 	bool buses;

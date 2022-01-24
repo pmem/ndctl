@@ -421,6 +421,26 @@ static struct cxl_decoder *util_cxl_decoder_filter(struct cxl_decoder *decoder,
 	return NULL;
 }
 
+static struct cxl_decoder *
+util_cxl_decoder_filter_by_memdev(struct cxl_decoder *decoder,
+				  const char *ident, const char *serial)
+{
+	struct cxl_ctx *ctx = cxl_decoder_get_ctx(decoder);
+	struct cxl_memdev *memdev;
+
+	if (!ident && !serial)
+		return decoder;
+
+	cxl_memdev_foreach(ctx, memdev) {
+		if (!util_cxl_memdev_filter(memdev, ident, serial))
+			continue;
+		if (cxl_decoder_get_target_by_memdev(decoder, memdev))
+			return decoder;
+	}
+
+	return NULL;
+}
+
 static unsigned long params_to_flags(struct cxl_filter_params *param)
 {
 	unsigned long flags = 0;
@@ -431,6 +451,8 @@ static unsigned long params_to_flags(struct cxl_filter_params *param)
 		flags |= UTIL_JSON_HUMAN;
 	if (param->health)
 		flags |= UTIL_JSON_HEALTH;
+	if (param->targets)
+		flags |= UTIL_JSON_TARGETS;
 	return flags;
 }
 
@@ -520,6 +542,9 @@ static void walk_decoders(struct cxl_port *port, struct cxl_filter_params *p,
 			continue;
 		if (!util_cxl_decoder_filter_by_port(decoder, p->port_filter,
 						     pf_mode(p)))
+			continue;
+		if (!util_cxl_decoder_filter_by_memdev(
+			    decoder, p->memdev_filter, p->serial_filter))
 			continue;
 		if (!p->idle && cxl_decoder_get_size(decoder) == 0)
 			continue;

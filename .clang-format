@@ -81,6 +81,7 @@ ForEachMacros:
   - 'cxl_bus_foreach'
   - 'cxl_port_foreach'
   - 'cxl_decoder_foreach'
+  - 'cxl_target_foreach'
   - 'cxl_endpoint_foreach'
   - 'daxctl_dev_foreach'
   - 'daxctl_mapping_foreach'

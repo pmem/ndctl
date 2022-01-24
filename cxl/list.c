@@ -41,6 +41,8 @@ static const struct option options[] = {
 		   "filter by CXL decoder device name(s) / class"),
 	OPT_BOOLEAN('D', "decoders", &param.decoders,
 		    "include CXL decoder info"),
+	OPT_BOOLEAN('T', "targets", &param.targets,
+		    "include CXL target data with decoders"),
 	OPT_BOOLEAN('i', "idle", &param.idle, "include disabled devices"),
 	OPT_BOOLEAN('u', "human", &param.human,
 		    "use human friendly number formats "),

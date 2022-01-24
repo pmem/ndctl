@@ -104,6 +104,11 @@ struct cxl_decoder *cxl_decoder_get_next(struct cxl_decoder *decoder);
 unsigned long long cxl_decoder_get_resource(struct cxl_decoder *decoder);
 unsigned long long cxl_decoder_get_size(struct cxl_decoder *decoder);
 const char *cxl_decoder_get_devname(struct cxl_decoder *decoder);
+struct cxl_target *cxl_decoder_get_target_by_memdev(struct cxl_decoder *decoder,
+						    struct cxl_memdev *memdev);
+struct cxl_target *
+cxl_decoder_get_target_by_position(struct cxl_decoder *decoder, int position);
+int cxl_decoder_get_nr_targets(struct cxl_decoder *decoder);
 struct cxl_ctx *cxl_decoder_get_ctx(struct cxl_decoder *decoder);
 int cxl_decoder_get_id(struct cxl_decoder *decoder);
 struct cxl_port *cxl_decoder_get_port(struct cxl_decoder *decoder);
@@ -125,6 +130,20 @@ bool cxl_decoder_is_locked(struct cxl_decoder *decoder);
 #define cxl_decoder_foreach(port, decoder)                                     \
 	for (decoder = cxl_decoder_get_first(port); decoder != NULL;           \
 	     decoder = cxl_decoder_get_next(decoder))
+
+struct cxl_target;
+struct cxl_target *cxl_target_get_first(struct cxl_decoder *decoder);
+struct cxl_target *cxl_target_get_next(struct cxl_target *target);
+struct cxl_decoder *cxl_target_get_decoder(struct cxl_target *target);
+int cxl_target_get_position(struct cxl_target *target);
+unsigned long cxl_target_get_id(struct cxl_target *target);
+const char *cxl_target_get_devname(struct cxl_target *target);
+bool cxl_target_maps_memdev(struct cxl_target *target,
+			    struct cxl_memdev *memdev);
+
+#define cxl_target_foreach(decoder, target)                                    \
+	for (target = cxl_target_get_first(decoder); target != NULL;           \
+	     target = cxl_target_get_next(target))
 
 struct cxl_endpoint;
 struct cxl_endpoint *cxl_endpoint_get_first(struct cxl_port *parent);

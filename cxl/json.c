@@ -268,6 +268,8 @@ struct json_object *util_cxl_decoder_to_json(struct cxl_decoder *decoder,
 	const char *devname = cxl_decoder_get_devname(decoder);
 	struct cxl_port *port = cxl_decoder_get_port(decoder);
 	struct json_object *jdecoder, *jobj;
+	struct json_object *jtargets;
+	struct cxl_target *target;
 	u64 val;
 
 	jdecoder = json_object_new_object();
@@ -321,7 +323,51 @@ struct json_object *util_cxl_decoder_to_json(struct cxl_decoder *decoder,
 					       jobj);
 	}
 
+	/* Endpoints don't have targets, they *are* targets */
+	if (cxl_port_is_endpoint(port))
+		return jdecoder;
+
+	val = cxl_decoder_get_nr_targets(decoder);
+	jobj = json_object_new_int(val);
+	if (jobj)
+		json_object_object_add(jdecoder, "nr_targets", jobj);
+
+	if (!(flags & UTIL_JSON_TARGETS) ||
+	    !cxl_decoder_get_nr_targets(decoder))
+		return jdecoder;
+
+	jtargets = json_object_new_array();
+	if (!jtargets)
+		return jdecoder;
+
+	cxl_target_foreach(decoder, target) {
+		struct json_object *jtarget = json_object_new_object();
+
+		if (!jtarget)
+			continue;
+
+		devname = cxl_target_get_devname(target);
+		jobj = json_object_new_string(devname);
+		if (jobj)
+			json_object_object_add(jtarget, "target", jobj);
+
+		val = cxl_target_get_position(target);
+		jobj = json_object_new_int(val);
+		if (jobj)
+			json_object_object_add(jtarget, "position", jobj);
+
+		val = cxl_target_get_id(target);
+		jobj = util_json_object_hex(val, flags);
+		if (jobj)
+			json_object_object_add(jtarget, "id", jobj);
+
+		json_object_array_add(jtargets, jtarget);
+	}
+
+	json_object_object_add(jdecoder, "targets", jtargets);
+
 	return jdecoder;
+
 }
 
 static struct json_object *__util_cxl_port_to_json(struct cxl_port *port,
