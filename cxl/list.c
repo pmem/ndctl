@@ -19,22 +19,24 @@ static int num_list_flags(void)
 	return param.memdevs;
 }
 
+static const struct option options[] = {
+	OPT_STRING('m', "memdev", &param.memdev_filter, "memory device name(s)",
+		   "filter by CXL memory device name(s)"),
+	OPT_STRING('s', "serial", &param.serial_filter,
+		   "memory device serial(s)",
+		   "filter by CXL memory device serial number(s)"),
+	OPT_BOOLEAN('M', "memdevs", &param.memdevs,
+		    "include CXL memory device info"),
+	OPT_BOOLEAN('i', "idle", &param.idle, "include disabled devices"),
+	OPT_BOOLEAN('u', "human", &param.human,
+		    "use human friendly number formats "),
+	OPT_BOOLEAN('H', "health", &param.health,
+		    "include memory device health information "),
+	OPT_END(),
+};
+
 int cmd_list(int argc, const char **argv, struct cxl_ctx *ctx)
 {
-	const struct option options[] = {
-		OPT_STRING('m', "memdev", &param.memdev_filter, "memory device name",
-			   "filter by CXL memory device name"),
-		OPT_STRING('s', "serial", &param.serial_filter, "memory device serial",
-			   "filter by CXL memory device serial number"),
-		OPT_BOOLEAN('M', "memdevs", &param.memdevs,
-			    "include CXL memory device info"),
-		OPT_BOOLEAN('i', "idle", &param.idle, "include disabled devices"),
-		OPT_BOOLEAN('u', "human", &param.human,
-				"use human friendly number formats "),
-		OPT_BOOLEAN('H', "health", &param.health,
-				"include memory device health information "),
-		OPT_END(),
-	};
 	const char * const u[] = {
 		"cxl list [<options>]",
 		NULL
