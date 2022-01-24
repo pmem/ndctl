@@ -19,7 +19,9 @@ else
 endif
 
 filedeps = [
-        '../copyright.txt',
+  '../copyright.txt',
+  'memdev-option.txt',
+  'labels-options.txt',
 ]
 
 cxl_manpages = [

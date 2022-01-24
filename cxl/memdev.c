@@ -24,12 +24,14 @@ static struct parameters {
 	unsigned len;
 	unsigned offset;
 	bool verbose;
+	bool serial;
 } param;
 
 static struct log_ctx ml;
 
 #define BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &param.verbose, "turn on debug")
+OPT_BOOLEAN('v',"verbose", &param.verbose, "turn on debug"), \
+OPT_BOOLEAN('S', "serial", &param.serial, "user serials numbers to id memdevs")
 
 #define READ_OPTIONS() \
 OPT_STRING('o', "output", &param.outfile, "output-file", \
@@ -172,8 +174,9 @@ out:
 }
 
 static int memdev_action(int argc, const char **argv, struct cxl_ctx *ctx,
-		int (*action)(struct cxl_memdev *memdev, struct action_context *actx),
-		const struct option *options, const char *usage)
+			 int (*action)(struct cxl_memdev *memdev,
+				       struct action_context *actx),
+			 const struct option *options, const char *usage)
 {
 	struct cxl_memdev *memdev, *single = NULL;
 	struct action_context actx = { 0 };
@@ -190,16 +193,25 @@ static int memdev_action(int argc, const char **argv, struct cxl_ctx *ctx,
 	if (argc == 0)
 		usage_with_options(u, options);
 	for (i = 0; i < argc; i++) {
-		if (strcmp(argv[i], "all") == 0) {
-			argc = 1;
-			break;
-		}
-		if (sscanf(argv[i], "mem%lu", &id) == 1)
-			continue;
-		if (sscanf(argv[i], "%lu", &id) == 1)
-			continue;
+		if (param.serial) {
+			char *end;
 
-		log_err(&ml, "'%s' is not a valid memdev name\n", argv[i]);
+			strtoull(argv[i], &end, 0);
+			if (end[0] == 0)
+				continue;
+		} else {
+			if (strcmp(argv[i], "all") == 0) {
+				argc = 1;
+				break;
+			}
+			if (sscanf(argv[i], "mem%lu", &id) == 1)
+				continue;
+			if (sscanf(argv[i], "%lu", &id) == 1)
+				continue;
+		}
+
+		log_err(&ml, "'%s' is not a valid memdev %s\n", argv[i],
+			param.serial ? "serial number" : "name");
 		err++;
 	}
 
@@ -244,7 +256,16 @@ static int memdev_action(int argc, const char **argv, struct cxl_ctx *ctx,
 
 	for (i = 0; i < argc; i++) {
 		cxl_memdev_foreach(ctx, memdev) {
-			if (!util_cxl_memdev_filter(memdev, argv[i], NULL))
+			const char *memdev_filter = NULL;
+			const char *serial_filter = NULL;
+
+			if (param.serial)
+				serial_filter = argv[i];
+			else
+				memdev_filter = argv[i];
+
+			if (!util_cxl_memdev_filter(memdev, memdev_filter,
+						    serial_filter))
 				continue;
 
 			if (action == action_write) {
