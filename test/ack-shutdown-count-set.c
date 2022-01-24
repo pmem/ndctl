@@ -117,6 +117,7 @@ static int test_ack_shutdown_count_set(int loglevel, struct ndctl_test *test,
 
 int main(int argc, char *argv[])
 {
+	char *test_env = getenv("NDCTL_TEST_FAMILY");
 	struct ndctl_test *test = ndctl_test_new(0);
 	struct ndctl_ctx *ctx;
 	int rc;
@@ -125,6 +126,9 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "failed to initialize test\n");
 		return EXIT_FAILURE;
 	}
+
+	if (test_env && strcmp(test_env, "PAPR") == 0)
+		return ndctl_test_result(test, 77);
 
 	rc = ndctl_new(&ctx);
 	if (rc)
