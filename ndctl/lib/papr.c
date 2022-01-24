@@ -165,6 +165,9 @@ static unsigned int papr_smart_get_flags(struct ndctl_cmd *cmd)
 		if (health.extension_flags & PDSM_DIMM_HEALTH_RUN_GAUGE_VALID)
 			flags |= ND_SMART_USED_VALID;
 
+		if (health.extension_flags &  PDSM_DIMM_DSC_VALID)
+			flags |= ND_SMART_SHUTDOWN_COUNT_VALID;
+
 		return flags;
 	}
 
@@ -236,6 +239,25 @@ static unsigned int papr_smart_get_life_used(struct ndctl_cmd *cmd)
 		(100 - health.dimm_fuel_gauge) : 0;
 }
 
+static unsigned int papr_smart_get_shutdown_count(struct ndctl_cmd *cmd)
+{
+
+	struct nd_papr_pdsm_health health;
+
+	/* Ignore in case of error or invalid pdsm */
+	if (!cmd_is_valid(cmd) ||
+	    to_pdsm(cmd)->cmd_status != 0 ||
+	    to_pdsm_cmd(cmd) != PAPR_PDSM_HEALTH)
+		return 0;
+
+	/* get the payload from command */
+	health = to_payload(cmd)->health;
+
+	return (health.extension_flags & PDSM_DIMM_DSC_VALID) ?
+		(health.dimm_dsc) : 0;
+
+}
+
 struct ndctl_dimm_ops * const papr_dimm_ops = &(struct ndctl_dimm_ops) {
 	.cmd_is_supported = papr_cmd_is_supported,
 	.smart_get_flags = papr_smart_get_flags,
@@ -245,4 +267,5 @@ struct ndctl_dimm_ops * const papr_dimm_ops = &(struct ndctl_dimm_ops) {
 	.smart_get_health = papr_smart_get_health,
 	.smart_get_shutdown_state = papr_smart_get_shutdown_state,
 	.smart_get_life_used = papr_smart_get_life_used,
+	.smart_get_shutdown_count = papr_smart_get_shutdown_count,
 };

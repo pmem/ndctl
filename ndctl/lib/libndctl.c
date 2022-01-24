@@ -1819,8 +1819,12 @@ static int add_papr_dimm(struct ndctl_dimm *dimm, const char *dimm_base)
 
 		/* Allocate monitor mode fd */
 		dimm->health_eventfd = open(path, O_RDONLY|O_CLOEXEC);
-		rc = 0;
+		/* Get the dirty shutdown counter value */
+		sprintf(path, "%s/papr/dirty_shutdown", dimm_base);
+		if (sysfs_read_attr(ctx, path, buf) == 0)
+			dimm->dirty_shutdown = strtoll(buf, NULL, 0);
 
+		rc = 0;
 	} else if (strcmp(buf, "nvdimm_test") == 0) {
 		/* probe via common populate_dimm_attributes() */
 		rc = populate_dimm_attributes(dimm, dimm_base, "papr");
