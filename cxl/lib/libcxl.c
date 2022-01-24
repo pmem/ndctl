@@ -1452,6 +1452,29 @@ CXL_EXPORT int cxl_dport_get_id(struct cxl_dport *dport)
 	return dport->id;
 }
 
+CXL_EXPORT bool cxl_dport_maps_memdev(struct cxl_dport *dport,
+				      struct cxl_memdev *memdev)
+{
+	struct cxl_ctx *ctx = cxl_memdev_get_ctx(memdev);
+
+	dbg(ctx, "memdev: %s dport: %s\n", memdev->host_path, dport->dev_path);
+
+	if (dport->phys_path)
+		return !!strstr(memdev->host_path, dport->phys_path);
+	return !!strstr(memdev->host_path, dport->dev_path);
+}
+
+CXL_EXPORT struct cxl_dport *
+cxl_port_get_dport_by_memdev(struct cxl_port *port, struct cxl_memdev *memdev)
+{
+	struct cxl_dport *dport;
+
+	cxl_dport_foreach(port, dport)
+		if (cxl_dport_maps_memdev(dport, memdev))
+			return dport;
+	return NULL;
+}
+
 static void *add_cxl_bus(void *parent, int id, const char *cxlbus_base)
 {
 	const char *devname = devpath_to_devname(cxlbus_base);

@@ -63,7 +63,8 @@ one or more memdevs. For example:
 ----
 Additionally, when provisioning new interleave configurations it is
 useful to know which memdevs can be referenced by a given decoder like a
-root decoder:
+root decoder, or mapped by a given port if the decoders are not
+configured.
 ----
 # cxl list -Mu -d decoder0.0
 {
