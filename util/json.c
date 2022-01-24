@@ -3,6 +3,7 @@
 #include <limits.h>
 #include <string.h>
 #include <stdio.h>
+#include <util/util.h>
 #include <util/json.h>
 #include <json-c/json.h>
 #include <json-c/printbuf.h>
@@ -95,9 +96,11 @@ void util_display_json_array(FILE *f_out, struct json_object *jarray,
 	int len = json_object_array_length(jarray);
 	int jflag = JSON_C_TO_STRING_PRETTY;
 
-	if (json_object_array_length(jarray) > 1 || !(flags & UTIL_JSON_HUMAN))
+	if (len > 1 || !(flags & UTIL_JSON_HUMAN)) {
+		if (len == 0)
+			warning("no matching devices found\n");
 		fprintf(f_out, "%s\n", json_object_to_json_string_ext(jarray, jflag));
-	else if (len) {
+	} else if (len) {
 		struct json_object *jobj;
 
 		jobj = json_object_array_get_idx(jarray, 0);
