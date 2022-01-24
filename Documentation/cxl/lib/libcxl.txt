@@ -245,6 +245,7 @@ bool cxl_port_is_root(struct cxl_port *port);
 bool cxl_port_is_switch(struct cxl_port *port);
 bool cxl_port_is_endpoint(struct cxl_port *port);
 bool cxl_port_hosts_memdev(struct cxl_port *port, struct cxl_memdev *memdev);
+int cxl_port_get_nr_dports(struct cxl_port *port);
 ----
 The port type is communicated via cxl_port_is_<type>(). An 'enabled' port
 is one that has succeeded in discovering the CXL component registers in
@@ -255,6 +256,32 @@ of intervening switch ports, and a terminal endpoint port.
 
 cxl_port_hosts_memdev() returns true if the port's host appears in the
 memdev host's device topology ancestry.
+
+==== DPORTS
+A CXL dport object represents a CXL / PCIe Switch Downstream Port, or a
+CXL / PCIe host bridge.
+
+===== DPORT: Enumeration
+----
+struct cxl_dport *cxl_dport_get_first(struct cxl_port *port);
+struct cxl_dport *cxl_dport_get_next(struct cxl_dport *dport);
+
+#define cxl_dport_foreach(port, dport)                                     \
+       for (dport = cxl_dport_get_first(port); dport != NULL;              \
+            dport = cxl_dport_get_next(dport))
+
+----
+
+===== DPORT: Attributes
+----
+const char *cxl_dport_get_devname(struct cxl_dport *dport);
+const char *cxl_dport_get_physical_node(struct cxl_dport *dport);
+int cxl_dport_get_id(struct cxl_dport *dport);
+----
+The id of a dport is the hardware idenfifier used by an upstream port to
+reference a downstream port. The physical node of a dport is only
+available for platform firmware defined downstream ports and alias the
+companion object, like a PCI host bridge, in the PCI device hierarchy.
 
 ENDPOINTS
 ---------

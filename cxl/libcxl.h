@@ -93,10 +93,22 @@ bool cxl_port_is_endpoint(struct cxl_port *port);
 struct cxl_bus *cxl_port_get_bus(struct cxl_port *port);
 const char *cxl_port_get_host(struct cxl_port *port);
 bool cxl_port_hosts_memdev(struct cxl_port *port, struct cxl_memdev *memdev);
+int cxl_port_get_nr_dports(struct cxl_port *port);
 
 #define cxl_port_foreach(parent, port)                                         \
 	for (port = cxl_port_get_first(parent); port != NULL;                  \
 	     port = cxl_port_get_next(port))
+
+struct cxl_dport;
+struct cxl_dport *cxl_dport_get_first(struct cxl_port *port);
+struct cxl_dport *cxl_dport_get_next(struct cxl_dport *dport);
+const char *cxl_dport_get_devname(struct cxl_dport *dport);
+const char *cxl_dport_get_physical_node(struct cxl_dport *dport);
+int cxl_dport_get_id(struct cxl_dport *dport);
+
+#define cxl_dport_foreach(port, dport)                                         \
+	for (dport = cxl_dport_get_first(port); dport != NULL;                 \
+	     dport = cxl_dport_get_next(dport))
 
 struct cxl_decoder;
 struct cxl_decoder *cxl_decoder_get_first(struct cxl_port *port);

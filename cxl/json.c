@@ -241,6 +241,58 @@ struct json_object *util_cxl_memdev_to_json(struct cxl_memdev *memdev,
 	return jdev;
 }
 
+static struct json_object *util_cxl_dports_to_json(struct json_object *jport,
+						   struct cxl_port *port,
+						   unsigned long flags)
+{
+	struct json_object *jobj, *jdports;
+	struct cxl_dport *dport;
+	int val;
+
+	val = cxl_port_get_nr_dports(port);
+	if (!val || !(flags & UTIL_JSON_TARGETS))
+		return jport;
+
+	jobj = json_object_new_int(val);
+	if (jobj)
+		json_object_object_add(jport, "nr_dports", jobj);
+
+	jdports = json_object_new_array();
+	if (!jdports)
+		return jport;
+
+	cxl_dport_foreach(port, dport) {
+		struct json_object *jdport;
+		const char *phys_node;
+
+		jdport = json_object_new_object();
+		if (!jdport)
+			continue;
+
+		jobj = json_object_new_string(cxl_dport_get_devname(dport));
+		if (jobj)
+			json_object_object_add(jdport, "dport", jobj);
+
+		phys_node = cxl_dport_get_physical_node(dport);
+		if (phys_node) {
+			jobj = json_object_new_string(phys_node);
+			if (jobj)
+				json_object_object_add(jdport, "alias", jobj);
+		}
+
+		val = cxl_dport_get_id(dport);
+		jobj = util_json_object_hex(val, flags);
+		if (jobj)
+			json_object_object_add(jdport, "id", jobj);
+
+		json_object_array_add(jdports, jdport);
+	}
+
+	json_object_object_add(jport, "dports", jdports);
+
+	return jport;
+}
+
 struct json_object *util_cxl_bus_to_json(struct cxl_bus *bus,
 					 unsigned long flags)
 {
@@ -259,7 +311,7 @@ struct json_object *util_cxl_bus_to_json(struct cxl_bus *bus,
 	if (jobj)
 		json_object_object_add(jbus, "provider", jobj);
 
-	return jbus;
+	return util_cxl_dports_to_json(jbus, cxl_bus_get_port(bus), flags);
 }
 
 struct json_object *util_cxl_decoder_to_json(struct cxl_decoder *decoder,
@@ -403,7 +455,7 @@ static struct json_object *__util_cxl_port_to_json(struct cxl_port *port,
 			json_object_object_add(jport, "state", jobj);
 	}
 
-	return jport;
+	return util_cxl_dports_to_json(jport, port, flags);
 }
 
 struct json_object *util_cxl_port_to_json(struct cxl_port *port,

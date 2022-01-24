@@ -89,13 +89,24 @@ static void free_decoder(struct cxl_decoder *decoder, struct list_head *head)
 	free(decoder);
 }
 
+static void free_dport(struct cxl_dport *dport, struct list_head *head)
+{
+	if (head)
+		list_del_from(head, &dport->list);
+	free(dport->dev_buf);
+	free(dport->dev_path);
+	free(dport->phys_path);
+	free(dport);
+}
+
 static void free_port(struct cxl_port *port, struct list_head *head);
 static void free_endpoint(struct cxl_endpoint *endpoint, struct list_head *head);
 static void __free_port(struct cxl_port *port, struct list_head *head)
 {
-	struct cxl_port *child, *_c;
 	struct cxl_endpoint *endpoint, *_e;
 	struct cxl_decoder *decoder, *_d;
+	struct cxl_dport *dport, *_dp;
+	struct cxl_port *child, *_c;
 
 	if (head)
 		list_del_from(head, &port->list);
@@ -105,6 +116,8 @@ static void __free_port(struct cxl_port *port, struct list_head *head)
 		free_endpoint(endpoint, &port->endpoints);
 	list_for_each_safe(&port->decoders, decoder, _d, list)
 		free_decoder(decoder, &port->decoders);
+	list_for_each_safe(&port->dports, dport, _dp, list)
+		free_dport(dport , &port->dports);
 	kmod_module_unref(port->module);
 	free(port->dev_buf);
 	free(port->dev_path);
@@ -701,6 +714,7 @@ static int cxl_port_init(struct cxl_port *port, struct cxl_port *parent_port,
 	list_head_init(&port->child_ports);
 	list_head_init(&port->endpoints);
 	list_head_init(&port->decoders);
+	list_head_init(&port->dports);
 
 	port->dev_path = strdup(cxlport_base);
 	if (!port->dev_path)
@@ -1330,6 +1344,99 @@ CXL_EXPORT struct cxl_bus *cxl_port_to_bus(struct cxl_port *port)
 	if (!cxl_port_is_root(port))
 		return NULL;
 	return container_of(port, struct cxl_bus, port);
+}
+
+static void *add_cxl_dport(void *parent, int id, const char *cxldport_base)
+{
+	const char *devname = devpath_to_devname(cxldport_base);
+	struct cxl_dport *dport, *dport_dup;
+	struct cxl_port *port = parent;
+	struct cxl_ctx *ctx = cxl_port_get_ctx(port);
+
+	dbg(ctx, "%s: base: \'%s\'\n", devname, cxldport_base);
+
+	dport = calloc(1, sizeof(*dport));
+	if (!dport)
+		return NULL;
+
+	dport->id = id;
+	dport->port = port;
+
+	dport->dev_path = realpath(cxldport_base, NULL);
+	if (!dport->dev_path)
+		goto err;
+
+	dport->dev_buf = calloc(1, strlen(cxldport_base) + 50);
+	if (!dport->dev_buf)
+		goto err;
+	dport->buf_len = strlen(cxldport_base) + 50;
+
+	sprintf(dport->dev_buf, "%s/physical_node", cxldport_base);
+	dport->phys_path = realpath(dport->dev_buf, NULL);
+
+	cxl_dport_foreach(port, dport_dup)
+		if (dport_dup->id == dport->id) {
+			free_dport(dport, NULL);
+			return dport_dup;
+		}
+
+	port->nr_dports++;
+	list_add(&port->dports, &dport->list);
+	return dport;
+
+err:
+	free_dport(dport, NULL);
+	return NULL;
+}
+
+static void cxl_dports_init(struct cxl_port *port)
+{
+	struct cxl_ctx *ctx = cxl_port_get_ctx(port);
+
+	if (port->dports_init)
+		return;
+
+	port->dports_init = 1;
+
+	sysfs_device_parse(ctx, port->dev_path, "dport", port, add_cxl_dport);
+}
+
+CXL_EXPORT int cxl_port_get_nr_dports(struct cxl_port *port)
+{
+	if (!port->dports_init)
+		cxl_dports_init(port);
+	return port->nr_dports;
+}
+
+CXL_EXPORT struct cxl_dport *cxl_dport_get_first(struct cxl_port *port)
+{
+	cxl_dports_init(port);
+
+	return list_top(&port->dports, struct cxl_dport, list);
+}
+
+CXL_EXPORT struct cxl_dport *cxl_dport_get_next(struct cxl_dport *dport)
+{
+	struct cxl_port *port = dport->port;
+
+	return list_next(&port->dports, dport, list);
+}
+
+CXL_EXPORT const char *cxl_dport_get_devname(struct cxl_dport *dport)
+{
+	return devpath_to_devname(dport->dev_path);
+}
+
+CXL_EXPORT const char *cxl_dport_get_physical_node(struct cxl_dport *dport)
+{
+	if (!dport->phys_path)
+		return NULL;
+	return devpath_to_devname(dport->phys_path);
+}
+
+CXL_EXPORT int cxl_dport_get_id(struct cxl_dport *dport)
+{
+	return dport->id;
 }
 
 static void *add_cxl_bus(void *parent, int id, const char *cxlbus_base)

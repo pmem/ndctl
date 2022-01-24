@@ -42,7 +42,7 @@ static const struct option options[] = {
 	OPT_BOOLEAN('D', "decoders", &param.decoders,
 		    "include CXL decoder info"),
 	OPT_BOOLEAN('T', "targets", &param.targets,
-		    "include CXL target data with decoders"),
+		    "include CXL target data with decoders or ports"),
 	OPT_BOOLEAN('i', "idle", &param.idle, "include disabled devices"),
 	OPT_BOOLEAN('u', "human", &param.human,
 		    "use human friendly number formats "),

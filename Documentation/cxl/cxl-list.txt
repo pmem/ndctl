@@ -272,7 +272,23 @@ OPTIONS
 
 -T::
 --targets::
-	Extend decoder listings with downstream port target information.
+	Extend decoder listings with downstream port target information, and /
+	or port and bus listings with the downstream port information.
+----
+# cxl list -BTu -b ACPI.CXL
+{
+  "bus":"root0",
+  "provider":"ACPI.CXL",
+  "nr_dports":1,
+  "dports":[
+    {
+      "dport":"ACPI0016:00",
+      "alias":"pci0000:34",
+      "id":"0"
+    }
+  ]
+}
+----
 
 --debug::
 	If the cxl tool was built with debug enabled, turn on debug

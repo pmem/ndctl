@@ -38,6 +38,16 @@ struct cxl_memdev {
 	struct cxl_endpoint *endpoint;
 };
 
+struct cxl_dport {
+	int id;
+	void *dev_buf;
+	size_t buf_len;
+	char *dev_path;
+	char *phys_path;
+	struct cxl_port *port;
+	struct list_node list;
+};
+
 enum cxl_port_type {
 	CXL_PORT_ROOT,
 	CXL_PORT_SWITCH,
@@ -53,6 +63,8 @@ struct cxl_port {
 	int ports_init;
 	int endpoints_init;
 	int decoders_init;
+	int dports_init;
+	int nr_dports;
 	struct cxl_ctx *ctx;
 	struct cxl_bus *bus;
 	enum cxl_port_type type;
@@ -62,6 +74,7 @@ struct cxl_port {
 	struct list_head child_ports;
 	struct list_head endpoints;
 	struct list_head decoders;
+	struct list_head dports;
 };
 
 struct cxl_bus {
