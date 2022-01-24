@@ -29,6 +29,19 @@ struct cxl_filter_params {
 struct cxl_memdev *util_cxl_memdev_filter(struct cxl_memdev *memdev,
 					  const char *__ident,
 					  const char *serials);
+struct cxl_port *util_cxl_port_filter_by_memdev(struct cxl_port *port,
+						const char *ident,
+						const char *serial);
+
+enum cxl_port_filter_mode {
+	CXL_PF_SINGLE,
+	CXL_PF_ANCESTRY,
+};
+
+struct cxl_port *util_cxl_port_filter(struct cxl_port *port, const char *ident,
+				      enum cxl_port_filter_mode mode);
+struct cxl_endpoint *util_cxl_endpoint_filter(struct cxl_endpoint *endpoint,
+					      const char *__ident);
 int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *param);
 bool cxl_filter_has(const char *needle, const char *__filter);
 #endif /* _CXL_UTIL_FILTER_H_ */

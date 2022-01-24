@@ -47,8 +47,8 @@ bool cxl_filter_has(const char *__filter, const char *needle)
 	return false;
 }
 
-static struct cxl_endpoint *
-util_cxl_endpoint_filter(struct cxl_endpoint *endpoint, const char *__ident)
+struct cxl_endpoint *util_cxl_endpoint_filter(struct cxl_endpoint *endpoint,
+					      const char *__ident)
 {
 	char *ident, *save;
 	const char *arg;
@@ -124,11 +124,6 @@ static struct cxl_port *__util_cxl_port_filter(struct cxl_port *port,
 	return NULL;
 }
 
-enum cxl_port_filter_mode {
-	CXL_PF_SINGLE,
-	CXL_PF_ANCESTRY,
-};
-
 static enum cxl_port_filter_mode pf_mode(struct cxl_filter_params *p)
 {
 	if (p->single)
@@ -136,9 +131,8 @@ static enum cxl_port_filter_mode pf_mode(struct cxl_filter_params *p)
 	return CXL_PF_ANCESTRY;
 }
 
-static struct cxl_port *util_cxl_port_filter(struct cxl_port *port,
-					     const char *ident,
-					     enum cxl_port_filter_mode mode)
+struct cxl_port *util_cxl_port_filter(struct cxl_port *port, const char *ident,
+				      enum cxl_port_filter_mode mode)
 {
 	struct cxl_port *iter = port;
 
@@ -358,9 +352,9 @@ util_cxl_endpoint_filter_by_memdev(struct cxl_endpoint *endpoint,
 	return NULL;
 }
 
-static struct cxl_port *util_cxl_port_filter_by_memdev(struct cxl_port *port,
-						       const char *ident,
-						       const char *serial)
+struct cxl_port *util_cxl_port_filter_by_memdev(struct cxl_port *port,
+						const char *ident,
+						const char *serial)
 {
 	struct cxl_ctx *ctx = cxl_port_get_ctx(port);
 	struct cxl_memdev *memdev;
@@ -958,7 +952,6 @@ int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *p)
 					continue;
 				}
 			}
-
 		}
 walk_children:
 		dbg(p, "walk decoders\n");

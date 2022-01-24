@@ -258,6 +258,11 @@ CXL_EXPORT void cxl_unref(struct cxl_ctx *ctx)
 	free(ctx);
 }
 
+static int cxl_flush(struct cxl_ctx *ctx)
+{
+	return sysfs_write_attr(ctx, "/sys/bus/cxl/flush", "1\n");
+}
+
 /**
  * cxl_set_log_fn - override default log routine
  * @ctx: cxl library context
@@ -530,11 +535,31 @@ CXL_EXPORT const char *cxl_memdev_get_firmware_verison(struct cxl_memdev *memdev
 	return memdev->firmware_version;
 }
 
+static void bus_invalidate(struct cxl_bus *bus)
+{
+	struct cxl_ctx *ctx = cxl_bus_get_ctx(bus);
+	struct cxl_port *bus_port, *port, *_p;
+	struct cxl_memdev *memdev;
+
+	/*
+	 * Something happend to cause the state of all ports to be
+	 * indeterminate, delete them all and start over.
+	 */
+	cxl_memdev_foreach(ctx, memdev)
+		if (cxl_memdev_get_bus(memdev) == bus)
+			memdev->endpoint = NULL;
+
+	bus_port = cxl_bus_get_port(bus);
+	list_for_each_safe(&bus_port->child_ports, port, _p, list)
+		free_port(port, &bus_port->child_ports);
+	bus_port->ports_init = 0;
+	cxl_flush(ctx);
+}
+
 CXL_EXPORT int cxl_memdev_disable_invalidate(struct cxl_memdev *memdev)
 {
 	struct cxl_ctx *ctx = cxl_memdev_get_ctx(memdev);
 	const char *devname = cxl_memdev_get_devname(memdev);
-	struct cxl_port *port, *_p, *bus_port;
 	struct cxl_bus *bus;
 
 	if (!cxl_memdev_is_enabled(memdev))
@@ -553,15 +578,7 @@ CXL_EXPORT int cxl_memdev_disable_invalidate(struct cxl_memdev *memdev)
 		return -EBUSY;
 	}
 
-	/*
-	 * The state of all ports is now indeterminate, delete them all
-	 * and start over.
-	 */
-	bus_port = cxl_bus_get_port(bus);
-	list_for_each_safe(&bus_port->child_ports, port, _p, list)
-		free_port(port, &bus_port->child_ports);
-	bus_port->ports_init = 0;
-	memdev->endpoint = NULL;
+	bus_invalidate(bus);
 
 	dbg(ctx, "%s: disabled\n", devname);
 
@@ -1352,11 +1369,69 @@ CXL_EXPORT int cxl_port_is_enabled(struct cxl_port *port)
 	return is_enabled(path);
 }
 
+CXL_EXPORT int cxl_port_disable_invalidate(struct cxl_port *port)
+{
+	const char *devname = cxl_port_get_devname(port);
+	struct cxl_bus *bus = cxl_port_get_bus(port);
+	struct cxl_ctx *ctx = cxl_port_get_ctx(port);
+
+	if (cxl_port_is_root(port)) {
+		err(ctx, "%s: can not be disabled through this interface\n",
+		    devname);
+		return -EINVAL;
+	}
+
+	if (!bus) {
+		err(ctx, "%s: failed to invalidate\n", devname);
+		return -ENXIO;
+	}
+
+	util_unbind(port->dev_path, ctx);
+
+	if (cxl_port_is_enabled(port)) {
+		err(ctx, "%s: failed to disable\n", devname);
+		return -EBUSY;
+	}
+
+	dbg(ctx, "%s: disabled\n", devname);
+
+	bus_invalidate(bus);
+
+	return 0;
+}
+
+CXL_EXPORT int cxl_port_enable(struct cxl_port *port)
+{
+	struct cxl_ctx *ctx = cxl_port_get_ctx(port);
+	const char *devname = cxl_port_get_devname(port);
+
+	if (cxl_port_is_enabled(port))
+		return 0;
+
+	util_bind(devname, port->module, "cxl", ctx);
+
+	if (!cxl_port_is_enabled(port)) {
+		err(ctx, "%s: failed to enable\n", devname);
+		return -ENXIO;
+	}
+
+	dbg(ctx, "%s: enabled\n", devname);
+
+	return 0;
+}
+
 CXL_EXPORT struct cxl_bus *cxl_port_to_bus(struct cxl_port *port)
 {
 	if (!cxl_port_is_root(port))
 		return NULL;
 	return container_of(port, struct cxl_bus, port);
+}
+
+CXL_EXPORT struct cxl_endpoint *cxl_port_to_endpoint(struct cxl_port *port)
+{
+	if (!cxl_port_is_endpoint(port))
+		return NULL;
+	return container_of(port, struct cxl_endpoint, port);
 }
 
 static void *add_cxl_dport(void *parent, int id, const char *cxldport_base)

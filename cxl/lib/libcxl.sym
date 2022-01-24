@@ -97,11 +97,14 @@ global:
 	cxl_port_is_switch;
 	cxl_port_to_bus;
 	cxl_port_is_endpoint;
+	cxl_port_to_endpoint;
 	cxl_port_get_bus;
 	cxl_port_get_host;
 	cxl_port_get_bus;
 	cxl_port_hosts_memdev;
 	cxl_port_get_nr_dports;
+	cxl_port_disable_invalidate;
+	cxl_port_enable;
 	cxl_port_get_next_all;
 	cxl_endpoint_get_first;
 	cxl_endpoint_get_next;

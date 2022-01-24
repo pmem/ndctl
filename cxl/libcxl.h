@@ -90,10 +90,13 @@ bool cxl_port_is_root(struct cxl_port *port);
 bool cxl_port_is_switch(struct cxl_port *port);
 struct cxl_bus *cxl_port_to_bus(struct cxl_port *port);
 bool cxl_port_is_endpoint(struct cxl_port *port);
+struct cxl_endpoint *cxl_port_to_endpoint(struct cxl_port *port);
 struct cxl_bus *cxl_port_get_bus(struct cxl_port *port);
 const char *cxl_port_get_host(struct cxl_port *port);
 bool cxl_port_hosts_memdev(struct cxl_port *port, struct cxl_memdev *memdev);
 int cxl_port_get_nr_dports(struct cxl_port *port);
+int cxl_port_disable_invalidate(struct cxl_port *port);
+int cxl_port_enable(struct cxl_port *port);
 struct cxl_port *cxl_port_get_next_all(struct cxl_port *port,
 				       const struct cxl_port *top);
 
