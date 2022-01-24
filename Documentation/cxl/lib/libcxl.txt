@@ -20,27 +20,100 @@ libcxl provides interfaces to interact with CXL devices in Linux, using sysfs
 interfaces for most kernel interactions, and the ioctl() interface for command
 submission.
 
-The starting point for all library interfaces is a 'cxl_ctx' object, returned
-by linklibcxl:cxl_new[3]. CXL 'Type 3' memory devices are children of the
-cxl_ctx object, and can be iterated through using an iterator API.
+The starting point for all library interfaces is a 'cxl_ctx' object,
+returned by linklibcxl:cxl_new[3]. CXL 'Type 3' memory devices and other
+CXL device objects are descendants of the cxl_ctx object, and can be
+iterated via an object an iterator API of the form
+cxl_<object>_foreach(<parent object>, <object iterator>).
 
-Library level interfaces that are agnostic to any device, or a specific
-subclass of operations have the prefix 'cxl_'
+MEMDEVS
+-------
+The object representing a CXL memory expander (Type 3 device) is 'struct
+cxl_memdev'. Library interfaces related to these devices have the prefix
+'cxl_memdev_'. These interfaces are mostly associated with sysfs
+interactions (unless otherwise noted in their respective documentation
+sections). They are typically used to retrieve data published by the
+kernel, or to send data or trigger kernel operations for a given device.
 
-The object representing a CXL Type 3 device is 'cxl_memdev'. Library interfaces
-related to these devices have the prefix 'cxl_memdev_'. These interfaces are
-mostly associated with sysfs interactions (unless otherwise noted in their
-respective documentation pages). They are typically used to retrieve data
-published by the kernel, or to send data or trigger kernel operations for a
-given device.
+=== MEMDEV: Enumeration
+----
+struct cxl_memdev *cxl_memdev_get_first(struct cxl_ctx *ctx);
+struct cxl_memdev *cxl_memdev_get_next(struct cxl_memdev *memdev);
+struct cxl_ctx *cxl_memdev_get_ctx(struct cxl_memdev *memdev);
+
+#define cxl_memdev_foreach(ctx, memdev) \
+        for (memdev = cxl_memdev_get_first(ctx); \
+             memdev != NULL; \
+             memdev = cxl_memdev_get_next(memdev))
+
+----
+
+CXL memdev instances are enumerated from the global library context
+'struct cxl_ctx'. By default a memdev only offers a portal to submit
+memory device commands, see the port, decoder, and endpoint APIs to
+determine what if any CXL Memory Resources are reachable given a
+specific memdev.
+
+=== MEMDEV: Attributes
+----
+int cxl_memdev_get_id(struct cxl_memdev *memdev);
+unsigned long long cxl_memdev_get_serial(struct cxl_memdev *memdev);
+const char *cxl_memdev_get_devname(struct cxl_memdev *memdev);
+int cxl_memdev_get_major(struct cxl_memdev *memdev);
+int cxl_memdev_get_minor(struct cxl_memdev *memdev);
+unsigned long long cxl_memdev_get_pmem_size(struct cxl_memdev *memdev);
+unsigned long long cxl_memdev_get_ram_size(struct cxl_memdev *memdev);
+const char *cxl_memdev_get_firmware_verison(struct cxl_memdev *memdev);
+size_t cxl_memdev_get_label_size(struct cxl_memdev *memdev);
+int cxl_memdev_nvdimm_bridge_active(struct cxl_memdev *memdev);
+----
+
+A memdev is given a kernel device name of the form "mem%d" where an id
+(cxl_memdev_get_id()) is dynamically allocated as devices are
+discovered. Note that there are no guarantees that ids / kernel device
+names for memdevs are stable from one boot to the next, devices are
+enumerated asynchronously. If a stable identifier is use
+cxl_memdev_get_serial() which returns a value according to the 'Device
+Serial Number Extended Capability' in the PCIe 5.0 Base Specification.
+
+The character device node for command submission can be found by default
+at /dev/cxl/mem%d, or created with a major / minor returned from
+cxl_memdev_get_{major,minor}().
+
+The 'pmem_size' and 'ram_size' attributes return the current
+provisioning of DPA (Device Physical Address / local capacity) in the
+device.
+
+=== MEMDEV: Commands
+----
+struct cxl_cmd *cxl_cmd_new_raw(struct cxl_memdev *memdev, int opcode);
+struct cxl_cmd *cxl_cmd_new_identify(struct cxl_memdev *memdev);
+struct cxl_cmd *cxl_cmd_new_get_health_info(struct cxl_memdev *memdev);
+struct cxl_cmd *cxl_cmd_new_read_label(struct cxl_memdev *memdev,
+					unsigned int offset, unsigned int length);
+struct cxl_cmd *cxl_cmd_new_write_label(struct cxl_memdev *memdev, void *buf,
+					unsigned int offset, unsigned int length);
+int cxl_memdev_zero_label(struct cxl_memdev *memdev, size_t length,
+			  size_t offset);
+int cxl_memdev_read_label(struct cxl_memdev *memdev, void *buf, size_t length,
+			  size_t offset);
+int cxl_memdev_write_label(struct cxl_memdev *memdev, void *buf, size_t length,
+			   size_t offset);
+
+----
 
 A 'cxl_cmd' is a reference counted object which is used to perform 'Mailbox'
 commands as described in the CXL Specification. A 'cxl_cmd' object is tied to a
 'cxl_memdev'. Associated library interfaces have the prefix 'cxl_cmd_'. Within
 this sub-class of interfaces, there are:
 
- * 'cxl_cmd_new_*' interfaces that allocate a new cxl_cmd object for a given
-   command type.
+ * 'cxl_cmd_new_*()' interfaces that allocate a new cxl_cmd object for a given
+   command type targeted at a given memdev. As part of the command
+   instantiation process the library validates that the command is
+   supported by the memory device, otherwise it returns NULL to indicate
+   'no support'. The libcxl command id is translated by the kernel into
+   a CXL standard opcode. See the potential command ids in
+   /usr/include/linux/cxl_mem.h.
 
  * 'cxl_cmd_submit' which submits the command via ioctl()
 
@@ -48,6 +121,18 @@ this sub-class of interfaces, there are:
    command response
 
  * 'cxl_cmd_get_*' interfaces to get general command related information.
+
+cxl_cmd_new_raw() supports so called 'RAW' commands where the command id
+is 'RAW' and it carries an unmodified CXL memory device command payload
+associated with the 'opcode' argument. Given the kernel does minimal
+input validation on these commands typically raw commands are not
+supported by the kernel outside debug build scenarios. libcxl is limited
+to supporting commands that appear in the CXL standard / public
+specifications.
+
+cxl_memdev{read,write,zero}_label() are helpers for marshaling multiple
+label access commands over an arbitrary extent of the device's label
+area.
 
 include::../../copyright.txt[]
 
