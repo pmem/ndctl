@@ -626,6 +626,11 @@ CXL_EXPORT struct cxl_port *cxl_endpoint_get_port(struct cxl_endpoint *endpoint)
 	return &endpoint->port;
 }
 
+CXL_EXPORT const char *cxl_endpoint_get_host(struct cxl_endpoint *endpoint)
+{
+	return cxl_port_get_host(&endpoint->port);
+}
+
 CXL_EXPORT int cxl_endpoint_is_enabled(struct cxl_endpoint *endpoint)
 {
 	return cxl_port_is_enabled(&endpoint->port);
@@ -742,6 +747,11 @@ CXL_EXPORT struct cxl_bus *cxl_port_get_bus(struct cxl_port *port)
 	bus = container_of(port, typeof(*bus), port);
 	port->bus = bus;
 	return bus;
+}
+
+CXL_EXPORT const char *cxl_port_get_host(struct cxl_port *port)
+{
+	return devpath_to_devname(port->uport);
 }
 
 CXL_EXPORT int cxl_port_is_enabled(struct cxl_port *port)

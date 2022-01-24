@@ -258,6 +258,10 @@ static struct json_object *__util_cxl_port_to_json(struct cxl_port *port,
 	if (jobj)
 		json_object_object_add(jport, name_key, jobj);
 
+	jobj = json_object_new_string(cxl_port_get_host(port));
+	if (jobj)
+		json_object_object_add(jport, "host", jobj);
+
 	if (!cxl_port_is_enabled(port)) {
 		jobj = json_object_new_string("disabled");
 		if (jobj)

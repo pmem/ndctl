@@ -95,6 +95,7 @@ global:
 	cxl_port_to_bus;
 	cxl_port_is_endpoint;
 	cxl_port_get_bus;
+	cxl_port_get_host;
 	cxl_endpoint_get_first;
 	cxl_endpoint_get_next;
 	cxl_endpoint_get_devname;
@@ -103,4 +104,5 @@ global:
 	cxl_endpoint_is_enabled;
 	cxl_endpoint_get_parent;
 	cxl_endpoint_get_port;
+	cxl_endpoint_get_host;
 } LIBCXL_1;

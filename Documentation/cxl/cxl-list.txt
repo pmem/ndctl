@@ -210,6 +210,15 @@ OPTIONS
 --endpoints::
 	Include endpoint objects (CXL Memory Device decoders) in the
 	listing.
+----
+# cxl list -E
+[
+  {
+    "endpoint":"endpoint2",
+    "host":"mem0"
+  }
+]
+----
 
 -e::
 --endpoint::

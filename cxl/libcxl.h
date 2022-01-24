@@ -83,6 +83,7 @@ bool cxl_port_is_switch(struct cxl_port *port);
 struct cxl_bus *cxl_port_to_bus(struct cxl_port *port);
 bool cxl_port_is_endpoint(struct cxl_port *port);
 struct cxl_bus *cxl_port_get_bus(struct cxl_port *port);
+const char *cxl_port_get_host(struct cxl_port *port);
 
 #define cxl_port_foreach(parent, port)                                         \
 	for (port = cxl_port_get_first(parent); port != NULL;                  \
@@ -97,6 +98,7 @@ struct cxl_ctx *cxl_endpoint_get_ctx(struct cxl_endpoint *endpoint);
 int cxl_endpoint_is_enabled(struct cxl_endpoint *endpoint);
 struct cxl_port *cxl_endpoint_get_parent(struct cxl_endpoint *endpoint);
 struct cxl_port *cxl_endpoint_get_port(struct cxl_endpoint *endpoint);
+const char *cxl_endpoint_get_host(struct cxl_endpoint *endpoint);
 
 #define cxl_endpoint_foreach(port, endpoint)                                   \
 	for (endpoint = cxl_endpoint_get_first(port); endpoint != NULL;        \
