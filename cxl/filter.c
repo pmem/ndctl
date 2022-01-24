@@ -441,6 +441,51 @@ util_cxl_decoder_filter_by_memdev(struct cxl_decoder *decoder,
 	return NULL;
 }
 
+static bool __memdev_filter_by_decoder(struct cxl_memdev *memdev,
+				       struct cxl_port *port, const char *ident)
+{
+	struct cxl_decoder *decoder;
+	struct cxl_endpoint *endpoint;
+
+	cxl_decoder_foreach(port, decoder) {
+		if (!util_cxl_decoder_filter(decoder, ident))
+			continue;
+		if (cxl_decoder_get_target_by_memdev(decoder, memdev))
+			return true;
+	}
+
+	cxl_endpoint_foreach(port, endpoint)
+		if (__memdev_filter_by_decoder(
+			    memdev, cxl_endpoint_get_port(endpoint), ident))
+			return true;
+	return false;
+}
+
+static struct cxl_memdev *
+util_cxl_memdev_filter_by_decoder(struct cxl_memdev *memdev, const char *ident)
+{
+	struct cxl_ctx *ctx = cxl_memdev_get_ctx(memdev);
+	struct cxl_bus *bus;
+
+	if (!ident)
+		return memdev;
+
+	cxl_bus_foreach(ctx, bus) {
+		struct cxl_port *port, *top;
+
+		port = cxl_bus_get_port(bus);
+		if (__memdev_filter_by_decoder(memdev, port, ident))
+			return memdev;
+
+		top = port;
+		cxl_port_foreach_all(top, port)
+			if (__memdev_filter_by_decoder(memdev, port, ident))
+				return memdev;
+	}
+
+	return NULL;
+}
+
 static unsigned long params_to_flags(struct cxl_filter_params *param)
 {
 	unsigned long flags = 0;
@@ -598,6 +643,9 @@ static void walk_endpoints(struct cxl_port *port, struct cxl_filter_params *p,
 				continue;
 			if (!util_cxl_memdev_filter(memdev, p->memdev_filter,
 						    p->serial_filter))
+				continue;
+			if (!util_cxl_memdev_filter_by_decoder(
+				    memdev, p->decoder_filter))
 				continue;
 			if (!p->idle && !cxl_memdev_is_enabled(memdev))
 				continue;

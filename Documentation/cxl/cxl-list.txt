@@ -61,6 +61,19 @@ one or more memdevs. For example:
   }
 ]
 ----
+Additionally, when provisioning new interleave configurations it is
+useful to know which memdevs can be referenced by a given decoder like a
+root decoder:
+----
+# cxl list -Mu -d decoder0.0
+{
+  "memdev":"mem0",
+  "pmem_size":"256.00 MiB (268.44 MB)",
+  "ram_size":0,
+  "serial":"0",
+  "host":"0000:35:00.0"
+}
+----
 
 The --human option in addition to reformatting some fields to more human
 friendly strings also unwraps the array to reduce the number of lines of

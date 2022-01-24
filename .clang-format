@@ -84,6 +84,7 @@ ForEachMacros:
   - 'cxl_target_foreach'
   - 'cxl_dport_foreach'
   - 'cxl_endpoint_foreach'
+  - 'cxl_port_foreach_all'
   - 'daxctl_dev_foreach'
   - 'daxctl_mapping_foreach'
   - 'daxctl_region_foreach'

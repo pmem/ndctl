@@ -219,10 +219,18 @@ struct cxl_port *cxl_port_get_parent(struct cxl_port *port);
 struct cxl_ctx *cxl_port_get_ctx(struct cxl_port *port);
 const char *cxl_port_get_host(struct cxl_port *port);
 struct cxl_port *cxl_decoder_get_port(struct cxl_decoder *decoder);
+struct cxl_port *cxl_port_get_next_all(struct cxl_port *port,
+                                       const struct cxl_port *top);
 
 #define cxl_port_foreach(parent, port)                                      \
        for (port = cxl_port_get_first(parent); port != NULL;                \
             port = cxl_port_get_next(port))
+
+#define cxl_port_foreach_all(top, port)                                        \
+       for (port = cxl_port_get_first(top); port != NULL;                     \
+            port = cxl_port_get_next_all(port, top))
+
+
 ----
 A bus object encapsulates a CXL port object. Use cxl_bus_get_port() to
 use generic port APIs on root objects.
@@ -235,6 +243,9 @@ that hierarchy via cxl_port_get_bus().
 
 The host of a port is the corresponding device name of the PCIe Root
 Port, or Switch Upstream Port with CXL capabilities.
+
+The cxl_port_foreach_all() helper does a depth first iteration of all
+ports beneath the 'top' port argument.
 
 === PORT: Attributes
 ----

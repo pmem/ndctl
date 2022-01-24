@@ -1257,6 +1257,19 @@ CXL_EXPORT struct cxl_port *cxl_port_get_next(struct cxl_port *port)
 	return list_next(&parent_port->child_ports, port, list);
 }
 
+CXL_EXPORT struct cxl_port *cxl_port_get_next_all(struct cxl_port *port,
+						  const struct cxl_port *top)
+{
+	struct cxl_port *child, *iter = port;
+
+	child = cxl_port_get_first(iter);
+	if (child)
+		return child;
+	while (!cxl_port_get_next(iter) && iter->parent && iter->parent != top)
+		iter = iter->parent;
+	return cxl_port_get_next(iter);
+}
+
 CXL_EXPORT const char *cxl_port_get_devname(struct cxl_port *port)
 {
 	return devpath_to_devname(port->dev_path);
