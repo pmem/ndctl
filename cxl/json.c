@@ -190,7 +190,7 @@ struct json_object *util_cxl_memdev_to_json(struct cxl_memdev *memdev,
 	struct json_object *jdev, *jobj;
 
 	jdev = json_object_new_object();
-	if (!devname || !jdev)
+	if (!jdev)
 		return NULL;
 
 	jobj = json_object_new_string(devname);
