@@ -6,6 +6,15 @@
 #include <cxl/libcxl.h>
 #include "filter.h"
 
+static const char *which_sep(const char *filter)
+{
+	if (strchr(filter, ' '))
+		return " ";
+	if (strchr(filter, ','))
+		return ",";
+	return " ";
+}
+
 struct cxl_memdev *util_cxl_memdev_filter(struct cxl_memdev *memdev,
 					  const char *__ident)
 {
@@ -20,8 +29,8 @@ struct cxl_memdev *util_cxl_memdev_filter(struct cxl_memdev *memdev,
 	if (!ident)
 		return NULL;
 
-	for (name = strtok_r(ident, " ", &save); name;
-	     name = strtok_r(NULL, " ", &save)) {
+	for (name = strtok_r(ident, which_sep(__ident), &save); name;
+	     name = strtok_r(NULL, which_sep(__ident), &save)) {
 		if (strcmp(name, "all") == 0)
 			break;
 
