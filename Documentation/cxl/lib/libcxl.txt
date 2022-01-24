@@ -134,6 +134,36 @@ cxl_memdev{read,write,zero}_label() are helpers for marshaling multiple
 label access commands over an arbitrary extent of the device's label
 area.
 
+BUSES
+-----
+The CXL Memory space is CPU and Device coherent. The address ranges that
+support coherent access are described by platform firmware and
+communicated to the operating system via a CXL root object 'struct
+cxl_bus'.
+
+=== BUS: Enumeration
+----
+struct cxl_bus *cxl_bus_get_first(struct cxl_ctx *ctx);
+struct cxl_bus *cxl_bus_get_next(struct cxl_bus *bus);
+
+#define cxl_bus_foreach(ctx, bus)                                           \
+       for (bus = cxl_bus_get_first(ctx); bus != NULL;                      \
+            bus = cxl_bus_get_next(bus))
+----
+
+=== BUS: Attributes
+----
+const char *cxl_bus_get_provider(struct cxl_bus *bus);
+const char *cxl_bus_get_devname(struct cxl_bus *bus);
+int cxl_bus_get_id(struct cxl_bus *bus);
+----
+
+The provider name of a bus is a persistent name that is independent of
+discovery order. The possible provider names are 'ACPI.CXL' and
+'cxl_test'. The devname and id attributes, like other objects, are just
+the kernel device names that are subject to change based on discovery
+order.
+
 include::../../copyright.txt[]
 
 SEE ALSO

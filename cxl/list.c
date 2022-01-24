@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
-/* Copyright (C) 2020-2021 Intel Corporation. All rights reserved. */
+/* Copyright (C) 2020-2022 Intel Corporation. All rights reserved. */
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -14,11 +14,6 @@
 
 static struct cxl_filter_params param;
 
-static int num_list_flags(void)
-{
-	return param.memdevs;
-}
-
 static const struct option options[] = {
 	OPT_STRING('m', "memdev", &param.memdev_filter, "memory device name(s)",
 		   "filter by CXL memory device name(s)"),
@@ -27,6 +22,9 @@ static const struct option options[] = {
 		   "filter by CXL memory device serial number(s)"),
 	OPT_BOOLEAN('M', "memdevs", &param.memdevs,
 		    "include CXL memory device info"),
+	OPT_STRING('b', "bus", &param.bus_filter, "bus device name",
+		   "filter by CXL bus device name(s)"),
+	OPT_BOOLEAN('B', "buses", &param.buses, "include CXL bus info"),
 	OPT_BOOLEAN('i', "idle", &param.idle, "include disabled devices"),
 	OPT_BOOLEAN('u', "human", &param.human,
 		    "use human friendly number formats "),
@@ -34,6 +32,11 @@ static const struct option options[] = {
 		    "include memory device health information "),
 	OPT_END(),
 };
+
+static int num_list_flags(void)
+{
+       return !!param.memdevs + !!param.buses;
+}
 
 int cmd_list(int argc, const char **argv, struct cxl_ctx *ctx)
 {
@@ -53,7 +56,9 @@ int cmd_list(int argc, const char **argv, struct cxl_ctx *ctx)
 	if (num_list_flags() == 0) {
 		if (param.memdev_filter || param.serial_filter)
 			param.memdevs = true;
-		else {
+		if (param.bus_filter)
+			param.buses = true;
+		if (num_list_flags() == 0) {
 			/*
 			 * TODO: We likely want to list regions by default if
 			 * nothing was explicitly asked for. But until we have

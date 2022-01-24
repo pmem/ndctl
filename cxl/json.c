@@ -221,3 +221,24 @@ struct json_object *util_cxl_memdev_to_json(struct cxl_memdev *memdev,
 	}
 	return jdev;
 }
+
+struct json_object *util_cxl_bus_to_json(struct cxl_bus *bus,
+					 unsigned long flags)
+{
+	const char *devname = cxl_bus_get_devname(bus);
+	struct json_object *jbus, *jobj;
+
+	jbus = json_object_new_object();
+	if (!jbus)
+		return NULL;
+
+	jobj = json_object_new_string(devname);
+	if (jobj)
+		json_object_object_add(jbus, "bus", jobj);
+
+	jobj = json_object_new_string(cxl_bus_get_provider(bus));
+	if (jobj)
+		json_object_object_add(jbus, "provider", jobj);
+
+	return jbus;
+}

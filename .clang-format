@@ -78,6 +78,7 @@ ExperimentalAutoDetectBinPacking: false
 # 	| sort -u)
 ForEachMacros:
   - 'cxl_memdev_foreach'
+  - 'cxl_bus_foreach'
   - 'daxctl_dev_foreach'
   - 'daxctl_mapping_foreach'
   - 'daxctl_region_foreach'

@@ -40,7 +40,9 @@ struct cxl_ctx {
 	int refcount;
 	void *userdata;
 	int memdevs_init;
+	int buses_init;
 	struct list_head memdevs;
+	struct list_head buses;
 	struct kmod_ctx *kmod_ctx;
 	void *private_data;
 };
@@ -62,6 +64,21 @@ static void free_memdev(struct cxl_memdev *memdev, struct list_head *head)
 	free(memdev->dev_buf);
 	free(memdev->dev_path);
 	free(memdev);
+}
+
+static void __free_port(struct cxl_port *port, struct list_head *head)
+{
+	if (head)
+		list_del_from(head, &port->list);
+	free(port->dev_buf);
+	free(port->dev_path);
+	free(port->uport);
+}
+
+static void free_bus(struct cxl_bus *bus, struct list_head *head)
+{
+	__free_port(&bus->port, head);
+	free(bus);
 }
 
 /**
@@ -130,6 +147,7 @@ CXL_EXPORT int cxl_new(struct cxl_ctx **ctx)
 	dbg(c, "log_priority=%d\n", c->ctx.log_priority);
 	*ctx = c;
 	list_head_init(&c->memdevs);
+	list_head_init(&c->buses);
 	c->kmod_ctx = kmod_ctx;
 
 	return 0;
@@ -160,6 +178,7 @@ CXL_EXPORT struct cxl_ctx *cxl_ref(struct cxl_ctx *ctx)
 CXL_EXPORT void cxl_unref(struct cxl_ctx *ctx)
 {
 	struct cxl_memdev *memdev, *_d;
+	struct cxl_bus *bus, *_b;
 
 	if (ctx == NULL)
 		return;
@@ -169,6 +188,9 @@ CXL_EXPORT void cxl_unref(struct cxl_ctx *ctx)
 
 	list_for_each_safe(&ctx->memdevs, memdev, _d, list)
 		free_memdev(memdev, &ctx->memdevs);
+
+	list_for_each_safe(&ctx->buses, bus, _b, port.list)
+		free_bus(bus, &ctx->buses);
 
 	kmod_unref(ctx->kmod_ctx);
 	info(ctx, "context %p released\n", ctx);
@@ -447,6 +469,126 @@ CXL_EXPORT int cxl_memdev_nvdimm_bridge_active(struct cxl_memdev *memdev)
 	}
 
 	return is_enabled(path);
+}
+
+static int cxl_port_init(struct cxl_port *port, struct cxl_ctx *ctx, int id,
+			 const char *cxlport_base)
+{
+	char *path = calloc(1, strlen(cxlport_base) + 100);
+	size_t rc;
+
+	if (!path)
+		return -ENOMEM;
+
+	port->id = id;
+	port->ctx = ctx;
+
+	port->dev_path = strdup(cxlport_base);
+	if (!port->dev_path)
+		goto err;
+
+	port->dev_buf = calloc(1, strlen(cxlport_base) + 50);
+	if (!port->dev_buf)
+		goto err;
+	port->buf_len = strlen(cxlport_base) + 50;
+
+	rc = snprintf(port->dev_buf, port->buf_len, "%s/uport", cxlport_base);
+	if (rc >= port->buf_len)
+		goto err;
+	port->uport = realpath(port->dev_buf, NULL);
+	if (!port->uport)
+		goto err;
+
+	return 0;
+err:
+	free(port->dev_path);
+	free(port->dev_buf);
+	free(path);
+	return -ENOMEM;
+}
+
+static void *add_cxl_bus(void *parent, int id, const char *cxlbus_base)
+{
+	const char *devname = devpath_to_devname(cxlbus_base);
+	struct cxl_bus *bus, *bus_dup;
+	struct cxl_ctx *ctx = parent;
+	struct cxl_port *port;
+	int rc;
+
+	dbg(ctx, "%s: base: \'%s\'\n", devname, cxlbus_base);
+
+	bus = calloc(1, sizeof(*bus));
+	if (!bus)
+		return NULL;
+
+	port = &bus->port;
+	rc = cxl_port_init(port, ctx, id, cxlbus_base);
+	if (rc)
+		goto err;
+
+	cxl_bus_foreach(ctx, bus_dup)
+		if (bus_dup->port.id == bus->port.id) {
+			free_bus(bus, NULL);
+			return bus_dup;
+		}
+
+	list_add(&ctx->buses, &port->list);
+	return bus;
+
+err:
+	free(bus);
+	return NULL;
+}
+
+static void cxl_buses_init(struct cxl_ctx *ctx)
+{
+	if (ctx->buses_init)
+		return;
+
+	ctx->buses_init = 1;
+
+	sysfs_device_parse(ctx, "/sys/bus/cxl/devices", "root", ctx,
+			   add_cxl_bus);
+}
+
+CXL_EXPORT struct cxl_bus *cxl_bus_get_first(struct cxl_ctx *ctx)
+{
+	cxl_buses_init(ctx);
+
+	return list_top(&ctx->buses, struct cxl_bus, port.list);
+}
+
+CXL_EXPORT struct cxl_bus *cxl_bus_get_next(struct cxl_bus *bus)
+{
+	struct cxl_ctx *ctx = bus->port.ctx;
+
+	return list_next(&ctx->buses, bus, port.list);
+}
+
+CXL_EXPORT const char *cxl_bus_get_devname(struct cxl_bus *bus)
+{
+	struct cxl_port *port = &bus->port;
+
+	return devpath_to_devname(port->dev_path);
+}
+
+CXL_EXPORT int cxl_bus_get_id(struct cxl_bus *bus)
+{
+	struct cxl_port *port = &bus->port;
+
+	return port->id;
+}
+
+CXL_EXPORT const char *cxl_bus_get_provider(struct cxl_bus *bus)
+{
+	struct cxl_port *port = &bus->port;
+	const char *devname = devpath_to_devname(port->uport);
+
+	if (strcmp(devname, "ACPI0017:00") == 0)
+		return "ACPI.CXL";
+	if (strcmp(devname, "cxl_acpi.0") == 0)
+		return "cxl_test";
+	return devname;
 }
 
 CXL_EXPORT void cxl_cmd_unref(struct cxl_cmd *cmd)

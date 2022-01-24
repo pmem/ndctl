@@ -57,6 +57,17 @@ int cxl_memdev_write_label(struct cxl_memdev *memdev, void *buf, size_t length,
              memdev != NULL; \
              memdev = cxl_memdev_get_next(memdev))
 
+struct cxl_bus;
+struct cxl_bus *cxl_bus_get_first(struct cxl_ctx *ctx);
+struct cxl_bus *cxl_bus_get_next(struct cxl_bus *bus);
+const char *cxl_bus_get_provider(struct cxl_bus *bus);
+const char *cxl_bus_get_devname(struct cxl_bus *bus);
+int cxl_bus_get_id(struct cxl_bus *bus);
+
+#define cxl_bus_foreach(ctx, bus)                                              \
+	for (bus = cxl_bus_get_first(ctx); bus != NULL;                        \
+	     bus = cxl_bus_get_next(bus))
+
 struct cxl_cmd;
 const char *cxl_cmd_get_devname(struct cxl_cmd *cmd);
 struct cxl_cmd *cxl_cmd_new_raw(struct cxl_memdev *memdev, int opcode);

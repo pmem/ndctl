@@ -34,6 +34,20 @@ struct cxl_memdev {
 	unsigned long long serial;
 };
 
+struct cxl_port {
+	int id;
+	void *dev_buf;
+	size_t buf_len;
+	char *dev_path;
+	char *uport;
+	struct cxl_ctx *ctx;
+	struct list_node list;
+};
+
+struct cxl_bus {
+	struct cxl_port port;
+};
+
 enum cxl_cmd_query_status {
 	CXL_CMD_QUERY_NOT_RUN = 0,
 	CXL_CMD_QUERY_OK,

@@ -9,7 +9,9 @@
 struct cxl_filter_params {
 	const char *memdev_filter;
 	const char *serial_filter;
+	const char *bus_filter;
 	bool memdevs;
+	bool buses;
 	bool idle;
 	bool human;
 	bool health;

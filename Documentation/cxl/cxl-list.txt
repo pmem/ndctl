@@ -15,17 +15,60 @@ SYNOPSIS
 Walk the CXL capable device hierarchy in the system and list all device
 instances along with some of their major attributes.
 
-Options can be specified to limit the output to specific objects.
+Options can be specified to limit the output to specific objects. When a
+single object type is specified the return json object is an array of
+just those objects, when multiple objects types are specified the
+returned the returned object may be an array of arrays with the inner
+array named for the given object type.
+
+Filters can by specifed as either a single identidier, a space separated
+quoted string, or a comma separated list. When multiple filter
+identifiers are specified within a filter string, like "-m
+mem0,mem1,mem2", they are combined as an 'OR' filter.  When multiple
+filter string types are specified, like "-m mem0,mem1,mem2 -p port10",
+they are combined as an 'AND' filter. So, "-m mem0,mem1,mem2 -p port10"
+would only list objects that are beneath port10 AND map mem0, mem1, OR
+mem2.
+
+The --human option in addition to reformatting some fields to more human
+friendly strings also unwraps the array to reduce the number of lines of
+output.
 
 EXAMPLE
 -------
 ----
 # cxl list --memdevs
-{
-  "memdev":"mem0",
-  "pmem_size":268435456,
-  "ram_size":0,
-}
+[
+  {
+    "memdev":"mem0",
+    "pmem_size":268435456,
+    "ram_size":0,
+    "serial":0
+  }
+]
+
+# cxl list -BMu
+[
+  {
+    "anon memdevs":[
+      {
+        "memdev":"mem0",
+        "pmem_size":"256.00 MiB (268.44 MB)",
+        "ram_size":0,
+        "serial":"0"
+      }
+    ]
+  },
+  {
+    "buses":[
+      {
+        "bus":"root0",
+        "provider":"ACPI.CXL"
+      }
+    ]
+  }
+]
+
 ----
 
 OPTIONS
@@ -34,13 +77,6 @@ OPTIONS
 --memdev=::
 	Specify CXL memory device name(s), or device id(s), to filter the listing. For example:
 ----
-# cxl list --memdev=mem0
-{
-  "memdev":"mem0",
-  "pmem_size":268435456,
-  "ram_size":0,
-}
-
 # cxl list -M --memdev="0 mem3 5"
 [
   {
@@ -113,6 +149,32 @@ OPTIONS
   }
 ]
 ----
+
+-B::
+--buses::
+	Include 'bus' / CXL root object(s) in the listing. Typically, on ACPI
+	systems the bus object is a singleton associated with the ACPI0017
+	device, but there are test scenerios where there may be multiple CXL
+	memory hierarchies.
+----
+# cxl list -B
+[
+  {
+    "bus":"root3",
+    "provider":"cxl_test"
+  },
+  {
+    "bus":"root0",
+    "provider":"ACPI.CXL"
+  }
+]
+----
+
+-b::
+--bus=::
+	Specify CXL root device name(s), device id(s), and / or CXL bus provider
+	names to filter the listing. The supported provider names are "ACPI.CXL"
+	and "cxl_test".
 
 include::human-option.txt[]
 
