@@ -26,11 +26,7 @@ static struct parameters {
 	bool verbose;
 } param;
 
-#define fail(fmt, ...) \
-do { \
-	fprintf(stderr, "cxl-%s:%s:%d: " fmt, \
-			VERSION, __func__, __LINE__, ##__VA_ARGS__); \
-} while (0)
+static struct log_ctx ml;
 
 #define BASE_OPTIONS() \
 OPT_BOOLEAN('v',"verbose", &param.verbose, "turn on debug")
@@ -79,7 +75,7 @@ static int action_zero(struct cxl_memdev *memdev, struct action_context *actx)
 		size = cxl_memdev_get_label_size(memdev);
 
 	if (cxl_memdev_nvdimm_bridge_active(memdev)) {
-		fprintf(stderr,
+		log_err(&ml,
 			"%s: has active nvdimm bridge, abort label write\n",
 			cxl_memdev_get_devname(memdev));
 		return -EBUSY;
@@ -87,7 +83,7 @@ static int action_zero(struct cxl_memdev *memdev, struct action_context *actx)
 
 	rc = cxl_memdev_zero_label(memdev, size, param.offset);
 	if (rc < 0)
-		fprintf(stderr, "%s: label zeroing failed: %s\n",
+		log_err(&ml, "%s: label zeroing failed: %s\n",
 			cxl_memdev_get_devname(memdev), strerror(-rc));
 
 	return rc;
@@ -100,7 +96,7 @@ static int action_write(struct cxl_memdev *memdev, struct action_context *actx)
 	int rc;
 
 	if (cxl_memdev_nvdimm_bridge_active(memdev)) {
-		fprintf(stderr,
+		log_err(&ml,
 			"%s: has active nvdimm bridge, abort label write\n",
 			cxl_memdev_get_devname(memdev));
 		return -EBUSY;
@@ -114,7 +110,7 @@ static int action_write(struct cxl_memdev *memdev, struct action_context *actx)
 		fseek(actx->f_in, 0L, SEEK_SET);
 
 		if (size > label_size) {
-			fprintf(stderr,
+			log_err(&ml,
 				"File size (%zu) greater than label area size (%zu), aborting\n",
 				size, label_size);
 			return -EINVAL;
@@ -133,7 +129,7 @@ static int action_write(struct cxl_memdev *memdev, struct action_context *actx)
 
 	rc = cxl_memdev_write_label(memdev, buf, size, param.offset);
 	if (rc < 0)
-		fprintf(stderr, "%s: label write failed: %s\n",
+		log_err(&ml, "%s: label write failed: %s\n",
 			cxl_memdev_get_devname(memdev), strerror(-rc));
 
 out:
@@ -158,7 +154,7 @@ static int action_read(struct cxl_memdev *memdev, struct action_context *actx)
 
 	rc = cxl_memdev_read_label(memdev, buf, size, param.offset);
 	if (rc < 0) {
-		fprintf(stderr, "%s: label read failed: %s\n",
+		log_err(&ml, "%s: label read failed: %s\n",
 			cxl_memdev_get_devname(memdev), strerror(-rc));
 		goto out;
 	}
@@ -188,6 +184,7 @@ static int memdev_action(int argc, const char **argv, struct cxl_ctx *ctx,
 	};
 	unsigned long id;
 
+	log_init(&ml, "cxl memdev", "CXL_MEMDEV_LOG");
 	argc = parse_options(argc, argv, options, u, 0);
 
 	if (argc == 0)
@@ -200,8 +197,8 @@ static int memdev_action(int argc, const char **argv, struct cxl_ctx *ctx,
 		}
 
 		if (sscanf(argv[i], "mem%lu", &id) != 1) {
-			fprintf(stderr, "'%s' is not a valid memdev name\n",
-					argv[i]);
+			log_err(&ml, "'%s' is not a valid memdev name\n",
+				argv[i]);
 			err++;
 		}
 	}
@@ -216,8 +213,8 @@ static int memdev_action(int argc, const char **argv, struct cxl_ctx *ctx,
 	else {
 		actx.f_out = fopen(param.outfile, "w+");
 		if (!actx.f_out) {
-			fprintf(stderr, "failed to open: %s: (%s)\n",
-					param.outfile, strerror(errno));
+			log_err(&ml, "failed to open: %s: (%s)\n",
+				param.outfile, strerror(errno));
 			rc = -errno;
 			goto out;
 		}
@@ -228,15 +225,18 @@ static int memdev_action(int argc, const char **argv, struct cxl_ctx *ctx,
 	} else {
 		actx.f_in = fopen(param.infile, "r");
 		if (!actx.f_in) {
-			fprintf(stderr, "failed to open: %s: (%s)\n",
-					param.infile, strerror(errno));
+			log_err(&ml, "failed to open: %s: (%s)\n", param.infile,
+				strerror(errno));
 			rc = -errno;
 			goto out_close_fout;
 		}
 	}
 
-	if (param.verbose)
+	if (param.verbose) {
 		cxl_set_log_priority(ctx, LOG_DEBUG);
+		ml.log_priority = LOG_DEBUG;
+	} else
+		ml.log_priority = LOG_INFO;
 
 	rc = 0;
 	err = 0;
@@ -299,8 +299,8 @@ int cmd_write_labels(int argc, const char **argv, struct cxl_ctx *ctx)
 	int count = memdev_action(argc, argv, ctx, action_write, write_options,
 			"cxl write-labels <memdev> [-i <filename>]");
 
-	fprintf(stderr, "wrote %d mem%s\n", count >= 0 ? count : 0,
-			count > 1 ? "s" : "");
+	log_info(&ml, "wrote %d mem%s\n", count >= 0 ? count : 0,
+		 count > 1 ? "s" : "");
 	return count >= 0 ? 0 : EXIT_FAILURE;
 }
 
@@ -309,8 +309,8 @@ int cmd_read_labels(int argc, const char **argv, struct cxl_ctx *ctx)
 	int count = memdev_action(argc, argv, ctx, action_read, read_options,
 			"cxl read-labels <mem0> [<mem1>..<memN>] [-o <filename>]");
 
-	fprintf(stderr, "read %d mem%s\n", count >= 0 ? count : 0,
-			count > 1 ? "s" : "");
+	log_info(&ml, "read %d mem%s\n", count >= 0 ? count : 0,
+		 count > 1 ? "s" : "");
 	return count >= 0 ? 0 : EXIT_FAILURE;
 }
 
@@ -319,7 +319,7 @@ int cmd_zero_labels(int argc, const char **argv, struct cxl_ctx *ctx)
 	int count = memdev_action(argc, argv, ctx, action_zero, zero_options,
 			"cxl zero-labels <mem0> [<mem1>..<memN>] [<options>]");
 
-	fprintf(stderr, "zeroed %d mem%s\n", count >= 0 ? count : 0,
-			count > 1 ? "s" : "");
+	log_info(&ml, "zeroed %d mem%s\n", count >= 0 ? count : 0,
+		 count > 1 ? "s" : "");
 	return count >= 0 ? 0 : EXIT_FAILURE;
 }
