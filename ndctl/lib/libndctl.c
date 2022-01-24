@@ -1668,7 +1668,6 @@ static enum ndctl_fwa_result fwa_result_to_result(const char *result)
 static int ndctl_bind(struct ndctl_ctx *ctx, struct kmod_module *module,
 		const char *devname);
 static int ndctl_unbind(struct ndctl_ctx *ctx, const char *devpath);
-static struct kmod_module *to_module(struct ndctl_ctx *ctx, const char *alias);
 
 static int populate_dimm_attributes(struct ndctl_dimm *dimm,
 				    const char *dimm_base,
@@ -1878,7 +1877,7 @@ static void *add_dimm(void *parent, int id, const char *dimm_base)
 	sprintf(path, "%s/modalias", dimm_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		goto err_read;
-	dimm->module = to_module(ctx, buf);
+	dimm->module = util_modalias_to_module(ctx, buf);
 
 	dimm->handle = -1;
 	dimm->phys_id = -1;
@@ -2597,7 +2596,7 @@ static void *add_region(void *parent, int id, const char *region_base)
 	sprintf(path, "%s/modalias", region_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		goto err_read;
-	region->module = to_module(ctx, buf);
+	region->module = util_modalias_to_module(ctx, buf);
 
 	sprintf(path, "%s/numa_node", region_base);
 	if ((rc = sysfs_read_attr(ctx, path, buf)) == 0)
@@ -3885,28 +3884,6 @@ NDCTL_EXPORT struct ndctl_ctx *ndctl_mapping_get_ctx(
 	return ndctl_mapping_get_bus(mapping)->ctx;
 }
 
-static struct kmod_module *to_module(struct ndctl_ctx *ctx, const char *alias)
-{
-	struct kmod_list *list = NULL;
-	struct kmod_module *mod;
-	int rc;
-
-	if (!ctx->kmod_ctx)
-		return NULL;
-
-	rc = kmod_module_new_from_lookup(ctx->kmod_ctx, alias, &list);
-	if (rc < 0 || !list) {
-		dbg(ctx, "failed to find module for alias: %s %d list: %s\n",
-				alias, rc, list ? "populated" : "empty");
-		return NULL;
-	}
-	mod = kmod_module_get_module(list);
-	dbg(ctx, "alias: %s module: %s\n", alias, kmod_module_get_name(mod));
-	kmod_module_unref_list(list);
-
-	return mod;
-}
-
 static char *get_block_device(struct ndctl_ctx *ctx, const char *block_path)
 {
 	char *bdev_name = NULL;
@@ -4069,7 +4046,7 @@ static void *add_namespace(void *parent, int id, const char *ndns_base)
 	sprintf(path, "%s/modalias", ndns_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		goto err_read;
-	ndns->module = to_module(ctx, buf);
+	ndns->module = util_modalias_to_module(ctx, buf);
 
 	ndctl_namespace_foreach(region, ndns_dup)
 		if (ndns_dup->id == ndns->id) {
@@ -5182,7 +5159,7 @@ static void *add_btt(void *parent, int id, const char *btt_base)
 	sprintf(path, "%s/modalias", btt_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		goto err_read;
-	btt->module = to_module(ctx, buf);
+	btt->module = util_modalias_to_module(ctx, buf);
 
 	sprintf(path, "%s/uuid", btt_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
@@ -5533,7 +5510,7 @@ static void *__add_pfn(struct ndctl_pfn *pfn, const char *pfn_base)
 	sprintf(path, "%s/modalias", pfn_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
 		goto err_read;
-	pfn->module = to_module(ctx, buf);
+	pfn->module = util_modalias_to_module(ctx, buf);
 
 	sprintf(path, "%s/uuid", pfn_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)

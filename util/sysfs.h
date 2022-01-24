@@ -27,4 +27,12 @@ static inline const char *devpath_to_devname(const char *devpath)
 {
 	return strrchr(devpath, '/') + 1;
 }
+
+struct kmod_ctx;
+struct kmod_module;
+struct kmod_module *__util_modalias_to_module(struct kmod_ctx *kmod_ctx,
+					      const char *alias,
+					      struct log_ctx *log);
+#define util_modalias_to_module(ctx, buf)                                      \
+	__util_modalias_to_module((ctx)->kmod_ctx, buf, &(ctx)->ctx)
 #endif /* __UTIL_SYSFS_H__ */

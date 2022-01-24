@@ -10,6 +10,7 @@
 #include <ctype.h>
 #include <fcntl.h>
 #include <dirent.h>
+#include <libkmod.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
@@ -117,4 +118,30 @@ int __sysfs_device_parse(struct log_ctx *ctx, const char *base_path,
 	closedir(dir);
 
 	return add_errors;
+}
+
+struct kmod_module *__util_modalias_to_module(struct kmod_ctx *kmod_ctx,
+					      const char *alias,
+					      struct log_ctx *log)
+{
+	struct kmod_list *list = NULL;
+	struct kmod_module *mod;
+	int rc;
+
+	if (!kmod_ctx)
+		return NULL;
+
+	rc = kmod_module_new_from_lookup(kmod_ctx, alias, &list);
+	if (rc < 0 || !list) {
+		log_dbg(log,
+			"failed to find module for alias: %s %d list: %s\n",
+			alias, rc, list ? "populated" : "empty");
+		return NULL;
+	}
+	mod = kmod_module_get_module(list);
+	log_dbg(log, "alias: %s module: %s\n", alias,
+		kmod_module_get_name(mod));
+	kmod_module_unref_list(list);
+
+	return mod;
 }
