@@ -39,6 +39,7 @@ int cxl_memdev_get_id(struct cxl_memdev *memdev);
 unsigned long long cxl_memdev_get_serial(struct cxl_memdev *memdev);
 const char *cxl_memdev_get_devname(struct cxl_memdev *memdev);
 const char *cxl_memdev_get_host(struct cxl_memdev *memdev);
+struct cxl_bus *cxl_memdev_get_bus(struct cxl_memdev *memdev);
 int cxl_memdev_get_major(struct cxl_memdev *memdev);
 int cxl_memdev_get_minor(struct cxl_memdev *memdev);
 struct cxl_ctx *cxl_memdev_get_ctx(struct cxl_memdev *memdev);
@@ -68,6 +69,7 @@ const char *cxl_bus_get_provider(struct cxl_bus *bus);
 const char *cxl_bus_get_devname(struct cxl_bus *bus);
 int cxl_bus_get_id(struct cxl_bus *bus);
 struct cxl_port *cxl_bus_get_port(struct cxl_bus *bus);
+struct cxl_ctx *cxl_bus_get_ctx(struct cxl_bus *bus);
 
 #define cxl_bus_foreach(ctx, bus)                                              \
 	for (bus = cxl_bus_get_first(ctx); bus != NULL;                        \
@@ -87,6 +89,7 @@ struct cxl_bus *cxl_port_to_bus(struct cxl_port *port);
 bool cxl_port_is_endpoint(struct cxl_port *port);
 struct cxl_bus *cxl_port_get_bus(struct cxl_port *port);
 const char *cxl_port_get_host(struct cxl_port *port);
+bool cxl_port_hosts_memdev(struct cxl_port *port, struct cxl_memdev *memdev);
 
 #define cxl_port_foreach(parent, port)                                         \
 	for (port = cxl_port_get_first(parent); port != NULL;                  \
@@ -102,6 +105,7 @@ int cxl_endpoint_is_enabled(struct cxl_endpoint *endpoint);
 struct cxl_port *cxl_endpoint_get_parent(struct cxl_endpoint *endpoint);
 struct cxl_port *cxl_endpoint_get_port(struct cxl_endpoint *endpoint);
 const char *cxl_endpoint_get_host(struct cxl_endpoint *endpoint);
+struct cxl_bus *cxl_endpoint_get_bus(struct cxl_endpoint *endpoint);
 struct cxl_memdev *cxl_endpoint_get_memdev(struct cxl_endpoint *endpoint);
 int cxl_memdev_is_enabled(struct cxl_memdev *memdev);
 

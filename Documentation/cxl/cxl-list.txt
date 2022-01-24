@@ -39,6 +39,25 @@ they are combined as an 'AND' filter. So, "-m mem0,mem1,mem2 -p port10"
 would only list objects that are beneath port10 AND map mem0, mem1, OR
 mem2.
 
+Given that many topology queries seek to answer questions relative to a
+given memdev, buses, ports, and endpoints can be filtered by one or more
+memdevs. For example:
+----
+# cxl list -P -p switch,endpoint -m mem0
+[
+  {
+    "port":"port1",
+    "host":"ACPI0016:00",
+    "endpoints:port1":[
+      {
+        "endpoint":"endpoint2",
+        "host":"mem0"
+      }
+    ]
+  }
+]
+----
+
 The --human option in addition to reformatting some fields to more human
 friendly strings also unwraps the array to reduce the number of lines of
 output.

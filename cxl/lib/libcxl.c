@@ -455,6 +455,15 @@ CXL_EXPORT const char *cxl_memdev_get_host(struct cxl_memdev *memdev)
 	return memdev->host;
 }
 
+CXL_EXPORT struct cxl_bus *cxl_memdev_get_bus(struct cxl_memdev *memdev)
+{
+	struct cxl_endpoint *endpoint = cxl_memdev_get_endpoint(memdev);
+
+	if (!endpoint)
+		return NULL;
+	return cxl_endpoint_get_bus(endpoint);
+}
+
 CXL_EXPORT int cxl_memdev_get_major(struct cxl_memdev *memdev)
 {
 	return memdev->major;
@@ -724,6 +733,13 @@ CXL_EXPORT const char *cxl_endpoint_get_host(struct cxl_endpoint *endpoint)
 	return cxl_port_get_host(&endpoint->port);
 }
 
+CXL_EXPORT struct cxl_bus *cxl_endpoint_get_bus(struct cxl_endpoint *endpoint)
+{
+	struct cxl_port *port = &endpoint->port;
+
+	return cxl_port_get_bus(port);
+}
+
 CXL_EXPORT int cxl_endpoint_is_enabled(struct cxl_endpoint *endpoint)
 {
 	return cxl_port_is_enabled(&endpoint->port);
@@ -875,6 +891,21 @@ CXL_EXPORT const char *cxl_port_get_host(struct cxl_port *port)
 	return devpath_to_devname(port->uport);
 }
 
+CXL_EXPORT bool cxl_port_hosts_memdev(struct cxl_port *port,
+				      struct cxl_memdev *memdev)
+{
+	struct cxl_endpoint *endpoint = cxl_memdev_get_endpoint(memdev);
+	struct cxl_port *iter;
+
+	if (!endpoint)
+		return false;
+
+	iter = cxl_endpoint_get_port(endpoint);
+	while (iter && iter != port)
+		iter = iter->parent;
+	return iter != NULL;
+}
+
 CXL_EXPORT int cxl_port_is_enabled(struct cxl_port *port)
 {
 	struct cxl_ctx *ctx = cxl_port_get_ctx(port);
@@ -983,6 +1014,11 @@ CXL_EXPORT const char *cxl_bus_get_provider(struct cxl_bus *bus)
 	if (strcmp(devname, "cxl_acpi.0") == 0)
 		return "cxl_test";
 	return devname;
+}
+
+CXL_EXPORT struct cxl_ctx *cxl_bus_get_ctx(struct cxl_bus *bus)
+{
+	return cxl_port_get_ctx(&bus->port);
 }
 
 CXL_EXPORT void cxl_cmd_unref(struct cxl_cmd *cmd)

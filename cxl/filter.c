@@ -297,6 +297,66 @@ struct cxl_memdev *util_cxl_memdev_filter(struct cxl_memdev *memdev,
 	return NULL;
 }
 
+static struct cxl_bus *util_cxl_bus_filter_by_memdev(struct cxl_bus *bus,
+						     const char *ident,
+						     const char *serial)
+{
+	struct cxl_ctx *ctx = cxl_bus_get_ctx(bus);
+	struct cxl_memdev *memdev;
+
+	if (!ident && !serial)
+		return bus;
+
+	cxl_memdev_foreach(ctx, memdev) {
+		if (!util_cxl_memdev_filter(memdev, ident, serial))
+			continue;
+		if (cxl_memdev_get_bus(memdev) == bus)
+			return bus;
+	}
+
+	return NULL;
+}
+
+static struct cxl_endpoint *
+util_cxl_endpoint_filter_by_memdev(struct cxl_endpoint *endpoint,
+				   const char *ident, const char *serial)
+{
+	struct cxl_ctx *ctx = cxl_endpoint_get_ctx(endpoint);
+	struct cxl_memdev *memdev;
+
+	if (!ident && !serial)
+		return endpoint;
+
+	cxl_memdev_foreach(ctx, memdev) {
+		if (!util_cxl_memdev_filter(memdev, ident, serial))
+			continue;
+		if (cxl_memdev_get_endpoint(memdev) == endpoint)
+			return endpoint;
+	}
+
+	return NULL;
+}
+
+static struct cxl_port *util_cxl_port_filter_by_memdev(struct cxl_port *port,
+						       const char *ident,
+						       const char *serial)
+{
+	struct cxl_ctx *ctx = cxl_port_get_ctx(port);
+	struct cxl_memdev *memdev;
+
+	if (!ident && !serial)
+		return port;
+
+	cxl_memdev_foreach(ctx, memdev) {
+		if (!util_cxl_memdev_filter(memdev, ident, serial))
+			continue;
+		if (cxl_port_hosts_memdev(port, memdev))
+			return port;
+	}
+
+	return NULL;
+}
+
 static unsigned long params_to_flags(struct cxl_filter_params *param)
 {
 	unsigned long flags = 0;
@@ -399,6 +459,9 @@ static void walk_endpoints(struct cxl_port *port, struct cxl_filter_params *p,
 		if (!util_cxl_endpoint_filter_by_port(endpoint, p->port_filter,
 						      pf_mode(p)))
 			continue;
+		if (!util_cxl_endpoint_filter_by_memdev(
+			    endpoint, p->memdev_filter, p->serial_filter))
+			continue;
 		if (!p->idle && !cxl_endpoint_is_enabled(endpoint))
 			continue;
 		if (p->endpoints) {
@@ -450,6 +513,9 @@ static void walk_child_ports(struct cxl_port *parent_port,
 		struct json_object *jchildports = NULL;
 		struct json_object *jchildeps = NULL;
 
+		if (!util_cxl_port_filter_by_memdev(port, p->memdev_filter,
+						    p->serial_filter))
+			continue;
 		if (!util_cxl_port_filter(port, p->port_filter, pf_mode(p)))
 			goto walk_children;
 		if (!util_cxl_port_filter_by_bus(port, p->bus_filter))
@@ -573,6 +639,9 @@ int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *p)
 		struct cxl_port *port = cxl_bus_get_port(bus);
 		const char *devname = cxl_bus_get_devname(bus);
 
+		if (!util_cxl_bus_filter_by_memdev(bus, p->memdev_filter,
+						   p->serial_filter))
+			continue;
 		if (!util_cxl_bus_filter(bus, p->bus_filter))
 			goto walk_children;
 		if (!util_cxl_port_filter(port, p->port_filter, pf_mode(p)))

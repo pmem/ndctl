@@ -150,11 +150,18 @@ cxl_bus'.
 ----
 struct cxl_bus *cxl_bus_get_first(struct cxl_ctx *ctx);
 struct cxl_bus *cxl_bus_get_next(struct cxl_bus *bus);
+struct cxl_ctx *cxl_bus_get_ctx(struct cxl_bus *bus);
+struct cxl_bus *cxl_memdev_get_bus(struct cxl_memdev *memdev);
+struct cxl_bus *cxl_endpoint_get_bus(struct cxl_endpoint *endpoint);
 
 #define cxl_bus_foreach(ctx, bus)                                           \
        for (bus = cxl_bus_get_first(ctx); bus != NULL;                      \
             bus = cxl_bus_get_next(bus))
 ----
+When a memdev is active it has established a CXL port hierarchy between
+itself and the root of its associated CXL topology. The
+cxl_{memdev,endpoint}_get_bus() helpers walk that topology to retrieve
+the associated bus object.
 
 === BUS: Attributes
 ----
@@ -209,6 +216,7 @@ int cxl_port_is_enabled(struct cxl_port *port);
 bool cxl_port_is_root(struct cxl_port *port);
 bool cxl_port_is_switch(struct cxl_port *port);
 bool cxl_port_is_endpoint(struct cxl_port *port);
+bool cxl_port_hosts_memdev(struct cxl_port *port, struct cxl_memdev *memdev);
 ----
 The port type is communicated via cxl_port_is_<type>(). An 'enabled' port
 is one that has succeeded in discovering the CXL component registers in
@@ -216,6 +224,9 @@ the host device and has enumerated its downstream ports. In order for a
 memdev to be enabled for CXL memory operation all CXL ports in its
 ancestry must also be enabled including a root port, an arbitrary number
 of intervening switch ports, and a terminal endpoint port.
+
+cxl_port_hosts_memdev() returns true if the port's host appears in the
+memdev host's device topology ancestry.
 
 ENDPOINTS
 ---------
