@@ -10,7 +10,7 @@
 
 #define CXL_EXPORT __attribute__ ((visibility("default")))
 
-struct cxl_nvdimm_bridge {
+struct cxl_pmem {
 	int id;
 	void *dev_buf;
 	size_t buf_len;
@@ -30,7 +30,7 @@ struct cxl_memdev {
 	int payload_max;
 	size_t lsa_size;
 	struct kmod_module *module;
-	struct cxl_nvdimm_bridge *bridge;
+	struct cxl_pmem *pmem;
 	unsigned long long serial;
 };
 
