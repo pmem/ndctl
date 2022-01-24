@@ -191,16 +191,16 @@ static int memdev_action(int argc, const char **argv, struct cxl_ctx *ctx,
 		usage_with_options(u, options);
 	for (i = 0; i < argc; i++) {
 		if (strcmp(argv[i], "all") == 0) {
-			argv[0] = "all";
 			argc = 1;
 			break;
 		}
+		if (sscanf(argv[i], "mem%lu", &id) == 1)
+			continue;
+		if (sscanf(argv[i], "%lu", &id) == 1)
+			continue;
 
-		if (sscanf(argv[i], "mem%lu", &id) != 1) {
-			log_err(&ml, "'%s' is not a valid memdev name\n",
-				argv[i]);
-			err++;
-		}
+		log_err(&ml, "'%s' is not a valid memdev name\n", argv[i]);
+		err++;
 	}
 
 	if (err == argc) {
@@ -243,11 +243,7 @@ static int memdev_action(int argc, const char **argv, struct cxl_ctx *ctx,
 	count = 0;
 
 	for (i = 0; i < argc; i++) {
-		if (sscanf(argv[i], "mem%lu", &id) != 1
-				&& strcmp(argv[i], "all") != 0)
-			continue;
-
-		cxl_memdev_foreach (ctx, memdev) {
+		cxl_memdev_foreach(ctx, memdev) {
 			if (!util_cxl_memdev_filter(memdev, argv[i], NULL))
 				continue;
 
