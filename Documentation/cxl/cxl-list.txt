@@ -15,6 +15,8 @@ SYNOPSIS
 Walk the CXL capable device hierarchy in the system and list all device
 instances along with some of their major attributes.
 
+Options can be specified to limit the output to specific objects.
+
 EXAMPLE
 -------
 ----
