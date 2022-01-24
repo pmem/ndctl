@@ -106,4 +106,7 @@ global:
 	cxl_endpoint_get_parent;
 	cxl_endpoint_get_port;
 	cxl_endpoint_get_host;
+	cxl_endpoint_get_memdev;
+	cxl_memdev_get_endpoint;
+	cxl_memdev_is_enabled;
 } LIBCXL_1;

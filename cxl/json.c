@@ -224,6 +224,12 @@ struct json_object *util_cxl_memdev_to_json(struct cxl_memdev *memdev,
 	if (jobj)
 		json_object_object_add(jdev, "host", jobj);
 
+	if (!cxl_memdev_is_enabled(memdev)) {
+		jobj = json_object_new_string("disabled");
+		if (jobj)
+			json_object_object_add(jdev, "state", jobj);
+	}
+
 	return jdev;
 }
 

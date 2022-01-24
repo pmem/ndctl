@@ -46,6 +46,8 @@ unsigned long long cxl_memdev_get_pmem_size(struct cxl_memdev *memdev);
 unsigned long long cxl_memdev_get_ram_size(struct cxl_memdev *memdev);
 const char *cxl_memdev_get_firmware_verison(struct cxl_memdev *memdev);
 size_t cxl_memdev_get_label_size(struct cxl_memdev *memdev);
+struct cxl_endpoint;
+struct cxl_endpoint *cxl_memdev_get_endpoint(struct cxl_memdev *memdev);
 int cxl_memdev_nvdimm_bridge_active(struct cxl_memdev *memdev);
 int cxl_memdev_zero_label(struct cxl_memdev *memdev, size_t length,
 		size_t offset);
@@ -100,6 +102,8 @@ int cxl_endpoint_is_enabled(struct cxl_endpoint *endpoint);
 struct cxl_port *cxl_endpoint_get_parent(struct cxl_endpoint *endpoint);
 struct cxl_port *cxl_endpoint_get_port(struct cxl_endpoint *endpoint);
 const char *cxl_endpoint_get_host(struct cxl_endpoint *endpoint);
+struct cxl_memdev *cxl_endpoint_get_memdev(struct cxl_endpoint *endpoint);
+int cxl_memdev_is_enabled(struct cxl_memdev *memdev);
 
 #define cxl_endpoint_foreach(port, endpoint)                                   \
 	for (endpoint = cxl_endpoint_get_first(port); endpoint != NULL;        \

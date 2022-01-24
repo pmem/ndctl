@@ -19,7 +19,16 @@ Options can be specified to limit the output to specific objects. When a
 single object type is specified the return json object is an array of
 just those objects, when multiple objects types are specified the
 returned the returned object may be an array of arrays with the inner
-array named for the given object type.
+array named for the given object type. The top-level arrays are ellided
+when the objects can nest under a higher object-type in the hierararchy.
+The potential top-level array names and their nesting properties are:
+
+"anon memdevs":: (disabled memory devices) do not nest
+"buses":: do not nest
+"ports":: nest under buses
+"endpoints":: nest under ports or buses (if ports are not emitted)
+"memdevs":: nest under endpoints or ports (if endpoints are not
+   emitted) or buses (if endpoints and ports are not emitted)
 
 Filters can by specifed as either a single identidier, a space separated
 quoted string, or a comma separated list. When multiple filter

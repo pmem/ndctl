@@ -480,6 +480,60 @@ CXL_EXPORT const char *cxl_memdev_get_firmware_verison(struct cxl_memdev *memdev
 	return memdev->firmware_version;
 }
 
+static struct cxl_endpoint *cxl_port_find_endpoint(struct cxl_port *parent_port,
+						   struct cxl_memdev *memdev)
+{
+	struct cxl_endpoint *endpoint;
+	struct cxl_port *port;
+
+	cxl_port_foreach(parent_port, port) {
+		cxl_endpoint_foreach(port, endpoint)
+			if (strcmp(cxl_endpoint_get_host(endpoint),
+				   cxl_memdev_get_devname(memdev)) == 0)
+				return endpoint;
+		endpoint = cxl_port_find_endpoint(port, memdev);
+		if (endpoint)
+			return endpoint;
+	}
+
+	return NULL;
+}
+
+CXL_EXPORT struct cxl_endpoint *
+cxl_memdev_get_endpoint(struct cxl_memdev *memdev)
+{
+	struct cxl_ctx *ctx = cxl_memdev_get_ctx(memdev);
+	struct cxl_endpoint *endpoint = NULL;
+	struct cxl_bus *bus;
+
+	if (memdev->endpoint)
+		return memdev->endpoint;
+
+	if (!cxl_memdev_is_enabled(memdev))
+		return NULL;
+
+	cxl_bus_foreach (ctx, bus) {
+		struct cxl_port *port = cxl_bus_get_port(bus);
+
+		endpoint = cxl_port_find_endpoint(port, memdev);
+		if (endpoint)
+			break;
+	}
+
+	if (!endpoint)
+		return NULL;
+
+	if (endpoint->memdev && endpoint->memdev != memdev)
+		err(ctx, "%s assigned to %s not %s\n",
+		    cxl_endpoint_get_devname(endpoint),
+		    cxl_memdev_get_devname(endpoint->memdev),
+		    cxl_memdev_get_devname(memdev));
+	memdev->endpoint = endpoint;
+	endpoint->memdev = memdev;
+
+	return endpoint;
+}
+
 CXL_EXPORT size_t cxl_memdev_get_label_size(struct cxl_memdev *memdev)
 {
 	return memdev->lsa_size;
@@ -493,6 +547,21 @@ static int is_enabled(const char *drvpath)
 		return 0;
 	else
 		return 1;
+}
+
+CXL_EXPORT int cxl_memdev_is_enabled(struct cxl_memdev *memdev)
+{
+	struct cxl_ctx *ctx = cxl_memdev_get_ctx(memdev);
+	char *path = memdev->dev_buf;
+	int len = memdev->buf_len;
+
+	if (snprintf(path, len, "%s/driver", memdev->dev_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+		    cxl_memdev_get_devname(memdev));
+		return 0;
+	}
+
+	return is_enabled(path);
 }
 
 CXL_EXPORT int cxl_memdev_nvdimm_bridge_active(struct cxl_memdev *memdev)
@@ -658,6 +727,34 @@ CXL_EXPORT const char *cxl_endpoint_get_host(struct cxl_endpoint *endpoint)
 CXL_EXPORT int cxl_endpoint_is_enabled(struct cxl_endpoint *endpoint)
 {
 	return cxl_port_is_enabled(&endpoint->port);
+}
+
+CXL_EXPORT struct cxl_memdev *
+cxl_endpoint_get_memdev(struct cxl_endpoint *endpoint)
+{
+	struct cxl_ctx *ctx = cxl_endpoint_get_ctx(endpoint);
+	struct cxl_memdev *memdev;
+
+	if (endpoint->memdev)
+		return endpoint->memdev;
+
+	if (!cxl_endpoint_is_enabled(endpoint))
+		return NULL;
+
+	cxl_memdev_foreach(ctx, memdev)
+		if (strcmp(cxl_memdev_get_devname(memdev),
+			   cxl_endpoint_get_host(endpoint)) == 0) {
+			if (memdev->endpoint && memdev->endpoint != endpoint)
+				err(ctx, "%s assigned to %s not %s\n",
+				    cxl_memdev_get_devname(memdev),
+				    cxl_endpoint_get_devname(memdev->endpoint),
+				    cxl_endpoint_get_devname(endpoint));
+			endpoint->memdev = memdev;
+			memdev->endpoint = endpoint;
+			return memdev;
+		}
+
+	return NULL;
 }
 
 static void *add_cxl_port(void *parent, int id, const char *cxlport_base)

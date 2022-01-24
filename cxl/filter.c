@@ -381,13 +381,16 @@ static struct json_object *pick_array(struct json_object *child,
 }
 
 static void walk_endpoints(struct cxl_port *port, struct cxl_filter_params *p,
-			   struct json_object *jeps, unsigned long flags)
+			   struct json_object *jeps, struct json_object *jdevs,
+			   unsigned long flags)
 {
 	struct cxl_endpoint *endpoint;
 
 	cxl_endpoint_foreach(port, endpoint) {
 		struct cxl_port *ep_port = cxl_endpoint_get_port(endpoint);
-		struct json_object *jendpoint;
+		const char *devname = cxl_endpoint_get_devname(endpoint);
+		struct json_object *jendpoint = NULL;
+		struct cxl_memdev *memdev;
 
 		if (!util_cxl_endpoint_filter(endpoint, p->endpoint_filter))
 			continue;
@@ -398,24 +401,54 @@ static void walk_endpoints(struct cxl_port *port, struct cxl_filter_params *p,
 			continue;
 		if (!p->idle && !cxl_endpoint_is_enabled(endpoint))
 			continue;
-		jendpoint = util_cxl_endpoint_to_json(endpoint, flags);
-		if (jendpoint)
+		if (p->endpoints) {
+			jendpoint = util_cxl_endpoint_to_json(endpoint, flags);
+			if (!jendpoint) {
+				err(p, "%s: failed to list\n", devname);
+				continue;
+			}
 			json_object_array_add(jeps, jendpoint);
+		}
+		if (p->memdevs) {
+			struct json_object *jobj;
+
+			memdev = cxl_endpoint_get_memdev(endpoint);
+			if (!memdev)
+				continue;
+			if (!util_cxl_memdev_filter(memdev, p->memdev_filter,
+						    p->serial_filter))
+				continue;
+			if (!p->idle && !cxl_memdev_is_enabled(memdev))
+				continue;
+			jobj = util_cxl_memdev_to_json(memdev, flags);
+			if (!jobj) {
+				err(p, "failed to json serialize %s\n",
+				    cxl_memdev_get_devname(memdev));
+				continue;
+			}
+			if (p->endpoints)
+				json_object_object_add(jendpoint, "memdev",
+						       jobj);
+			else
+				json_object_array_add(jdevs, jobj);
+		}
 	}
 }
 
 static void walk_child_ports(struct cxl_port *parent_port,
 			     struct cxl_filter_params *p,
 			     struct json_object *jports,
-			     struct json_object *jeps, unsigned long flags)
+			     struct json_object *jeps,
+			     struct json_object *jdevs, unsigned long flags)
 {
 	struct cxl_port *port;
 
 	cxl_port_foreach(parent_port, port) {
 		const char *devname = cxl_port_get_devname(port);
 		struct json_object *jport = NULL;
+		struct json_object *jchilddevs = NULL;
 		struct json_object *jchildports = NULL;
-		struct json_object *jchildendpoints = NULL;
+		struct json_object *jchildeps = NULL;
 
 		if (!util_cxl_port_filter(port, p->port_filter, pf_mode(p)))
 			goto walk_children;
@@ -436,28 +469,41 @@ static void walk_child_ports(struct cxl_port *parent_port,
 				    devname);
 				continue;
 			}
-		}
 
-		if (p->ports && p->endpoints) {
-			jchildendpoints = json_object_new_array();
-			if (!jchildendpoints) {
-				err(p,
-				    "%s: failed to enumerate child endpoints\n",
-				    devname);
-				continue;
+			if (p->memdevs && !p->endpoints) {
+				jchilddevs = json_object_new_array();
+				if (!jchilddevs) {
+					err(p,
+					    "%s: failed to enumerate child memdevs\n",
+					    devname);
+					continue;
+				}
+			}
+
+			if (p->endpoints) {
+				jchildeps = json_object_new_array();
+				if (!jchildeps) {
+					err(p,
+					    "%s: failed to enumerate child endpoints\n",
+					    devname);
+					continue;
+				}
 			}
 		}
 
 walk_children:
-		if (p->endpoints)
-			walk_endpoints(port, p, pick_array(jchildendpoints, jeps),
-				       flags);
+		if (p->endpoints || p->memdevs)
+			walk_endpoints(port, p, pick_array(jchildeps, jeps),
+				       pick_array(jchilddevs, jdevs), flags);
 
 		walk_child_ports(port, p, pick_array(jchildports, jports),
-				 pick_array(jchildendpoints, jeps), flags);
+				 pick_array(jchildeps, jeps),
+				 pick_array(jchilddevs, jdevs), flags);
 		cond_add_put_array_suffix(jport, "ports", devname, jchildports);
 		cond_add_put_array_suffix(jport, "endpoints", devname,
-					  jchildendpoints);
+					  jchildeps);
+		cond_add_put_array_suffix(jport, "memdevs", devname,
+					  jchilddevs);
 	}
 }
 
@@ -466,6 +512,7 @@ int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *p)
 	struct json_object *jdevs = NULL, *jbuses = NULL, *jports = NULL;
 	struct json_object *jplatform = json_object_new_array();
 	unsigned long flags = params_to_flags(p);
+	struct json_object *janondevs = NULL;
 	struct json_object *jeps = NULL;
 	struct cxl_memdev *memdev;
 	int top_level_objs = 0;
@@ -476,8 +523,8 @@ int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *p)
 		return -ENOMEM;
 	}
 
-	jdevs = json_object_new_array();
-	if (!jdevs)
+	janondevs = json_object_new_array();
+	if (!janondevs)
 		goto err;
 
 	jbuses = json_object_new_array();
@@ -492,20 +539,28 @@ int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *p)
 	if (!jeps)
 		goto err;
 
+	jdevs = json_object_new_array();
+	if (!jdevs)
+		goto err;
+
 	dbg(p, "walk memdevs\n");
 	cxl_memdev_foreach(ctx, memdev) {
-		struct json_object *jdev;
+		struct json_object *janondev;
 
 		if (!util_cxl_memdev_filter(memdev, p->memdev_filter,
 					    p->serial_filter))
 			continue;
+		if (cxl_memdev_is_enabled(memdev))
+			continue;
+		if (!p->idle)
+			continue;
 		if (p->memdevs) {
-			jdev = util_cxl_memdev_to_json(memdev, flags);
-			if (!jdev) {
+			janondev = util_cxl_memdev_to_json(memdev, flags);
+			if (!janondev) {
 				dbg(p, "memdev object allocation failure\n");
 				continue;
 			}
-			json_object_array_add(jdevs, jdev);
+			json_object_array_add(janondevs, janondev);
 		}
 	}
 
@@ -513,6 +568,7 @@ int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *p)
 	cxl_bus_foreach(ctx, bus) {
 		struct json_object *jbus = NULL;
 		struct json_object *jchildports = NULL;
+		struct json_object *jchilddevs = NULL;
 		struct json_object *jchildeps = NULL;
 		struct cxl_port *port = cxl_bus_get_port(bus);
 		const char *devname = cxl_bus_get_devname(bus);
@@ -546,17 +602,29 @@ int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *p)
 					continue;
 				}
 			}
+
+			if (p->memdevs && !p->ports && !p->endpoints) {
+				jchilddevs = json_object_new_array();
+				if (!jchilddevs) {
+					err(p,
+					    "%s: failed to enumerate child memdevs\n",
+					    devname);
+					continue;
+				}
+			}
 		}
 walk_children:
 		dbg(p, "walk ports\n");
 		walk_child_ports(port, p, pick_array(jchildports, jports),
-				 pick_array(jchildeps, jeps), flags);
+				 pick_array(jchildeps, jeps),
+				 pick_array(jchilddevs, jdevs), flags);
 		cond_add_put_array_suffix(jbus, "ports", devname, jchildports);
 		cond_add_put_array_suffix(jbus, "endpoints", devname,
 					  jchildeps);
+		cond_add_put_array_suffix(jbus, "memdevs", devname, jchilddevs);
 	}
 
-	if (json_object_array_length(jdevs))
+	if (json_object_array_length(janondevs))
 		top_level_objs++;
 	if (json_object_array_length(jbuses))
 		top_level_objs++;
@@ -564,20 +632,24 @@ walk_children:
 		top_level_objs++;
 	if (json_object_array_length(jeps))
 		top_level_objs++;
+	if (json_object_array_length(jdevs))
+		top_level_objs++;
 
-	splice_array(p, jdevs, jplatform, "anon memdevs", top_level_objs > 1);
+	splice_array(p, janondevs, jplatform, "anon memdevs", top_level_objs > 1);
 	splice_array(p, jbuses, jplatform, "buses", top_level_objs > 1);
 	splice_array(p, jports, jplatform, "ports", top_level_objs > 1);
 	splice_array(p, jeps, jplatform, "endpoints", top_level_objs > 1);
+	splice_array(p, jdevs, jplatform, "memdevs", top_level_objs > 1);
 
 	util_display_json_array(stdout, jplatform, flags);
 
 	return 0;
 err:
-	json_object_put(jdevs);
+	json_object_put(janondevs);
 	json_object_put(jbuses);
 	json_object_put(jports);
 	json_object_put(jeps);
+	json_object_put(jdevs);
 	json_object_put(jplatform);
 	return -ENOMEM;
 }
