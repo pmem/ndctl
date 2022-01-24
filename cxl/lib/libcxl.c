@@ -500,6 +500,64 @@ CXL_EXPORT const char *cxl_memdev_get_firmware_verison(struct cxl_memdev *memdev
 	return memdev->firmware_version;
 }
 
+CXL_EXPORT int cxl_memdev_disable_invalidate(struct cxl_memdev *memdev)
+{
+	struct cxl_ctx *ctx = cxl_memdev_get_ctx(memdev);
+	const char *devname = cxl_memdev_get_devname(memdev);
+	struct cxl_port *port, *_p, *bus_port;
+	struct cxl_bus *bus;
+
+	if (!cxl_memdev_is_enabled(memdev))
+		return 0;
+
+	bus = cxl_memdev_get_bus(memdev);
+	if (!bus) {
+		err(ctx, "%s: failed to invalidate\n", devname);
+		return -ENXIO;
+	}
+
+	util_unbind(memdev->dev_path, ctx);
+
+	if (cxl_memdev_is_enabled(memdev)) {
+		err(ctx, "%s: failed to disable\n", devname);
+		return -EBUSY;
+	}
+
+	/*
+	 * The state of all ports is now indeterminate, delete them all
+	 * and start over.
+	 */
+	bus_port = cxl_bus_get_port(bus);
+	list_for_each_safe(&bus_port->child_ports, port, _p, list)
+		free_port(port, &bus_port->child_ports);
+	bus_port->ports_init = 0;
+	memdev->endpoint = NULL;
+
+	dbg(ctx, "%s: disabled\n", devname);
+
+	return 0;
+}
+
+CXL_EXPORT int cxl_memdev_enable(struct cxl_memdev *memdev)
+{
+	struct cxl_ctx *ctx = cxl_memdev_get_ctx(memdev);
+	const char *devname = cxl_memdev_get_devname(memdev);
+
+	if (cxl_memdev_is_enabled(memdev))
+		return 0;
+
+	util_bind(devname, memdev->module, "cxl", ctx);
+
+	if (!cxl_memdev_is_enabled(memdev)) {
+		err(ctx, "%s: failed to enable\n", devname);
+		return -ENXIO;
+	}
+
+	dbg(ctx, "%s: enabled\n", devname);
+
+	return 0;
+}
+
 static struct cxl_endpoint *cxl_port_find_endpoint(struct cxl_port *parent_port,
 						   struct cxl_memdev *memdev)
 {

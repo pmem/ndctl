@@ -25,13 +25,14 @@ static struct parameters {
 	unsigned offset;
 	bool verbose;
 	bool serial;
+	bool force;
 } param;
 
 static struct log_ctx ml;
 
 #define BASE_OPTIONS() \
 OPT_BOOLEAN('v',"verbose", &param.verbose, "turn on debug"), \
-OPT_BOOLEAN('S', "serial", &param.serial, "user serials numbers to id memdevs")
+OPT_BOOLEAN('S', "serial", &param.serial, "use serial numbers to id memdevs")
 
 #define READ_OPTIONS() \
 OPT_STRING('o', "output", &param.outfile, "output-file", \
@@ -45,6 +46,10 @@ OPT_STRING('i', "input", &param.infile, "input-file", \
 OPT_UINTEGER('s', "size", &param.len, "number of label bytes to operate"), \
 OPT_UINTEGER('O', "offset", &param.offset, \
 	"offset into the label area to start operation")
+
+#define DISABLE_OPTIONS()                                              \
+OPT_BOOLEAN('f', "force", &param.force,                                \
+	    "DANGEROUS: override active memdev safety checks")
 
 static const struct option read_options[] = {
 	BASE_OPTIONS(),
@@ -65,6 +70,37 @@ static const struct option zero_options[] = {
 	LABEL_OPTIONS(),
 	OPT_END(),
 };
+
+static const struct option disable_options[] = {
+	BASE_OPTIONS(),
+	DISABLE_OPTIONS(),
+	OPT_END(),
+};
+
+static const struct option enable_options[] = {
+	BASE_OPTIONS(),
+	OPT_END(),
+};
+
+static int action_disable(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (!cxl_memdev_is_enabled(memdev))
+		return 0;
+
+	if (!param.force) {
+		/* TODO: actually detect rather than assume active */
+		log_err(&ml, "%s is part of an active region\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_disable_invalidate(memdev);
+}
+
+static int action_enable(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	return cxl_memdev_enable(memdev);
+}
 
 static int action_zero(struct cxl_memdev *memdev, struct action_context *actx)
 {
@@ -337,6 +373,28 @@ int cmd_zero_labels(int argc, const char **argv, struct cxl_ctx *ctx)
 			"cxl zero-labels <mem0> [<mem1>..<memN>] [<options>]");
 
 	log_info(&ml, "zeroed %d mem%s\n", count >= 0 ? count : 0,
+		 count > 1 ? "s" : "");
+	return count >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_disable_memdev(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int count = memdev_action(
+		argc, argv, ctx, action_disable, disable_options,
+		"cxl disable-memdev <mem0> [<mem1>..<memN>] [<options>]");
+
+	log_info(&ml, "disabled %d mem%s\n", count >= 0 ? count : 0,
+		 count > 1 ? "s" : "");
+	return count >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_enable_memdev(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int count = memdev_action(
+		argc, argv, ctx, action_enable, enable_options,
+		"cxl enable-memdev <mem0> [<mem1>..<memN>] [<options>]");
+
+	log_info(&ml, "enabled %d mem%s\n", count >= 0 ? count : 0,
 		 count > 1 ? "s" : "");
 	return count >= 0 ? 0 : EXIT_FAILURE;
 }

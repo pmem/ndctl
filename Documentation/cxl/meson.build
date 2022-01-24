@@ -30,6 +30,8 @@ cxl_manpages = [
   'cxl-read-labels.txt',
   'cxl-write-labels.txt',
   'cxl-zero-labels.txt',
+  'cxl-enable-memdev.txt',
+  'cxl-disable-memdev.txt',
 ]
 
 foreach man : cxl_manpages

@@ -48,6 +48,8 @@ unsigned long long cxl_memdev_get_pmem_size(struct cxl_memdev *memdev);
 unsigned long long cxl_memdev_get_ram_size(struct cxl_memdev *memdev);
 const char *cxl_memdev_get_firmware_verison(struct cxl_memdev *memdev);
 size_t cxl_memdev_get_label_size(struct cxl_memdev *memdev);
+int cxl_memdev_disable_invalidate(struct cxl_memdev *memdev);
+int cxl_memdev_enable(struct cxl_memdev *memdev);
 struct cxl_endpoint;
 struct cxl_endpoint *cxl_memdev_get_endpoint(struct cxl_memdev *memdev);
 int cxl_memdev_nvdimm_bridge_active(struct cxl_memdev *memdev);

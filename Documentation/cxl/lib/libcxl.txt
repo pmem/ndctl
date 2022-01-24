@@ -93,6 +93,29 @@ device.
 cxl_memdev_get_numa_node() returns the affinitized CPU node number if
 available or -1 otherwise.
 
+=== MEMDEV: Control
+----
+int cxl_memdev_disable_invalidate(struct cxl_memdev *memdev);
+int cxl_memdev_enable(struct cxl_memdev *memdev);
+----
+When a memory device is disabled it unregisters its associated endpoints
+and potentially intervening switch ports if there are no other memdevs
+pinning that port active. That means that any existing port objects that
+the library has previously returned are in valid and need to be re-read.
+Callers must be careful to re-retrieve port objects after
+cxl_memdev_disable_invalidate(). Any usage of a previously obtained port
+object after a cxl_memdev_disable_invalidate() call is a use-after-free
+programming error. It follows that after cxl_memdev_enable() new ports
+may appear in the topology that were not previously enumerable.
+
+NOTE: cxl_memdev_disable_invalidate() will force disable the memdev
+regardless of whether the memory provided by the device is in active use
+by the operating system. Callers take responisbility for assuring that
+it is safe to disable the memory device. Otherwise, this call can be as
+destructive as ripping a DIMM out of a running system. Like all other
+libcxl calls that mutate the system state or divulge security sensitive
+information this call requires root / CAP_SYS_ADMIN.
+
 === MEMDEV: Commands
 ----
 struct cxl_cmd *cxl_cmd_new_raw(struct cxl_memdev *memdev, int opcode);

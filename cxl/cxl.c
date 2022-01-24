@@ -64,6 +64,8 @@ static struct cmd_struct commands[] = {
 	{ "zero-labels", .c_fn = cmd_zero_labels },
 	{ "read-labels", .c_fn = cmd_read_labels },
 	{ "write-labels", .c_fn = cmd_write_labels },
+	{ "disable-memdev", .c_fn = cmd_disable_memdev },
+	{ "enable-memdev", .c_fn = cmd_enable_memdev },
 };
 
 int main(int argc, const char **argv)

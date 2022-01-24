@@ -115,4 +115,6 @@ global:
 	cxl_memdev_get_endpoint;
 	cxl_memdev_is_enabled;
 	cxl_memdev_get_bus;
+	cxl_memdev_disable_invalidate;
+	cxl_memdev_enable;
 } LIBCXL_1;
