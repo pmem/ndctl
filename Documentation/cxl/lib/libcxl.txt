@@ -389,6 +389,7 @@ unsigned long cxl_target_get_id(struct cxl_target *target);
 const char *cxl_target_get_devname(struct cxl_target *target);
 bool cxl_target_maps_memdev(struct cxl_target *target,
                            struct cxl_memdev *memdev);
+const char *cxl_target_get_physical_node(struct cxl_target *target);
 ----
 The position of a decoder along with the interleave granularity dictate
 which address in the decoder's resource range map to which port.
@@ -409,6 +410,11 @@ instance.
 The cxl_target_maps_memdev() helper is the companion of
 cxl_decoder_get_target_by_memdev() to determine which downstream ports /
 targets are capable of mapping which memdevs.
+
+Some platform firmware implementations define an alias / companion
+device to represent the root of a PCI device hierarchy. The
+cxl_target_get_physical_node() helper returns the device name of that
+companion object in the PCI hierarchy.
 
 include::../../copyright.txt[]
 

@@ -72,6 +72,7 @@ static void free_target(struct cxl_target *target, struct list_head *head)
 	if (head)
 		list_del_from(head, &target->list);
 	free(target->dev_path);
+	free(target->phys_path);
 	free(target);
 }
 
@@ -970,7 +971,11 @@ static void *add_cxl_decoder(void *parent, int id, const char *cxldecoder_base)
 			free(target);
 			break;
 		}
-		dbg(ctx, "%s: target%ld %s\n", devname, i, target->dev_path);
+		sprintf(port->dev_buf, "%s/dport%d/physical_node", port->dev_path, did);
+		target->phys_path = realpath(port->dev_buf, NULL);
+		dbg(ctx, "%s: target%ld %s phys_path: %s\n", devname, i,
+		    target->dev_path,
+		    target->phys_path ? target->phys_path : "none");
 		list_add(&decoder->targets, &target->list);
 	}
 
@@ -1138,7 +1143,16 @@ CXL_EXPORT bool cxl_target_maps_memdev(struct cxl_target *target,
 	dbg(ctx, "memdev: %s target: %s\n", memdev->host_path,
 	    target->dev_path);
 
+	if (target->phys_path)
+		return !!strstr(memdev->host_path, target->phys_path);
 	return !!strstr(memdev->host_path, target->dev_path);
+}
+
+CXL_EXPORT const char *cxl_target_get_physical_node(struct cxl_target *target)
+{
+	if (!target->phys_path)
+		return NULL;
+	return devpath_to_devname(target->phys_path);
 }
 
 CXL_EXPORT struct cxl_target *

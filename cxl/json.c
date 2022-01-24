@@ -342,6 +342,7 @@ struct json_object *util_cxl_decoder_to_json(struct cxl_decoder *decoder,
 
 	cxl_target_foreach(decoder, target) {
 		struct json_object *jtarget = json_object_new_object();
+		const char *phys_node;
 
 		if (!jtarget)
 			continue;
@@ -350,6 +351,13 @@ struct json_object *util_cxl_decoder_to_json(struct cxl_decoder *decoder,
 		jobj = json_object_new_string(devname);
 		if (jobj)
 			json_object_object_add(jtarget, "target", jobj);
+
+		phys_node = cxl_target_get_physical_node(target);
+		if (phys_node) {
+			jobj = json_object_new_string(phys_node);
+			if (jobj)
+				json_object_object_add(jtarget, "alias", jobj);
+		}
 
 		val = cxl_target_get_position(target);
 		jobj = json_object_new_int(val);

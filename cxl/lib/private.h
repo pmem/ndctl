@@ -77,6 +77,7 @@ struct cxl_target {
 	struct list_node list;
 	struct cxl_decoder *decoder;
 	char *dev_path;
+	char *phys_path;
 	int id, position;
 };
 

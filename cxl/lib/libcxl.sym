@@ -141,4 +141,5 @@ global:
 	cxl_target_get_id;
 	cxl_target_get_devname;
 	cxl_target_maps_memdev;
+	cxl_target_get_physical_node;
 } LIBCXL_1;
