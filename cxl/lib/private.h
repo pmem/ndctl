@@ -116,7 +116,42 @@ struct cxl_decoder {
 	bool accelmem_capable;
 	bool locked;
 	enum cxl_decoder_target_type target_type;
+	int regions_init;
 	struct list_head targets;
+	struct list_head regions;
+	struct list_head stale_regions;
+};
+
+enum cxl_decode_state {
+	CXL_DECODE_UNKNOWN = -1,
+	CXL_DECODE_RESET = 0,
+	CXL_DECODE_COMMIT,
+};
+
+struct cxl_region {
+	struct cxl_decoder *decoder;
+	struct list_node list;
+	int mappings_init;
+	struct cxl_ctx *ctx;
+	void *dev_buf;
+	size_t buf_len;
+	char *dev_path;
+	int id;
+	uuid_t uuid;
+	u64 start;
+	u64 size;
+	unsigned int interleave_ways;
+	unsigned int interleave_granularity;
+	enum cxl_decode_state decode_state;
+	struct kmod_module *module;
+	struct list_head mappings;
+};
+
+struct cxl_memdev_mapping {
+	struct cxl_region *region;
+	struct cxl_decoder *decoder;
+	unsigned int position;
+	struct list_node list;
 };
 
 enum cxl_cmd_query_status {
