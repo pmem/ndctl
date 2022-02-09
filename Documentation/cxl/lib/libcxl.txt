@@ -508,6 +508,75 @@ device to represent the root of a PCI device hierarchy. The
 cxl_target_get_physical_node() helper returns the device name of that
 companion object in the PCI hierarchy.
 
+==== REGIONS
+A CXL region is composed of one or more slices of CXL memdevs, with configurable
+interleave settings - both the number of interleave ways, and the interleave
+granularity. In terms of hierarchy, it is the child of a CXL root decoder. A root
+decoder (recall that this corresponds to an ACPI CEDT.CFMWS 'window'), may have
+multiple child regions, but a region is strictly tied to one root decoder.
+
+The slices that compose a region are called mappings. A mapping is a
+tuple of 'memdev', 'endpoint decoder', and the 'position'.
+
+===== REGION: Enumeration
+----
+struct cxl_region *cxl_region_get_first(struct cxl_decoder *decoder);
+struct cxl_region *cxl_region_get_next(struct cxl_region *region);
+
+#define cxl_region_foreach(decoder, region)                                    \
+	for (region = cxl_region_get_first(decoder); region != NULL;           \
+	     region = cxl_region_get_next(region))
+
+#define cxl_region_foreach_safe(decoder, region, _region)                      \
+	for (region = cxl_region_get_first(decoder),                           \
+	     _region = region ? cxl_region_get_next(region) : NULL;            \
+	     region != NULL;                                                   \
+	     region = _region,                                                 \
+	     _region = _region ? cxl_region_get_next(_region) : NULL)
+----
+
+===== REGION: Attributes
+----
+int cxl_region_get_id(struct cxl_region *region);
+const char *cxl_region_get_devname(struct cxl_region *region);
+void cxl_region_get_uuid(struct cxl_region *region, uuid_t uu);
+unsigned long long cxl_region_get_size(struct cxl_region *region);
+unsigned long long cxl_region_get_resource(struct cxl_region *region);
+unsigned int cxl_region_get_interleave_ways(struct cxl_region *region);
+unsigned int cxl_region_get_interleave_granularity(struct cxl_region *region);
+struct cxl_decoder *cxl_region_get_target_decoder(struct cxl_region *region,
+						  int position);
+int cxl_region_set_size(struct cxl_region *region, unsigned long long size);
+int cxl_region_set_uuid(struct cxl_region *region, uuid_t uu);
+int cxl_region_set_interleave_ways(struct cxl_region *region,
+				   unsigned int ways);
+int cxl_region_set_interleave_granularity(struct cxl_region *region,
+					  unsigned int granularity);
+int cxl_region_set_target(struct cxl_region *region, int position,
+			  struct cxl_decoder *decoder);
+int cxl_region_clear_target(struct cxl_region *region, int position);
+int cxl_region_clear_all_targets(struct cxl_region *region);
+int cxl_region_decode_commit(struct cxl_region *region);
+int cxl_region_decode_reset(struct cxl_region *region);
+----
+
+A region's resource attribute is the Host Physical Address at which the region's
+address space starts. The region's address space is a subset of the parent root
+decoder's address space.
+
+The interleave ways is the number of component memdevs participating in the
+region.
+
+The interleave granularity depends on the root decoder's granularity, and must
+follow the interleave math rules defined in the CXL spec.
+
+Regions have a list of targets 0..N, which are programmed with the name of an
+endpoint decoder under each participating memdev.
+
+The 'decode_commit' and 'decode_reset' attributes reserve and free DPA space
+on a given memdev by allocating an endpoint decoder, and programming it based
+on the region's interleave geometry.
+
 include::../../copyright.txt[]
 
 SEE ALSO
