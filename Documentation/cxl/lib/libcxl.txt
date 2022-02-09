@@ -216,6 +216,18 @@ discovery order. The possible provider names are 'ACPI.CXL' and
 the kernel device names that are subject to change based on discovery
 order.
 
+=== BUS: Control
+----
+int cxl_bus_disable_invalidate(struct cxl_bus *bus);
+----
+
+An entire CXL topology can be torn down with this API. Like other
+_invalidate APIs callers must assume that all library objects have been
+freed. This one goes one step further and also frees the @bus argument.
+This may crash the system and is only useful in kernel driver
+development scenarios.
+
+
 PORTS
 -----
 CXL ports track the PCIe hierarchy between a platform firmware CXL root

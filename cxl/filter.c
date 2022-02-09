@@ -176,8 +176,7 @@ util_cxl_decoder_filter_by_port(struct cxl_decoder *decoder, const char *ident,
 	return NULL;
 }
 
-static struct cxl_bus *util_cxl_bus_filter(struct cxl_bus *bus,
-					   const char *__ident)
+struct cxl_bus *util_cxl_bus_filter(struct cxl_bus *bus, const char *__ident)
 {
 	char *ident, *save;
 	const char *arg;
