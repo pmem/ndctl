@@ -23,6 +23,7 @@ filedeps = [
   'memdev-option.txt',
   'labels-options.txt',
   'debug-option.txt',
+  'region-description.txt',
 ]
 
 cxl_manpages = [
@@ -39,6 +40,7 @@ cxl_manpages = [
   'cxl-set-partition.txt',
   'cxl-reserve-dpa.txt',
   'cxl-free-dpa.txt',
+  'cxl-create-region.txt',
 ]
 
 foreach man : cxl_manpages

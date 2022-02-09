@@ -547,6 +547,7 @@ void util_cxl_mappings_append_json(struct json_object *jregion,
 	cxl_mapping_foreach(region, mapping) {
 		struct json_object *jmapping;
 		struct cxl_decoder *decoder;
+		struct cxl_memdev *memdev;
 
 		jmapping = json_object_new_object();
 		if (!jmapping)
@@ -563,6 +564,14 @@ void util_cxl_mappings_append_json(struct json_object *jregion,
 		decoder = cxl_mapping_get_decoder(mapping);
 		if (!decoder)
 			continue;
+
+		memdev = cxl_decoder_get_memdev(decoder);
+		if (memdev) {
+			devname = cxl_memdev_get_devname(memdev);
+			jobj = json_object_new_string(devname);
+			if (jobj)
+				json_object_object_add(jmapping, "memdev", jobj);
+		}
 
 		devname = cxl_decoder_get_devname(decoder);
 		jobj = json_object_new_string(devname);

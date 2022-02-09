@@ -3,6 +3,7 @@ cxl_src = [
   'list.c',
   'port.c',
   'bus.c',
+  'region.c',
   'memdev.c',
   'json.c',
   'filter.c',
