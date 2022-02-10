@@ -150,6 +150,7 @@ monitor = find_program('monitor.sh')
 max_extent = find_program('max_available_extent_ns.sh')
 pfn_meta_errors = find_program('pfn-meta-errors.sh')
 track_uuid = find_program('track-uuid.sh')
+cxl_topo = find_program('cxl-topology.sh')
 
 tests = [
   [ 'libndctl',               libndctl,		  'ndctl' ],
@@ -174,6 +175,7 @@ tests = [
   [ 'max_extent_ns',          max_extent,	  'ndctl' ],
   [ 'pfn-meta-errors.sh',     pfn_meta_errors,	  'ndctl' ],
   [ 'track-uuid.sh',          track_uuid,	  'ndctl' ],
+  [ 'cxl-topology.sh',	      cxl_topo,		  'cxl'   ],
 ]
 
 if get_option('destructive').enabled()
