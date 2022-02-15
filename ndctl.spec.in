@@ -38,6 +38,9 @@ subsystem defines a kernel device model and control message interface for
 platform NVDIMM resources like those defined by the ACPI 6+ NFIT (NVDIMM
 Firmware Interface Table).
 
+%if 0%{?flatpak}
+%global _udevrulesdir %{_prefix}/lib/udev/rules.d
+%endif
 
 %package -n DNAME
 Summary:	Development files for libndctl
@@ -231,7 +234,7 @@ fi
 %{_libdir}/libcxl.so
 %{_libdir}/pkgconfig/libcxl.pc
 %{_mandir}/man3/cxl*
-%{_mandir}/man3/libcxl.3.gz
+%{_mandir}/man3/libcxl.3*
 
 
 %changelog
