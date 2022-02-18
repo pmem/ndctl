@@ -105,13 +105,13 @@ get_field()
 	json="$($NDCTL list -b $bus -d $dimm -H)"
 	val="$(jq -r ".[].dimms[].health.$smart_listing" <<< $json)"
 	val="$(translate_val $val)"
-	echo $val
+	printf "%0.0f\n" "$val"
 }
 
 verify()
 {
 	local field="$1"
-	local val="$2"
+	local val="$(printf "%0.0f\n" "$2")"
 
 	[[ "$val" == "$(get_field $field)" ]]
 }
