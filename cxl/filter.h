@@ -23,6 +23,7 @@ struct cxl_filter_params {
 	bool idle;
 	bool human;
 	bool health;
+	bool partition;
 	struct log_ctx ctx;
 };
 
