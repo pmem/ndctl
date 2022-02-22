@@ -2308,15 +2308,12 @@ CXL_EXPORT int cxl_cmd_identify_get_fw_rev(struct cxl_cmd *cmd, char *fw_rev,
 CXL_EXPORT unsigned long long cxl_cmd_identify_get_partition_align(
 		struct cxl_cmd *cmd)
 {
-	struct cxl_cmd_identify *id =
-			(struct cxl_cmd_identify *)cmd->send_cmd->out.payload;
+	struct cxl_cmd_identify *c;
 
-	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_IDENTIFY)
-		return -EINVAL;
-	if (cmd->status < 0)
-		return cmd->status;
-
-	return le64_to_cpu(id->partition_align);
+	c = cmd_to_identify(cmd);
+	if (!c)
+		return ULLONG_MAX;
+	return cxl_capacity_to_bytes(c->partition_align);
 }
 
 CXL_EXPORT unsigned int cxl_cmd_identify_get_label_size(struct cxl_cmd *cmd)
