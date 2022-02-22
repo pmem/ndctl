@@ -2478,6 +2478,34 @@ cxl_cmd_partition_get_next_persistent_size(struct cxl_cmd *cmd)
 	return cxl_capacity_to_bytes(c->next_persistent);
 }
 
+CXL_EXPORT int cxl_cmd_partition_set_mode(struct cxl_cmd *cmd,
+		enum cxl_setpartition_mode mode)
+{
+	struct cxl_cmd_set_partition *setpart = cmd->input_payload;
+
+	if (mode == CXL_SETPART_IMMEDIATE)
+		setpart->flags = CXL_CMD_SET_PARTITION_FLAG_IMMEDIATE;
+	else
+		setpart->flags = !CXL_CMD_SET_PARTITION_FLAG_IMMEDIATE;
+
+	return 0;
+}
+
+CXL_EXPORT struct cxl_cmd *cxl_cmd_new_set_partition(struct cxl_memdev *memdev,
+		unsigned long long volatile_size)
+{
+	struct cxl_cmd_set_partition *setpart;
+	struct cxl_cmd *cmd;
+
+	cmd = cxl_cmd_new_generic(memdev,
+			CXL_MEM_COMMAND_ID_SET_PARTITION_INFO);
+
+	setpart = cmd->input_payload;
+	setpart->volatile_size = cpu_to_le64(volatile_size)
+					/ CXL_CAPACITY_MULTIPLIER;
+	return cmd;
+}
+
 CXL_EXPORT int cxl_cmd_submit(struct cxl_cmd *cmd)
 {
 	struct cxl_memdev *memdev = cmd->memdev;

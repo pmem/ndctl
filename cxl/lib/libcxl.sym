@@ -163,4 +163,6 @@ global:
 	cxl_cmd_identify_get_total_size;
 	cxl_cmd_identify_get_volatile_only_size;
 	cxl_cmd_identify_get_persistent_only_size;
+	cxl_cmd_new_set_partition;
+	cxl_cmd_partition_set_mode;
 } LIBCXL_1;

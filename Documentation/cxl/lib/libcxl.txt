@@ -132,6 +132,8 @@ int cxl_memdev_read_label(struct cxl_memdev *memdev, void *buf, size_t length,
 int cxl_memdev_write_label(struct cxl_memdev *memdev, void *buf, size_t length,
 			   size_t offset);
 struct cxl_cmd *cxl_cmd_new_get_partition(struct cxl_memdev *memdev);
+struct cxl_cmd *cxl_cmd_new_set_partition(struct cxl_memdev *memdev,
+					  unsigned long long volatile_size);
 
 ----
 
@@ -147,6 +149,8 @@ this sub-class of interfaces, there are:
    'no support'. The libcxl command id is translated by the kernel into
    a CXL standard opcode. See the potential command ids in
    /usr/include/linux/cxl_mem.h.
+
+ * 'cxl_cmd_<name>_set_<field>' interfaces that set specific fields in a cxl_cmd
 
  * 'cxl_cmd_submit' which submits the command via ioctl()
 
@@ -166,6 +170,13 @@ specifications.
 cxl_memdev{read,write,zero}_label() are helpers for marshaling multiple
 label access commands over an arbitrary extent of the device's label
 area.
+
+cxl_cmd_partition_set_mode() supports selecting NEXTBOOT or IMMEDIATE
+mode. When CXL_SETPART_IMMEDIATE mode is set, it is the caller’s
+responsibility to avoid immediate changes to partitioning when the
+device is in use. When CXL_SETPART_NEXTBOOT mode is set, the change
+in partitioning shall become the “next” configuration, to become
+active on the next device reset.
 
 BUSES
 -----
