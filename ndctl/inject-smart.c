@@ -467,6 +467,10 @@ static int dimm_inject_smart(struct ndctl_dimm *dimm)
 		jdimms = json_object_new_array();
 		if (!jdimms)
 			goto out;
+
+		/* Ensure the dimm flags are upto date before reporting them */
+		ndctl_dimm_refresh_flags(dimm);
+
 		jdimm = util_dimm_to_json(dimm, sctx.flags);
 		if (!jdimm)
 			goto out;
