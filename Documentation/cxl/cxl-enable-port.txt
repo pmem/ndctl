@@ -1,0 +1,43 @@
+// SPDX-License-Identifier: GPL-2.0
+
+cxl-enable-port(1)
+==================
+
+NAME
+----
+cxl-enable-port - activate / hot-add a given CXL port
+
+SYNOPSIS
+--------
+[verse]
+'cxl enable-port' <port0> [<port1>..<portN>] [<options>]
+
+A port typically autoenables at initial device discovery. However, if it
+was manually disabled this command can trigger the kernel to activate it
+again. This involves detecting the state of the HDM (Host Managed Device
+Memory) Decoders and validating that CXL.mem is enabled for each port in
+the device's hierarchy.
+
+OPTIONS
+-------
+-e::
+--endpoint::
+	Toggle from treating the port arguments as Switch Port identifiers to
+	Endpoint Port identifiers.
+
+-m::
+--enable-memdevs::
+	Try to enable descendant memdevs after enabling the port. Recall that a
+	memdev is only enabled after all CXL ports in its device topology
+	ancestry are enabled.
+
+--debug::
+	If the cxl tool was built with debug enabled, turn on debug
+	messages.
+
+
+include::../copyright.txt[]
+
+SEE ALSO
+--------
+linkcxl:cxl-disable-port[1]

@@ -357,7 +357,7 @@ static struct json_object *util_##type##_build_size_array(struct ndctl_##type *a
 		int64_t align;					\
 								\
 		align = get_elem(arg, i);			\
-		jobj = json_object_new_int64(align);		\
+		jobj = util_json_new_u64(align);		\
 		if (!jobj)					\
 			goto err;				\
 		json_object_array_add(arr, jobj);		\
@@ -550,7 +550,7 @@ struct json_object *util_region_badblocks_to_json(struct ndctl_region *region,
 		if (!jbb)
 			goto err_array;
 
-		jobj = json_object_new_int64(bb->offset);
+		jobj = util_json_new_u64(bb->offset);
 		if (!jobj)
 			goto err;
 		json_object_object_add(jbb, "offset", jobj);
@@ -604,7 +604,7 @@ static struct json_object *util_namespace_badblocks_to_json(
 		if (!jbb)
 			goto err_array;
 
-		jobj = json_object_new_int64(bb->offset);
+		jobj = util_json_new_u64(bb->offset);
 		if (!jobj)
 			goto err;
 		json_object_object_add(jbb, "offset", jobj);
@@ -682,7 +682,7 @@ static struct json_object *dev_badblocks_to_json(struct ndctl_region *region,
 		if (!jbb)
 			goto err_array;
 
-		jobj = json_object_new_int64(offset);
+		jobj = util_json_new_u64(offset);
 		if (!jobj)
 			goto err;
 		json_object_object_add(jbb, "offset", jobj);
@@ -972,7 +972,7 @@ struct json_object *util_namespace_to_json(struct ndctl_namespace *ndns,
 	}
 
 	if (align) {
-		jobj = json_object_new_int64(align);
+		jobj = util_json_new_u64(align);
 		if (!jobj)
 			goto err;
 		json_object_object_add(jndns, "align", jobj);

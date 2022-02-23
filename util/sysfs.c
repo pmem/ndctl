@@ -10,6 +10,7 @@
 #include <ctype.h>
 #include <fcntl.h>
 #include <dirent.h>
+#include <libkmod.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
@@ -117,4 +118,106 @@ int __sysfs_device_parse(struct log_ctx *ctx, const char *base_path,
 	closedir(dir);
 
 	return add_errors;
+}
+
+struct kmod_module *__util_modalias_to_module(struct kmod_ctx *kmod_ctx,
+					      const char *alias,
+					      struct log_ctx *log)
+{
+	struct kmod_list *list = NULL;
+	struct kmod_module *mod;
+	int rc;
+
+	if (!kmod_ctx)
+		return NULL;
+
+	rc = kmod_module_new_from_lookup(kmod_ctx, alias, &list);
+	if (rc < 0 || !list) {
+		log_dbg(log,
+			"failed to find module for alias: %s %d list: %s\n",
+			alias, rc, list ? "populated" : "empty");
+		return NULL;
+	}
+	mod = kmod_module_get_module(list);
+	log_dbg(log, "alias: %s module: %s\n", alias,
+		kmod_module_get_name(mod));
+	kmod_module_unref_list(list);
+
+	return mod;
+}
+
+int __util_bind(const char *devname, struct kmod_module *module,
+		const char *bus, struct log_ctx *ctx)
+{
+	DIR *dir;
+	int rc = 0;
+	char path[200];
+	struct dirent *de;
+	const int len = sizeof(path);
+
+	if (!devname) {
+		log_err(ctx, "missing devname\n");
+		return -EINVAL;
+	}
+
+	if (module) {
+		rc = kmod_module_probe_insert_module(module,
+						     KMOD_PROBE_APPLY_BLACKLIST,
+						     NULL, NULL, NULL, NULL);
+		if (rc < 0) {
+			log_err(ctx, "%s: insert failure: %d\n", __func__, rc);
+			return rc;
+		}
+	}
+
+	if (snprintf(path, len, "/sys/bus/%s/drivers", bus) >= len) {
+		log_err(ctx, "%s: buffer too small!\n", devname);
+		return -ENXIO;
+	}
+
+	dir = opendir(path);
+	if (!dir) {
+		log_err(ctx, "%s: opendir(\"%s\") failed\n", devname, path);
+		return -ENXIO;
+	}
+
+	while ((de = readdir(dir)) != NULL) {
+		char *drv_path;
+
+		if (de->d_ino == 0)
+			continue;
+		if (de->d_name[0] == '.')
+			continue;
+
+		if (asprintf(&drv_path, "%s/%s/bind", path, de->d_name) < 0) {
+			log_err(ctx, "%s: path allocation failure\n", devname);
+			continue;
+		}
+
+		rc = __sysfs_write_attr_quiet(ctx, drv_path, devname);
+		free(drv_path);
+		if (rc == 0)
+			break;
+	}
+	closedir(dir);
+
+	if (rc) {
+		log_dbg(ctx, "%s: bind failed\n", devname);
+		return -ENXIO;
+	}
+	return 0;
+}
+
+int __util_unbind(const char *devpath, struct log_ctx *ctx)
+{
+	const char *devname = devpath_to_devname(devpath);
+	char path[200];
+	const int len = sizeof(path);
+
+	if (snprintf(path, len, "%s/driver/unbind", devpath) >= len) {
+		log_err(ctx, "%s: buffer too small!\n", devname);
+		return -ENXIO;
+	}
+
+	return __sysfs_write_attr(ctx, path, devname);
 }

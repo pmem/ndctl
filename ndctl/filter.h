@@ -31,7 +31,7 @@ const char *util_nsmode_name(enum ndctl_namespace_mode mode);
 
 struct json_object;
 
-/* json object hierarchy for the util_filter_walk() performed by cmd_list() */
+/* json object hierarchy for the ndctl_filter_walk() performed by cmd_list() */
 struct list_filter_arg {
 	struct json_object *jnamespaces;
 	struct json_object *jregions;
@@ -50,19 +50,20 @@ struct monitor_filter_arg {
 };
 
 /*
- * struct util_filter_ctx - control and callbacks for util_filter_walk()
+ * struct ndctl_filter_ctx - control and callbacks for ndctl_filter_walk()
  * ->filter_bus() and ->filter_region() return bool because the
  * child-object filter routines can not be called if the parent context
  * is not established. ->filter_dimm() and ->filter_namespace() are leaf
  * objects, so no child dependencies to check.
  */
-struct util_filter_ctx {
-	bool (*filter_bus)(struct ndctl_bus *bus, struct util_filter_ctx *ctx);
-	void (*filter_dimm)(struct ndctl_dimm *dimm, struct util_filter_ctx *ctx);
+struct ndctl_filter_ctx {
+	bool (*filter_bus)(struct ndctl_bus *bus, struct ndctl_filter_ctx *ctx);
+	void (*filter_dimm)(struct ndctl_dimm *dimm,
+			    struct ndctl_filter_ctx *ctx);
 	bool (*filter_region)(struct ndctl_region *region,
-			struct util_filter_ctx *ctx);
+			      struct ndctl_filter_ctx *ctx);
 	void (*filter_namespace)(struct ndctl_namespace *ndns,
-			struct util_filter_ctx *ctx);
+				 struct ndctl_filter_ctx *ctx);
 	union {
 		void *arg;
 		struct list_filter_arg *list;
@@ -70,7 +71,7 @@ struct util_filter_ctx {
 	};
 };
 
-struct util_filter_params {
+struct ndctl_filter_params {
 	const char *bus;
 	const char *region;
 	const char *type;
@@ -81,6 +82,6 @@ struct util_filter_params {
 };
 
 struct ndctl_ctx;
-int util_filter_walk(struct ndctl_ctx *ctx, struct util_filter_ctx *fctx,
-		struct util_filter_params *param);
+int ndctl_filter_walk(struct ndctl_ctx *ctx, struct ndctl_filter_ctx *fctx,
+		      struct ndctl_filter_params *param);
 #endif /* _NDCTL_UTIL_FILTER_H_ */

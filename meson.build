@@ -82,6 +82,7 @@ project_source_root = meson.current_source_dir()
 # Cleanup the leftover config.h files to avoid conflicts with the meson
 # generated config.h
 git = find_program('git', required : false)
+env = find_program('env')
 if git.found()
   run_command('clean_config.sh',
     env : 'GIT_DIR=@0@/.git'.format(project_source_root),
@@ -109,6 +110,24 @@ else
       output : 'version.h',
       command: vcs_tagger
   )
+endif
+
+if git.found()
+  all_files = run_command(
+    env, '-u', 'GIT_WORK_TREE',
+    git, '--git-dir=@0@/.git'.format(project_source_root),
+         'ls-files', ':/*.[ch]',
+    check : false)
+  if all_files.returncode() == 0
+    all_files = files(all_files.stdout().split())
+    custom_target(
+            'tags',
+            output : 'tags',
+            command : [env, 'etags', '-o', '@0@/TAGS'.format(project_source_root)] + all_files)
+    run_target(
+            'ctags',
+            command : [env, 'ctags', '-o', '@0@/tags'.format(project_source_root)] + all_files)
+  endif
 endif
 
 versiondep = declare_dependency(
@@ -222,6 +241,12 @@ foreach ident : ['secure_getenv', '__secure_getenv']
   conf.set10('HAVE_' + ident.to_upper(), cc.has_function(ident))
 endforeach
 
+conf.set10('HAVE_JSON_U64',
+  cc.has_function('json_object_new_uint64',
+    prefix : '''#include <json-c/json.h>''',
+    dependencies : json,
+  )
+)
 
 ndctlconf_dir = sysconfdir / 'ndctl.conf.d'
 ndctlconf = ndctlconf_dir / 'monitor.conf'

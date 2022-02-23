@@ -152,28 +152,28 @@ pfn_meta_errors = find_program('pfn-meta-errors.sh')
 track_uuid = find_program('track-uuid.sh')
 
 tests = [
-  [ 'libndctl',               libndctl ],
-  [ 'dsm-fail',               dsm_fail ],
-  [ 'create.sh',              create ],
-  [ 'clear.sh',               clear ],
-  [ 'pmem-errors.sh',         pmem_errors ],
-  [ 'daxdev-errors.sh',       daxdev_errors_sh ],
-  [ 'multi-dax.sh',           multi_dax ],
-  [ 'btt-check.sh',           btt_check ],
-  [ 'label-compat.sh',        label_compat ],
-  [ 'sector-mode.sh',         sector_mode ],
-  [ 'inject-error.sh',        inject_error ],
-  [ 'btt-errors.sh',          btt_errors ],
-  [ 'hugetlb',                hugetlb ],
-  [ 'btt-pad-compat.sh',      btt_pad_compat ],
-  [ 'firmware-update.sh',     firmware_update ],
-  [ 'ack-shutdown-count-set', ack_shutdown_count ],
-  [ 'rescan-partitions.sh',   rescan_partitions ],
-  [ 'inject-smart.sh',        inject_smart ],
-  [ 'monitor.sh',             monitor ],
-  [ 'max_extent_ns',          max_extent ],
-  [ 'pfn-meta-errors.sh',     pfn_meta_errors ],
-  [ 'track-uuid.sh',          track_uuid ],
+  [ 'libndctl',               libndctl,		  'ndctl' ],
+  [ 'dsm-fail',               dsm_fail,	      	  'ndctl' ],
+  [ 'create.sh',              create,	      	  'ndctl' ],
+  [ 'clear.sh',               clear,	      	  'ndctl' ],
+  [ 'pmem-errors.sh',         pmem_errors,    	  'ndctl' ],
+  [ 'daxdev-errors.sh',       daxdev_errors_sh,	  'dax'	  ],
+  [ 'multi-dax.sh',           multi_dax,	  'dax'   ],
+  [ 'btt-check.sh',           btt_check,	  'ndctl' ],
+  [ 'label-compat.sh',        label_compat,       'ndctl' ],
+  [ 'sector-mode.sh',         sector_mode,        'ndctl' ],
+  [ 'inject-error.sh',        inject_error,	  'ndctl' ],
+  [ 'btt-errors.sh',          btt_errors,	  'ndctl' ],
+  [ 'hugetlb',                hugetlb,		  'ndctl' ],
+  [ 'btt-pad-compat.sh',      btt_pad_compat,	  'ndctl' ],
+  [ 'firmware-update.sh',     firmware_update,	  'ndctl' ],
+  [ 'ack-shutdown-count-set', ack_shutdown_count, 'ndctl' ],
+  [ 'rescan-partitions.sh',   rescan_partitions,  'ndctl' ],
+  [ 'inject-smart.sh',        inject_smart,	  'ndctl' ],
+  [ 'monitor.sh',             monitor,		  'ndctl' ],
+  [ 'max_extent_ns',          max_extent,	  'ndctl' ],
+  [ 'pfn-meta-errors.sh',     pfn_meta_errors,	  'ndctl' ],
+  [ 'track-uuid.sh',          track_uuid,	  'ndctl' ],
 ]
 
 if get_option('destructive').enabled()
@@ -188,26 +188,26 @@ if get_option('destructive').enabled()
   mmap_test = find_program('mmap.sh')
 
   tests += [
-    [ 'pmem-ns',           pmem_ns ],
-    [ 'sub-section.sh',    sub_section ],
-    [ 'dax-dev',           dax_dev ],
-    [ 'dax-ext4.sh',       dax_ext4 ],
-    [ 'dax-xfs.sh',        dax_xfs ],
-    [ 'align.sh',          align ],
-    [ 'device-dax',        device_dax ],
-    [ 'revoke-devmem',     revoke_devmem ],
-    [ 'device-dax-fio.sh', device_dax_fio ],
-    [ 'daxctl-devices.sh', daxctl_devices ],
-    [ 'daxctl-create.sh',  daxctl_create ],
-    [ 'dm.sh',             dm ],
-    [ 'mmap.sh',           mmap_test ],
+    [ 'pmem-ns',           pmem_ns,	   'ndctl' ],
+    [ 'sub-section.sh',    sub_section,	   'dax'   ],
+    [ 'dax-dev',           dax_dev,	   'dax'   ],
+    [ 'dax-ext4.sh',       dax_ext4,	   'dax'   ],
+    [ 'dax-xfs.sh',        dax_xfs,	   'dax'   ],
+    [ 'align.sh',          align,	   'ndctl' ],
+    [ 'device-dax',        device_dax,	   'dax'   ],
+    [ 'revoke-devmem',     revoke_devmem,  'dax'   ],
+    [ 'device-dax-fio.sh', device_dax_fio, 'dax'   ],
+    [ 'daxctl-devices.sh', daxctl_devices, 'dax'   ],
+    [ 'daxctl-create.sh',  daxctl_create,  'dax'   ],
+    [ 'dm.sh',             dm,		   'dax'   ],
+    [ 'mmap.sh',           mmap_test,	   'dax'   ],
   ]
 endif
 
 if get_option('keyutils').enabled()
   security = find_program('security.sh')
   tests += [
-    [ 'security.sh', security ]
+    [ 'security.sh', security, 'ndctl' ]
   ]
 endif
 
@@ -226,6 +226,7 @@ foreach t : tests
       dax_dev,
       mmap,
     ],
+    suite: t[2],
     timeout : 0,
     env : [
       'NDCTL=@0@'.format(ndctl_tool.full_path()),

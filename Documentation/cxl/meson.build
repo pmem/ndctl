@@ -19,7 +19,9 @@ else
 endif
 
 filedeps = [
-        '../copyright.txt',
+  '../copyright.txt',
+  'memdev-option.txt',
+  'labels-options.txt',
 ]
 
 cxl_manpages = [
@@ -28,6 +30,10 @@ cxl_manpages = [
   'cxl-read-labels.txt',
   'cxl-write-labels.txt',
   'cxl-zero-labels.txt',
+  'cxl-enable-memdev.txt',
+  'cxl-disable-memdev.txt',
+  'cxl-enable-port.txt',
+  'cxl-disable-port.txt',
 ]
 
 foreach man : cxl_manpages

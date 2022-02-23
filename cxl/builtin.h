@@ -10,4 +10,8 @@ int cmd_read_labels(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_zero_labels(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_init_labels(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_check_labels(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_disable_memdev(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_enable_memdev(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_disable_port(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_enable_port(int argc, const char **argv, struct cxl_ctx *ctx);
 #endif /* _CXL_BUILTIN_H_ */

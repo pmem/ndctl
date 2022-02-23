@@ -1,0 +1,34 @@
+// SPDX-License-Identifier: GPL-2.0
+
+cxl-enable-memdev(1)
+====================
+
+NAME
+----
+cxl-enable-memdev - activate / hot-add a given CXL memdev
+
+SYNOPSIS
+--------
+[verse]
+'cxl enable-memdev' <mem0> [<mem1>..<memN>] [<options>]
+
+A memdev typically autoenables at initial device discovery. However, if
+it was manually disabled this command can trigger the kernel to activate
+it again. This involves detecting the state of the HDM (Host Managed
+Device Memory) Decoders and validating that CXL.mem is enabled for each
+port in the device's hierarchy.
+
+OPTIONS
+-------
+<memory device(s)>::
+include::memdev-option.txt[]
+
+-v::
+	Turn on verbose debug messages in the library (if libcxl was built with
+	logging and debug enabled).
+
+include::../copyright.txt[]
+
+SEE ALSO
+--------
+linkcxl:cxl-disable-memdev[1]

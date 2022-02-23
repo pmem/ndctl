@@ -10,17 +10,20 @@
 
 #define CXL_EXPORT __attribute__ ((visibility("default")))
 
-struct cxl_nvdimm_bridge {
+struct cxl_pmem {
 	int id;
 	void *dev_buf;
 	size_t buf_len;
 	char *dev_path;
 };
 
+struct cxl_endpoint;
 struct cxl_memdev {
 	int id, major, minor;
+	int numa_node;
 	void *dev_buf;
 	size_t buf_len;
+	char *host_path;
 	char *dev_path;
 	char *firmware_version;
 	struct cxl_ctx *ctx;
@@ -30,7 +33,85 @@ struct cxl_memdev {
 	int payload_max;
 	size_t lsa_size;
 	struct kmod_module *module;
-	struct cxl_nvdimm_bridge *bridge;
+	struct cxl_pmem *pmem;
+	unsigned long long serial;
+	struct cxl_endpoint *endpoint;
+};
+
+struct cxl_dport {
+	int id;
+	void *dev_buf;
+	size_t buf_len;
+	char *dev_path;
+	char *phys_path;
+	struct cxl_port *port;
+	struct list_node list;
+};
+
+enum cxl_port_type {
+	CXL_PORT_ROOT,
+	CXL_PORT_SWITCH,
+	CXL_PORT_ENDPOINT,
+};
+
+struct cxl_port {
+	int id;
+	void *dev_buf;
+	size_t buf_len;
+	char *dev_path;
+	char *uport;
+	int ports_init;
+	int endpoints_init;
+	int decoders_init;
+	int dports_init;
+	int nr_dports;
+	struct cxl_ctx *ctx;
+	struct cxl_bus *bus;
+	enum cxl_port_type type;
+	struct cxl_port *parent;
+	struct kmod_module *module;
+	struct list_node list;
+	struct list_head child_ports;
+	struct list_head endpoints;
+	struct list_head decoders;
+	struct list_head dports;
+};
+
+struct cxl_bus {
+	struct cxl_port port;
+};
+
+struct cxl_endpoint {
+	struct cxl_port port;
+	struct cxl_memdev *memdev;
+};
+
+struct cxl_target {
+	struct list_node list;
+	struct cxl_decoder *decoder;
+	char *dev_path;
+	char *phys_path;
+	int id, position;
+};
+
+struct cxl_decoder {
+	struct cxl_port *port;
+	struct list_node list;
+	struct cxl_ctx *ctx;
+	u64 start;
+	u64 size;
+	void *dev_buf;
+	size_t buf_len;
+	char *dev_path;
+	int nr_targets;
+	int id;
+	bool pmem_capable;
+	bool volatile_capable;
+	bool mem_capable;
+	bool accelmem_capable;
+	bool locked;
+	enum cxl_decoder_target_type target_type;
+	struct list_head targets;
 };
 
 enum cxl_cmd_query_status {
