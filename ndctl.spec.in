@@ -38,6 +38,9 @@ subsystem defines a kernel device model and control message interface for
 platform NVDIMM resources like those defined by the ACPI 6+ NFIT (NVDIMM
 Firmware Interface Table).
 
+%if 0%{?flatpak}
+%global _udevrulesdir %{_prefix}/lib/udev/rules.d
+%endif
 
 %package -n DNAME
 Summary:	Development files for libndctl
@@ -136,6 +139,31 @@ libcxl is a library for enumerating and communicating with CXL devices.
 
 %define bashcompdir %(pkg-config --variable=completionsdir bash-completion)
 
+%pre
+if [ -f %{_sysconfdir}/ndctl/monitor.conf ] ; then
+  if ! [ -f %{_sysconfdir}/ndctl.conf.d/monitor.conf ] ; then
+    cp -a %{_sysconfdir}/ndctl/monitor.conf /var/run/ndctl-monitor.conf-migration
+  fi
+fi
+
+%post
+if [ -f /var/run/ndctl-monitor.conf-migration ] ; then
+  config_found=false
+  while read line ; do
+    [ -n "$line" ] || continue
+    case "$line" in
+      \#*) continue ;;
+    esac
+    config_found=true
+    break
+  done < /var/run/ndctl-monitor.conf-migration
+  if $config_found ; then
+    echo "[monitor]" > %{_sysconfdir}/ndctl.conf.d/monitor.conf
+    cat /var/run/ndctl-monitor.conf-migration >> %{_sysconfdir}/ndctl.conf.d/monitor.conf
+  fi
+  rm /var/run/ndctl-monitor.conf-migration
+fi
+
 %files
 %defattr(-,root,root)
 %license LICENSES/preferred/GPL-2.0 LICENSES/other/MIT LICENSES/other/CC0-1.0
@@ -206,7 +234,7 @@ libcxl is a library for enumerating and communicating with CXL devices.
 %{_libdir}/libcxl.so
 %{_libdir}/pkgconfig/libcxl.pc
 %{_mandir}/man3/cxl*
-%{_mandir}/man3/libcxl.3.gz
+%{_mandir}/man3/libcxl.3*
 
 
 %changelog
