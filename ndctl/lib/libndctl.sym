@@ -458,3 +458,7 @@ LIBNDCTL_26 {
 	ndctl_set_config_path;
 	ndctl_get_config_path;
 } LIBNDCTL_25;
+
+LIBNDCTL_27 {
+	ndctl_dimm_refresh_flags;
+} LIBNDCTL_26;
