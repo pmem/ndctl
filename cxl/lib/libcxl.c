@@ -546,8 +546,7 @@ static void bus_invalidate(struct cxl_bus *bus)
 	 * indeterminate, delete them all and start over.
 	 */
 	cxl_memdev_foreach(ctx, memdev)
-		if (cxl_memdev_get_bus(memdev) == bus)
-			memdev->endpoint = NULL;
+		memdev->endpoint = NULL;
 
 	bus_port = cxl_bus_get_port(bus);
 	list_for_each_safe(&bus_port->child_ports, port, _p, list)
