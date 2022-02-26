@@ -53,10 +53,11 @@ static inline bool is_power_of_2(unsigned long long v)
 #define COMPILER_HAS_GENERIC_BUILTIN_OVERFLOW 1
 #endif
 
-#if __clang__ && \
-    __has_builtin(__builtin_mul_overflow) && \
+#if __clang__
+#if __has_builtin(__builtin_mul_overflow) && \
     __has_builtin(__builtin_add_overflow)
 #define COMPILER_HAS_GENERIC_BUILTIN_OVERFLOW 1
+#endif
 #endif
 
 #if COMPILER_HAS_GENERIC_BUILTIN_OVERFLOW
