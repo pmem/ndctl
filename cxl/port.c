@@ -145,7 +145,6 @@ static int port_action(int argc, const char **argv, struct cxl_ctx *ctx,
 		usage,
 		NULL
 	};
-	unsigned long id;
 
 	log_init(&pl, "cxl port", "CXL_PORT_LOG");
 	argc = parse_options(argc, argv, options, u, 0);
@@ -153,31 +152,10 @@ static int port_action(int argc, const char **argv, struct cxl_ctx *ctx,
 	if (argc == 0)
 		usage_with_options(u, options);
 	for (i = 0; i < argc; i++) {
-		const char *fmt;
-
 		if (strcmp(argv[i], "all") == 0) {
 			argc = 1;
 			break;
 		}
-
-		if (param.endpoint)
-			fmt = "endpoint%lu";
-		else
-			fmt = "port%lu";
-
-		if (sscanf(argv[i], fmt, &id) == 1)
-			continue;
-		if (sscanf(argv[i], "%lu", &id) == 1)
-			continue;
-
-		log_err(&pl, "'%s' is not a valid %s identifer\n", argv[i],
-			param.endpoint ? "endpoint" : "port");
-		err++;
-	}
-
-	if (err == argc) {
-		usage_with_options(u, options);
-		return -EINVAL;
 	}
 
 	if (param.debug) {
@@ -187,7 +165,6 @@ static int port_action(int argc, const char **argv, struct cxl_ctx *ctx,
 		pl.log_priority = LOG_INFO;
 
 	rc = 0;
-	err = 0;
 	count = 0;
 
 	for (i = 0; i < argc; i++) {
@@ -198,15 +175,16 @@ static int port_action(int argc, const char **argv, struct cxl_ctx *ctx,
 
 			endpoint = find_cxl_endpoint(ctx, argv[i]);
 			if (!endpoint) {
-				log_dbg(&pl, "endpoint: %s not found\n",
-					argv[i]);
+				log_notice(&pl, "endpoint: %s not found\n",
+					   argv[i]);
 				continue;
 			}
 			port = cxl_endpoint_get_port(endpoint);
 		} else {
 			port = find_cxl_port(ctx, argv[i]);
 			if (!port) {
-				log_dbg(&pl, "port: %s not found\n", argv[i]);
+				log_notice(&pl, "port: %s not found\n",
+					   argv[i]);
 				continue;
 			}
 		}
