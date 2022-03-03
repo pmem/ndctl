@@ -2283,8 +2283,6 @@ cmd_to_identify(struct cxl_cmd *cmd)
 	if (cxl_cmd_validate_status(cmd, CXL_MEM_COMMAND_ID_IDENTIFY))
 		return NULL;
 
-	if (!cmd)
-		return NULL;
 	return cmd->output_payload;
 }
 
@@ -2429,8 +2427,6 @@ cmd_to_get_partition(struct cxl_cmd *cmd)
 	if (cxl_cmd_validate_status(cmd, CXL_MEM_COMMAND_ID_GET_PARTITION_INFO))
 		return NULL;
 
-	if (!cmd)
-		return NULL;
 	return cmd->output_payload;
 }
 
