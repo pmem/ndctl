@@ -624,10 +624,9 @@ DAXCTL_EXPORT int daxctl_region_create_dev(struct daxctl_region *region)
 	}
 
 	rc = sysfs_write_attr(ctx, path, num_devices);
-	if (rc)
-		return rc;
+	free(num_devices);
 
-	return 0;
+	return rc;
 }
 
 DAXCTL_EXPORT int daxctl_region_destroy_dev(struct daxctl_region *region,
