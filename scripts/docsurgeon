@@ -244,7 +244,7 @@ gen_cli()
 
 	# Start template generation
 	printf "%s\n" "$copyright_cli" > "$tmp"
-	gen_header "$name" >> "$tmp"
+	gen_header "$name($_arg_section)" >> "$tmp"
 	gen_section_name "$name" >> "$tmp"
 	gen_section_synopsis_1 "$name" >> "$tmp"
 	gen_section "DESCRIPTION" >> "$tmp"
