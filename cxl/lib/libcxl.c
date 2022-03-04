@@ -1018,11 +1018,13 @@ static void *add_cxl_decoder(void *parent, int id, const char *cxldecoder_base)
 	cxl_decoder_foreach(port, decoder_dup)
 		if (decoder_dup->id == decoder->id) {
 			free_decoder(decoder, NULL);
+			free(path);
 			return decoder_dup;
 		}
 
 	list_add(&port->decoders, &decoder->list);
 
+	free(path);
 	return decoder;
 
 err_decoder:
