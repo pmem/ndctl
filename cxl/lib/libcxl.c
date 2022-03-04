@@ -919,11 +919,11 @@ static void *add_cxl_decoder(void *parent, int id, const char *cxldecoder_base)
 
 	decoder->dev_path = strdup(cxldecoder_base);
 	if (!decoder->dev_path)
-		goto err;
+		goto err_decoder;
 
 	decoder->dev_buf = calloc(1, strlen(cxldecoder_base) + 50);
 	if (!decoder->dev_buf)
-		goto err;
+		goto err_decoder;
 	decoder->buf_len = strlen(cxldecoder_base) + 50;
 
 	sprintf(path, "%s/start", cxldecoder_base);
@@ -1024,10 +1024,12 @@ static void *add_cxl_decoder(void *parent, int id, const char *cxldecoder_base)
 	list_add(&port->decoders, &decoder->list);
 
 	return decoder;
-err:
+
+err_decoder:
 	free(decoder->dev_path);
 	free(decoder->dev_buf);
 	free(decoder);
+err:
 	free(path);
 	return NULL;
 }
