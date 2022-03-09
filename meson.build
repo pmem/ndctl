@@ -150,7 +150,7 @@ endif
 
 if get_option('systemd').enabled()
   systemd = dependency('systemd', required : true)
-  systemdunitdir = systemd.get_pkgconfig_variable('systemd_system_unit_dir')
+  systemdunitdir = systemd.get_pkgconfig_variable('systemdsystemunitdir')
   udev = dependency('udev', required : true)
   udevdir = udev.get_pkgconfig_variable('udevdir')
   udevrulesdir = udevdir / 'rules.d'
