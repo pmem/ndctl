@@ -57,7 +57,6 @@ sed -e s,@VERSION@,@0@,g
 '''.format(meson.project_version(), prefixdir, libdir, includedir).split()
 
 cc_flags = [
-  '-Wall',
   '-Wchar-subscripts',
   '-Wformat-security',
   '-Wmissing-declarations',
@@ -70,9 +69,12 @@ cc_flags = [
   '-Wmaybe-uninitialized',
   '-Wdeclaration-after-statement',
   '-Wunused-result',
-  '-D_FORTIFY_SOURCE=2',
-  '-O2',
 ]
+
+if get_option('optimization') != '0'
+  cc_flags += [ '-D_FORTIFY_SOURCE=2' ]
+endif
+
 cc = meson.get_compiler('c')
 add_project_arguments(cc.get_supported_arguments(cc_flags), language : 'c')
 
