@@ -149,7 +149,7 @@ if get_option('docs').enabled()
 endif
 
 if get_option('systemd').enabled()
-  systemd = dependency('systemd', required : true)
+  systemd = dependency('systemd', version : '>=246', required : true)
   systemdunitdir = systemd.get_pkgconfig_variable('systemd_system_unit_dir')
   udev = dependency('udev', required : true)
   udevdir = udev.get_pkgconfig_variable('udevdir')
