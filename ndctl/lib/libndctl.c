@@ -4593,7 +4593,6 @@ NDCTL_EXPORT int ndctl_namespace_disable_safe(struct ndctl_namespace *ndns)
 	const char *bdev = NULL;
 	int fd, active = 0;
 	char path[50];
-	unsigned long long size = ndctl_namespace_get_size(ndns);
 
 	if (pfn && ndctl_pfn_is_enabled(pfn))
 		bdev = ndctl_pfn_get_block_device(pfn);
@@ -4630,11 +4629,7 @@ NDCTL_EXPORT int ndctl_namespace_disable_safe(struct ndctl_namespace *ndns)
 				devname);
 		return -EBUSY;
 	} else {
-		if (size == 0)
-			/* No disable necessary due to no capacity allocated */
-			return 1;
-		else
-			ndctl_namespace_disable_invalidate(ndns);
+		ndctl_namespace_disable_invalidate(ndns);
 	}
 
 	return 0;
