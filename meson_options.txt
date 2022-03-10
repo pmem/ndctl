@@ -25,3 +25,5 @@ option('bashcompletiondir', type : 'string',
        description : '''${datadir}/bash-completion/completions''')
 option('iniparserdir', type : 'string',
        description : 'Path containing the iniparser header files')
+option('modprobedatadir', type : 'string',
+       description : '''${sysconfdir}/modprobe.d/''')

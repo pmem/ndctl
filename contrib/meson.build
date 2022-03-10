@@ -24,5 +24,8 @@ if bashcompletiondir != 'no'
   install_data('ndctl', rename : 'cxl', install_dir : bashcompletiondir)
 endif
 
-modprobedatadir = get_option('sysconfdir') + '/modprobe.d/'
+modprobedatadir = get_option('modprobedatadir')
+if modprobedatadir == ''
+  modprobedatadir = get_option('modprobedatadir')
+endif
 install_data('nvdimm-security.conf', install_dir : modprobedatadir)
