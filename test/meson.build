@@ -227,7 +227,7 @@ foreach t : tests
       mmap,
     ],
     suite: t[2],
-    timeout : 0,
+    timeout : 600,
     env : [
       'NDCTL=@0@'.format(ndctl_tool.full_path()),
       'DAXCTL=@0@'.format(daxctl_tool.full_path()),
