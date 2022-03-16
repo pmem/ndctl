@@ -15,7 +15,6 @@ daxctl_tool = executable('daxctl',
   dependencies : [
     daxctl_dep,
     ndctl_dep,
-    iniparser,
     util_dep,
     uuid,
     kmod,

@@ -27,7 +27,6 @@ deps = [
   uuid,
   kmod,
   json,
-  iniparser,
   versiondep,
 ]
 

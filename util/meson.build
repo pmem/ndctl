@@ -11,6 +11,7 @@ util = static_library('util', [
   'abspath.c',
   'iomem.c',
   ],
+  dependencies: iniparser,
   include_directories : root_inc,
 )
 util_dep = declare_dependency(link_with : util)
