@@ -160,9 +160,27 @@ endif
 
 cc = meson.get_compiler('c')
 
-# keyutils and iniparser lack pkgconfig
+# keyutils lacks pkgconfig
 keyutils = cc.find_library('keyutils', required : get_option('keyutils'))
-iniparser = cc.find_library('iniparser', required : true)
+
+# iniparser lacks pkgconfig and its header files are either at '/usr/include' or '/usr/include/iniparser'
+# Use the path provided by user via meson configure -Diniparserdir=<somepath>
+# if thats not provided then try searching for 'iniparser.h' in default system include path
+# and if that not found then as a last resort try looking at '/usr/include/iniparser'
+iniparser_headers = ['iniparser.h', 'dictionary.h']
+
+message('Looking for iniparser include headers', iniparser_headers)
+
+iniparserdir = include_directories(includedir / get_option('iniparserdir'), is_system:true)
+iniparser = cc.find_library('iniparser', required : (get_option('iniparserdir') != '') ,
+	  has_headers :iniparser_headers ,header_include_directories : iniparserdir)
+
+if not iniparser.found()
+   iniparserdir = include_directories(includedir / 'iniparser', is_system:true)
+   iniparser = cc.find_library('iniparser', required : true, has_headers : iniparser_headers,
+	     header_include_directories : iniparserdir)
+endif
+iniparser = declare_dependency(include_directories: iniparserdir, dependencies:iniparser)
 
 conf = configuration_data()
 check_headers = [

@@ -23,3 +23,5 @@ option('pkgconfiglibdir', type : 'string', value : '',
        description : 'directory for standard pkg-config files')
 option('bashcompletiondir', type : 'string',
        description : '''${datadir}/bash-completion/completions''')
+option('iniparserdir', type : 'string',
+       description : 'Path containing the iniparser header files')
