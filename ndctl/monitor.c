@@ -14,6 +14,7 @@
 #include <ndctl/ndctl.h>
 #include <ndctl/libndctl.h>
 #include <sys/epoll.h>
+#include <sys/stat.h>
 #define BUF_SIZE 2048
 
 /* reuse the core log helpers for the monitor logger */
@@ -588,7 +589,7 @@ int cmd_monitor(int argc, const char **argv, struct ndctl_ctx *ctx)
 		"ndctl monitor [<options>]",
 		NULL
 	};
-	const struct config configs[] = {
+	struct config configs[] = {
 		CONF_MONITOR(NDCTL_CONF_FILE, parse_monitor_config),
 		CONF_STR("core:bus", &param.bus, NULL),
 		CONF_STR("core:region", &param.region, NULL),
@@ -604,7 +605,9 @@ int cmd_monitor(int argc, const char **argv, struct ndctl_ctx *ctx)
 	const char *prefix = "./", *ndctl_configs;
 	struct ndctl_filter_ctx fctx = { 0 };
 	struct monitor_filter_arg mfa = { 0 };
-	int i, rc;
+	int i, rc = 0;
+	struct stat st;
+	char *path = NULL;
 
 	argc = parse_options_prefix(argc, argv, prefix, options, u, 0);
 	for (i = 0; i < argc; i++) {
@@ -622,14 +625,20 @@ int cmd_monitor(int argc, const char **argv, struct ndctl_ctx *ctx)
 		monitor.ctx.log_priority = LOG_INFO;
 
 	ndctl_configs = ndctl_get_config_path(ctx);
-	if (monitor.configs)
+	if (!monitor.configs && ndctl_configs) {
+		rc = asprintf(&path, "%s/monitor.conf", ndctl_configs);
+		if (rc < 0)
+			goto out;
+
+		if (stat(path, &st) == 0)
+			monitor.configs = path;
+	}
+	if (monitor.configs) {
+		configs[0].key = monitor.configs;
 		rc = parse_configs_prefix(monitor.configs, prefix, configs);
-	else if (ndctl_configs)
-		rc = parse_configs_prefix(ndctl_configs, prefix, configs);
-	else
-		rc = 0;
-	if (rc)
-		goto out;
+		if (rc)
+			goto out;
+	}
 
 	if (monitor.log) {
 		if (strncmp(monitor.log, "./", 2) != 0)
@@ -687,5 +696,7 @@ int cmd_monitor(int argc, const char **argv, struct ndctl_ctx *ctx)
 out:
 	if (monitor.log_file)
 		fclose(monitor.log_file);
+	if (path)
+		free(path);
 	return rc;
 }
