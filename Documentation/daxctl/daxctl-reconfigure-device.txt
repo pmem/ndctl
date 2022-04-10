@@ -91,8 +91,8 @@ details.
 Outside of the NUMA performance details linked above the other method to
 detect the presence of "Soft Reserved" memory is to dump /proc/iomem and
 look for "Soft Reserved" ranges. If the kernel was not built with
-CONFIG_EFI_SOFTRESERVE, predates the introduction of
-CONFIG_EFI_SOFTRESERVE (v5.5), or was booted with the efi=nosoftreserve
+CONFIG_EFI_SOFT_RESERVE, predates the introduction of
+CONFIG_EFI_SOFT_RESERVE (v5.5), or was booted with the efi=nosoftreserve
 command line then device-dax will not attach and the expectation is that
 the memory shows up as a memory-only NUMA node. Otherwise the memory
 shows up as a device-dax instance and DAXCTL(1) can be used to
