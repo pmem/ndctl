@@ -354,6 +354,23 @@ static int rw_bin(FILE *f, struct ndctl_cmd *cmd, ssize_t size,
 	return 0;
 }
 
+static int revalidate_labels(struct ndctl_dimm *dimm)
+{
+	int rc;
+
+	/*
+	 * If the dimm is already disabled the kernel is not holding a cached
+	 * copy of the label space.
+	 */
+	if (!ndctl_dimm_is_enabled(dimm))
+		return 0;
+
+	rc = ndctl_dimm_disable(dimm);
+	if (rc)
+		return rc;
+	return ndctl_dimm_enable(dimm);
+}
+
 static int action_write(struct ndctl_dimm *dimm, struct action_context *actx)
 {
 	struct ndctl_cmd *cmd_read, *cmd_write;
@@ -377,18 +394,10 @@ static int action_write(struct ndctl_dimm *dimm, struct action_context *actx)
 
 	size = ndctl_cmd_cfg_read_get_size(cmd_read);
 	rc = rw_bin(actx->f_in, cmd_write, size, param.offset, WRITE);
-
-	/*
-	 * If the dimm is already disabled the kernel is not holding a cached
-	 * copy of the label space.
-	 */
-	if (!ndctl_dimm_is_enabled(dimm))
-		goto out;
-
-	rc = ndctl_dimm_disable(dimm);
 	if (rc)
 		goto out;
-	rc = ndctl_dimm_enable(dimm);
+
+	rc = revalidate_labels(dimm);
 
  out:
 	ndctl_cmd_unref(cmd_read);
@@ -1043,7 +1052,7 @@ static int action_security_freeze(struct ndctl_dimm *dimm,
 static int action_sanitize_dimm(struct ndctl_dimm *dimm,
 		struct action_context *actx)
 {
-	int rc;
+	int rc = 0;
 	enum ndctl_key_type key_type;
 
 	if (ndctl_dimm_get_security(dimm) < 0) {
@@ -1085,9 +1094,10 @@ static int action_sanitize_dimm(struct ndctl_dimm *dimm,
 		rc = ndctl_dimm_overwrite_key(dimm);
 		if (rc < 0)
 			return rc;
+		rc = revalidate_labels(dimm);
 	}
 
-	return 0;
+	return rc;
 }
 
 static int action_wait_overwrite(struct ndctl_dimm *dimm,
