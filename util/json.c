@@ -37,11 +37,16 @@ static int display_size(struct json_object *jobj, struct printbuf *pbuf,
 
 			c = snprintf(buf, sizeof(buf), "\"%ld.%02ld MiB",
 					cMiB/100 , cMiB % 100);
-		} else {
+		} else if (bytes < 2*SZ_1T) {
 			long cGiB = (bytes * 200LL / SZ_1G+1) /2;
 
 			c = snprintf(buf, sizeof(buf), "\"%ld.%02ld GiB",
 					cGiB/100 , cGiB % 100);
+		} else {
+			long cTiB = (bytes * 200LL / SZ_1T+1) /2;
+
+			c = snprintf(buf, sizeof(buf), "\"%ld.%02ld TiB",
+					cTiB/100 , cTiB % 100);
 		}
 
 		/* JEDEC */
@@ -50,12 +55,18 @@ static int display_size(struct json_object *jobj, struct printbuf *pbuf,
 
 			snprintf(buf + c, sizeof(buf) - c, " (%ld.%02ld MB)\"",
 					cMB/100, cMB % 100);
-		} else {
+		} else if (bytes < 2*SZ_1T) {
 			long cGB  = (bytes / (1000000000LL/200LL) + 1) / 2;
 
 			snprintf(buf + c, sizeof(buf) - c, " (%ld.%02ld GB)\"",
 					cGB/100 , cGB % 100);
+		} else {
+			long cTB  = (bytes / (1000000000000LL/200LL) + 1) / 2;
+
+			snprintf(buf + c, sizeof(buf) - c, " (%ld.%02ld TB)\"",
+					cTB/100 , cTB % 100);
 		}
+
 	}
 
 	return printbuf_memappend(pbuf, buf, strlen(buf));
