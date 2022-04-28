@@ -86,6 +86,7 @@ global:
 	cxl_bus_get_id;
 	cxl_bus_get_port;
 	cxl_bus_get_ctx;
+	cxl_bus_disable_invalidate;
 	cxl_port_get_first;
 	cxl_port_get_next;
 	cxl_port_get_devname;

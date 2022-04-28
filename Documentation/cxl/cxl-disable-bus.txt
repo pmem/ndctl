@@ -1,0 +1,37 @@
+// SPDX-License-Identifier: GPL-2.0
+
+cxl-disable-bus(1)
+===================
+
+NAME
+----
+cxl-disable-bus - Shutdown an entire tree of CXL devices
+
+SYNOPSIS
+--------
+[verse]
+'cxl disable-bus' <root0> [<root1>..<rootN>] [<options>]
+
+For test and debug scenarios, disable a CXL bus and any associated
+memory devices from CXL.mem operations.
+
+OPTIONS
+-------
+-f::
+--force::
+	DANGEROUS: Override the safety measure that blocks attempts to disable a
+	bus if the tool determines a descendent memdev is in active usage.
+	Recall that CXL memory ranges might have been established by platform
+	firmware and disabling an active device is akin to force removing memory
+	from a running system.
+
+--debug::
+	If the cxl tool was built with debug disabled, turn on debug
+	messages.
+
+
+include::../copyright.txt[]
+
+SEE ALSO
+--------
+linkcxl:cxl-disable-port[1]

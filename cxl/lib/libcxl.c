@@ -556,6 +556,21 @@ static void bus_invalidate(struct cxl_bus *bus)
 	cxl_flush(ctx);
 }
 
+CXL_EXPORT int cxl_bus_disable_invalidate(struct cxl_bus *bus)
+{
+	struct cxl_ctx *ctx = cxl_bus_get_ctx(bus);
+	struct cxl_port *port = cxl_bus_get_port(bus);
+	int rc;
+
+	rc = util_unbind(port->uport, ctx);
+	if (rc)
+		return rc;
+
+	free_bus(bus, &ctx->buses);
+	cxl_flush(ctx);
+	return 0;
+}
+
 CXL_EXPORT int cxl_memdev_disable_invalidate(struct cxl_memdev *memdev)
 {
 	struct cxl_ctx *ctx = cxl_memdev_get_ctx(memdev);

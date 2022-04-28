@@ -2,6 +2,7 @@ cxl_src = [
   'cxl.c',
   'list.c',
   'port.c',
+  'bus.c',
   'memdev.c',
   'json.c',
   'filter.c',
