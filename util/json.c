@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <util/util.h>
 #include <util/json.h>
+#include <util/size.h>
 #include <json-c/json.h>
 #include <json-c/printbuf.h>
 
@@ -27,24 +28,24 @@ static int display_size(struct json_object *jobj, struct printbuf *pbuf,
 	 * If prefix == JEDEC, we mean prefixes like kilo,mega,giga etc.
 	 */
 
-	if (bytes < 5000*1024)
+	if (bytes < 5000*SZ_1K)
 		snprintf(buf, sizeof(buf), "%lld", bytes);
 	else {
 		/* IEC */
-		if (bytes < 2*1024LL*1024LL*1024LL) {
-			long cMiB = (bytes * 200LL / (1LL<<20) +1) /2;
+		if (bytes < 2L*SZ_1G) {
+			long cMiB = (bytes * 200LL / SZ_1M+1) /2;
 
 			c = snprintf(buf, sizeof(buf), "\"%ld.%02ld MiB",
 					cMiB/100 , cMiB % 100);
 		} else {
-			long cGiB = (bytes * 200LL / (1LL<<30) +1) /2;
+			long cGiB = (bytes * 200LL / SZ_1G+1) /2;
 
 			c = snprintf(buf, sizeof(buf), "\"%ld.%02ld GiB",
 					cGiB/100 , cGiB % 100);
 		}
 
 		/* JEDEC */
-		if (bytes < 2*1024LL*1024LL*1024LL) {
+		if (bytes < 2L*SZ_1G) {
 			long cMB  = (bytes / (1000000LL / 200LL) + 1) / 2;
 
 			snprintf(buf + c, sizeof(buf) - c, " (%ld.%02ld MB)\"",
