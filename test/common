@@ -27,6 +27,18 @@ if [ -z $DAXCTL ]; then
 	fi
 fi
 
+# CXL
+if [ -z $CXL ]; then
+	if [ -f "../cxl/cxl" ] && [ -x "../cxl/cxl" ]; then
+		export CXL=../cxl/cxl
+	elif [ -f "./cxl/cxl" ] && [ -x "./cxl/cxl" ]; then
+		export CXL=./cxl/cxl
+	else
+		echo "Couldn't find a cxl binary"
+		exit 1
+	fi
+fi
+
 if [ -z $TEST_PATH ]; then
 	export TEST_PATH=.
 fi
