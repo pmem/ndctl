@@ -13,6 +13,8 @@ smart_supported_bus=""
 
 . $(dirname $0)/common
 
+monitor_conf="$TEST_PATH/../ndctl"
+
 check_prereq "jq"
 
 trap 'err $LINENO' ERR
@@ -22,7 +24,7 @@ check_min_kver "4.15" || do_skip "kernel $KVER may not support monitor service"
 start_monitor()
 {
 	logfile=$(mktemp)
-	$NDCTL monitor -l $logfile $1 &
+	$NDCTL monitor -c "$monitor_conf" -l $logfile $1 &
 	monitor_pid=$!
 	sync; sleep 3
 	truncate --size 0 $logfile #remove startup log
