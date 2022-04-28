@@ -3,6 +3,8 @@ util = static_library('util', [
   'parse-configs.c',
   'usage.c',
   'size.c',
+  'json.c',
+  'log.c',
   'main.c',
   'help.c',
   'strbuf.c',
