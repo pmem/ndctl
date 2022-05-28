@@ -19,4 +19,7 @@ int cmd_enable_port(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_set_partition(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_disable_bus(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_create_region(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_enable_region(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_disable_region(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_destroy_region(int argc, const char **argv, struct cxl_ctx *ctx);
 #endif /* _CXL_BUILTIN_H_ */

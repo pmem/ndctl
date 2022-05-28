@@ -1,0 +1,36 @@
+// SPDX-License-Identifier: GPL-2.0
+
+cxl-disable-region(1)
+=====================
+
+NAME
+----
+cxl-disable-region - disable specified region(s).
+
+SYNOPSIS
+--------
+[verse]
+'cxl disable-region <region> [<options>]'
+
+include::region-description.txt[]
+
+EXAMPLE
+-------
+----
+# cxl disable-region all
+disabled 2 regions
+----
+
+OPTIONS
+-------
+include::bus-option.txt[]
+
+include::decoder-option.txt[]
+
+include::debug-option.txt[]
+
+include::../copyright.txt[]
+
+SEE ALSO
+--------
+linkcxl:cxl-list[1], linkcxl:cxl-enable-region[1]
