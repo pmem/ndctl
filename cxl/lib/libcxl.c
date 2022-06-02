@@ -49,9 +49,11 @@ struct cxl_ctx {
 
 static void free_pmem(struct cxl_pmem *pmem)
 {
-	free(pmem->dev_buf);
-	free(pmem->dev_path);
-	free(pmem);
+	if (pmem) {
+		free(pmem->dev_buf);
+		free(pmem->dev_path);
+		free(pmem);
+	}
 }
 
 static void free_memdev(struct cxl_memdev *memdev, struct list_head *head)
