@@ -4,7 +4,6 @@ daxctl_src = [
   'list.c',
   'migrate.c',
   'device.c',
-  '../util/json.c',
   'json.c',
   'filter.c',
 ]

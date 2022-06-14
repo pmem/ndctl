@@ -546,14 +546,28 @@ static void bus_invalidate(struct cxl_bus *bus)
 	 * indeterminate, delete them all and start over.
 	 */
 	cxl_memdev_foreach(ctx, memdev)
-		if (cxl_memdev_get_bus(memdev) == bus)
-			memdev->endpoint = NULL;
+		memdev->endpoint = NULL;
 
 	bus_port = cxl_bus_get_port(bus);
 	list_for_each_safe(&bus_port->child_ports, port, _p, list)
 		free_port(port, &bus_port->child_ports);
 	bus_port->ports_init = 0;
 	cxl_flush(ctx);
+}
+
+CXL_EXPORT int cxl_bus_disable_invalidate(struct cxl_bus *bus)
+{
+	struct cxl_ctx *ctx = cxl_bus_get_ctx(bus);
+	struct cxl_port *port = cxl_bus_get_port(bus);
+	int rc;
+
+	rc = util_unbind(port->uport, ctx);
+	if (rc)
+		return rc;
+
+	free_bus(bus, &ctx->buses);
+	cxl_flush(ctx);
+	return 0;
 }
 
 CXL_EXPORT int cxl_memdev_disable_invalidate(struct cxl_memdev *memdev)

@@ -1,31 +1,26 @@
 // SPDX-License-Identifier: GPL-2.0
 
-cxl-disable-port(1)
+cxl-disable-bus(1)
 ===================
 
 NAME
 ----
-cxl-disable-port - disable / hot-remove a given CXL port and descendants
+cxl-disable-bus - Shutdown an entire tree of CXL devices
 
 SYNOPSIS
 --------
 [verse]
-'cxl disable-port' <port0> [<port1>..<portN>] [<options>]
+'cxl disable-bus' <root0> [<root1>..<rootN>] [<options>]
 
-For test and debug scenarios, disable a CXL port and any memory devices
-dependent on this port being active for CXL.mem operation.
+For test and debug scenarios, disable a CXL bus and any associated
+memory devices from CXL.mem operations.
 
 OPTIONS
 -------
--e::
---endpoint::
-	Toggle from treating the port arguments as Switch Port identifiers to
-	Endpoint Port identifiers.
-
 -f::
 --force::
 	DANGEROUS: Override the safety measure that blocks attempts to disable a
-	port if the tool determines a descendent memdev is in active usage.
+	bus if the tool determines a descendent memdev is in active usage.
 	Recall that CXL memory ranges might have been established by platform
 	firmware and disabling an active device is akin to force removing memory
 	from a running system.

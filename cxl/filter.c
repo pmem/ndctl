@@ -73,6 +73,9 @@ struct cxl_endpoint *util_cxl_endpoint_filter(struct cxl_endpoint *endpoint,
 
 		if (strcmp(arg, cxl_endpoint_get_devname(endpoint)) == 0)
 			break;
+
+		if (strcmp(arg, cxl_endpoint_get_host(endpoint)) == 0)
+			break;
 	}
 
 	free(ident);
@@ -115,6 +118,9 @@ static struct cxl_port *__util_cxl_port_filter(struct cxl_port *port,
 			break;
 
 		if (strcmp(arg, cxl_port_get_devname(port)) == 0)
+			break;
+
+		if (strcmp(arg, cxl_port_get_host(port)) == 0)
 			break;
 	}
 
@@ -176,8 +182,7 @@ util_cxl_decoder_filter_by_port(struct cxl_decoder *decoder, const char *ident,
 	return NULL;
 }
 
-static struct cxl_bus *util_cxl_bus_filter(struct cxl_bus *bus,
-					   const char *__ident)
+struct cxl_bus *util_cxl_bus_filter(struct cxl_bus *bus, const char *__ident)
 {
 	char *ident, *save;
 	const char *arg;
@@ -303,6 +308,9 @@ struct cxl_memdev *util_cxl_memdev_filter(struct cxl_memdev *memdev,
 			break;
 
 		if (strcmp(name, cxl_memdev_get_devname(memdev)) == 0)
+			break;
+
+		if (strcmp(name, cxl_memdev_get_host(memdev)) == 0)
 			break;
 	}
 

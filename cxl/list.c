@@ -104,6 +104,7 @@ int cmd_list(int argc, const char **argv, struct cxl_ctx *ctx)
 			error("please specify entities to list, e.g. using -m/-M\n");
 			usage_with_options(u, options);
 		}
+		param.single = true;
 	}
 
 	log_init(&param.ctx, "cxl list", "CXL_LIST_LOG");
