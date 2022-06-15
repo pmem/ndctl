@@ -186,7 +186,7 @@ check_libtool_vers "libdaxctl"
 gen_lists ${last_ref}..HEAD~1
 
 # For ABI diff purposes, use the latest fixes tag
-contrib/do_abidiff ${last_fix}..HEAD
+scripts/do_abidiff ${last_fix}..HEAD
 
 # once everything passes, update the git-version
 sed -i -e "s/DEF_VER=[0-9]\+.*/DEF_VER=${next_ref#v}/" git-version
