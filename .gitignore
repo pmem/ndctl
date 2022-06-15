@@ -1,5 +1,8 @@
 build/
+release/
 rhel/ndctl.spec
 sles/ndctl.spec
 *.swp
 tags
+cscope.*
+scripts/docsurgeon_parser.sh
