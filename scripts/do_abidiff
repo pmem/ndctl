@@ -29,7 +29,7 @@ build_rpm()
 	version="$(./git-version)"
 	release="f$(basename $(readlink -f /etc/mock/default.cfg) | cut -d- -f2)"
 	git archive  --format=tar --prefix="ndctl-${version}/" HEAD | gzip > ndctl-${version}.tar.gz
-	fedpkg --release $release --module-name ndctl mockbuild
+	fedpkg --release $release --name=ndctl mockbuild
 	[ "$?" -eq 0 ] || err "error building $ref"
 	mkdir -p release/rel_${ref}/
 	cp results_ndctl/*/*/*.x86_64.rpm release/rel_${ref}/
