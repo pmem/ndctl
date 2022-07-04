@@ -166,6 +166,8 @@ static int get_value(struct parse_opt_ctx_t *p,
 			return -1;
 		*(unsigned int *)opt->value = strtol(arg, (char **)&s, 10);
 		if (*s)
+			*(unsigned int *)opt->value = strtol(arg, (char **)&s, 16);
+		if (*s)
 			return opterror(opt, "expects a numerical value", flags);
 		return 0;
 
@@ -197,6 +199,8 @@ static int get_value(struct parse_opt_ctx_t *p,
 		if (get_arg(p, opt, flags, &arg))
 			return -1;
 		*(uint64_t *)opt->value = strtoull(arg, (char **)&s, 10);
+		if (*s)
+			*(uint64_t *)opt->value = strtoull(arg, (char **)&s, 16);
 		if (*s)
 			return opterror(opt, "expects a numerical value", flags);
 		return 0;

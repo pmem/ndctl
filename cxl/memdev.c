@@ -1155,6 +1155,18 @@ static const struct option cmd_health_counters_get_options[] = {
 	OPT_END(),
 };
 
+static struct _hct_get_plat_param_params {
+	bool verbose;
+} hct_get_plat_param_params;
+
+#define HCT_GET_PLAT_PARAM_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &hct_get_plat_param_params.verbose, "turn on debug")
+
+static const struct option cmd_hct_get_plat_param_options[] = {
+	HCT_GET_PLAT_PARAM_BASE_OPTIONS(),
+	OPT_END(),
+};
+
 
 static int action_cmd_clear_event_records(struct cxl_memdev *memdev, struct action_context *actx)
 {
@@ -1880,6 +1892,16 @@ static int action_cmd_health_counters_get(struct cxl_memdev *memdev, struct acti
 	return cxl_memdev_health_counters_get(memdev);
 }
 
+static int action_cmd_hct_get_plat_param(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort hct_get_plat_param\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_hct_get_plat_param(memdev);
+}
 
 static int action_zero(struct cxl_memdev *memdev, struct action_context *actx)
 {
@@ -2607,3 +2629,10 @@ int cmd_health_counters_get(int argc, const char **argv, struct cxl_ctx *ctx)
 	return rc >= 0 ? 0 : EXIT_FAILURE;
 }
 
+int cmd_hct_get_plat_param(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_hct_get_plat_param, cmd_hct_get_plat_param_options,
+			"cxl hct-get-plat-params <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}

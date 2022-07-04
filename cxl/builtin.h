@@ -70,4 +70,5 @@ int cmd_hbo_transfer_fw(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_hbo_activate_fw(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_health_counters_clear(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_health_counters_get(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_hct_get_plat_param(int argc, const char **argv, struct cxl_ctx *ctx);
 #endif /* _CXL_BUILTIN_H_ */

@@ -124,4 +124,5 @@ global:
 	cxl_memdev_hbo_activate_fw;
 	cxl_memdev_health_counters_clear;
 	cxl_memdev_health_counters_get;
+	cxl_memdev_hct_get_plat_param;
 } LIBCXL_3;

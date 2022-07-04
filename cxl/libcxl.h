@@ -151,6 +151,7 @@ int cxl_memdev_hbo_activate_fw(struct cxl_memdev *memdev);
 int cxl_memdev_health_counters_clear(struct cxl_memdev *memdev,
 	u32 bitmask);
 int cxl_memdev_health_counters_get(struct cxl_memdev *memdev);
+int cxl_memdev_hct_get_plat_param(struct cxl_memdev *memdev);
 
 #define cxl_memdev_foreach(ctx, memdev) \
         for (memdev = cxl_memdev_get_first(ctx); \

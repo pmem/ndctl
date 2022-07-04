@@ -127,6 +127,7 @@ static struct cmd_struct commands[] = {
 	{ "hbo-activate-fw", .c_fn = cmd_hbo_activate_fw },
 	{ "health-counters-clear", .c_fn = cmd_health_counters_clear },
 	{ "health-counters-get", .c_fn = cmd_health_counters_get },
+	{ "hct-get-plat-param", .c_fn = cmd_hct_get_plat_param },
 };
 
 int main(int argc, const char **argv)
