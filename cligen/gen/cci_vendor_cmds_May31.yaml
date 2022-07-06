@@ -1,0 +1,3598 @@
+################################################################################
+#  Copyright 2022 Microchip Technology Inc. and its subsidiaries.
+#  Subject to your compliance with these terms, you may use Microchip
+#  software and any derivatives exclusively with Microchip products. It is
+#  your responsibility to comply with third party license terms applicable to
+#  your use of third party software (including open source software) that may
+#  accompany Microchip software.
+#  THIS SOFTWARE IS SUPPLIED BY MICROCHIP "AS IS". NO WARRANTIES, WHETHER
+#  EXPRESS, IMPLIED OR STATUTORY, APPLY TO THIS SOFTWARE, INCLUDING ANY
+#  IMPLIED WARRANTIES OF NON-INFRINGEMENT, MERCHANTABILITY, AND FITNESS FOR A
+#  PARTICULAR PURPOSE. IN NO EVENT WILL MICROCHIP BE LIABLE FOR ANY INDIRECT,
+#  SPECIAL, PUNITIVE, INCIDENTAL OR CONSEQUENTIAL LOSS, DAMAGE, COST OR
+#  EXPENSE OF ANY KIND WHATSOEVER RELATED TO THE SOFTWARE, HOWEVER CAUSED,
+#  EVEN IF MICROCHIP HAS BEEN ADVISED OF THE POSSIBILITY OR THE DAMAGES ARE
+#  FORESEEABLE. TO THE FULLEST EXTENT ALLOWED BY LAW, MICROCHIP'S TOTAL
+#  LIABILITY ON ALL CLAIMS IN ANY WAY RELATED TO THIS SOFTWARE WILL NOT
+#  EXCEED THE AMOUNT OF FEES, IF ANY, THAT YOU HAVE PAID DIRECTLY TO
+#  MICROCHIP FOR THIS SOFTWARE.
+################################################################################
+
+--- # CCI vendor commands
+
+command_sets:
+- command_set_name: DDR Commands
+  command_set_description: DDR Subcommands
+
+  command_set_opcodes:
+  - opcode_name: DDR Info
+    mnemonic: DDR_INFO
+    opcode: 0xC500
+    opcode_description: >
+      This opcode reads basic DDR memory information
+
+    input_payload:
+    - ipl_name: DDR Info Input Payload
+      ipl_mnemonic: DDR_INFO_IN_PL
+      ipl_size_bytes: 1
+
+      parameters:
+      - ipl_par_name: DDR instance
+        ipl_par_mnemonic: DDR_ID
+        ipl_offset: 0x00
+        ipl_length: 1
+
+    output_payload:
+    - opl_name: DDR Info Output Payload
+      opl_mnemonic: DDR_INFO_OUT_PL
+      opl_size_bytes: 8
+
+      parameters:
+      - opl_par_name: DDR controller MSTR register
+        opl_par_mnemonic: MSTR_REG
+        opl_offset: 0x00
+        opl_length: 4
+
+      - opl_par_name: DRAM width derived from DEVICE_CONFIG
+        opl_par_mnemonic: DRAM_WIDTH
+        opl_offset: 0x04
+        opl_length: 4
+
+        enumerators:
+        - opl_en_name: DRAM Width x4 device
+          opl_en_mnemonic: X4_DEVICE
+          opl_value: 0x00
+
+        - opl_en_name: DRAM Width x8 device
+          opl_en_mnemonic: X8_DEVICE
+          opl_value: 0x01
+
+        - opl_en_name: DRAM Width x16 device
+          opl_en_mnemonic: X16_DEVICE
+          opl_value: 0x02
+
+        - opl_en_name: DRAM Width x32 device
+          opl_en_mnemonic: X32_DEVICE
+          opl_value: 0x03
+
+- command_set_name: HIF/CXL Trace Buffer
+  command_set_description: |
+    Manage and operate HIF and CXL Trace buffer.
+    Prepare device to capture HIF or CXL traffic
+
+    1) enable trace buffer
+    2) configure trace buffer
+         - trigger pattern
+         - trigger masks
+         - post trigger depth
+    3) set trigger mode and arm the trace buffer
+
+  command_set_opcodes:
+  - opcode_name: Get HIF/CXL Trace Buffer Platform Parameters
+    mnemonic: HCT_GET_PLAT_PARAMS
+    opcode: 0xC600
+    opcode_description: >
+      Returns the number of trace buffer instances and the type (HIF or CXL)
+      of each instance.
+
+    output_payload:
+    - opl_name: Get Platform Parameter Output  Payload
+      opl_mnemonic: HCT_GET_PLAT_PARAMS_OUT_PL
+      opl_size_bytes: 1+
+
+      parameters:
+      - opl_par_name: Number of Trace buffer instances
+        opl_par_mnemonic: NUM_INST
+        opl_offset: 0x00
+        opl_length: 1
+        opl_description: >
+          This parameter represents the number of available trace buffer instances.
+
+      - opl_par_name: Trace buffer instance type
+        opl_par_mnemonic: TYPE
+        opl_offset: 0x01
+        opl_unit_size: 1
+        opl_units_num: VARIES
+        opl_length: VARIES
+        opl_description: |
+          This parameter is an array of length NUM_INST and represents the type
+          (HIF or CXL) of the available trace buffer instances.
+          A type field containing a 0 indicates a FLIT/CXL trace buffer.
+          A type field containing a 1 indicates a HIF trace buffer.
+
+        enumerators:
+        - opl_en_name: Trace Buffer Type FLIT
+          opl_en_mnemonic: FLIT
+          opl_value: 0x00
+          opl_en_description: Indicates a trace buffer instance of type FLIT/CXL.
+
+        - opl_en_name: Trace Buffer Type HIF
+          opl_en_mnemonic: HIF
+          opl_value: 0x01
+          opl_en_description: Indicates a trace buffer instance of type HIF.
+
+  - opcode_name: Get HIF/CXL Trace Buffer Configuration
+    mnemonic: HCT_GET_CONFIG
+    opcode: 0xC601
+    opcode_description: |
+      There are 8 registers for both, trigger pattern and trigger mask configuration
+      for the HIF trace buffer and 16 each for the CXL variant. The configuration values
+      returned by this opcode have the following structure.
+
+      HIF output payload format
+        |PTD |Ignr val|rsvd|rsvd|Config Trig    |Config Mask    |
+        |[00]|[01]    |[02]|[03]|[04][05]...[35]|[36][37]...[67]|
+
+      CXL output payload format
+        |PTD |Ignr val|rsvd|rsvd|Config Trig    |Config Mask     |
+        |[00]|[01]    |[02]|[03]|[04][05]...[67]|[68][69]...[131]|
+
+    input_payload:
+    - ipl_name: Get Configuration Input Payload
+      ipl_mnemonic: HCT_GET_CONFIG_IN_PL
+      ipl_size_bytes: 1
+
+      parameters:
+      - ipl_par_name: HCT Instance
+        ipl_par_mnemonic: HCT_INST
+        ipl_offset: 0x00
+        ipl_length: 1
+        ipl_description: >
+          The trace buffer instance we want to retrieve the configuration from.
+
+    output_payload:
+    - opl_name: Get Configuration Output Payload
+      opl_mnemonic: HCT_GET_CONFIG_OUT_PL
+      opl_size_bytes: 4+
+
+      parameters:
+      - opl_par_name: Post Trigger Depth
+        opl_par_mnemonic: POST_TRIG_DEPTH
+        opl_offset: 0x00
+        opl_length: 1
+        opl_description: >
+          The Post-Trigger Depth controls the number of entries to capture in the trace buffer after the trigger
+          occurs. This can be any value from 0 (0% post-trigger) to 127 (100% post-trigger).
+
+      - opl_par_name: Ignore Valid
+        opl_par_mnemonic: IGNORE_VALID
+        opl_offset: 0x01
+        opl_length: 1
+        opl_description: |
+          The Ignore Valid bit controls whether the non-valid flits are stored in the trace buffer.
+
+          When set to logic:
+          1: Invalid flits are captured in the trace buffer.
+          0: Only valid flits are stored in the trace buffer.
+
+          This register bit should only be modified when the trace buffer is in idle state.
+
+      - opl_par_name: Reserved
+        opl_par_mnemonic: RSVD
+        opl_offset: 0x02
+        opl_length: 1
+
+      - opl_par_name: Reserved
+        opl_par_mnemonic: RSVD
+        opl_offset: 0x03
+        opl_length: 1
+
+      - opl_par_name: Trigger Config
+        opl_par_mnemonic: TRIG_CONFIG
+        opl_offset: 0x04
+        opl_unit_size: 4
+        opl_units_num: VARIES
+        opl_length: VARIES
+        opl_description: >
+          Array that contains the trigger pattern configuration followed by the trigger mask configuration.
+
+  - opcode_name: Set HIF/CXL Trace Buffer Configuration
+    mnemonic: HCT_SET_CONFIG
+    opcode: 0xC602
+    opcode_description: |
+      There are 8 registers for both, trigger pattern and trigger mask
+      configuration for the HIF trace buffer and 16 each for the CXL variant.
+      The passed configuration values must have the following structure.
+
+      HIF input payload format
+        |HCT Index|Flags|rsvd|rsvd|PTD |Ignr val|rsvd|rsvd|Config Trig    |Config Mask    |
+        |[00]     |[01] |[02]|[03]|[04]|[05]    |[06]|[07]|[08][09]...[39]|[40][41]...[71]|
+
+      CXL input payload format
+        |HCT Index|Flags|rsvd|rsvd|PTD |Ignr val|rsvd|rsvd|Config Trig    |Config Mask     |
+        |[00]     |[01] |[02]|[03]|[04]|[05]    |[06]|[07]|[08][09]...[71]|[72][73]...[135]|
+
+    input_payload:
+    - ipl_name: Set Configuration Input Payload
+      ipl_mnemonic: HCT_SET_CONFIG_IN_PL
+      ipl_size_bytes: 8+
+
+      parameters:
+      - ipl_par_name: HCT Instance
+        ipl_par_mnemonic: HCT_INST
+        ipl_offset: 0x00
+        ipl_length: 1
+
+      - ipl_par_name: Config Flags
+        ipl_par_mnemonic: CONFIG_FLAGS
+        ipl_offset: 0x01
+        ipl_length: 1
+        ipl_description: |
+          This parameter indicates what configuration values are present in the
+          input payload.
+
+          3'b001 - capture config (post-trigger-depth and ignore-valid) is present
+          3'b010 - config trigger is present
+          3'b100 - config trigger mask is present
+
+        enumerators:
+        - ipl_en_name: Capture Configuration Present
+          ipl_en_mnemonic: CAPT_CFG
+          ipl_value: 0x01
+          ipl_en_description: Signals that the PTD and Ignore_Valid flags are present in input payload.
+
+        - ipl_en_name: Trigger Config Present
+          ipl_en_mnemonic: TRIGGER_CFG
+          ipl_value: 0x02
+          ipl_en_description: Signals that the trigger configuration is present in input payload.
+
+        - ipl_en_name: Trigger Mask Present
+          ipl_en_mnemonic: TRIGGER_MASK
+          ipl_value: 0x04
+          ipl_en_description: Signals that the trigger mask is present in input payload.
+
+      - ipl_par_name: Reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x02
+        ipl_length: 1
+
+      - ipl_par_name: Reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x03
+        ipl_length: 1
+
+      - ipl_par_name: Post Trigger Depth
+        ipl_par_mnemonic: POST_TRIG_DEPTH
+        ipl_offset: 0x04
+        ipl_length: 1
+        ipl_description: >
+          The Post-Trigger Depth controls the number of entries to capture in
+          the trace buffer after the trigger occurs. This can be any value from
+          0 (0% post-trigger) to 127 (100% post-trigger).
+
+      - ipl_par_name: Ignore Valid
+        ipl_par_mnemonic: IGNORE_VALID
+        ipl_offset: 0x05
+        ipl_length: 1
+        ipl_description: |
+          The Ignore Valid bit controls whether the non-valid flits are stored in the trace buffer.
+
+          When set to logic:
+
+          1: Invalid flits are captured in the trace buffer.
+          0: Only valid flits are stored in the trace buffer.
+
+          This register bit should only be modified when the trace buffer is in idle state.
+
+      - ipl_par_name: Reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x06
+        ipl_length: 1
+
+      - ipl_par_name: Reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x07
+        ipl_length: 1
+
+      - ipl_par_name: Trigger Config
+        ipl_par_mnemonic: TRIG_CONFIG
+        ipl_offset: 0x08
+        ipl_length: VARIES
+        ipl_description: >
+          Array that contains the trigger pattern configuration followed by the
+          trigger mask configuration. Every incoming HIF command (or CXL flit)
+          is compared against the pattern bits and pattern mask.  If the bits of
+          the command or flit where the pattern mask bit is 1 match the pattern
+          bits, the trigger is asserted and the trace buffer begins the
+          post-trigger capture phase. The post-trigger capture phase ends when
+          the post-trigger capture depth is reached, and at that point no new
+          data is written to the circular buffer. For the HIF variant, separate
+          trigger pattern registers are defined for HIF read commands and HIF
+          write commands. Also note that the pattern trigger can not be
+          configured to trigger on the sideband bits in the HIF variant.
+
+  - opcode_name: Start Stop Trigger the HIF/CXL Trace Buffer
+    mnemonic: HCT_START_STOP_TRIGGER
+    opcode: 0xC603
+    opcode_description: >
+      Configure the capture starting event.
+
+    input_payload:
+    - ipl_name: Start Stop Trigger Input Payload
+      ipl_mnemonic: HCT_START_STOP_TRIGGER_IN_PL
+      ipl_size_bytes: 2
+
+      parameters:
+      - ipl_par_name: HCT Instance
+        ipl_par_mnemonic: HCT_INST
+        ipl_offset: 0x00
+        ipl_length: 1
+        ipl_description: >
+          The number of the trace buffer instance that is going to be used.
+
+      - ipl_par_name: Buffer Control
+        ipl_par_mnemonic: BUF_CONTROL
+        ipl_offset: 0x01
+        ipl_length: 1
+        ipl_description: >
+          Operational mode of the trace buffer.
+
+        enumerators:
+        - ipl_en_name: Stop
+          ipl_en_mnemonic: STOP
+          ipl_value: 0x00
+          ipl_en_description: Stop capturing
+
+        - ipl_en_name: Pre-Trigger
+          ipl_en_mnemonic: PRE_TRIGGER
+          ipl_value: 0x01
+          ipl_en_description: Arm Trigger (waiting for pattern to occur)
+
+        - ipl_en_name: Post-Trigger
+          ipl_en_mnemonic: POST_TRIGGER
+          ipl_value: 0x02
+          ipl_en_description: Manual Trigger (kicks off capturing immediately)
+
+  - opcode_name: Get HIF/CXL Trace Buffer Status
+    mnemonic: HCT_GET_BUFFER_STATUS
+    opcode: 0xC604
+    opcode_description: >
+      Retrieve the current state the trace buffer is in.
+
+    input_payload:
+    - ipl_name: Get HIF/CXL Trace Buffer Status Input Payload
+      ipl_mnemonic: HCT_GET_BUFFER_STATUS_IN_PL
+      ipl_size_bytes: 1
+
+      parameters:
+      - ipl_par_name: HCT Instance
+        ipl_par_mnemonic: HCT_INST
+        ipl_offset: 0x00
+        ipl_length: 1
+        ipl_description: >
+          The number of the trace buffer instance the caller is interested in.
+
+    output_payload:
+    - opl_name: Get HIF/CXL Trace Buffer Status Output Payload
+      opl_mnemonic: HCT_GET_BUFFER_STATUS_OUT_PL
+      opl_size_bytes: 2
+
+      parameters:
+      - opl_par_name: Buffer Status
+        opl_par_mnemonic: BUF_STATUS
+        opl_offset: 0x00
+        opl_length: 1
+        opl_description: >
+          Operational mode of the trace buffer.
+
+        enumerators:
+        - opl_en_name: Stop
+          opl_en_mnemonic: STOP
+          opl_value: 0x00
+          opl_en_description: Stop capturing
+
+        - opl_en_name: Pre-Trigger
+          opl_en_mnemonic: PRE_TRIGGER
+          opl_value: 0x01
+          opl_en_description: Arm Trigger (waiting for pattern to occur)
+
+        - opl_en_name: Post-Trigger
+          opl_en_mnemonic: POST_TRIGGER
+          opl_value: 0x02
+          opl_en_description: Manual Trigger (kicks off capturing immediately)
+
+      - opl_par_name: Fill Level
+        opl_par_mnemonic: FILL_LEVEL
+        opl_offset: 0x01
+        opl_length: 1
+        opl_description: >
+          The number of buffer entries in the trace buffer reflects the current
+          fill level of the trace buffer. It is updated automatically.
+
+  - opcode_name: Read HIF/CXL Trace Buffer
+    mnemonic: HCT_READ_BUFFER
+    opcode: 0xC605
+    opcode_description: >
+      Retrieve one entry line of the trace buffer starting at the buffer start.
+      Each subsequent read will retrieve the next buffer entry until the buffer
+      end is reached indicated by 'BUF_END' flag in the output payload.
+      From this point on subsequent reads read will return the last entry line
+      until the buffer is stared again.
+
+    input_payload:
+    - ipl_name: Read Buffer Input Payload
+      ipl_mnemonic: HCT_READ_BUFFER_IN_PL
+      ipl_size_bytes: 2
+
+      parameters:
+      - ipl_par_name: HCT Instance
+        ipl_par_mnemonic: HCT_INST
+        ipl_offset: 0x00
+        ipl_length: 1
+        ipl_description: >
+          The number of the trace buffer instance the caller is interested in.
+
+      - ipl_par_name: Number of buffer entries to read
+        ipl_par_mnemonic: NUM_ENTRIES_TO_READ
+        ipl_offset: 0x01
+        ipl_length: 1
+        ipl_description: >
+          The number of buffer entries the caller wants to read.
+
+    output_payload:
+    - opl_name: Read Buffer Output Payload
+      opl_mnemonic: HCT_READ_BUFFER_OUT_PL
+      opl_size_bytes: 4+
+
+      parameters:
+      - opl_par_name: Buffer End Reached
+        opl_par_mnemonic: BUF_END
+        opl_offset: 0x00
+        opl_length: 1
+        opl_description: >
+          This flag signals that the buffer end has been reached.
+
+      - opl_par_name: Number of buffer entries
+        opl_par_mnemonic: NUM_BUF_ENTRIES
+        opl_offset: 0x01
+        opl_length: 1
+        opl_description: >
+          Number of buffer entries that follow in the payload.
+
+      - opl_par_name: Reserved
+        opl_par_mnemonic: RSVD
+        opl_offset: 0x02
+        opl_length: 2
+
+      - opl_par_name: Buffer Entry
+        opl_par_mnemonic: BUF_ENTRY
+        opl_offset: 0x04
+        opl_length: VARIES
+        opl_description: |
+          Depending on the 'NUM_ENTRIES_TO_READ' parameter of the input payload
+          or the provided output payload buffer size, this section of the
+          payload can occur multipe times.
+
+          The structure of an entry is as follows:
+
+          HIF buffer entry data:
+            The trace buffer RAM is 256 bits (32 bytes) wide, so bits [4:2] of the
+            address is used to address inside the 256-bit word read from the RAM.
+
+            RAM data [30:0] 31-bit Timestamp
+            RAM data [31] Post Trigger Flag
+            RAM data [63:32] HIF Write Command (wdata_ptr, autopre fields)
+            RAM data [95:64] HIF Write Command (addr, pri, latency, length, wdata_ptr fields)
+            RAM data [127:96] HIF Write Command (cmd_type, addr fields)
+            RAM data [159:128] HIF Write Command (valid flag), HIF Read Command (read token, length, autopre fields)
+            RAM data [191:160] HIF Read Command (read token field)
+            RAM data [223:192] HIF Read Command (addr,pri, latency, read token fields)
+            RAM data [255:224] HIF Read Command (validflag, cmd_type, addr fields)
+
+          FLIT buffer entry data:
+
+            The trace buffer RAM is 560 bits (70 bytes) wide, however, in
+            order to address in 32-bit slices, RAM is assumed to be 576 bits
+            (72 bytes) wide. MSB 16-bits [572:560] are ignored.
+
+            RAM data [31:0] CXL Flit Slot0, Bytes 3-0
+            RAM data [63:32] CXL Flit Slot0, Bytes 7-4
+            RAM data [95:64] CXL Flit Slot0, Bytes 11-8
+            RAM data [127:96] CXL Flit Slot0, Bytes 15-12
+            RAM data [159:128] CXL Flit Slot1, Bytes 3-0
+            RAM data [191:160] CXL Flit Slot1, Bytes 7-4
+            RAM data [223:192] CXL Flit Slot1, Bytes 11-8
+            RAM data [255:224] CXL Flit Slot1, Bytes 15-12
+            RAM data [287:256] CXL Flit Slot2, Bytes 3-0
+            RAM data [319:288] CXL Flit Slot2, Bytes 7-4
+            RAM data [351:320] CXL Flit Slot2, Bytes 11-8
+            RAM data [383:352] CXL Flit Slot2, Bytes 15-12
+            RAM data [415:384] CXL Flit Slot3, Bytes 3-0
+            RAM data [447:416] CXL Flit Slot3, Bytes 7-4
+            RAM data [480:448] CXL Flit Slot3, Bytes 11-8
+            RAM data [511:480] CXL Flit Slot3, Bytes 15-12
+            RAM data [527:512] CXL FLIT 16-bit CRC
+            RAM data [558:528] 31-bit Timestamp
+            RAM data [559] Post Trigger Flag
+            RAM data [575:560] (16-bits) 16-bit Unused
+
+  - opcode_name: Enable HIF/CXL Trace Buffer Instance
+    mnemonic: HCT_ENABLE
+    opcode: 0xC606
+    opcode_description: >
+      This opcode is used to enable and activate a trace buffer instance. This
+      action is mandatory in order to be able to use a trace buffer.
+
+    input_payload:
+    - ipl_name: Enable Trace Buffer Input Payload
+      ipl_mnemonic: HCT_ENABLE_IN_PL
+      ipl_size_bytes: 1
+
+      parameters:
+      - ipl_par_name: HCT Instance
+        ipl_par_mnemonic: HCT_INST
+        ipl_offset: 0x00
+        ipl_length: 1
+        ipl_description: >
+          The number of the trace buffer instance that is to be enabled.
+
+- command_set_name: LTMON Commands
+  command_set_description: LTSSM Monitor Commands
+  command_set_opcodes:
+  - opcode_name: LTMON Capture Clear
+    mnemonic: LTMON_CAPTURE_CLEAR
+    opcode: 0xC70A
+
+    input_payload:
+    - ipl_name: LTMON Capture Clear Input Payload
+      ipl_mnemonic: LTMON_CAPT_CLEAR_IN_PL
+      ipl_size_bytes: 2
+
+      parameters:
+      - ipl_par_name: unused
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x00
+        ipl_length: 1
+
+      - ipl_par_name: CXL.MEM ID
+        ipl_par_mnemonic: cxl_mem_id
+        ipl_offset: 0x01
+        ipl_length: 1
+
+  - opcode_name: LTMON Capture
+    mnemonic: LTMON_CAPTURE
+    opcode: 0xC70C
+
+    input_payload:
+    - ipl_name: LTMON Capture Input Payload
+      ipl_mnemonic: LTMON_CAPT_IN_PL
+      ipl_size_bytes: 8
+
+      parameters:
+      - ipl_par_name: unused
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x00
+        ipl_length: 1
+
+      - ipl_par_name: CXL.MEM ID
+        ipl_par_mnemonic: cxl_mem_id
+        ipl_offset: 0x01
+        ipl_length: 1
+
+      - ipl_par_name: Capture Mode
+        ipl_par_mnemonic: CAPT_MODE
+        ipl_offset: 0x02
+        ipl_length: 1
+
+      - ipl_par_name: Ignore Sub Change
+        ipl_par_mnemonic: IGNORE_SUB_CHG
+        ipl_offset: 0x03
+        ipl_length: 2
+
+      - ipl_par_name: Ignore Receiver L0 Change
+        ipl_par_mnemonic: IGNORE_RXL0_CHG
+        ipl_offset: 0x05
+        ipl_length: 1
+
+      - ipl_par_name: Trigger Source Selection
+        ipl_par_mnemonic: TRIG_SRC_SEL
+        ipl_offset: 0x06
+        ipl_length: 1
+
+      - ipl_par_name: reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x07
+        ipl_length: 1
+
+  - opcode_name: LTMON Capture Freeze and Restore
+    mnemonic: LTMON_CAPTURE_FREEZE_AND_RESTORE
+    opcode: 0xC70E
+
+    input_payload:
+    - ipl_name: LTMON Capture Freeze Input Payload
+      ipl_mnemonic: LTMON_CAPT_FREEZE_RESTORE_IN_PL
+      ipl_size_bytes: 4
+
+      parameters:
+      - ipl_par_name: unused
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x00
+        ipl_length: 1
+
+      - ipl_par_name: CXL.MEM ID
+        ipl_par_mnemonic: cxl_mem_id
+        ipl_offset: 0x01
+        ipl_length: 1
+
+      - ipl_par_name: Freeze Restore
+        ipl_par_mnemonic: FREEZE_RESTORE
+        ipl_offset: 0x02
+        ipl_length: 1
+
+      - ipl_par_name: reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x03
+        ipl_length: 1
+
+  - opcode_name: LTMON L2R Count Dump
+    mnemonic: LTMON_L2R_COUNT_DUMP
+    opcode: 0xC710
+
+    input_payload:
+    - ipl_name: LTMON L2R Count Dump Input Payload
+      ipl_mnemonic: LTMON_L2R_CNT_DUMP_IN_PL
+      ipl_size_bytes: 2
+
+      parameters:
+      - ipl_par_name: unused
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x00
+        ipl_length: 1
+
+      - ipl_par_name: CXL.MEM ID
+        ipl_par_mnemonic: cxl_mem_id
+        ipl_offset: 0x01
+        ipl_length: 1
+
+    output_payload:
+    - opl_name: LTMON L2R Count Dump Output Payload
+      opl_mnemonic: LTMON_L2R_CNT_DUMP_OUT_PL
+      opl_size_bytes: 4
+
+      parameters:
+      - opl_par_name: Dump Count
+        opl_par_mnemonic: DUMP_CNT
+        opl_offset: 0x00
+        opl_length: 4
+
+  - opcode_name: LTMON L2R Count Clear
+    mnemonic: LTMON_L2R_COUNT_CLEAR
+    opcode: 0xC711
+
+    input_payload:
+    - ipl_name: LTMON L2R Count Clear Input Payload
+      ipl_mnemonic: LTMON_L2R_CNT_CLEAR_IN_PL
+      ipl_size_bytes: 2
+
+      parameters:
+      - ipl_par_name: unused
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x00
+        ipl_length: 1
+
+      - ipl_par_name: CXL.MEM ID
+        ipl_par_mnemonic: cxl_mem_id
+        ipl_offset: 0x01
+        ipl_length: 1
+
+  - opcode_name: LTMON Basic Configuration
+    mnemonic: LTMON_BASIC_CFG
+    opcode: 0xC712
+
+    input_payload:
+    - ipl_name: LTMON Basic Configuration Input Payload
+      ipl_mnemonic: LTMON_BASE_CFG_IN_PL
+      ipl_size_bytes: 4
+
+      parameters:
+      - ipl_par_name: unused
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x00
+        ipl_length: 1
+
+      - ipl_par_name: CXL.MEM ID
+        ipl_par_mnemonic: cxl_mem_id
+        ipl_offset: 0x01
+        ipl_length: 1
+
+      - ipl_par_name: Tick Count
+        ipl_par_mnemonic: TICK_CNT
+        ipl_offset: 0x02
+        ipl_length: 1
+
+      - ipl_par_name: Global Time Stamp
+        ipl_par_mnemonic: GLOBAL_TS
+        ipl_offset: 0x03
+        ipl_length: 1
+
+  - opcode_name: LTMON Watch
+    mnemonic: LTMON_WATCH
+    opcode: 0xC713
+
+    input_payload:
+    - ipl_name: LTMON Watch Input Payload
+      ipl_mnemonic: LTMON_WATCH_IN_PL
+      ipl_size_bytes: 12
+
+      parameters:
+      - ipl_par_name: unused
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x00
+        ipl_length: 1
+
+      - ipl_par_name: CXL.MEM ID
+        ipl_par_mnemonic: cxl_mem_id
+        ipl_offset: 0x01
+        ipl_length: 1
+
+      - ipl_par_name: Watch ID
+        ipl_par_mnemonic: WATCH_ID
+        ipl_offset: 0x02
+        ipl_length: 1
+
+      - ipl_par_name: Watch Mode
+        ipl_par_mnemonic: WATCH_MODE
+        ipl_offset: 0x03
+        ipl_length: 1
+
+      - ipl_par_name: Source Maj State
+        ipl_par_mnemonic: SRC_MAJ_ST
+        ipl_offset: 0x04
+        ipl_length: 1
+
+      - ipl_par_name: Source Min State
+        ipl_par_mnemonic: SRC_MIN_ST
+        ipl_offset: 0x05
+        ipl_length: 1
+
+      - ipl_par_name: Source L0 State
+        ipl_par_mnemonic: SRC_L0_ST
+        ipl_offset: 0x06
+        ipl_length: 1
+
+      - ipl_par_name: Destination Maj State
+        ipl_par_mnemonic: DST_MAJ_ST
+        ipl_offset: 0x07
+        ipl_length: 1
+
+      - ipl_par_name: Destination Min State
+        ipl_par_mnemonic: DST_MIN_ST
+        ipl_offset: 0x08
+        ipl_length: 1
+
+      - ipl_par_name: Destination L0 State
+        ipl_par_mnemonic: DST_L0_ST
+        ipl_offset: 0x09
+        ipl_length: 1
+
+      - ipl_par_name: reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x0A
+        ipl_length: 2
+
+  - opcode_name: LTMON Capture Status
+    mnemonic: LTMON_CAPTURE_STAT
+    opcode: 0xC714
+
+    input_payload:
+    - ipl_name: LTMON Capture Status Input Payload
+      ipl_mnemonic: LTMON_CAPT_STAT_IN_PL
+      ipl_size_bytes: 2
+
+      parameters:
+      - ipl_par_name: unused
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x00
+        ipl_length: 1
+
+      - ipl_par_name: CXL.MEM ID
+        ipl_par_mnemonic: cxl_mem_id
+        ipl_offset: 0x01
+        ipl_length: 1
+
+    output_payload:
+    - opl_name: LTMON Capture Status Output Payload
+      opl_mnemonic: LTMON_CAPT_STAT_OUT_PL
+      opl_size_bytes: 12
+
+      parameters:
+      - opl_par_name: Trigger Count
+        opl_par_mnemonic: TRIG_CNT
+        opl_offset: 0x00
+        opl_length: 2
+
+      - opl_par_name: Watch 0 Trigger Count
+        opl_par_mnemonic: WATCH0_TRIG_CNT
+        opl_offset: 0x02
+        opl_length: 2
+
+      - opl_par_name: Watch 1 Trigger Count
+        opl_par_mnemonic: WATCH1_TRIG_CNT
+        opl_offset: 0x04
+        opl_length: 2
+
+      - opl_par_name: Time Stamp
+        opl_par_mnemonic: TIME_STAMP
+        opl_offset: 0x06
+        opl_length: 2
+
+      - opl_par_name: Trigger Source Status
+        opl_par_mnemonic: TRIG_SRC_STAT
+        opl_offset: 0x08
+        opl_length: 1
+
+      - opl_par_name: reserved
+        opl_par_mnemonic: RSVD
+        opl_offset: 0x09
+        opl_length: 3
+
+  - opcode_name: LTMON Capture Log Dump
+    mnemonic: LTMON_CAPTURE_LOG_DMP
+    opcode: 0xC715
+
+    input_payload:
+    - ipl_name: LTMON Capture Log Dump Input Payload
+      ipl_mnemonic: LTMON_CAPT_LOG_DUMP_IN_PL
+      ipl_size_bytes: 8
+
+      parameters:
+      - ipl_par_name: unused
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x00
+        ipl_length: 1
+
+      - ipl_par_name: CXL.MEM ID
+        ipl_par_mnemonic: cxl_mem_id
+        ipl_offset: 0x01
+        ipl_length: 1
+
+      - ipl_par_name: Dump Index
+        ipl_par_mnemonic: DUMP_IDX
+        ipl_offset: 0x02
+        ipl_length: 2
+
+      - ipl_par_name: Dump Count
+        ipl_par_mnemonic: DUMP_CNT
+        ipl_offset: 0x04
+        ipl_length: 2
+
+      - ipl_par_name: reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x06
+        ipl_length: 2
+
+    output_payload:
+    - opl_name: LTMON Capture Log Dump Output Payload
+      opl_mnemonic: LTMON_CAPT_LOG_DUMP_OUT_PL
+      opl_size_bytes: 16
+
+      parameters:
+      - opl_par_name: LTMON Data
+        opl_par_mnemonic: data
+        opl_offset: 0
+        opl_length: 16
+
+        bit_fields:
+
+          # LTSSM_RAM_REG_1
+        - opl_bf_name: rx l0s state
+          opl_bf_mnemonic: RX_L0S_SUBSTATE
+          opl_bit: "2:0"
+
+        - opl_bf_name: Monitored LTSSM Substate
+          opl_bf_mnemonic: SUBSTATE
+          opl_bit: "6:3"
+
+        - opl_bf_name: Monitored LTSSM Main State
+          opl_bf_mnemonic: MAIN_STATE
+          opl_bit: "12:7"
+
+        - opl_bf_name: "link rate, 0: 2.5G, 1: 5G, 2: 8G, 3: 16G, 4: 32G"
+          opl_bf_mnemonic: LINK_RATE
+          opl_bit: "15:13"
+
+        - opl_bf_name: indication for roll over of 37-bit timer counter
+          opl_bf_mnemonic: TIMESTAMP_ROLLOVER
+          opl_bit: "16:16"
+
+        - opl_bf_name: "link width 0: 0, 1: 1, 2: 2, 3: 4, 4: 8, 5: 16"
+          opl_bf_mnemonic: LINK_WIDTH
+          opl_bit: "19:17"
+
+        - opl_bf_name: unused bits
+          opl_bf_mnemonic: RSVD
+          opl_bit: "31:20"
+
+          # LTSSM_RAM_REG_2
+        - opl_bf_name: 32 higher time counter bits
+          opl_bf_mnemonic: TIMESTAMP_31_0
+          opl_bit: "31:0"
+
+          # LTSSM_RAM_REG_3
+        - opl_bf_name: time stamp high bits
+          opl_bf_mnemonic: TIMESTAMP_36_32
+          opl_bit: "4:0"
+
+        - opl_bf_name: unused bits
+          opl_bf_mnemonic: RSVD
+          opl_bit: "31:5"
+
+          # LTSSM_RAM_REG_4
+        - opl_bf_name: conditions lead to recorded state
+          opl_bf_mnemonic: ARC
+          opl_bit: "31:0"
+
+  - opcode_name: LTMON Capture Trigger
+    mnemonic: LTMON_CAPTURE_TRIGGER
+    opcode: 0xC716
+
+    input_payload:
+    - ipl_name: LTMON Capture Trigger Input Payload
+      ipl_mnemonic: LTMON_TRIG_IN_PL
+      ipl_size_bytes: 4
+
+      parameters:
+      - ipl_par_name: unused
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x00
+        ipl_length: 1
+
+      - ipl_par_name: CXL.MEM ID
+        ipl_par_mnemonic: cxl_mem_id
+        ipl_offset: 0x01
+        ipl_length: 1
+
+      - ipl_par_name: Trigger Source
+        ipl_par_mnemonic: TRIG_SRC
+        ipl_offset: 0x02
+        ipl_length: 1
+
+      - ipl_par_name: reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x03
+        ipl_length: 1
+
+  - opcode_name: LTMON Enable
+    mnemonic: LTMON_ENABLE
+    opcode: 0xC780
+
+    input_payload:
+    - ipl_name: LTMON Enable Input Payload
+      ipl_mnemonic: LTMON_ENABLE_IN_PL
+      ipl_size_bytes: 4
+
+      parameters:
+      - ipl_par_name: unused
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x00
+        ipl_length: 1
+
+      - ipl_par_name: CXL.MEM ID
+        ipl_par_mnemonic: cxl_mem_id
+        ipl_offset: 0x01
+        ipl_length: 1
+
+      - ipl_par_name: Enable
+        ipl_par_mnemonic: ENABLE
+        ipl_offset: 0x02
+        ipl_length: 1
+
+      - ipl_par_name: reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x03
+        ipl_length: 1
+
+- command_set_name: Ordered Set Analyzer
+  command_set_description: OSA Commands
+  command_set_opcodes:
+  - opcode_name: OSA Type Trigger Configuration
+    mnemonic: OSA_OS_TYPE_TRIG_CFG
+    opcode: 0xC800
+
+    input_payload:
+    - ipl_name: OSA Type Trigger Config Input Payload
+      ipl_mnemonic: OSA_OS_TYPE_TRIG_CFG_IN_PL
+      ipl_size_bytes: 12
+
+      parameters:
+      - ipl_par_name: unused
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x00
+        ipl_length: 1
+
+      - ipl_par_name: CXL.MEM ID
+        ipl_par_mnemonic: cxl_mem_id
+        ipl_offset: 0x01
+        ipl_length: 1
+
+      - ipl_par_name: Reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x02
+        ipl_length: 2
+
+      - ipl_par_name: Lane Mask
+        ipl_par_mnemonic: LANE_MASK
+        ipl_offset: 0x04
+        ipl_length: 2
+
+      - ipl_par_name: Lane Direction Mask (see OSA_LANE_DIR_BITMSK_*)
+        ipl_par_mnemonic: LANE_DIR_MASK
+        ipl_offset: 0x06
+        ipl_length: 1
+
+      - ipl_par_name: Link Rate mask (see OSA_LINK_RATE_BITMSK_*)
+        ipl_par_mnemonic: RATE_MASK
+        ipl_offset: 0x07
+        ipl_length: 1
+
+      - ipl_par_name: OS Type mask (see OSA_OS_TYPE_TRIG_BITMSK_*)
+        ipl_par_mnemonic: OS_TYPE_MASK
+        ipl_offset: 0x08
+        ipl_length: 2
+
+      - ipl_par_name: Reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x0A
+        ipl_length: 2
+
+  - opcode_name: OSA Pattern Trigger Configuration
+    mnemonic: OSA_OS_PATT_TRIG_CFG
+    opcode: 0xC801
+
+    input_payload:
+    - ipl_name: OSA Pattern Trigger Config Input Payload
+      ipl_mnemonic: OSA_PATT_TRIG_CFG_IN_PL
+      ipl_size_bytes: 40
+
+      parameters:
+      - ipl_par_name: unused
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x00
+        ipl_length: 1
+
+      - ipl_par_name: CXL.MEM ID
+        ipl_par_mnemonic: cxl_mem_id
+        ipl_offset: 0x01
+        ipl_length: 1
+
+      - ipl_par_name: Reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x02
+        ipl_length: 2
+
+      - ipl_par_name: Lane Mask
+        ipl_par_mnemonic: LANE_MASK
+        ipl_offset: 0x04
+        ipl_length: 2
+
+      - ipl_par_name: Lane Direction mask (see OSA_LANE_DIR_BITMSK_*)
+        ipl_par_mnemonic: LANE_DIR_MASK
+        ipl_offset: 0x06
+        ipl_length: 1
+
+      - ipl_par_name: Link Rate mask (see OSA_LINK_RATE_BITMSK_*)
+        ipl_par_mnemonic: RATE_MASK
+        ipl_offset: 0x07
+        ipl_length: 1
+
+      - ipl_par_name: Pattern Match Value [CXL_MEM_OSA_DATA_LEN_DW]
+        ipl_par_mnemonic: PATT_VAL
+        ipl_offset: 0x08
+        ipl_unit_size: 4
+        ipl_units_num: 4
+        ipl_length: 16
+
+      - ipl_par_name: Pattern Match mask [CXL_MEM_OSA_DATA_LEN_DW]
+        ipl_par_mnemonic: PATT_MASK
+        ipl_offset: 0x18
+        ipl_unit_size: 4
+        ipl_units_num: 4
+        ipl_length: 16
+
+  - opcode_name: OSA Miscellaneous Trigger Configuration
+    mnemonic: OSA_MISC_TRIG_CFG
+    opcode: 0xC802
+
+    input_payload:
+    - ipl_name: OSA Miscellaneous Trigger Configuration Input Payload
+      ipl_mnemonic: OSA_MISC_TRIG_CFG_IN_PL
+      ipl_size_bytes: 8
+
+      parameters:
+      - ipl_par_name: unused
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x00
+        ipl_length: 1
+
+      - ipl_par_name: CXL.MEM ID
+        ipl_par_mnemonic: cxl_mem_id
+        ipl_offset: 0x01
+        ipl_length: 1
+
+      - ipl_par_name: Reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x02
+        ipl_length: 2
+
+      - ipl_par_name: Trigger Enable Mask.
+        ipl_par_mnemonic: TRIG_EN_MASK
+        ipl_offset: 0x04
+        ipl_length: 1
+        ipl_description: >
+          Bitmask of trigger types to enable.
+          Use cxl_mem_osa_misc_trig_type_enum values for bit positions.
+
+      - ipl_par_name: Reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x05
+        ipl_length: 3
+
+  - opcode_name: OSA Capture Control
+    mnemonic: OSA_CAP_CTRL
+    opcode: 0xC803
+
+    input_payload:
+    - ipl_name: OSA Capture Control Input Payload
+      ipl_mnemonic: OSA_CAP_CTRL_IN_PL
+      ipl_size_bytes: 16
+
+      parameters:
+      - ipl_par_name: unused
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x00
+        ipl_length: 1
+
+      - ipl_par_name: CXL.MEM ID
+        ipl_par_mnemonic: cxl_mem_id
+        ipl_offset: 0x01
+        ipl_length: 1
+
+      - ipl_par_name: Reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x02
+        ipl_length: 2
+
+      - ipl_par_name: Lane Mask
+        ipl_par_mnemonic: LANE_MASK
+        ipl_offset: 0x04
+        ipl_length: 2
+
+      - ipl_par_name: Lane Direction Mask (see OSA_LANE_DIR_BITMSK_*)
+        ipl_par_mnemonic: LANE_DIR_MASK
+        ipl_offset: 0x06
+        ipl_length: 1
+
+      - ipl_par_name: Drop Single OS's (TS1/TS2/FTS/CTL_SKP)
+        ipl_par_mnemonic: DROP_SINGLE_OS
+        ipl_offset: 0x07
+        ipl_length: 1
+
+      - ipl_par_name: Capture Stop Mode (see osa_cap_stop_mode_enum)
+        ipl_par_mnemonic: STOP_MODE
+        ipl_offset: 0x08
+        ipl_length: 1
+
+      - ipl_par_name: Snapshot Mode Enable
+        ipl_par_mnemonic: SNAPSHOT_MODE
+        ipl_offset: 0x09
+        ipl_length: 1
+
+      - ipl_par_name: Number of post-trigger entries
+        ipl_par_mnemonic: POST_TRIG_NUM
+        ipl_offset: 0x0A
+        ipl_length: 2
+        ipl_description: >
+          Number of post-trigger entries to capture.
+          This is multiplied by the number of RAMs allocated to the lane.
+
+      - ipl_par_name: OS Type mask (see OSA_OS_TYPE_CAP_BITMSK_*)
+        ipl_par_mnemonic: OS_TYPE_MASK
+        ipl_offset: 0x0C
+        ipl_length: 2
+
+      - ipl_par_name: Reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x0E
+        ipl_length: 2
+
+  - opcode_name: OSA Configuration Dump
+    mnemonic: OSA_CFG_DUMP
+    opcode: 0xC804
+
+    input_payload:
+    - ipl_name: OSA Configuration Dump Input Payload
+      ipl_mnemonic: OSA_CFG_DUMP_IN_PL
+      ipl_size_bytes: 4
+
+      parameters:
+      - ipl_par_name: unused
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x00
+        ipl_length: 1
+
+      - ipl_par_name: CXL.MEM ID
+        ipl_par_mnemonic: cxl_mem_id
+        ipl_offset: 0x01
+        ipl_length: 1
+
+      - ipl_par_name: Reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x02
+        ipl_length: 2
+
+    output_payload:
+    - opl_name: OSA Configuration Dump Output Payload
+      opl_mnemonic: OSA_CFG_DUMP_OUT_PL
+      opl_size_bytes: 60
+
+      parameters:
+      - opl_par_name: OS type triggering - lane mask
+        opl_par_mnemonic: os_type_trig_cfg_lane_mask
+        opl_offset: 0
+        opl_length: 2
+
+      - opl_par_name: OS type triggering - lane direction mask (see OSA_LANE_DIR_BITMSK_*)
+        opl_par_mnemonic: os_type_trig_cfg_lane_dir_mask
+        opl_offset: 2
+        opl_length: 1
+
+      - opl_par_name: OS type triggering - link rate mask (see OSA_LINK_RATE_BITMSK_*)
+        opl_par_mnemonic: os_type_trig_cfg_rate_mask
+        opl_offset: 3
+        opl_length: 1
+
+      - opl_par_name: OS type triggering - OS type mask (see OSA_OS_TYPE_TRIG_BITMSK_*)
+        opl_par_mnemonic: os_type_trig_cfg_os_type_mask
+        opl_offset: 4
+        opl_length: 2
+
+      - opl_par_name: Reserved
+        opl_par_mnemonic: RSVD
+        opl_offset: 6
+        opl_length: 2
+
+      - opl_par_name: OS pattern triggering - lane mask
+        opl_par_mnemonic: os_patt_trig_cfg_lane_mask
+        opl_offset: 8
+        opl_length: 2
+
+      - opl_par_name: OS pattern triggering - lane direction mask (see OSA_LANE_DIR_BITMSK_*)
+        opl_par_mnemonic: os_patt_trig_cfg_lane_dir_mask
+        opl_offset: 10
+        opl_length: 1
+
+      - opl_par_name: OS pattern triggering - link rate mask (see OSA_LINK_RATE_BITMSK_*)
+        opl_par_mnemonic: os_patt_trig_cfg_rate_mask
+        opl_offset: 11
+        opl_length: 1
+
+      - opl_par_name: OS pattern triggering - pattern match value
+        opl_par_mnemonic: os_patt_trig_cfg_val
+        opl_offset: 12
+        opl_length: 16
+        opl_unit_size: 4
+        opl_units_num: 4
+
+      - opl_par_name: OS pattern triggering - pattern match mask
+        opl_par_mnemonic: os_patt_trig_cfg_mask
+        opl_offset: 28
+        opl_length: 16
+        opl_unit_size: 4
+        opl_units_num: 4
+
+      - opl_par_name: miscellaneous triggering
+        opl_par_mnemonic: misc_trig_cfg_trig_en_mask
+        opl_offset: 44
+        opl_length: 1
+        opl_description: >
+          bitmask of enabled trigger types
+          (see cxl_mem_osa_misc_trig_type_enum values for bit positions)
+
+      - opl_par_name: Reserved
+        opl_par_mnemonic: RSVD
+        opl_offset: 45
+        opl_length: 3
+
+      - opl_par_name: capture control - lane mask
+        opl_par_mnemonic: cap_ctrl_lane_mask
+        opl_offset: 48
+        opl_length: 2
+
+      - opl_par_name: capture control - lane direction mask (see OSA_LANE_DIR_BITMSK_*)
+        opl_par_mnemonic: cap_ctrl_lane_dir_mask
+        opl_offset: 50
+        opl_length: 1
+
+      - opl_par_name: capture control - drop single OS's (TS1/TS2/FTS/CTL_SKP)
+        opl_par_mnemonic: cap_ctrl_drop_single_os
+        opl_offset: 51
+        opl_length: 1
+
+      - opl_par_name: capture control - capture stop mode
+        opl_par_mnemonic: cap_ctrl_stop_mode
+        opl_offset: 52
+        opl_length: 1
+
+      - opl_par_name: capture control - snapshot mode enable
+        opl_par_mnemonic: cap_ctrl_snapshot_mode
+        opl_offset: 53
+        opl_length: 1
+
+      - opl_par_name: capture control
+        opl_par_mnemonic: cap_ctrl_post_trig_num
+        opl_offset: 54
+        opl_length: 2
+        opl_description: >
+          Number of post-trigger entries to capture.
+          This is multiplied by the number of RAMs allocated to the lane.
+
+      - opl_par_name: capture control - OS type mask (see OSA_OS_TYPE_CAP_BITMSK_*)
+        opl_par_mnemonic: cap_ctrl_os_type_mask
+        opl_offset: 56
+        opl_length: 2
+
+      - opl_par_name: Reserved
+        opl_par_mnemonic: RSVD
+        opl_offset: 58
+        opl_length: 2
+
+  - opcode_name: OSA Analyzer Operation
+    mnemonic: OSA_ANA_OP
+    opcode: 0xC805
+
+    input_payload:
+    - ipl_name: OSA Analyzer Input Payload
+      ipl_mnemonic: OSA_ANA_OP_IN_PL
+      ipl_size_bytes: 4
+
+      parameters:
+      - ipl_par_name: unused
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x00
+        ipl_length: 1
+
+      - ipl_par_name: CXL.MEM ID
+        ipl_par_mnemonic: cxl_mem_id
+        ipl_offset: 0x01
+        ipl_length: 1
+
+      - ipl_par_name: Operation (see osa_op_enum)
+        ipl_par_mnemonic: OP
+        ipl_offset: 0x02
+        ipl_length: 1
+
+      - ipl_par_name: Reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x03
+        ipl_length: 1
+
+  - opcode_name: OSA Status Query
+    mnemonic: OSA_STATUS_QUERY
+    opcode: 0xC806
+
+    input_payload:
+    - ipl_name: OSA Status Query Input Payload
+      ipl_mnemonic: OSA_STAT_QUERY_IN_PL
+      ipl_size_bytes: 4
+
+      parameters:
+      - ipl_par_name: unused
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x00
+        ipl_length: 1
+
+      - ipl_par_name: CXL.MEM ID
+        ipl_par_mnemonic: cxl_mem_id
+        ipl_offset: 0x01
+        ipl_length: 1
+
+      - ipl_par_name: Reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x02
+        ipl_length: 2
+
+    output_payload:
+
+    - opl_name: OSA Status Query Output Payload
+      opl_mnemonic: OSA_STAT_QUERY_OUT_PL
+      opl_size_bytes: 8
+
+      parameters:
+
+      - opl_par_name: OSA state (see osa_state_enum)
+        opl_par_mnemonic: state
+        opl_offset: 0x00
+        opl_length: 1
+
+      - opl_par_name: lane that caused the trigger
+        opl_par_mnemonic: lane_id
+        opl_offset: 0x01
+        opl_length: 1
+
+      - opl_par_name: direction of lane that caused the trigger (see osa_lane_dir_enum)
+        opl_par_mnemonic: lane_dir
+        opl_offset: 0x02
+        opl_length: 1
+
+      - opl_par_name: reserved
+        opl_par_mnemonic: RSVD
+        opl_offset: 0x03
+        opl_length: 1
+
+      - opl_par_name: trigger reason mask (see OSA_TRIG_REASON_BITMSK_*)
+        opl_par_mnemonic: trig_reason_mask
+        opl_offset: 0x04
+        opl_length: 2
+
+      - opl_par_name: reserved
+        opl_par_mnemonic: RSVD
+        opl_offset: 0x06
+        opl_length: 2
+
+  - opcode_name: OSA Data Read
+    mnemonic: OSA_DATA_READ
+    opcode: 0xC807
+
+    input_payload:
+    - ipl_name: OSA Data Read Input Payload
+      ipl_mnemonic: OSA_DATA_READ_IN_PL
+      ipl_size_bytes: 8
+
+      parameters:
+      - ipl_par_name: unused
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x00
+        ipl_length: 1
+
+      - ipl_par_name: CXL.MEM ID
+        ipl_par_mnemonic: cxl_mem_id
+        ipl_offset: 0x01
+        ipl_length: 1
+
+      - ipl_par_name: Lane ID
+        ipl_par_mnemonic: lane_id
+        ipl_offset: 0x02
+        ipl_length: 1
+
+      - ipl_par_name: lane direction (see osa_lane_dir_enum)
+        ipl_par_mnemonic: lane_dir
+        ipl_offset: 0x03
+        ipl_length: 1
+
+      - ipl_par_name: index of the first entry to read
+        ipl_par_mnemonic: start_entry
+        ipl_offset: 0x04
+        ipl_length: 2
+
+      - ipl_par_name: maximum number of entries to read
+        ipl_par_mnemonic: num_entries
+        ipl_offset: 0x06
+        ipl_length: 1
+
+      - ipl_par_name: Reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x07
+        ipl_length: 1
+
+    output_payload:
+    - opl_name: OSA Data Read Output Payload
+      opl_mnemonic: OSA_DATA_READ_OUT_PL
+      opl_size_bytes: 12+
+
+      parameters:
+      - opl_par_name: total number of entries read
+        opl_par_mnemonic: entries_read
+        opl_offset: 0
+        opl_length: 1
+
+      - opl_par_name: CXL.MEM ID
+        opl_par_mnemonic: cxl_mem_id
+        opl_offset: 1
+        opl_length: 1
+
+      - opl_par_name: lane ID
+        opl_par_mnemonic: lane_id
+        opl_offset: 2
+        opl_length: 1
+
+      - opl_par_name: lane direction (see osa_lane_dir_enum)
+        opl_par_mnemonic: lane_dir
+        opl_offset: 3
+        opl_length: 1
+
+      - opl_par_name: index of the next entry to read
+        opl_par_mnemonic: next_entry
+        opl_offset: 4
+        opl_length: 2
+
+      - opl_par_name: number of entries remaining
+        opl_par_mnemonic: entries_rem
+        opl_offset: 6
+        opl_length: 2
+
+      - opl_par_name: wrap indicator
+        opl_par_mnemonic: wrap
+        opl_offset: 8
+        opl_length: 1
+        opl_description: >
+          Indicates whether any older entries may have been discarded due to a wrap
+          in the allocated RAM(s).  Only applicable when Snapshot Mode is disabled.
+
+      - opl_par_name: reserved
+        opl_par_mnemonic: RSVD
+        opl_offset: 9
+        opl_length: 3
+
+      - opl_par_name: data
+        opl_par_mnemonic: data
+        opl_offset: 12
+        opl_unit_size: 4
+        opl_units_num: VARIES
+        opl_length: VARIES
+
+  - opcode_name: OSA Access Release
+    mnemonic: OSA_ACCESS_REL
+    opcode: 0xC808
+
+    input_payload:
+    - ipl_name: OSA Access Release Input Payload
+      ipl_mnemonic: OSA_ACC_REL_IN_PL
+      ipl_size_bytes: 4
+
+      parameters:
+      - ipl_par_name: unused
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x00
+        ipl_length: 1
+
+      - ipl_par_name: CXL.MEM ID
+        ipl_par_mnemonic: cxl_mem_id
+        ipl_offset: 0x01
+        ipl_length: 1
+
+      - ipl_par_name: Reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x02
+        ipl_length: 2
+
+- command_set_name: Performance Counters TL/AL
+  command_set_description: >
+    To configure and operate the performance counters the commands/opcodes
+    in this section can be used to:
+
+      - Setup LTIF performance counter
+      - Setup HIF perf counter
+      - Read a specific counter value
+      - Clear a specific counter
+      - Latch the current value of a specific counter
+      - Read the latched value of a specific counter
+
+    Please find a detailed description in the opcode section below about the
+    usage of the available commands.
+
+  command_set_opcodes:
+  - opcode_name: MTA set LTIF performance counter
+    mnemonic: PERFCNT_MTA_LTIF_SET
+    opcode: 0xCA00
+    opcode_description: >
+      This opcode provides access to the configuration field of the LTIF
+      performance counter.
+      The counter is set to increment when the event signal is high.
+
+    input_payload:
+    - ipl_name: MTA set LTIF perf counter Input Payload
+      ipl_mnemonic: PERFCNT_MTA_LTIF_SET_IN_PL
+      ipl_size_bytes: 20
+
+      parameters:
+      - ipl_par_name: Counter
+        ipl_par_mnemonic: COUNTER
+        ipl_offset: 0x00
+        ipl_length: 4
+        ipl_description: >
+          Selects counter instances.
+
+        enumerators:
+        - ipl_en_name: PMON0 is implemented on LTIF_RCMD0 interface
+          ipl_en_mnemonic: PMON0_LTIF_RCMD0
+          ipl_value: 0x00
+
+        - ipl_en_name: PMON1 is implemented on LTIF_RCMD1 interface
+          ipl_en_mnemonic: PMON1_LTIF_RCMD1
+          ipl_value: 0x01
+
+        - ipl_en_name: PMON2 is implemented on LTIF_WCMD interface
+          ipl_en_mnemonic: PMON2_LTIF_WCMD
+          ipl_value: 0x02
+
+      - ipl_par_name: Match Value
+        ipl_par_mnemonic: MATCH_VALUE
+        ipl_offset: 0x04
+        ipl_length: 4
+        ipl_description: >
+          This field specifies that out of 3 monitored signals which signal match should trigger the event counter.
+
+        enumerators:
+        - ipl_en_name: Pass event unfiltered. Count all types of LTIF commands
+          ipl_en_mnemonic: UNFILTERED
+          ipl_value: 0x00
+
+        - ipl_en_name: Count event trigger when programmed CXL OPCODE matches
+          ipl_en_mnemonic: OPCODE
+          ipl_value: 0x01
+
+        - ipl_en_name: Count event trigger when programmed META_FIELD matches
+          ipl_en_mnemonic: META_FIELD
+          ipl_value: 0x02
+
+        - ipl_en_name: Count_event trigger when programmed OPCODE and META_FIELD matches
+          ipl_en_mnemonic: OPCODE_META_FIELD
+          ipl_value: 0x03
+
+        - ipl_en_name: Count event trigger when programmed META_VALUE matches
+          ipl_en_mnemonic: META_VALUE
+          ipl_value: 0x04
+
+        - ipl_en_name: Count_event trigger when programmed OPCODE and META_VALUE matches
+          ipl_en_mnemonic: OPCODE_META_VAL
+          ipl_value: 0x05
+
+        - ipl_en_name: Count_event trigger when programmed META_VALUE and META_FIELD matches
+          ipl_en_mnemonic: META_VAL_META_FIELD
+          ipl_value: 0x06
+
+        - ipl_en_name: Count_event trigger when programmed OPCODE, META_FIELD and META_VALUE matches
+          ipl_en_mnemonic: OPCODE_META_VAL_META_FIELD
+          ipl_value: 0x07
+
+      - ipl_par_name: Opcode
+        ipl_par_mnemonic: OPCODE
+        ipl_offset: 0x08
+        ipl_length: 4
+        ipl_description: >
+          Monitor an event for a programmed CXL OPCODE
+
+      - ipl_par_name: Meta Field
+        ipl_par_mnemonic: META_FIELD
+        ipl_offset: 0x0c
+        ipl_length: 4
+        ipl_description: >
+          Monitor an event for a programmed CXL meta field.
+
+      - ipl_par_name: Meta Value
+        ipl_par_mnemonic: META_VALUE
+        ipl_offset: 0x10
+        ipl_length: 4
+        ipl_description: >
+          Monitor an event for a programmed CXL meta value.
+
+  - opcode_name: MTA get performance counter
+    mnemonic: PERFCNT_MTA_GET
+    opcode: 0xCA01
+    opcode_description: >
+      Reads current value of a counter instance.
+
+    input_payload:
+    - ipl_name: MTA get performance counter Input Payload
+      ipl_mnemonic: PERFCNT_MTA_GET_IN_PL
+      ipl_size_bytes: 5
+
+      parameters:
+      - ipl_par_name: Type
+        ipl_par_mnemonic: TYPE
+        ipl_offset: 0x00
+        ipl_length: 1
+        ipl_description: >
+          Selects the interface type.
+
+        enumerators:
+        - ipl_en_name: LTIF
+          ipl_en_mnemonic: LTIF
+          ipl_value: 0x00
+
+        - ipl_en_name: HIF
+          ipl_en_mnemonic: HIF
+          ipl_value: 0x01
+
+      - ipl_par_name: Counter
+        ipl_par_mnemonic: COUNTER
+        ipl_offset: 0x01
+        ipl_length: 4
+        ipl_description: >
+          Selects the counter instance to read the current counter value from.
+
+    output_payload:
+    - opl_name: MTA get configuration output Payload
+      opl_mnemonic: PERFCNT_MTA_GET_OUT_PL
+      opl_size_bytes: 8
+
+      parameters:
+      - opl_par_name: Counter
+        opl_par_mnemonic: COUNTER
+        opl_offset: 0x00
+        opl_length: 8
+
+  - opcode_name: MTA get latch value
+    mnemonic: PERFCNT_MTA_LATCH_VAL_GET
+    opcode: 0xCA02
+    opcode_description: >
+      Reads a latched value of a counter instance.
+
+    input_payload:
+    - ipl_name: MTA get latch Input Payload
+      ipl_mnemonic: PERFCNT_MTA_LATCH_VAL_GET_IN_PL
+      ipl_size_bytes: 5
+
+      parameters:
+      - ipl_par_name: Type
+        ipl_par_mnemonic: TYPE
+        ipl_offset: 0x00
+        ipl_length: 1
+        ipl_description: >
+          Selects the interface type.
+
+        enumerators:
+        - ipl_en_name: LTIF
+          ipl_en_mnemonic: LTIF
+          ipl_value: 0x00
+
+        - ipl_en_name: HIF
+          ipl_en_mnemonic: HIF
+          ipl_value: 0x01
+
+      - ipl_par_name: Counter
+        ipl_par_mnemonic: COUNTER
+        ipl_offset: 0x01
+        ipl_length: 4
+        ipl_description: >
+          Selects the counter instance to read the latched counter value from.
+
+    output_payload:
+    - opl_name: MTA get latch output Payload
+      opl_mnemonic: PERFCNT_MTA_LATCH_VAL_GET_OUT_PL
+      opl_size_bytes: 8
+
+      parameters:
+      - opl_par_name: Latch value
+        opl_par_mnemonic: LATCH_VAL
+        opl_offset: 0x00
+        opl_length: 8
+
+  - opcode_name: MTA clear counter
+    mnemonic: PERFCNT_MTA_COUNTER_CLEAR
+    opcode: 0xCA03
+    opcode_description: >
+      Clears value of a given counter instance.
+
+    input_payload:
+    - ipl_name: MTA clear counter Input Payload
+      ipl_mnemonic: PERFCNT_MTA_COUNTER_CLEAR_IN_PL
+      ipl_size_bytes: 5
+
+      parameters:
+      - ipl_par_name: Type
+        ipl_par_mnemonic: TYPE
+        ipl_offset: 0x00
+        ipl_length: 1
+        ipl_description: >
+          Selects the interface type.
+
+        enumerators:
+        - ipl_en_name: LTIF
+          ipl_en_mnemonic: LTIF
+          ipl_value: 0x00
+
+        - ipl_en_name: HIF
+          ipl_en_mnemonic: HIF
+          ipl_value: 0x01
+
+      - ipl_par_name: Counter
+        ipl_par_mnemonic: COUNTER
+        ipl_offset: 0x01
+        ipl_length: 4
+        ipl_description: >
+          Selects the counter instance to be cleared.
+
+  - opcode_name: MTA latch counter value
+    mnemonic: PERFCNT_MTA_CNT_VAL_LATCH
+    opcode: 0xCA04
+    opcode_description: >
+      Latches the current value of a given counter instance.
+
+    input_payload:
+    - ipl_name: MTA latch counter value Input Payload
+      ipl_mnemonic: PERFCNT_MTA_CNT_VAL_LATCH_IN_PL
+      ipl_size_bytes: 5
+
+      parameters:
+      - ipl_par_name: Type
+        ipl_par_mnemonic: TYPE
+        ipl_offset: 0x00
+        ipl_length: 1
+        ipl_description: >
+          Selects the interface type.
+
+        enumerators:
+        - ipl_en_name: LTIF
+          ipl_en_mnemonic: LTIF
+          ipl_value: 0x00
+
+        - ipl_en_name: HIF
+          ipl_en_mnemonic: HIF
+          ipl_value: 0x01
+
+      - ipl_par_name: Counter
+        ipl_par_mnemonic: COUNTER
+        ipl_offset: 0x01
+        ipl_length: 4
+        ipl_description: >
+          Selects counter instance which value is to be latched.
+
+  - opcode_name: MTA set HIF performance counter
+    mnemonic: PERFCNT_MTA_HIF_SET
+    opcode: 0xCA05
+
+    input_payload:
+    - ipl_name: MTA set HIF performance counter Input Payload
+      ipl_mnemonic: PERFCNT_MTA_HIF_SET_IN_PL
+      ipl_size_bytes: 20
+
+      parameters:
+      - ipl_par_name: Counter
+        ipl_par_mnemonic: COUNTER
+        ipl_offset: 0x00
+        ipl_length: 4
+        ipl_description: >
+          Selects the counter instance.
+
+        enumerators:
+        - ipl_en_name: PMON0 is implemented on HIF_RCMD0 interface
+          ipl_en_mnemonic: PMON0_HIF_RCMD0
+          ipl_value: 0x00
+
+        - ipl_en_name: PMON1 is implemented on HIF_RCMD1 interface
+          ipl_en_mnemonic: PMON1_HIF_RCMD1
+          ipl_value: 0x01
+
+        - ipl_en_name: PMON2 is implemented on HIF_RCMD2 interface
+          ipl_en_mnemonic: PMON2_HIF_RCMD0
+          ipl_value: 0x02
+
+        - ipl_en_name: PMON3 is implemented on HIF_RCMD3 interface
+          ipl_en_mnemonic: PMON3_HIF_RCMD1
+          ipl_value: 0x03
+
+        - ipl_en_name: PMON4 is implemented on HIF_WCMD0 interface
+          ipl_en_mnemonic: PMON4_HIF_WCMD
+          ipl_value: 0x04
+
+        - ipl_en_name: PMON5 is implemented on HIF_WCMD1 interface
+          ipl_en_mnemonic: PMON5_HIF_WCMD
+          ipl_value: 0x05
+
+        - ipl_en_name: PMON6 is implemented on HIF_WCMD2 interface
+          ipl_en_mnemonic: PMON6_HIF_WCMD
+          ipl_value: 0x06
+
+        - ipl_en_name: PMON7 is implemented on HIF_WCMD3 interface.
+          ipl_en_mnemonic: PMON7_HIF_WCMD
+          ipl_value: 0x07
+
+      - ipl_par_name: Match Value
+        ipl_par_mnemonic: MATCH_VALUE
+        ipl_offset: 0x04
+        ipl_length: 4
+        ipl_description: >
+          Monitor an event for a programmed CXL OPCODE.
+
+      - ipl_par_name: Address
+        ipl_par_mnemonic: ADDR
+        ipl_offset: 0x08
+        ipl_length: 4
+        ipl_description: >
+          Monitor an event for a programmed upper 12 bits of byte aligned HIF channel address.
+
+      - ipl_par_name: Req Type
+        ipl_par_mnemonic: REQ_TY
+        ipl_offset: 0x0c
+        ipl_length: 4
+        ipl_description: >
+          Monitor an event for a programmed value of REQ_TYPE.
+
+        enumerators:
+        - ipl_en_name: CXL request
+          ipl_en_mnemonic: CXL
+          ipl_value: 0x00
+
+        - ipl_en_name: FBE request
+          ipl_en_mnemonic: FBE
+          ipl_value: 0x02
+
+        - ipl_en_name: RMW request
+          ipl_en_mnemonic: RMW
+          ipl_value: 0x03
+
+      - ipl_par_name: Scrub Req
+        ipl_par_mnemonic: SC_TY
+        ipl_offset: 0x10
+        ipl_length: 4
+        ipl_description: >
+          Monitor an event for a programmed scrubbing type request.
+
+  - opcode_name: MTA get HIF configuration
+    mnemonic: PERFCNT_MTA_HIF_CFG_GET
+    opcode: 0xCA06
+
+    input_payload:
+    - ipl_name: MTA get HIF configuration Input Payload
+      ipl_mnemonic: PERFCNT_MTA_HIF_CFG_GET_IN_PL
+      ipl_size_bytes: 4
+
+      parameters:
+      - ipl_par_name: Counter
+        ipl_par_mnemonic: COUNTER
+        ipl_offset: 0x00
+        ipl_length: 4
+
+    output_payload:
+    - opl_name: MTA get HIF configuration output Payload
+      opl_mnemonic: PERFCNT_MTA_HIF_CFG_GET_OUT_PL
+      opl_size_bytes: 8
+
+      parameters:
+      - opl_par_name: Counter
+        opl_par_mnemonic: COUNTER
+        opl_offset: 0x00
+        opl_length: 8
+
+  - opcode_name: MTA get HIF latch value
+    mnemonic: PERFCNT_MTA_HIF_LATCH_VAL_GET
+    opcode: 0xCA07
+
+    input_payload:
+    - ipl_name: MTA get HIF latch Input Payload
+      ipl_mnemonic: PERFCNT_MTA_LTIF_LATCH_VAL_GET_IN_PL
+      ipl_size_bytes: 4
+
+      parameters:
+      - ipl_par_name: Counter
+        ipl_par_mnemonic: COUNTER
+        ipl_offset: 0x00
+        ipl_length: 4
+
+    output_payload:
+    - opl_name: MTA get HIF latch output Payload
+      opl_mnemonic: PERFCNT_MTA_HIF_LATCH_GET_OUT_PL
+      opl_size_bytes: 8
+
+      parameters:
+      - opl_par_name: Latch value
+        opl_par_mnemonic: LATCH_VAL
+        opl_offset: 0x00
+        opl_length: 8
+
+  - opcode_name: MTA HIF clear counter
+    mnemonic: PERFCNT_MTA_HIF_COUNTER_CLEAR
+    opcode: 0xCA08
+
+    input_payload:
+    - ipl_name: MTA HIF clear counter Input Payload
+      ipl_mnemonic: PERFCNT_MTA_LTIF_COUNTER_CLEAR_IN_PL
+      ipl_size_bytes: 4
+
+      parameters:
+      - ipl_par_name: Counter
+        ipl_par_mnemonic: COUNTER
+        ipl_offset: 0x00
+        ipl_length: 4
+
+  - opcode_name: MTA latch HIF counter value
+    mnemonic: PERFCNT_MTA_HIF_CNT_VAL_LATCH
+    opcode: 0xCA09
+
+    input_payload:
+    - ipl_name: MTA latch HIF counter value Input Payload
+      ipl_mnemonic: PERFCNT_MTA_HIF_CNT_VAL_LATCH_IN_PL
+      ipl_size_bytes: 4
+
+      parameters:
+      - ipl_par_name: Counter
+        ipl_par_mnemonic: COUNTER
+        ipl_offset: 0x00
+        ipl_length: 4
+
+- command_set_name: Performance Counters DDR
+  command_set_description: Performance Counters DDR command set
+
+  command_set_opcodes:
+  - opcode_name: DDR Generic Select
+    mnemonic: PERFCNT_DDR_GENERIC_SELECT
+    opcode: 0xCA10
+    opcode_description: >
+     This function is used to setup specific filters and/or events
+     to be captured by PERFCNT_DDR_GENERIC_CAPTURE function.
+
+    input_payload:
+    - ipl_name: DDR Generic Select Input Payload
+      ipl_mnemonic: PERFCNT_DDR_GENERIC_SELECT_IN_PL
+      ipl_size_bytes: 13
+
+      parameters:
+      - ipl_par_name: DDR instance
+        ipl_par_mnemonic: DDR_ID
+        ipl_offset: 0x00
+        ipl_length: 1
+
+      - ipl_par_name: CID selection
+        ipl_par_mnemonic: CID
+        ipl_offset: 0x01
+        ipl_length: 1
+
+        enumumerators:
+        - ipl_en_name: CID 0 filter
+          ipl_en_mnemonic: CID0
+          ipl_value: 0x01
+
+        - ipl_en_name: CID 1 filter
+          ipl_en_mnemonic: CID1
+          ipl_value: 0x02
+
+        - ipl_en_name: CID 2 filter
+          ipl_en_mnemonic: CID2
+          ipl_value: 0x04
+
+        - ipl_en_name: CID 3 filter
+          ipl_en_mnemonic: CID3
+          ipl_value: 0x08
+
+        - ipl_en_name: No filtering by CID
+          ipl_en_mnemonic: NO_FILTERING
+          ipl_value: 0x0F
+
+      - ipl_par_name: Rank selection
+        ipl_par_mnemonic: RANK
+        ipl_offset: 0x02
+        ipl_length: 1
+
+        enumumerators:
+        - ipl_en_name: Rank 0 filter
+          ipl_en_mnemonic: RANK0
+          ipl_value: 0x01
+
+        - ipl_en_name: Rank 1 filter
+          ipl_en_mnemonic: RANK1
+          ipl_value: 0x02
+
+        - ipl_en_name: Rank 2 filter
+          ipl_en_mnemonic: RANK2
+          ipl_value: 0x04
+
+        - ipl_en_name: Rank 3 filter
+          ipl_en_mnemonic: RANK3
+          ipl_value: 0x08
+
+        - ipl_en_name: No filtering by Rank
+          ipl_en_mnemonic: NO_FILTERING
+          ipl_value: 0x0F
+
+      - ipl_par_name: Bank selection
+        ipl_par_mnemonic: BANK
+        ipl_offset: 0x03
+        ipl_length: 1
+
+        enumumerators:
+        - ipl_en_name: Bank 0 filter
+          ipl_en_mnemonic: BA0
+          ipl_value: 0x01
+
+        - ipl_en_name: Bank 1 filter
+          ipl_en_mnemonic: BA1
+          ipl_value: 0x02
+
+        - ipl_en_name: Bank 2 filter
+          ipl_en_mnemonic: BA2
+          ipl_value: 0x04
+
+        - ipl_en_name: Bank 3 filter
+          ipl_en_mnemonic: BA3
+          ipl_value: 0x08
+
+        - ipl_en_name: No filtering by Bank
+          ipl_en_mnemonic: NO_FILTERING
+          ipl_value: 0x0F
+
+      - ipl_par_name: Bank Group selection
+        ipl_par_mnemonic: BANKGROUP
+        ipl_offset: 0x04
+        ipl_length: 1
+
+        enumumerators:
+        - ipl_en_name: Bank Group 0 filter
+          ipl_en_mnemonic: BG0
+          ipl_value: 0x01
+
+        - ipl_en_name: Bank Group 1 filter
+          ipl_en_mnemonic: BG1
+          ipl_value: 0x02
+
+        - ipl_en_name: Bank Group 2 filter
+          ipl_en_mnemonic: BG2
+          ipl_value: 0x04
+
+        - ipl_en_name: Bank Group 3 filter
+          ipl_en_mnemonic: BG3
+          ipl_value: 0x08
+
+        - ipl_en_name: Bank Group 4 filter
+          ipl_en_mnemonic: BG4
+          ipl_value: 0x10
+
+        - ipl_en_name: Bank Group 5 filter
+          ipl_en_mnemonic: BG5
+          ipl_value: 0x20
+
+        - ipl_en_name: Bank Group 6 filter
+          ipl_en_mnemonic: BG6
+          ipl_value: 0x40
+
+        - ipl_en_name: Bank Group 7 filter
+          ipl_en_mnemonic: BG7
+          ipl_value: 0x80
+
+        - ipl_en_name: No filtering by Bank Group
+          ipl_en_mnemonic: NO_FILTERING
+          ipl_value: 0xFF
+
+      - ipl_par_name: Events selection
+        ipl_par_mnemonic: EVENT
+        ipl_offset: 0x05
+        ipl_unit_size: 1
+        ipl_units_num: 8
+        ipl_length: 8
+
+        enumumerators:
+        - ipl_en_name: RAS on PHY0
+          ipl_en_mnemonic: RAS_ON_PHY0
+          ipl_value: 0x00
+
+        - ipl_en_name: CAS on PHY0
+          ipl_en_mnemonic: CAS_ON_PHY0
+          ipl_value: 0x01
+
+        - ipl_en_name: WE on PHY0
+          ipl_en_mnemonic: WE_ON_PHY0
+          ipl_value: 0x02
+
+        - ipl_en_name: CKE[0] on PHY0
+          ipl_en_mnemonic: CKE0_ON_PHY0
+          ipl_value: 0x03
+
+        - ipl_en_name: CKE[1] on PHY0
+          ipl_en_mnemonic: CKE1_ON_PHY0
+          ipl_value: 0x04
+
+        - ipl_en_name: CKE[2] on PHY0
+          ipl_en_mnemonic: CKE2_ON_PHY0
+          ipl_value: 0x05
+
+        - ipl_en_name: CKE[3] on PHY0
+          ipl_en_mnemonic: CKE3_ON_PHY0
+          ipl_value: 0x06
+
+        - ipl_en_name: controller_busy output
+          ipl_en_mnemonic: CONTROLLER_BUSY
+          ipl_value: 0x07
+
+        - ipl_en_name: controller_int output
+          ipl_en_mnemonic: CONTROLLER_INT
+          ipl_value: 0x08
+
+        - ipl_en_name: perf_hif_rd_or_wr
+          ipl_en_mnemonic: PERF_HIF_RD_OR_WR
+          ipl_value: 0x09
+
+        - ipl_en_name: perf_hif_wr
+          ipl_en_mnemonic: PERF_HIF_WR
+          ipl_value: 0x0A
+
+        - ipl_en_name: perf_hif_rd
+          ipl_en_mnemonic: PERF_HIF_RD
+          ipl_value: 0x0B
+
+        - ipl_en_name: perf_hif_rmw
+          ipl_en_mnemonic: PERF_HIF_RMW
+          ipl_value: 0x0C
+
+        - ipl_en_name: perf_hif_hi_pri_rd
+          ipl_en_mnemonic: PERF_HIF_HI_PRI_RD
+          ipl_value: 0x0D
+
+        - ipl_en_name: perf_read_bypass
+          ipl_en_mnemonic: PERF_READ_BYPASS
+          ipl_value: 0x0E
+
+        - ipl_en_name: perf_act_bypass
+          ipl_en_mnemonic: PERF_ACT_BYPASS
+          ipl_value: 0x0F
+
+        - ipl_en_name: perf_dfi_wr_data_cycles
+          ipl_en_mnemonic: PERF_DFI_WR_DATA_CYCLES
+          ipl_value: 0x10
+
+        - ipl_en_name: perf_dfi_rd_data_cycles
+          ipl_en_mnemonic: PERF_DFI_RD_DATA_CYCLES
+          ipl_value: 0x11
+
+        - ipl_en_name: perf_hpr_xact_when_critical
+          ipl_en_mnemonic: PERF_HPR_XACT_WHEN_CRITICAL
+          ipl_value: 0x12
+
+        - ipl_en_name: perf_lpr_xact_when_critical
+          ipl_en_mnemonic: PERF_LPR_XACT_WHEN_CRITICAL
+          ipl_value: 0x13
+
+        - ipl_en_name: perf_wr_xact_when_critical
+          ipl_en_mnemonic: PERF_WR_XACT_WHEN_CRITICAL
+          ipl_value: 0x14
+
+        - ipl_en_name: perf_op_is_activate
+          ipl_en_mnemonic: PERF_OP_IS_ACTIVATE
+          ipl_value: 0x15
+
+        - ipl_en_name: perf_op_is_rd_or_wr
+          ipl_en_mnemonic: PERF_OP_IS_RD_OR_WR
+          ipl_value: 0x16
+
+        - ipl_en_name: perf_op_is_rd_activate
+          ipl_en_mnemonic: PERF_OP_IS_RD_ACTIVATE
+          ipl_value: 0x17
+
+        - ipl_en_name: perf_op_is_rd
+          ipl_en_mnemonic: PERF_OP_IS_RD
+          ipl_value: 0x18
+
+        - ipl_en_name: perf_op_is_wr
+          ipl_en_mnemonic: PERF_OP_IS_WR
+          ipl_value: 0x19
+
+        - ipl_en_name: perf_op_is_precharge
+          ipl_en_mnemonic: PERF_OP_IS_PRECHARGE
+          ipl_value: 0x1A
+
+        - ipl_en_name: perf_precharge_for_rdwr
+          ipl_en_mnemonic: PERF_PRECHARGE_FOR_RDWR
+          ipl_value: 0x1B
+
+        - ipl_en_name: perf_precharge_for_other
+          ipl_en_mnemonic: PERF_PRECHARGE_FOR_OTHER
+          ipl_value: 0x1C
+
+        - ipl_en_name: perf_rdwr_transitions
+          ipl_en_mnemonic: PERF_RDWR_TRANSITIONS
+          ipl_value: 0x1D
+
+        - ipl_en_name: perf_write_combine
+          ipl_en_mnemonic: PERF_WRITE_COMBINE
+          ipl_value: 0x1E
+
+        - ipl_en_name: perf_war_hazard
+          ipl_en_mnemonic: PERF_WAR_HAZARD
+          ipl_value: 0x1F
+
+        - ipl_en_name: perf_raw_hazard
+          ipl_en_mnemonic: PERF_RAW_HAZARD
+          ipl_value: 0x20
+
+        - ipl_en_name: perf_waw_hazard
+          ipl_en_mnemonic: PERF_WAW_HAZARD
+          ipl_value: 0x21
+
+        - ipl_en_name: perf_op_is_enter_selfref
+          ipl_en_mnemonic: PERF_OP_IS_ENTER_SELFREF
+          ipl_value: 0x22
+
+        - ipl_en_name: perf_op_is_enter_powerdown
+          ipl_en_mnemonic: PERF_OP_IS_ENTER_POWERDOWN
+          ipl_value: 0x23
+
+        - ipl_en_name: perf_op_is_enter_mpsm
+          ipl_en_mnemonic: PERF_OP_IS_ENTER_MPSM
+          ipl_value: 0x24
+
+        - ipl_en_name: perf_selfref_mode
+          ipl_en_mnemonic: PERF_SELFREF_MODE
+          ipl_value: 0x25
+
+        - ipl_en_name: perf_op_is_refresh
+          ipl_en_mnemonic: PERF_OP_IS_REFRESH
+          ipl_value: 0x26
+
+        - ipl_en_name: perf_op_is_load_mode
+          ipl_en_mnemonic: PERF_OP_IS_LOAD_MODE
+          ipl_value: 0x27
+
+        - ipl_en_name: perf_op_is_zqcl
+          ipl_en_mnemonic: PERF_OP_IS_ZQCL
+          ipl_value: 0x28
+
+        - ipl_en_name: perf_op_is_zqcs
+          ipl_en_mnemonic: PERF_OP_IS_ZQCS
+          ipl_value: 0x29
+
+        - ipl_en_name: perf_hpr_req_with_nocredit
+          ipl_en_mnemonic: PERF_HPR_REQ_WITH_NOCREDIT
+          ipl_value: 0x2A
+
+        - ipl_en_name: perf_lpr_req_with_nocredit
+          ipl_en_mnemonic: PERF_LPR_REQ_WITH_NOCREDIT
+          ipl_value: 0x2B
+
+        - ipl_en_name: RAS on PHY1
+          ipl_en_mnemonic: RAS_ON_PHY1
+          ipl_value: 0x2C
+
+        - ipl_en_name: CAS on PHY1
+          ipl_en_mnemonic: CAS_ON_PHY1
+          ipl_value: 0x2D
+
+        - ipl_en_name: WE on PHY1
+          ipl_en_mnemonic: WE_ON_PHY1
+          ipl_value: 0x2E
+
+        - ipl_en_name: CKE[0] on PHY1
+          ipl_en_mnemonic: CKE0_ON_PHY1
+          ipl_value: 0x2F
+
+        - ipl_en_name: CKE[1] on PHY1
+          ipl_en_mnemonic: CKE1_ON_PHY1
+          ipl_value: 0x30
+
+        - ipl_en_name: CKE[2] on PHY1
+          ipl_en_mnemonic: CKE2_ON_PHY1
+          ipl_value: 0x31
+
+        - ipl_en_name: CKE[3] on PHY1
+          ipl_en_mnemonic: CKE3_ON_PHY1
+          ipl_value: 0x32
+
+        - ipl_en_name: controller_busy_ch1
+          ipl_en_mnemonic: CONTROLLER_BUSY_CH1
+          ipl_value: 0x33
+
+        - ipl_en_name: perf_hif_rd_or_wr_dch1
+          ipl_en_mnemonic: PERF_HIF_RD_OR_WR_DCH1
+          ipl_value: 0x34
+
+        - ipl_en_name: perf_hif_wr_dch1
+          ipl_en_mnemonic: PERF_HIF_WR_DCH1
+          ipl_value: 0x35
+
+        - ipl_en_name: perf_hif_rd_dch1
+          ipl_en_mnemonic: PERF_HIF_RD_DCH1
+          ipl_value: 0x36
+
+        - ipl_en_name: perf_hif_rmw_dch1
+          ipl_en_mnemonic: PERF_HIF_RMW_DCH1
+          ipl_value: 0x37
+
+        - ipl_en_name: perf_hif_hi_pri_rd_dch1
+          ipl_en_mnemonic: PERF_HIF_HI_PRI_RD_DCH1
+          ipl_value: 0x38
+
+        - ipl_en_name: perf_read_bypass_dch1
+          ipl_en_mnemonic: PERF_READ_BYPASS_DCH1
+          ipl_value: 0x39
+
+        - ipl_en_name: perf_act_bypass_dch1
+          ipl_en_mnemonic: PERF_ACT_BYPASS_DCH1
+          ipl_value: 0x3A
+
+        - ipl_en_name: perf_dfi_wr_data_cycles_dch1
+          ipl_en_mnemonic: PERF_DFI_WR_DATA_CYCLES_DCH1
+          ipl_value: 0x3B
+
+        - ipl_en_name: perf_dfi_rd_data_cycles_dch1
+          ipl_en_mnemonic: PERF_DFI_RD_DATA_CYCLES_DCH1
+          ipl_value: 0x3C
+
+        - ipl_en_name: perf_hpr_xact_when_critical_dch1
+          ipl_en_mnemonic: PERF_HPR_XACT_WHEN_CRITICAL_DCH1
+          ipl_value: 0x3D
+
+        - ipl_en_name: perf_lpr_xact_when_critical_dch1
+          ipl_en_mnemonic: PERF_LPR_XACT_WHEN_CRITICAL_DCH1
+          ipl_value: 0x3E
+
+        - ipl_en_name: perf_wr_xact_when_critical_dch1
+          ipl_en_mnemonic: PERF_WR_XACT_WHEN_CRITICAL_DCH1
+          ipl_value: 0x3F
+
+        - ipl_en_name: perf_op_is_activate_dch1
+          ipl_en_mnemonic: PERF_OP_IS_ACTIVATE_DCH1
+          ipl_value: 0x40
+
+        - ipl_en_name: perf_op_is_rd_or_wr_dch1
+          ipl_en_mnemonic: PERF_OP_IS_RD_OR_WR_DCH1
+          ipl_value: 0x41
+
+        - ipl_en_name: perf_op_is_rd_activate_dch1
+          ipl_en_mnemonic: PERF_OP_IS_RD_ACTIVATE_DCH1
+          ipl_value: 0x42
+
+        - ipl_en_name: perf_op_is_rd_dch1
+          ipl_en_mnemonic: PERF_OP_IS_RD_DCH1
+          ipl_value: 0x43
+
+        - ipl_en_name: perf_op_is_wr_dch1
+          ipl_en_mnemonic: PERF_OP_IS_WR_DCH1
+          ipl_value: 0x44
+
+        - ipl_en_name: perf_op_is_precharge_dch1
+          ipl_en_mnemonic: PERF_OP_IS_PRECHARGE_DCH1
+          ipl_value: 0x45
+
+        - ipl_en_name: perf_precharge_for_rdwr_dch1
+          ipl_en_mnemonic: PERF_PRECHARGE_FOR_RDWR_DCH1
+          ipl_value: 0x46
+
+        - ipl_en_name: perf_precharge_for_other_dch1
+          ipl_en_mnemonic: PERF_PRECHARGE_FOR_OTHER_DCH1
+          ipl_value: 0x47
+
+        - ipl_en_name: perf_rdwr_transitions_dch1
+          ipl_en_mnemonic: PERF_RDWR_TRANSITIONS_DCH1
+          ipl_value: 0x48
+
+        - ipl_en_name: perf_write_combine_dch1
+          ipl_en_mnemonic: PERF_WRITE_COMBINE_DCH1
+          ipl_value: 0x49
+
+        - ipl_en_name: perf_war_hazard_dch1
+          ipl_en_mnemonic: PERF_WAR_HAZARD_DCH1
+          ipl_value: 0x4A
+
+        - ipl_en_name: perf_raw_hazard_dch1
+          ipl_en_mnemonic: PERF_RAW_HAZARD_DCH1
+          ipl_value: 0x4B
+
+        - ipl_en_name: perf_waw_hazard_dch1
+          ipl_en_mnemonic: PERF_WAW_HAZARD_DCH1
+          ipl_value: 0x4C
+
+        - ipl_en_name: perf_op_is_enter_selfref_dch1
+          ipl_en_mnemonic: PERF_OP_IS_ENTER_SELFREF_DCH1
+          ipl_value: 0x4D
+
+        - ipl_en_name: perf_op_is_enter_powerdown_dch1
+          ipl_en_mnemonic: PERF_OP_IS_ENTER_POWERDOWN_DCH1
+          ipl_value: 0x4E
+
+        - ipl_en_name: perf_op_is_enter_mpsm_dch1
+          ipl_en_mnemonic: PERF_OP_IS_ENTER_MPSM_DCH1
+          ipl_value: 0x4F
+
+        - ipl_en_name: perf_selfref_mode_dch1
+          ipl_en_mnemonic: PERF_SELFREF_MODE_DCH1
+          ipl_value: 0x50
+
+        - ipl_en_name: perf_op_is_refresh_dch1
+          ipl_en_mnemonic: PERF_OP_IS_REFRESH_DCH1
+          ipl_value: 0x51
+
+        - ipl_en_name: perf_op_is_load_mode_dch1
+          ipl_en_mnemonic: PERF_OP_IS_LOAD_MODE_DCH1
+          ipl_value: 0x52
+
+        - ipl_en_name: perf_op_is_zqcl_dch1
+          ipl_en_mnemonic: PERF_OP_IS_ZQCL_DCH1
+          ipl_value: 0x53
+
+        - ipl_en_name: perf_op_is_zqcs_dch1
+          ipl_en_mnemonic: PERF_OP_IS_ZQCS_DCH1
+          ipl_value: 0x54
+
+        - ipl_en_name: perf_hpr_req_with_nocredit_dch1
+          ipl_en_mnemonic: PERF_HPR_REQ_WITH_NOCREDIT_DCH1
+          ipl_value: 0x55
+
+        - ipl_en_name: perf_lpr_req_with_nocredit_dch1
+          ipl_en_mnemonic: PERF_LPR_REQ_WITH_NOCREDIT_DCH1
+          ipl_value: 0x56
+
+        - ipl_en_name: perf_op_is_mwr
+          ipl_en_mnemonic: PERF_OP_IS_MWR
+          ipl_value: 0x57
+
+        - ipl_en_name: perf_op_is_crit_ref
+          ipl_en_mnemonic: PERF_OP_IS_CRIT_REF
+          ipl_value: 0x58
+
+        - ipl_en_name: perf_op_is_spec_ref
+          ipl_en_mnemonic: PERF_OP_IS_SPEC_REF
+          ipl_value: 0x59
+
+        - ipl_en_name: perf_visible_window_limit_reached_rd
+          ipl_en_mnemonic: PERF_VISIBLE_WINDOW_LIMIT_REACHED_RD
+          ipl_value: 0x5A
+
+        - ipl_en_name: perf_visible_window_limit_reached_wr
+          ipl_en_mnemonic: PERF_VISIBLE_WINDOW_LIMIT_REACHED_WR
+          ipl_value: 0x5B
+
+        - ipl_en_name: perf_op_is_dqsosc_mpc
+          ipl_en_mnemonic: PERF_OP_IS_DQSOSC_MPC
+          ipl_value: 0x5C
+
+        - ipl_en_name: perf_op_is_dqsosc_mrr
+          ipl_en_mnemonic: PERF_OP_IS_DQSOSC_MRR
+          ipl_value: 0x5D
+
+        - ipl_en_name: perf_op_is_tcr_mrr
+          ipl_en_mnemonic: PERF_OP_IS_TCR_MRR
+          ipl_value: 0x5E
+
+        - ipl_en_name: perf_op_is_zqstart
+          ipl_en_mnemonic: PERF_OP_IS_ZQSTART
+          ipl_value: 0x5F
+
+        - ipl_en_name: perf_op_is_zqlatch
+          ipl_en_mnemonic: PERF_OP_IS_ZQLATCH
+          ipl_value: 0x60
+
+        - ipl_en_name: perf_op_is_mwr_dch1
+          ipl_en_mnemonic: PERF_OP_IS_MWR_DCH1
+          ipl_value: 0x61
+
+        - ipl_en_name: perf_op_is_crit_ref_dch1
+          ipl_en_mnemonic: PERF_OP_IS_CRIT_REF_DCH1
+          ipl_value: 0x62
+
+        - ipl_en_name: perf_op_is_spec_ref_dch1
+          ipl_en_mnemonic: PERF_OP_IS_SPEC_REF_DCH1
+          ipl_value: 0x63
+
+        - ipl_en_name: perf_visible_window_limit_reached_rd_dch1
+          ipl_en_mnemonic: PERF_VISIBLE_WINDOW_LIMIT_REACHED_RD_DCH1
+          ipl_value: 0x64
+
+        - ipl_en_name: perf_visible_window_limit_reached_wr_dch1
+          ipl_en_mnemonic: PERF_VISIBLE_WINDOW_LIMIT_REACHED_WR_DCH1
+          ipl_value: 0x65
+
+        - ipl_en_name: perf_op_is_dqsosc_mpc_dch1
+          ipl_en_mnemonic: PERF_OP_IS_DQSOSC_MPC_DCH1
+          ipl_value: 0x66
+
+        - ipl_en_name: perf_op_is_dqsosc_mrr_dch1
+          ipl_en_mnemonic: PERF_OP_IS_DQSOSC_MRR_DCH1
+          ipl_value: 0x67
+
+        - ipl_en_name: perf_op_is_tcr_mrr_dch1
+          ipl_en_mnemonic: PERF_OP_IS_TCR_MRR_DCH1
+          ipl_value: 0x68
+
+        - ipl_en_name: perf_op_is_zqstart_dch1
+          ipl_en_mnemonic: PERF_OP_IS_ZQSTART_DCH1
+          ipl_value: 0x69
+
+        - ipl_en_name: perf_op_is_zqlatch_dch1
+          ipl_en_mnemonic: PERF_OP_IS_ZQLATCH_DCH1
+          ipl_value: 0x6A
+
+  - opcode_name: DDR Generic Capture
+    mnemonic: PERFCNT_DDR_GENERIC_CAPTURE
+    opcode: 0xCA11
+    opcode_description: >
+     This function is used to capture 8 generic events.
+
+     By default, no filtering will be applied
+     and the 8 events are preset to:
+
+     event0 - RAS on PHY0
+     event1 - CAS on PHY0
+     event2 - perf_op_is_activate
+     event3 - perf_op_is_rd
+     event4 - perf_op_is_wr
+     event5 - perf_op_is_precharge
+     event6 - perf_op_is_enter_selfref
+     event7 - perf_op_is_refresh
+
+     To set a specific filtering or to capture other events,
+     use function PERFCNT_DDR_GENERIC_SELECT upfront.
+
+    input_payload:
+    - ipl_name: DDR Generic Capture Input Payload
+      ipl_mnemonic: PERFCNT_DDR_GENERIC_CAPTURE_IN_PL
+      ipl_size_bytes: 8
+
+      parameters:
+      - ipl_par_name: DDR instance
+        ipl_par_mnemonic: DDR_ID
+        ipl_offset: 0x00
+        ipl_length: 1
+
+      - ipl_par_name: reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x01
+        ipl_length: 3
+
+      - ipl_par_name: Capture-time in ms
+        ipl_par_mnemonic: POLL_PERIOD_MS
+        ipl_offset: 0x04
+        ipl_length: 4
+
+    output_payload:
+    - opl_name: DDR Generic Capture Output Payload
+      opl_mnemonic: PERFCNT_DDR_GENERIC_CAPTURE_OUT_PL
+      opl_size_bytes: 32
+
+      parameters:
+      - opl_par_name: Generic Counter Readings
+        opl_par_mnemonic: RESULT
+        opl_offset: 0x00
+        opl_unit_size: 4
+        opl_units_num: 8
+        opl_length: 32
+
+  - opcode_name: DDR DFI Capture
+    mnemonic: PERFCNT_DDR_DFI_CAPTURE
+    opcode: 0xCA12
+    opcode_description: >
+     This function is used to capture the following DFI special counters:
+
+     DFI special counter #17
+     DFI special counter #20
+     DFI special counter #21
+
+    input_payload:
+    - ipl_name: DDR DFI Capture Input Payload
+      ipl_mnemonic: PERFCNT_DDR_DFI_CAPTURE_IN_PL
+      ipl_size_bytes: 8
+
+      parameters:
+      - ipl_par_name: DDR instance
+        ipl_par_mnemonic: DDR_ID
+        ipl_offset: 0x00
+        ipl_length: 1
+
+      - ipl_par_name: reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x01
+        ipl_length: 3
+
+      - ipl_par_name: Capture-time in ms
+        ipl_par_mnemonic: POLL_PERIOD_MS
+        ipl_offset: 0x04
+        ipl_length: 4
+
+    output_payload:
+    - opl_name: DDR DFI Capture Output Payload
+      opl_mnemonic: PERFCNT_DDR_DFI_CAPTURE_OUT_PL
+      opl_size_bytes: 24
+
+      parameters:
+      - opl_par_name: Special Counter 17 Reading
+        opl_par_mnemonic: DFI_COUNTER_17
+        opl_offset: 0x00
+        opl_length: 4
+
+      - opl_par_name: Special Counter 20 Reading
+        opl_par_mnemonic: DFI_COUNTER_20
+        opl_offset: 0x04
+        opl_length: 4
+
+      - opl_par_name: Special Counter 21 Reading
+        opl_par_mnemonic: DFI_COUNTER_21
+        opl_offset: 0x08
+        opl_length: 4
+
+      - opl_par_name: Special Counter 17 Reading (second channel)
+        opl_par_mnemonic: DFI_CH1_COUNTER_17
+        opl_offset: 0x0C
+        opl_length: 4
+
+      - opl_par_name: Special Counter 20 Reading (second channel)
+        opl_par_mnemonic: DFI_CH1_COUNTER_20
+        opl_offset: 0x10
+        opl_length: 4
+
+      - opl_par_name: Special Counter 21 Reading (second channel)
+        opl_par_mnemonic: DFI_CH1_COUNTER_21
+        opl_offset: 0x14
+        opl_length: 4
+
+- command_set_name: Error Injection
+  command_set_description: >
+    Injection of dedicated error conditions at several places
+    of ongoing memory traffic flow:
+    - HIF wdata Poison
+    - HIF wdata ECC
+    - DRS Poison
+    - DRS ECC
+    - RxFlit CRC
+    - TxFlit CRC
+    - Viral indication
+
+  command_set_opcodes:
+  - opcode_name: Error Injection HIF Poison
+    mnemonic: ERR_INJ_HIF_POISON
+    opcode: 0xCB00
+    opcode_description: >
+      Injects Poison bit to HIF wdata.
+
+    input_payload:
+    - ipl_name: Error injection HIF Poison input
+      ipl_mnemonic: ERR_INJ_HIF_POISON_IN_PL
+      ipl_size_bytes: 9
+
+      parameters:
+      - ipl_par_name: HIF channel
+        ipl_par_mnemonic: CH_ID
+        ipl_offset: 0x00
+        ipl_length: 1
+        ipl_description: >
+          HIF channel 0..3 selection.
+
+      - ipl_par_name: Duration
+        ipl_par_mnemonic: DURATION
+        ipl_offset: 0x01
+        ipl_length: 1
+        ipl_description: >
+          0x00: Turn continuous error generation OFF
+          0x01: Turn continuous error generation ON
+          0x02: SingleShot - Generate a single error
+
+      - ipl_par_name: Injection mode
+        ipl_par_mnemonic: INJ_MODE
+        ipl_offset: 0x02
+        ipl_length: 1
+        ipl_description: >
+          0x00: Inject poison bit on any transaction going to HIF wdata
+          0x01: Inject poison bit on address given by ADDRESS parameter
+
+          Please note that the ADDRESS parameter is shared by HIF Poison and HIF ECC functionality!
+
+      - ipl_par_name: reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x03
+        ipl_length: 1
+
+      - ipl_par_name: Address
+        ipl_par_mnemonic: ADDRESS
+        ipl_offset: 0x04
+        ipl_length: 5
+        opcode_description: >
+          40-bit Address field, only used for some injection modes.
+
+          Please note that the ADDRESS parameter is shared by HIF Poison and HIF ECC functionality!
+
+  - opcode_name: Error Injection HIF ECC
+    mnemonic: ERR_INJ_HIF_ECC
+    opcode: 0xCB01
+    opcode_description: >
+      Injects single or double bit ECC to HIF wdata.
+
+    input_payload:
+    - ipl_name: Error injection HIF ECC input
+      ipl_mnemonic: ERR_INJ_HIF_ECC_IN_PL
+      ipl_size_bytes: 9
+
+      parameters:
+      - ipl_par_name: HIF channel
+        ipl_par_mnemonic: CH_ID
+        ipl_offset: 0x00
+        ipl_length: 1
+        ipl_description: >
+          HIF channel 0..3 selection.
+
+      - ipl_par_name: Duration
+        ipl_par_mnemonic: DURATION
+        ipl_offset: 0x01
+        ipl_length: 1
+        ipl_description: >
+          0x00: Turn continuous error generation OFF
+          0x01: Turn continuous error generation ON
+          0x02: SingleShot - Generate a single error
+
+      - ipl_par_name: Injection Mode
+        ipl_par_mnemonic: INJ_MODE
+        ipl_offset: 0x02
+        ipl_length: 1
+        opcode_description: >
+          0x00: Inject single bit ECC error on any transaction going to HIF wdata
+          0x01: Inject single bit ECC error on address given by ADDRESS parameter
+          0x02: Inject double bit ECC error on any transaction going to HIF wdata
+          0x03: Inject double bit ECC error on address given by ADDRESS parameter
+
+          Please note that the ADDRESS parameter is shared by HIF Poison and HIF ECC functionality!
+
+      - ipl_par_name: reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x03
+        ipl_length: 1
+
+      - ipl_par_name: Address
+        ipl_par_mnemonic: ADDRESS
+        ipl_offset: 0x04
+        ipl_length: 5
+        opcode_description: >
+          40-bit Address field, only used for some injection modes.
+
+          Please note that the ADDRESS parameter is shared by HIF Poison and HIF ECC functionality!
+
+  - opcode_name: Error Injection DRS Poison
+    mnemonic: ERR_INJ_DRS_POISON
+    opcode: 0xCB02
+    opcode_description: >
+      Injects Poison bit on DRS going to Link-Layer.
+
+    input_payload:
+    - ipl_name: Error injection DRS Poison input
+      ipl_mnemonic: ERR_INJ_DRS_POISON_IN_PL
+      ipl_size_bytes: 6
+
+      parameters:
+      - ipl_par_name: DRS channel
+        ipl_par_mnemonic: CH_ID
+        ipl_offset: 0x00
+        ipl_length: 1
+        ipl_description: >
+          CXL DRS channel 0..3 selection.
+
+      - ipl_par_name: Duration
+        ipl_par_mnemonic: DURATION
+        ipl_offset: 0x01
+        ipl_length: 1
+        ipl_description: >
+          0x00: Turn continuous error generation OFF
+          0x01: Turn continuous error generation ON
+          0x02: SingleShot - Generate a single error
+
+      - ipl_par_name: Injection mode
+        ipl_par_mnemonic: INJ_MODE
+        ipl_offset: 0x02
+        ipl_length: 1
+        ipl_description: >
+          0x00: Inject poison bit on any DRS going to Link layer
+          0x01: Inject poison bit on tag given by TAG parameter
+
+          Please note that the TAG parameter is shared by DRS Poison and DRS ECC functionality!
+
+      - ipl_par_name: reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x03
+        ipl_length: 1
+
+      - ipl_par_name: Tag
+        ipl_par_mnemonic: TAG
+        ipl_offset: 0x04
+        ipl_length: 2
+        opcode_description: >
+          16-bit Tag field, only used for some injection modes.
+
+          Please note that the TAG parameter is shared by DRS Poison and DRS ECC functionality!
+
+  - opcode_name: Error Injection DRS ECC
+    mnemonic: ERR_INJ_DRS_ECC
+    opcode: 0xCB03
+    opcode_description: >
+      Injects single or double bit ECC on DRS going to Link-Layer.
+
+    input_payload:
+    - ipl_name: Error injection DRS ECC input
+      ipl_mnemonic: ERR_INJ_DRS_ECC_IN_PL
+      ipl_size_bytes: 6
+
+      parameters:
+      - ipl_par_name: DRS channel
+        ipl_par_mnemonic: CH_ID
+        ipl_offset: 0x00
+        ipl_length: 1
+        ipl_description: >
+          CXL DRS channel 0..3 selection.
+
+      - ipl_par_name: Duration
+        ipl_par_mnemonic: DURATION
+        ipl_offset: 0x01
+        ipl_length: 1
+        ipl_description: >
+          0x00: Turn continuous error generation OFF
+          0x01: Turn continuous error generation ON
+          0x02: SingleShot - Generate a single error
+
+      - ipl_par_name: Injection mode
+        ipl_par_mnemonic: INJ_MODE
+        ipl_offset: 0x02
+        ipl_length: 1
+        ipl_description: >
+          0x00: Inject single bit ECC error on any DRS going to Link-Layer
+          0x01: Inject single bit ECC error on tag given by TAG parameter
+          0x02: Inject double bit ECC error on any DRS going to Link-Layer
+          0x03: Inject double bit ECC error on tag given by TAG parameter
+
+          Please note that the TAG parameter is shared by DRS Poison and DRS ECC functionality!
+
+      - ipl_par_name: reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x03
+        ipl_length: 1
+
+      - ipl_par_name: Tag
+        ipl_par_mnemonic: TAG
+        ipl_offset: 0x04
+        ipl_length: 2
+        opcode_description: >
+          16-bit Tag field, only used for some injection modes.
+
+          Please note that the TAG parameter is shared by DRS Poison and DRS ECC functionality!
+
+  - opcode_name: Error Injection RX-Flit CRC
+    mnemonic: ERR_INJ_RXFLIT_CRC
+    opcode: 0xCB04
+    opcode_description: >
+      Injects CRC error onto RX-Flit.
+
+    input_payload:
+    - ipl_name: Error injection RX-Flit CRC input
+      ipl_mnemonic: ERR_INJ_RXFLIT_CRC_IN_PL
+      ipl_size_bytes: 1
+
+      parameters:
+      - ipl_par_name: CXL.mem instance
+        ipl_par_mnemonic: CXL_MEM_ID
+        ipl_offset: 0x00
+        ipl_length: 1
+        ipl_description: >
+          CXL.mem instance selection.
+
+  - opcode_name: Error Injection TX-Flit CRC
+    mnemonic: ERR_INJ_TXFLIT_CRC
+    opcode: 0xCB05
+    opcode_description: >
+      Injects CRC error onto TX-Flit.
+
+    input_payload:
+    - ipl_name: Error injection TX-Flit CRC input
+      ipl_mnemonic: ERR_INJ_TXFLIT_CRC_IN_PL
+      ipl_size_bytes: 1
+
+      parameters:
+      - ipl_par_name: CXL.mem instance
+        ipl_par_mnemonic: CXL_MEM_ID
+        ipl_offset: 0x00
+        ipl_length: 1
+        ipl_description: >
+          CXL.mem instance selection.
+
+  - opcode_name: Error Injection Viral
+    mnemonic: ERR_INJ_VIRAL
+    opcode: 0xCB06
+    opcode_description: >
+      Indication of a Viral error to Link-Layer.
+
+    input_payload:
+    - ipl_name: Error injection Viral input
+      ipl_mnemonic: ERR_INJ_VIRAL_IN_PL
+      ipl_size_bytes: 1
+
+      parameters:
+      - ipl_par_name: ld_id
+        ipl_par_mnemonic: LD_ID
+        ipl_offset: 0x00
+        ipl_length: 1
+        ipl_description: >
+          4-bit LD_ID value to be used while sending viral interrupt to Link-layer.
+
+- command_set_name: EH Eye Capture
+  command_set_description: EH Eye Capture Commands
+  command_set_opcodes:
+
+  - opcode_name: EH Eye capture Run
+    mnemonic: EH_EYE_CAP_RUN
+    opcode: 0xCC00
+
+    input_payload:
+
+    - ipl_name: EH Eye capture Run input
+      ipl_mnemonic: eh_eye_cap_run_in_pl
+      ipl_size_bytes: 8
+
+      parameters:
+
+      - ipl_par_name: unused
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x00
+        ipl_length: 1
+
+      - ipl_par_name: capture depth (BT_DEPTH_MIN to BT_DEPTH_MAX)
+        ipl_par_mnemonic: depth
+        ipl_offset: 0x01
+        ipl_length: 1
+
+      - ipl_par_name: reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x02
+        ipl_length: 2
+
+      - ipl_par_name: lane mask
+        ipl_par_mnemonic: lane_mask
+        ipl_offset: 0x04
+        ipl_length: 4
+
+  - opcode_name: EH Eye capture Status
+    mnemonic: EH_EYE_CAP_STATUS
+    opcode: 0xCC01
+
+    input_payload:
+
+    - ipl_name: EH Eye capture Status input
+      ipl_mnemonic: eh_eye_cap_stat_in_pl
+      ipl_size_bytes: 4
+
+      parameters:
+
+      - ipl_par_name: unused
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x00
+        ipl_length: 1
+
+      - ipl_par_name: reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x01
+        ipl_length: 3
+
+    output_payload:
+
+    - opl_name: EH Eye capture Status output
+      opl_mnemonic: eh_eye_cap_stat_out_pl
+      opl_size_bytes: 4
+
+      parameters:
+
+      - opl_par_name: Status (see eye_cap_state_enum)
+        opl_par_mnemonic: stat
+        opl_offset: 0x00
+        opl_length: 1
+
+      - opl_par_name: reserved
+        opl_par_mnemonic: RSVD
+        opl_offset: 0x01
+        opl_length: 3
+
+  - opcode_name: EH Eye capture Read
+    mnemonic: EH_EYE_CAP_READ
+    opcode: 0xCC02
+
+    input_payload:
+
+    - ipl_name: EH Eye capture Read input
+      ipl_mnemonic: eh_eye_cap_read_in_pl
+      ipl_size_bytes: 4
+
+      parameters:
+
+      - ipl_par_name: unused
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x00
+        ipl_length: 1
+
+      - ipl_par_name: lane ID
+        ipl_par_mnemonic: lane_id
+        ipl_offset: 0x01
+        ipl_length: 1
+
+      - ipl_par_name: bin number [0 .. BT_BIN_TOT - 1]
+        ipl_par_mnemonic: bin_num
+        ipl_offset: 0x02
+        ipl_length: 1
+
+      - ipl_par_name: reserved
+        ipl_par_mnemonic: RSVD
+        ipl_offset: 0x03
+        ipl_length: 1
+
+    output_payload:
+
+    - opl_name: EH Eye capture Read output
+      opl_mnemonic: eh_eye_cap_read_out_pl
+      opl_size_bytes: 248
+
+      parameters:
+
+      - opl_par_name: Total number of phases in ber_data
+        opl_par_mnemonic: num_phase
+        opl_offset: 0x00
+        opl_length: 1
+
+      - opl_par_name: reserved
+        opl_par_mnemonic: RSVD
+        opl_offset: 0x01
+        opl_length: 7
+
+      - opl_par_name: Per-phase bit error rates (multiplied by EYE_CAP_ERROR_CNT_MULT)
+        opl_par_mnemonic: ber_data
+        opl_offset: 0x08
+        opl_unit_size: 4
+        opl_units_num: 60
+        opl_length: 240
+
+- command_set_name: Elkhound Adaptation Objects
+  command_set_description: >
+    Elkhound Adaptation Objects Commands
+
+  command_set_opcodes:
+  - opcode_name: EH Get Adaptation Data
+    mnemonic: EH_ADAPT_GET
+    opcode: 0xCC03
+    opcode_description: >
+        Elkhound Get Adaptation Data Command
+
+    input_payload:
+
+    - ipl_name: Get Adaptation Data input
+      ipl_mnemonic: eh_get_adapt_data_in_pl
+      ipl_size_bytes: 4
+
+      parameters:
+
+      - ipl_par_name: lane id
+        ipl_par_mnemonic: LANE_ID
+        ipl_offset: 0x00
+        ipl_length: 4
+
+    output_payload:
+
+    - opl_name: Get Adaptation Data output
+      opl_mnemonic: eh_get_adapt_data_out_pl
+      opl_size_bytes: 0x1c
+
+      parameters:
+
+      - opl_par_name: contain the current value of the object PGA_GAIN as captured through a write to register bit ADAPT_DSP_RESULTS_CAPTURE_REQ
+        opl_par_mnemonic: pga_gain
+        opl_offset: 0x00
+        opl_length: 1
+
+      - opl_par_name: PGA Stage2 DC offset correction
+        opl_par_mnemonic: pga_off2
+        opl_offset: 0x01
+        opl_length: 1
+
+      - opl_par_name: PGA Stage1 DC offset correction
+        opl_par_mnemonic: pga_off1
+        opl_offset: 0x02
+        opl_length: 1
+
+      - opl_par_name: I_TAP2<7:0> 2's compliment
+        opl_par_mnemonic: cdfe_a2
+        opl_offset: 0x03
+        opl_length: 1
+
+      - opl_par_name: I_TAP3<6:0> 2's compliment
+        opl_par_mnemonic: cdfe_a3
+        opl_offset: 0x04
+        opl_length: 1
+
+      - opl_par_name: I_TAP4<6:0> 2's compliment
+        opl_par_mnemonic: cdfe_a4
+        opl_offset: 0x05
+        opl_length: 1
+
+      - opl_par_name: I_TAP5<6:0> 2's compliment
+        opl_par_mnemonic: cdfe_a5
+        opl_offset: 0x06
+        opl_length: 1
+
+      - opl_par_name: I_TAP6<6:0> 2's compliment
+        opl_par_mnemonic: cdfe_a6
+        opl_offset: 0x07
+        opl_length: 1
+
+      - opl_par_name: I_TAP7<6:0> 2's compliment
+        opl_par_mnemonic: cdfe_a7
+        opl_offset: 0x08
+        opl_length: 1
+
+      - opl_par_name: I_TAP8<6:0> 2's compliment
+        opl_par_mnemonic: cdfe_a8
+        opl_offset: 0x09
+        opl_length: 1
+
+      - opl_par_name: I_TAP9<5:0> 2's compliment
+        opl_par_mnemonic: cdfe_a9
+        opl_offset: 0x0a
+        opl_length: 1
+
+      - opl_par_name: I_TAP10<5:0> 2's compliment
+        opl_par_mnemonic: cdfe_a10
+        opl_offset: 0x0b
+        opl_length: 1
+
+      - opl_par_name: Zobel a_gain
+        opl_par_mnemonic: zobel_a_gain
+        opl_offset: 0x0c
+        opl_length: 1
+
+      - opl_par_name: zobel_b_gain
+        opl_par_mnemonic: zobel_b_gain
+        opl_offset: 0x0d
+        opl_length: 1
+
+      - opl_par_name: Zobel DC offset correction
+        opl_par_mnemonic: zobel_dc_offset
+        opl_offset: 0x0e
+        opl_length: 2
+
+      - opl_par_name:  contain the current value of the object UDFE_THR_0 as captured through a write to register bit ADAPT_DSP_RESULTS_CAPTURE_REQ.
+        opl_par_mnemonic: udfe_thr_0
+        opl_offset: 0x10
+        opl_length: 2
+
+      - opl_par_name: contain the current value of the object UDFE_THR_1 as captured through a write to register bit ADAPT_DSP_RESULTS_CAPTURE_REQ
+        opl_par_mnemonic: udfe_thr_1
+        opl_offset: 0x12
+        opl_length: 2
+
+      - opl_par_name: contain the current value of the object DC_OFFSET as captured through a write to register bit ADAPT_DSP_RESULTS_CAPTURE_REQ
+        opl_par_mnemonic: dc_offset
+        opl_offset: 0x14
+        opl_length: 2
+
+      - opl_par_name: contain the current value of the object PGA_GAIN as captured through a write to register bit ADAPT_DSP_RESULTS_CAPTURE_REQ
+        opl_par_mnemonic: median_amp
+        opl_offset: 0x16
+        opl_length: 2
+
+      - opl_par_name: contain the current value of the object PH_OFS_T as captured through a write to register bit ADAPT_DSP_RESULTS_CAPTURE_REQ
+        opl_par_mnemonic: ph_ofs_t
+        opl_offset: 0x18
+        opl_length: 1
+
+      - opl_par_name: reserved
+        opl_par_mnemonic: RSVD
+        opl_offset: 0x19
+        opl_length: 3
+
+  - opcode_name: EH One-off Adaptation
+    mnemonic: EH_ADAPT_ONEOFF
+    opcode: 0xCC04
+    opcode_description: >
+        Elkhound One-off Adaptation Command
+
+    input_payload:
+
+    - ipl_name: One-off Adaptation Data input
+      ipl_mnemonic: eh_one_off_adapt_data_in_pl
+      ipl_size_bytes: 0x10
+
+      parameters:
+
+      - ipl_par_name: lane id
+        ipl_par_mnemonic: lane_id
+        ipl_offset: 0x00
+        ipl_length: 4
+      - ipl_par_name: Adaption objects preload enable
+        ipl_par_mnemonic: preload
+        ipl_offset: 0x04
+        ipl_length: 4
+      - ipl_par_name: Adaptions loop
+        ipl_par_mnemonic: loops
+        ipl_offset: 0x08
+        ipl_length: 4
+      - ipl_par_name: Adaption objects enable
+        ipl_par_mnemonic: objects
+        ipl_offset: 0x0C
+        ipl_length: 4
+
+  - opcode_name: EH Adapt Force
+    mnemonic: EH_ADAPT_FORCE
+    opcode: 0xCC05
+    opcode_description: >
+        Elkhound Force Adaptation Values Command
+
+    input_payload:
+
+    - ipl_name: Force Adaptation Data input
+      ipl_mnemonic: eh_force_adapt_data_in_pl
+      ipl_size_bytes: 0x28
+
+      parameters:
+
+      - ipl_par_name: lane id
+        ipl_par_mnemonic: lane_id
+        ipl_offset: 0x00
+        ipl_length: 4
+      - ipl_par_name: PCIe rate (0 - Gen1, 1 - Gen2, 2 - Gen3, 3 - Gen4, 4 - Gen5)
+        ipl_par_mnemonic: rate
+        ipl_offset: 0x04
+        ipl_length: 4
+      - ipl_par_name: vdd bias (0 = 0.82V, 1 = 0.952V)
+        ipl_par_mnemonic: vdd_bias
+        ipl_offset: 0x08
+        ipl_length: 4
+      - ipl_par_name: spread spectrum clocking enable (0 - SSC enable, 1 - SSC disable)
+        ipl_par_mnemonic: ssc
+        ipl_offset: 0x0C
+        ipl_length: 4
+      - ipl_par_name: used to set the value of the PGA_GAIN object when preloading is enabled
+        ipl_par_mnemonic: pga_gain
+        ipl_offset: 0x10
+        ipl_length: 1
+      - ipl_par_name: used to set the value of the PGA_A0 object when preloading is enabled
+        ipl_par_mnemonic: pga_a0
+        ipl_offset: 0x11
+        ipl_length: 1
+      - ipl_par_name: PGA Stage1,2 offset preload value, split evenly between PGA Stage1 & Stage2 DC offset
+        ipl_par_mnemonic: pga_off
+        ipl_offset: 0x12
+        ipl_length: 1
+      - ipl_par_name: used to set the value of CDFE_A2 (DFE Tap2) when preloading (CDFE_GRP0) is enabled
+        ipl_par_mnemonic: cdfe_a2
+        ipl_offset: 0x13
+        ipl_length: 1
+      - ipl_par_name: used to set the value of CDFE_A3 (DFE Tap3) when preloading (CDFE_GRP0) is enabled
+        ipl_par_mnemonic: cdfe_a3
+        ipl_offset: 0x14
+        ipl_length: 1
+      - ipl_par_name: used to set the value of CDFE_A4 (DFE Tap4) when preloading (CDFE_GRP0) is enabled
+        ipl_par_mnemonic: cdfe_a4
+        ipl_offset: 0x15
+        ipl_length: 1
+      - ipl_par_name: used to set the value of CDFE_A5 (DFE Tap5) when preloading (CDFE_GRP1) is enabled
+        ipl_par_mnemonic: cdfe_a5
+        ipl_offset: 0x16
+        ipl_length: 1
+      - ipl_par_name: used to set the value of CDFE_A6 (DFE Tap6) when preloading (CDFE_GRP1) is enabled
+        ipl_par_mnemonic: cdfe_a6
+        ipl_offset: 0x17
+        ipl_length: 1
+      - ipl_par_name: used to set the value of CDFE_A7 (DFE Tap7) when preloading (CDFE_GRP1) is enabled
+        ipl_par_mnemonic: cdfe_a7
+        ipl_offset: 0x18
+        ipl_length: 1
+      - ipl_par_name: used to set the value of CDFE_A8 (DFE Tap8) when preloading (CDFE_GRP2) is enabled
+        ipl_par_mnemonic: cdfe_a8
+        ipl_offset: 0x19
+        ipl_length: 1
+      - ipl_par_name: used to set the value of CDFE_A9 (DFE Tap9) when preloading (CDFE_GRP2) is enabled
+        ipl_par_mnemonic: cdfe_a9
+        ipl_offset: 0x1A
+        ipl_length: 1
+      - ipl_par_name: used to set the value of CDFE_A10 (DFE Tap10) when preloading (CDFE_GRP2) is enabled
+        ipl_par_mnemonic: cdfe_a10
+        ipl_offset: 0x1B
+        ipl_length: 1
+      - ipl_par_name: used to set the value of the DC_OFFSET object when preloading is enabled
+        ipl_par_mnemonic: dc_offset
+        ipl_offset: 0x1C
+        ipl_length: 2
+      - ipl_par_name: Zobel DC offset preload value
+        ipl_par_mnemonic: zobel_dc_offset
+        ipl_offset: 0x1E
+        ipl_length: 2
+      - ipl_par_name: used to set the value of the UDFE_THR_0 object when preloading is enabled
+        ipl_par_mnemonic: udfe_thr_0
+        ipl_offset: 0x20
+        ipl_length: 2
+      - ipl_par_name: used to set the value of the UDFE_THR_1 object when preloading is enabled
+        ipl_par_mnemonic: udfe_thr_1
+        ipl_offset: 0x22
+        ipl_length: 2
+      - ipl_par_name: used to set the value of the MEDIAN_AMP object when preloading is enabled
+        ipl_par_mnemonic: median_amp
+        ipl_offset: 0x24
+        ipl_length: 2
+      - ipl_par_name: Zobel a_gain preload
+        ipl_par_mnemonic: zobel_a_gain
+        ipl_offset: 0x26
+        ipl_length: 1
+      - ipl_par_name: Timing phase offset preload
+        ipl_par_mnemonic: ph_ofs_t
+        ipl_offset: 0x27
+        ipl_length: 1
+
+- command_set_name: Hidden BO Commands
+  command_set_description: Perform background operations hidden from the host driver
+  command_set_opcodes:
+  - opcode_name: Hidden BO Status
+    mnemonic: HBO_STATUS
+    opcode: 0xCD00
+
+    output_payload:
+
+    - opl_name: Hidden BO status output
+      opl_mnemonic: hbo_status_out_pl
+      opl_size_bytes: 8
+
+      parameters:
+
+      - opl_par_name: BO status
+        opl_par_mnemonic: BO_STATUS
+        opl_offset: 0x00
+        opl_length: 8
+
+        bit_fields:
+        - opl_bf_name: Command Opcode
+          opl_bf_mnemonic: CMD_OPCODE
+          opl_bit: "15:0"
+
+        - opl_bf_name: Percentage Complete
+          opl_bf_mnemonic: PERCENT_COMPLETE
+          opl_bit: "22:16"
+
+        - opl_bf_name: Background Operation is running
+          opl_bf_mnemonic: BO_RUN
+          opl_bit: "23:23"
+
+        - opl_bf_name: Reserved
+          opl_bf_mnemonic: RSVD
+          opl_bit: "31:24"
+
+        - opl_bf_name: Return Code
+          opl_bf_mnemonic: RET_CODE
+          opl_bit: "47:32"
+
+        - opl_bf_name: Vendor Specific Extended Status
+          opl_bf_mnemonic: VENDOR_EXT_STATUS
+          opl_bit: "63:48"
+
+  - opcode_name: HBO Transfer FW
+    mnemonic: HBO_TRANSFER_FW
+    opcode: 0xCD01
+    opcode_description: >
+      This command is identical to Spec defined Transfer FW command (201h),
+      but triggers a Hidden Background Operation which is queried using Hidden BO Status
+
+  - opcode_name: HBO Activate FW
+    mnemonic: HBO_ACTIVATE_FW
+    opcode: 0xCD02
+    opcode_description: >
+      This command is identical to Spec defined Activate FW command (202h),
+      but triggers a Hidden Background Operation which is queried using Hidden BO Status
+
+- command_set_name: Health counter
+  command_set_description: Health counter command set
+  command_set_opcodes:
+
+  - opcode_name: Clear Health Counters
+    mnemonic: HEALTH_COUNTERS_CLEAR
+    opcode: 0xCE00
+
+    input_payload:
+
+    - ipl_name: Clear Health Counters Input Payload
+      ipl_mnemonic: clear_health_counters_in_pl
+      ipl_size_bytes: 4
+
+      parameters:
+      - ipl_par_name: health counters bitmask
+        ipl_par_mnemonic: bitmask
+        ipl_offset: 0x00
+        ipl_length: 4
+
+  - opcode_name: Get Health Counters
+    mnemonic: HEALTH_COUNTERS_GET
+    opcode: 0xCE01
+
+    output_payload:
+
+    - opl_name: Get Health Counters Output Payload
+      opl_mnemonic: get_health_counters_out_pl
+      opl_size_bytes: 40
+
+      parameters:
+
+      - opl_par_name: Number of times temperature has exceeded threshold
+        opl_par_mnemonic: temperature_threshold_exceeded
+        opl_offset: 0x00
+        opl_length: 4
+
+      - opl_par_name: Number of Power On events
+        opl_par_mnemonic: power_on_events
+        opl_offset: 0x04
+        opl_length: 4
+
+      - opl_par_name: Number of Power On hours
+        opl_par_mnemonic: power_on_hours
+        opl_offset: 0x08
+        opl_length: 4
+
+      - opl_par_name: Number of CXL.mem Link CRC errors
+        opl_par_mnemonic: cxl_mem_link_crc_errors
+        opl_offset: 0x0C
+        opl_length: 4
+
+      - opl_par_name: Number of CXL.io Link LCRC errors
+        opl_par_mnemonic: cxl_io_link_lcrc_errors
+        opl_offset: 0x10
+        opl_length: 4
+
+      - opl_par_name: Number of CXL.io Link ECRC errors
+        opl_par_mnemonic: cxl_io_link_ecrc_errors
+        opl_offset: 0x14
+        opl_length: 4
+
+      - opl_par_name: Number of DDR single ECC errors
+        opl_par_mnemonic: num_ddr_single_ecc_errors
+        opl_offset: 0x18
+        opl_length: 4
+
+      - opl_par_name: Number of DDR double ECC errors
+        opl_par_mnemonic: num_ddr_double_ecc_errors
+        opl_offset: 0x1C
+        opl_length: 4
+
+      - opl_par_name: Number of Link recovery events
+        opl_par_mnemonic: link_recovery_events
+        opl_offset: 0x20
+        opl_length: 4
+
+      - opl_par_name: Amount of time spent in throttled state (in seconds)
+        opl_par_mnemonic: time_in_throttled
+        opl_offset: 0x24
+        opl_length: 4
+
+- command_set_name: Configuration File Commands
+  command_set_description: Configuration File Commands
+  command_set_opcodes:
+
+  - opcode_name: Read Configuration File
+    mnemonic: CONF_READ
+    opcode: 0xCF00
+    opcode_description: >
+      This command allows to read <length> bytes of the configuration file starting from the offset <offset>.
+      The command will return the <payload> containing the requested portion of the configuration file.
+      If the request goes beyond the end of the config file, the portion within the config file will be returned.
+      The returned <payload> is empty if the caller specified an <offset> beyond the end of the config file.
+      This is not considered an error.
+
+    input_payload:
+
+    - ipl_name: Read Configuration File Input Payload
+      ipl_mnemonic: read_conf_in_pl
+      ipl_size_bytes: 8
+
+      parameters:
+
+      - ipl_par_name: Starting Offset
+        ipl_par_mnemonic: offset
+        ipl_offset: 0
+        ipl_length: 4
+
+      - ipl_par_name: Requested Length
+        ipl_par_mnemonic: length
+        ipl_offset: 4
+        ipl_length: 4
+
+    output_payload:
+
+    - opl_name: Read Configuration File Output Payload
+      opl_mnemonic: read_conf_out_pl
+      opl_size_bytes: 0+
+
+      parameters:
+
+      - opl_par_name: Payload
+        opl_par_mnemonic: payload
+        opl_offset: 0
+        opl_length: VARIES

@@ -1,0 +1,81 @@
+LIBCXL_1 {
+global:
+	cxl_get_userdata;
+	cxl_set_userdata;
+	cxl_get_private_data;
+	cxl_set_private_data;
+	cxl_ref;
+	cxl_get_log_priority;
+	cxl_set_log_fn;
+	cxl_unref;
+	cxl_set_log_priority;
+	cxl_new;
+local:
+        *;
+};
+
+LIBCXL_2 {
+global:
+	cxl_memdev_get_first;
+	cxl_memdev_get_next;
+	cxl_memdev_get_id;
+	cxl_memdev_get_devname;
+	cxl_memdev_get_major;
+	cxl_memdev_get_minor;
+	cxl_memdev_get_ctx;
+	cxl_memdev_get_pmem_size;
+	cxl_memdev_get_ram_size;
+	cxl_memdev_get_firmware_verison;
+} LIBCXL_1;
+
+LIBCXL_3 {
+global:
+	cxl_cmd_get_devname;
+	cxl_cmd_new_raw;
+	cxl_cmd_set_input_payload;
+	cxl_cmd_set_output_payload;
+	cxl_cmd_ref;
+	cxl_cmd_unref;
+	cxl_cmd_submit;
+	cxl_cmd_get_mbox_status;
+	cxl_cmd_get_out_size;
+	cxl_cmd_new_identify;
+	cxl_cmd_identify_get_fw_rev;
+	cxl_cmd_identify_get_partition_align;
+	cxl_cmd_identify_get_lsa_size;
+	cxl_cmd_new_get_health_info;
+	cxl_cmd_get_health_info_get_health_status;
+	cxl_cmd_get_health_info_get_media_status;
+	cxl_cmd_get_health_info_get_ext_status;
+	cxl_cmd_get_health_info_get_life_used;
+	cxl_cmd_get_health_info_get_temperature;
+	cxl_cmd_get_health_info_get_dirty_shutdowns;
+	cxl_cmd_get_health_info_get_volatile_errors;
+	cxl_cmd_get_health_info_get_pmem_errors;
+	cxl_cmd_new_get_lsa;
+	cxl_cmd_get_lsa_get_payload;
+} LIBCXL_2;
+
+LIBCXL_4 {
+global:
+	cxl_memdev_get_lsa_size;
+	cxl_memdev_is_active;
+	cxl_cmd_new_set_lsa;
+	cxl_memdev_zero_lsa;
+	cxl_memdev_set_lsa;
+	cxl_memdev_get_lsa;
+	cxl_memdev_cmd_identify;
+	cxl_memdev_get_supported_logs;
+	cxl_memdev_get_cel_log;
+	cxl_memdev_get_event_interrupt_policy;
+	cxl_memdev_set_event_interrupt_policy;
+	cxl_memdev_get_timestamp;
+	cxl_memdev_set_timestamp;
+	cxl_memdev_get_alert_config;
+	cxl_memdev_set_alert_config;
+	cxl_memdev_get_health_info;
+	cxl_memdev_get_event_records;
+	cxl_memdev_get_ld_info;
+	cxl_memdev_ddr_info;
+	cxl_memdev_clear_event_records;
+} LIBCXL_3;
