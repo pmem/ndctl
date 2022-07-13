@@ -152,6 +152,7 @@ pfn_meta_errors = find_program('pfn-meta-errors.sh')
 track_uuid = find_program('track-uuid.sh')
 cxl_topo = find_program('cxl-topology.sh')
 cxl_sysfs = find_program('cxl-region-sysfs.sh')
+cxl_labels = find_program('cxl-labels.sh')
 
 tests = [
   [ 'libndctl',               libndctl,		  'ndctl' ],
@@ -178,6 +179,7 @@ tests = [
   [ 'track-uuid.sh',          track_uuid,	  'ndctl' ],
   [ 'cxl-topology.sh',	      cxl_topo,		  'cxl'   ],
   [ 'cxl-region-sysfs.sh',    cxl_sysfs,	  'cxl'   ],
+  [ 'cxl-labels.sh',          cxl_labels,	  'cxl'   ],
 ]
 
 if get_option('destructive').enabled()
