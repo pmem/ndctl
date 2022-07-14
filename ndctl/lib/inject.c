@@ -2,7 +2,6 @@
 // Copyright (C) 2014-2020, Intel Corporation. All rights reserved.
 #include <stdlib.h>
 #include <limits.h>
-#include <util/list.h>
 #include <util/size.h>
 #include <ndctl/libndctl.h>
 #include <ccan/list/list.h>
