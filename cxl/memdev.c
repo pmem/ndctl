@@ -19,6 +19,7 @@
 struct action_context {
 	FILE *f_out;
 	FILE *f_in;
+	struct json_object *jdevs;
 };
 
 static struct parameters {
@@ -339,12 +340,13 @@ out:
 }
 
 static int action_setpartition(struct cxl_memdev *memdev,
-		struct action_context *actx)
+			       struct action_context *actx)
 {
 	const char *devname = cxl_memdev_get_devname(memdev);
 	enum cxl_setpart_type type = CXL_SETPART_PMEM;
 	unsigned long long size = ULLONG_MAX;
 	struct json_object *jmemdev;
+	unsigned long flags;
 	struct cxl_cmd *cmd;
 	int rc;
 
@@ -396,10 +398,12 @@ out_err:
 	if (rc)
 		log_err(&ml, "%s error: %s\n", devname, strerror(-rc));
 
-	jmemdev = util_cxl_memdev_to_json(memdev, UTIL_JSON_PARTITION);
-	if (jmemdev)
-		printf("%s\n", json_object_to_json_string_ext(jmemdev,
-		       JSON_C_TO_STRING_PRETTY));
+	flags = UTIL_JSON_PARTITION;
+	if (actx->f_out == stdout && isatty(1))
+		flags |= UTIL_JSON_HUMAN;
+	jmemdev = util_cxl_memdev_to_json(memdev, flags);
+	if (actx->jdevs && jmemdev)
+		json_object_array_add(actx->jdevs, jmemdev);
 
 	return rc;
 }
@@ -445,6 +449,9 @@ static int memdev_action(int argc, const char **argv, struct cxl_ctx *ctx,
 			param.serial ? "serial number" : "name");
 		err++;
 	}
+
+	if (action == action_setpartition)
+		actx.jdevs = json_object_new_array();
 
 	if (err == argc) {
 		usage_with_options(u, options);
@@ -527,6 +534,15 @@ static int memdev_action(int argc, const char **argv, struct cxl_ctx *ctx,
 
 	if (actx.f_in != stdin)
 		fclose(actx.f_in);
+
+	if (actx.jdevs) {
+		unsigned long flags = 0;
+
+		if (actx.f_out == stdout && isatty(1))
+			flags |= UTIL_JSON_HUMAN;
+		util_display_json_array(actx.f_out, actx.jdevs, flags);
+	}
+
 
  out_close_fout:
 	if (actx.f_out != stdout)
