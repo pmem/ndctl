@@ -65,7 +65,7 @@ OPT_BOOLEAN('f', "force", &param.force,                                \
 
 #define SET_PARTITION_OPTIONS() \
 OPT_STRING('t', "type",  &param.type, "type",			\
-	"'pmem' or 'volatile' (Default: 'pmem')"),		\
+	"'pmem' or 'ram' (volatile) (Default: 'pmem')"),		\
 OPT_STRING('s', "size",  &param.size, "size",			\
 	"size in bytes (Default: all available capacity)"),	\
 OPT_BOOLEAN('a', "align",  &param.align,			\
@@ -354,6 +354,8 @@ static int action_setpartition(struct cxl_memdev *memdev,
 		if (strcmp(param.type, "pmem") == 0)
 			/* default */;
 		else if (strcmp(param.type, "volatile") == 0)
+			type = CXL_SETPART_VOLATILE;
+		else if (strcmp(param.type, "ram") == 0)
 			type = CXL_SETPART_VOLATILE;
 		else {
 			log_err(&ml, "invalid type '%s'\n", param.type);
