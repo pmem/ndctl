@@ -380,8 +380,8 @@ struct cxl_port *util_cxl_port_filter_by_memdev(struct cxl_port *port,
 	return NULL;
 }
 
-static struct cxl_decoder *util_cxl_decoder_filter(struct cxl_decoder *decoder,
-						   const char *__ident)
+struct cxl_decoder *util_cxl_decoder_filter(struct cxl_decoder *decoder,
+					    const char *__ident)
 {
 	struct cxl_port *port = cxl_decoder_get_port(decoder);
 	int pid, did;

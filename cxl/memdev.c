@@ -33,6 +33,7 @@ static struct parameters {
 	bool align;
 	const char *type;
 	const char *size;
+	const char *decoder_filter;
 } param;
 
 static struct log_ctx ml;
@@ -71,6 +72,19 @@ OPT_STRING('s', "size",  &param.size, "size",			\
 OPT_BOOLEAN('a', "align",  &param.align,			\
 	"auto-align --size per device's requirement")
 
+#define RESERVE_DPA_OPTIONS()                                          \
+OPT_STRING('s', "size", &param.size, "size",                           \
+	   "size in bytes (Default: all available capacity)")
+
+#define DPA_OPTIONS()                                          \
+OPT_STRING('d', "decoder", &param.decoder_filter,              \
+   "decoder instance id",                                      \
+   "override the automatic decoder selection"),                \
+OPT_STRING('t', "type", &param.type, "type",                   \
+	   "'pmem' or 'ram' (volatile) (Default: 'pmem')"),    \
+OPT_BOOLEAN('f', "force", &param.force,                        \
+	    "Attempt 'expected to fail' operations")
+
 static const struct option read_options[] = {
 	BASE_OPTIONS(),
 	LABEL_OPTIONS(),
@@ -107,6 +121,242 @@ static const struct option set_partition_options[] = {
 	SET_PARTITION_OPTIONS(),
 	OPT_END(),
 };
+
+static const struct option reserve_dpa_options[] = {
+	BASE_OPTIONS(),
+	RESERVE_DPA_OPTIONS(),
+	DPA_OPTIONS(),
+	OPT_END(),
+};
+
+static const struct option free_dpa_options[] = {
+	BASE_OPTIONS(),
+	DPA_OPTIONS(),
+	OPT_END(),
+};
+
+enum reserve_dpa_mode {
+	DPA_ALLOC,
+	DPA_FREE,
+};
+
+static int __reserve_dpa(struct cxl_memdev *memdev,
+			 enum reserve_dpa_mode alloc_mode,
+			 struct action_context *actx)
+{
+	struct cxl_decoder *decoder, *auto_target = NULL, *target = NULL;
+	struct cxl_endpoint *endpoint = cxl_memdev_get_endpoint(memdev);
+	const char *devname = cxl_memdev_get_devname(memdev);
+	unsigned long long avail_dpa, size;
+	enum cxl_decoder_mode mode;
+	struct cxl_port *port;
+	char buf[256];
+	int rc;
+
+	if (param.type) {
+		if (strcmp(param.type, "ram") == 0)
+			mode = CXL_DECODER_MODE_RAM;
+		else if (strcmp(param.type, "volatile") == 0)
+			mode = CXL_DECODER_MODE_RAM;
+		else if (strcmp(param.type, "ram") == 0)
+			mode = CXL_DECODER_MODE_RAM;
+		else if (strcmp(param.type, "pmem") == 0)
+			mode = CXL_DECODER_MODE_PMEM;
+		else {
+			log_err(&ml, "%s: unsupported type: %s\n", devname,
+				param.type);
+			return -EINVAL;
+		}
+	} else
+		mode = CXL_DECODER_MODE_RAM;
+
+	if (!endpoint) {
+		log_err(&ml, "%s: CXL operation disabled\n", devname);
+		return -ENXIO;
+	}
+
+	port = cxl_endpoint_get_port(endpoint);
+
+	if (mode == CXL_DECODER_MODE_RAM)
+		avail_dpa = cxl_memdev_get_ram_size(memdev);
+	else
+		avail_dpa = cxl_memdev_get_pmem_size(memdev);
+
+	cxl_decoder_foreach(port, decoder) {
+		size = cxl_decoder_get_dpa_size(decoder);
+		if (size == ULLONG_MAX)
+			continue;
+		if (cxl_decoder_get_mode(decoder) != mode)
+			continue;
+
+		if (size > avail_dpa) {
+			log_err(&ml, "%s: capacity accounting error\n",
+				devname);
+			return -ENXIO;
+		}
+		avail_dpa -= size;
+	}
+
+	if (!param.size)
+		if (alloc_mode == DPA_ALLOC) {
+			size = avail_dpa;
+			if (!avail_dpa) {
+				log_err(&ml, "%s: no available capacity\n",
+					devname);
+				return -ENOSPC;
+			}
+		} else
+			size = 0;
+	else {
+		size = parse_size64(param.size);
+		if (size == ULLONG_MAX) {
+			log_err(&ml, "%s: failed to parse size option '%s'\n",
+				devname, param.size);
+			return -EINVAL;
+		}
+		if (size > avail_dpa) {
+			log_err(&ml, "%s: '%s' exceeds available capacity\n",
+				devname, param.size);
+			if (!param.force)
+				return -ENOSPC;
+		}
+	}
+
+	/*
+	 * Find next free decoder, assumes cxl_decoder_foreach() is in
+	 * hardware instance-id order
+	 */
+	if (alloc_mode == DPA_ALLOC)
+		cxl_decoder_foreach(port, decoder) {
+			/* first 0-dpa_size is our target */
+			if (cxl_decoder_get_dpa_size(decoder) == 0) {
+				auto_target = decoder;
+				break;
+			}
+		}
+	else
+		cxl_decoder_foreach_reverse(port, decoder) {
+			/* nothing to free? */
+			if (!cxl_decoder_get_dpa_size(decoder))
+				continue;
+			/*
+			 * Active decoders can't be freed, and by definition all
+			 * previous decoders must also be active
+			 */
+			if (cxl_decoder_get_size(decoder))
+				break;
+			/* first dpa_size > 0 + disabled decoder is our target */
+			if (cxl_decoder_get_dpa_size(decoder) < ULLONG_MAX) {
+				auto_target = decoder;
+				break;
+			}
+		}
+
+	if (param.decoder_filter) {
+		unsigned long id;
+		char *end;
+
+		id = strtoul(param.decoder_filter, &end, 0);
+		/* allow for standalone ordinal decoder ids */
+		if (*end == '\0')
+			rc = snprintf(buf, sizeof(buf), "decoder%d.%ld",
+				      cxl_port_get_id(port), id);
+		else
+			rc = snprintf(buf, sizeof(buf), "%s",
+				      param.decoder_filter);
+
+		if (rc >= (int)sizeof(buf)) {
+			log_err(&ml, "%s: decoder filter '%s' too long\n",
+				devname, param.decoder_filter);
+			return -EINVAL;
+		}
+
+		if (alloc_mode == DPA_ALLOC)
+			cxl_decoder_foreach(port, decoder) {
+				target = util_cxl_decoder_filter(decoder, buf);
+				if (target)
+					break;
+			}
+		else
+			cxl_decoder_foreach_reverse(port, decoder) {
+				target = util_cxl_decoder_filter(decoder, buf);
+				if (target)
+					break;
+			}
+
+		if (!target) {
+			log_err(&ml, "%s: no match for decoder: '%s'\n",
+				devname, param.decoder_filter);
+			return -ENXIO;
+		}
+
+		if (target != auto_target) {
+			log_err(&ml, "%s: %s is out of sequence\n", devname,
+				cxl_decoder_get_devname(target));
+			if (!param.force)
+				return -EINVAL;
+		}
+	}
+
+	if (!target)
+		target = auto_target;
+
+	if (!target) {
+		log_err(&ml, "%s: no suitable decoder found\n", devname);
+		return -ENXIO;
+	}
+
+	if (cxl_decoder_get_mode(target) != mode) {
+		rc = cxl_decoder_set_dpa_size(target, 0);
+		if (rc) {
+			log_err(&ml,
+				"%s: %s: failed to clear allocation to set mode\n",
+				devname, cxl_decoder_get_devname(target));
+			return rc;
+		}
+		rc = cxl_decoder_set_mode(target, mode);
+		if (rc) {
+			log_err(&ml, "%s: %s: failed to set %s mode\n", devname,
+				cxl_decoder_get_devname(target),
+				mode == CXL_DECODER_MODE_PMEM ? "pmem" : "ram");
+			return rc;
+		}
+	}
+
+	rc = cxl_decoder_set_dpa_size(target, size);
+	if (rc)
+		log_err(&ml, "%s: %s: failed to set dpa allocation\n", devname,
+			cxl_decoder_get_devname(target));
+	else {
+		struct json_object *jdev, *jdecoder;
+		unsigned long flags = 0;
+
+		if (actx->f_out == stdout && isatty(1))
+			flags |= UTIL_JSON_HUMAN;
+		jdev = util_cxl_memdev_to_json(memdev, flags);
+		jdecoder = util_cxl_decoder_to_json(target, flags);
+		if (!jdev || !jdecoder) {
+			json_object_put(jdev);
+			json_object_put(jdecoder);
+		} else {
+			json_object_object_add(jdev, "decoder", jdecoder);
+			json_object_array_add(actx->jdevs, jdev);
+		}
+	}
+	return rc;
+}
+
+static int action_reserve_dpa(struct cxl_memdev *memdev,
+			      struct action_context *actx)
+{
+	return __reserve_dpa(memdev, DPA_ALLOC, actx);
+}
+
+static int action_free_dpa(struct cxl_memdev *memdev,
+			   struct action_context *actx)
+{
+	return __reserve_dpa(memdev, DPA_FREE, actx);
+}
 
 static int action_disable(struct cxl_memdev *memdev, struct action_context *actx)
 {
@@ -452,7 +702,8 @@ static int memdev_action(int argc, const char **argv, struct cxl_ctx *ctx,
 		err++;
 	}
 
-	if (action == action_setpartition)
+	if (action == action_setpartition || action == action_reserve_dpa ||
+	    action == action_free_dpa)
 		actx.jdevs = json_object_new_array();
 
 	if (err == argc) {
@@ -495,6 +746,8 @@ static int memdev_action(int argc, const char **argv, struct cxl_ctx *ctx,
 	count = 0;
 
 	for (i = 0; i < argc; i++) {
+		bool found = false;
+
 		cxl_memdev_foreach(ctx, memdev) {
 			const char *memdev_filter = NULL;
 			const char *serial_filter = NULL;
@@ -507,6 +760,7 @@ static int memdev_action(int argc, const char **argv, struct cxl_ctx *ctx,
 			if (!util_cxl_memdev_filter(memdev, memdev_filter,
 						    serial_filter))
 				continue;
+			found = true;
 
 			if (action == action_write) {
 				single = memdev;
@@ -519,6 +773,8 @@ static int memdev_action(int argc, const char **argv, struct cxl_ctx *ctx,
 			else if (rc && !err)
 				err = rc;
 		}
+		if (!found)
+			log_info(&ml, "no memdev matches %s\n", argv[i]);
 	}
 	rc = err;
 
@@ -619,6 +875,28 @@ int cmd_set_partition(int argc, const char **argv, struct cxl_ctx *ctx)
 			"cxl set-partition <mem0> [<mem1>..<memN>] [<options>]");
 	log_info(&ml, "set_partition %d mem%s\n", count >= 0 ? count : 0,
 		 count > 1 ? "s" : "");
+
+	return count >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_reserve_dpa(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int count = memdev_action(
+		argc, argv, ctx, action_reserve_dpa, reserve_dpa_options,
+		"cxl reserve-dpa <mem0> [<mem1>..<memn>] [<options>]");
+	log_info(&ml, "reservation completed on %d mem device%s\n",
+		 count >= 0 ? count : 0, count > 1 ? "s" : "");
+
+	return count >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_free_dpa(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int count = memdev_action(
+		argc, argv, ctx, action_free_dpa, free_dpa_options,
+		"cxl free-dpa <mem0> [<mem1>..<memn>] [<options>]");
+	log_info(&ml, "reservation release completed on %d mem device%s\n",
+		 count >= 0 ? count : 0, count > 1 ? "s" : "");
 
 	return count >= 0 ? 0 : EXIT_FAILURE;
 }

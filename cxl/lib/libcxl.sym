@@ -173,4 +173,8 @@ global:
 	cxl_decoder_get_dpa_resource;
 	cxl_decoder_get_dpa_size;
 	cxl_decoder_get_mode;
+	cxl_decoder_get_last;
+	cxl_decoder_get_prev;
+	cxl_decoder_set_dpa_size;
+	cxl_decoder_set_mode;
 } LIBCXL_2;
