@@ -19,6 +19,7 @@
 #include <ccan/short_types/short_types.h>
 
 #include <util/log.h>
+#include <util/list.h>
 #include <util/size.h>
 #include <util/sysfs.h>
 #include <util/bitmap.h>
@@ -908,6 +909,11 @@ cxl_endpoint_get_memdev(struct cxl_endpoint *endpoint)
 	return NULL;
 }
 
+static int decoder_id_cmp(struct cxl_decoder *d1, struct cxl_decoder *d2)
+{
+	return d1->id - d2->id;
+}
+
 static void *add_cxl_decoder(void *parent, int id, const char *cxldecoder_base)
 {
 	const char *devname = devpath_to_devname(cxldecoder_base);
@@ -1049,7 +1055,7 @@ static void *add_cxl_decoder(void *parent, int id, const char *cxldecoder_base)
 			return decoder_dup;
 		}
 
-	list_add(&port->decoders, &decoder->list);
+	list_add_sorted(&port->decoders, decoder, list, decoder_id_cmp);
 
 	free(path);
 	return decoder;
