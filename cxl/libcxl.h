@@ -139,6 +139,7 @@ enum cxl_decoder_mode {
 	CXL_DECODER_MODE_PMEM,
 	CXL_DECODER_MODE_RAM,
 };
+
 static inline const char *cxl_decoder_mode_name(enum cxl_decoder_mode mode)
 {
 	static const char *names[] = {
@@ -154,6 +155,10 @@ static inline const char *cxl_decoder_mode_name(enum cxl_decoder_mode mode)
 }
 
 enum cxl_decoder_mode cxl_decoder_get_mode(struct cxl_decoder *decoder);
+int cxl_decoder_set_mode(struct cxl_decoder *decoder,
+			 enum cxl_decoder_mode mode);
+int cxl_decoder_set_dpa_size(struct cxl_decoder *decoder,
+			     unsigned long long size);
 const char *cxl_decoder_get_devname(struct cxl_decoder *decoder);
 struct cxl_target *cxl_decoder_get_target_by_memdev(struct cxl_decoder *decoder,
 						    struct cxl_memdev *memdev);
@@ -181,6 +186,10 @@ bool cxl_decoder_is_locked(struct cxl_decoder *decoder);
 #define cxl_decoder_foreach(port, decoder)                                     \
 	for (decoder = cxl_decoder_get_first(port); decoder != NULL;           \
 	     decoder = cxl_decoder_get_next(decoder))
+
+#define cxl_decoder_foreach_reverse(port, decoder)                             \
+	for (decoder = cxl_decoder_get_last(port); decoder != NULL;           \
+	     decoder = cxl_decoder_get_prev(decoder))
 
 struct cxl_target;
 struct cxl_target *cxl_target_get_first(struct cxl_decoder *decoder);

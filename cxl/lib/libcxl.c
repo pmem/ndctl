@@ -1120,6 +1120,20 @@ CXL_EXPORT struct cxl_decoder *cxl_decoder_get_next(struct cxl_decoder *decoder)
 	return list_next(&port->decoders, decoder, list);
 }
 
+CXL_EXPORT struct cxl_decoder *cxl_decoder_get_last(struct cxl_port *port)
+{
+	cxl_decoders_init(port);
+
+	return list_tail(&port->decoders, struct cxl_decoder, list);
+}
+
+CXL_EXPORT struct cxl_decoder *cxl_decoder_get_prev(struct cxl_decoder *decoder)
+{
+	struct cxl_port *port = decoder->port;
+
+	return list_prev(&port->decoders, decoder, list);
+}
+
 CXL_EXPORT struct cxl_ctx *cxl_decoder_get_ctx(struct cxl_decoder *decoder)
 {
 	return decoder->ctx;
@@ -1173,6 +1187,78 @@ cxl_decoder_get_dpa_size(struct cxl_decoder *decoder)
 	}
 
 	return decoder->dpa_size;
+}
+
+CXL_EXPORT int cxl_decoder_set_dpa_size(struct cxl_decoder *decoder,
+					unsigned long long size)
+{
+	struct cxl_port *port = cxl_decoder_get_port(decoder);
+	struct cxl_ctx *ctx = cxl_decoder_get_ctx(decoder);
+	char *path = decoder->dev_buf;
+	int len = decoder->buf_len, rc;
+	char buf[SYSFS_ATTR_SIZE];
+
+	if (!cxl_port_is_endpoint(port)) {
+		err(ctx, "%s: not an endpoint decoder\n",
+		    cxl_decoder_get_devname(decoder));
+		return -EINVAL;
+	}
+
+	if (snprintf(path, len, "%s/dpa_size", decoder->dev_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+		    cxl_decoder_get_devname(decoder));
+		return -ENOMEM;
+	}
+
+	sprintf(buf, "%#llx\n", size);
+	rc = sysfs_write_attr(ctx, path, buf);
+	if (rc < 0)
+		return rc;
+
+	decoder->dpa_size = size;
+	return 0;
+}
+
+CXL_EXPORT int cxl_decoder_set_mode(struct cxl_decoder *decoder,
+				    enum cxl_decoder_mode mode)
+{
+	struct cxl_port *port = cxl_decoder_get_port(decoder);
+	struct cxl_ctx *ctx = cxl_decoder_get_ctx(decoder);
+	char *path = decoder->dev_buf;
+	int len = decoder->buf_len, rc;
+	char buf[SYSFS_ATTR_SIZE];
+
+	if (!cxl_port_is_endpoint(port)) {
+		err(ctx, "%s: not an endpoint decoder\n",
+		    cxl_decoder_get_devname(decoder));
+		return -EINVAL;
+	}
+
+	switch (mode) {
+	case CXL_DECODER_MODE_PMEM:
+		sprintf(buf, "pmem");
+		break;
+	case CXL_DECODER_MODE_RAM:
+		sprintf(buf, "ram");
+		break;
+	default:
+		err(ctx, "%s: unsupported mode: %d\n",
+		    cxl_decoder_get_devname(decoder), mode);
+		return -EINVAL;
+	}
+
+	if (snprintf(path, len, "%s/mode", decoder->dev_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+		    cxl_decoder_get_devname(decoder));
+		return -ENOMEM;
+	}
+
+	rc = sysfs_write_attr(ctx, path, buf);
+	if (rc < 0)
+		return rc;
+
+	decoder->mode = mode;
+	return 0;
 }
 
 CXL_EXPORT enum cxl_decoder_mode
