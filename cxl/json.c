@@ -473,6 +473,8 @@ struct json_object *util_cxl_decoder_to_json(struct cxl_decoder *decoder,
 	}
 
 	if (cxl_port_is_endpoint(port)) {
+		enum cxl_decoder_mode mode = cxl_decoder_get_mode(decoder);
+
 		size = cxl_decoder_get_dpa_size(decoder);
 		val = cxl_decoder_get_dpa_resource(decoder);
 		if (size && val < ULLONG_MAX) {
@@ -487,6 +489,12 @@ struct json_object *util_cxl_decoder_to_json(struct cxl_decoder *decoder,
 			if (jobj)
 				json_object_object_add(jdecoder, "dpa_size",
 						       jobj);
+		}
+
+		if (mode > CXL_DECODER_MODE_NONE) {
+			jobj = json_object_new_string(cxl_decoder_mode_name(mode));
+			if (jobj)
+				json_object_object_add(jdecoder, "mode", jobj);
 		}
 	}
 
