@@ -392,6 +392,8 @@ more CXL decoder objects.
 ----
 unsigned long long cxl_decoder_get_resource(struct cxl_decoder *decoder);
 unsigned long long cxl_decoder_get_size(struct cxl_decoder *decoder);
+unsigned long long cxl_decoder_get_dpa_resource(struct cxl_decoder *decoder);
+unsigned long long cxl_decoder_get_dpa_size(struct cxl_decoder *decoder);
 const char *cxl_decoder_get_devname(struct cxl_decoder *decoder);
 int cxl_decoder_get_id(struct cxl_decoder *decoder);
 int cxl_decoder_get_nr_targets(struct cxl_decoder *decoder);

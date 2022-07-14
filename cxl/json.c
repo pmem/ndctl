@@ -472,6 +472,24 @@ struct json_object *util_cxl_decoder_to_json(struct cxl_decoder *decoder,
 			json_object_object_add(jdecoder, "state", jobj);
 	}
 
+	if (cxl_port_is_endpoint(port)) {
+		size = cxl_decoder_get_dpa_size(decoder);
+		val = cxl_decoder_get_dpa_resource(decoder);
+		if (size && val < ULLONG_MAX) {
+			jobj = util_json_object_hex(val, flags);
+			if (jobj)
+				json_object_object_add(jdecoder, "dpa_resource",
+						       jobj);
+		}
+
+		if (size && size < ULLONG_MAX) {
+			jobj = util_json_object_size(size, flags);
+			if (jobj)
+				json_object_object_add(jdecoder, "dpa_size",
+						       jobj);
+		}
+	}
+
 	if (cxl_port_is_root(port) && cxl_decoder_is_mem_capable(decoder)) {
 		if (cxl_decoder_is_pmem_capable(decoder)) {
 			jobj = json_object_new_boolean(true);

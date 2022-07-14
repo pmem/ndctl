@@ -167,3 +167,9 @@ global:
 	cxl_cmd_new_set_partition;
 	cxl_cmd_partition_set_mode;
 } LIBCXL_1;
+
+LIBCXL_3 {
+global:
+	cxl_decoder_get_dpa_resource;
+	cxl_decoder_get_dpa_size;
+} LIBCXL_2;
