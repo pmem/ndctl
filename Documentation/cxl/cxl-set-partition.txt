@@ -37,7 +37,7 @@ include::memdev-option.txt[]
 
 -t::
 --type=::
-	Type of partition, 'pmem' or 'volatile', to modify.
+	Type of partition, 'pmem' or 'ram' (volatile), to modify.
 	Default: 'pmem'
 
 -s::
