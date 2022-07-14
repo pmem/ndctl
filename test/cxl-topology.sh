@@ -64,14 +64,9 @@ switch[2]=$(jq -r ".[] | .[\"ports:${bridge[1]}\"] | $port_sort | .[0].host" <<<
 switch[3]=$(jq -r ".[] | .[\"ports:${bridge[1]}\"] | $port_sort | .[1].host" <<< $json)
 
 
-# check that all 8 cxl_test memdevs are enabled by default and have a
-# pmem size of 256M
-json=$($CXL list -b cxl_test -M)
-count=$(jq "map(select(.pmem_size == $((256 << 20)))) | length" <<< $json)
-((count == 8)) || err "$LINENO"
-
-
 # validate the expected properties of the 4 root decoders
+# use the size of the first decoder to determine the cxl_test version /
+# properties
 json=$($CXL list -b cxl_test -D -d root)
 port_id=${root:4}
 port_id_len=${#port_id}
@@ -80,25 +75,40 @@ count=$(jq "[ $decoder_sort | .[0] |
 	select(.volatile_capable == true) |
 	select(.size == $((256 << 20))) |
 	select(.nr_targets == 1) ] | length" <<< $json)
-((count == 1)) || err "$LINENO"
+
+if [ $count -eq 1 ]; then
+	decoder_base_size=$((256 << 20))
+	pmem_size=$((256 << 20))
+else
+	decoder_base_size=$((1 << 30))
+	pmem_size=$((1 << 30))
+fi
 
 count=$(jq "[ $decoder_sort | .[1] |
 	select(.volatile_capable == true) |
-	select(.size == $((512 << 20))) |
+	select(.size == $((decoder_base_size * 2))) |
 	select(.nr_targets == 2) ] | length" <<< $json)
 ((count == 1)) || err "$LINENO"
 
 count=$(jq "[ $decoder_sort | .[2] |
 	select(.pmem_capable == true) |
-	select(.size == $((256 << 20))) |
+	select(.size == $decoder_base_size) |
 	select(.nr_targets == 1) ] | length" <<< $json)
 ((count == 1)) || err "$LINENO"
 
 count=$(jq "[ $decoder_sort | .[3] |
 	select(.pmem_capable == true) |
-	select(.size == $((512 << 20))) |
+	select(.size == $((decoder_base_size * 2))) |
 	select(.nr_targets == 2) ] | length" <<< $json)
 ((count == 1)) || err "$LINENO"
+
+
+# check that all 8 cxl_test memdevs are enabled by default and have a
+# pmem size of 256M, or 1G
+json=$($CXL list -b cxl_test -M)
+count=$(jq "map(select(.pmem_size == $pmem_size)) | length" <<< $json)
+((count == 8)) || err "$LINENO"
+
 
 # check that switch ports disappear after all of their memdevs have been
 # disabled, and return when the memdevs are enabled.
