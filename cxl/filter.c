@@ -428,7 +428,9 @@ util_cxl_decoder_filter_by_memdev(struct cxl_decoder *decoder,
 				  const char *ident, const char *serial)
 {
 	struct cxl_ctx *ctx = cxl_decoder_get_ctx(decoder);
+	struct cxl_endpoint *endpoint;
 	struct cxl_memdev *memdev;
+	struct cxl_port *port;
 
 	if (!ident && !serial)
 		return decoder;
@@ -437,6 +439,12 @@ util_cxl_decoder_filter_by_memdev(struct cxl_decoder *decoder,
 		if (!util_cxl_memdev_filter(memdev, ident, serial))
 			continue;
 		if (cxl_decoder_get_target_by_memdev(decoder, memdev))
+			return decoder;
+		port = cxl_decoder_get_port(decoder);
+		if (!port || !cxl_port_is_endpoint(port))
+			continue;
+		endpoint = cxl_port_to_endpoint(port);
+		if (cxl_endpoint_get_memdev(endpoint) == memdev)
 			return decoder;
 	}
 
