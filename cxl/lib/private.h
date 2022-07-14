@@ -108,6 +108,7 @@ struct cxl_decoder {
 	char *dev_path;
 	int nr_targets;
 	int id;
+	enum cxl_decoder_mode mode;
 	bool pmem_capable;
 	bool volatile_capable;
 	bool mem_capable;
