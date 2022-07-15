@@ -462,3 +462,7 @@ LIBNDCTL_26 {
 LIBNDCTL_27 {
 	ndctl_dimm_refresh_flags;
 } LIBNDCTL_26;
+
+LIBNDCTL_28 {
+	ndctl_dimm_disable_master_passphrase;
+} LIBNDCTL_27;

@@ -1028,7 +1028,19 @@ static int action_remove_passphrase(struct ndctl_dimm *dimm,
 		return -EOPNOTSUPP;
 	}
 
-	return ndctl_dimm_remove_key(dimm);
+	return ndctl_dimm_remove_key(dimm, ND_USER_KEY);
+}
+
+static int action_remove_master_passphrase(struct ndctl_dimm *dimm,
+		struct action_context *actx)
+{
+	if (ndctl_dimm_get_security(dimm) < 0) {
+		error("%s: security operation not supported\n",
+				ndctl_dimm_get_devname(dimm));
+		return -EOPNOTSUPP;
+	}
+
+	return ndctl_dimm_remove_key(dimm, ND_MASTER_KEY);
 }
 
 static int action_security_freeze(struct ndctl_dimm *dimm,
@@ -1591,6 +1603,17 @@ int cmd_remove_passphrase(int argc, const char **argv, void *ctx)
 			"ndctl remove-passphrase <nmem0> [<nmem1>..<nmemN>] [<options>]");
 
 	fprintf(stderr, "passphrase removed for %d nmem%s.\n", count >= 0 ? count : 0,
+			count > 1 ? "s" : "");
+	return count >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_remove_master_passphrase(int argc, const char **argv, void *ctx)
+{
+	int count = dimm_action(argc, argv, ctx, action_remove_master_passphrase,
+			base_options,
+			"ndctl remove-master-passphrase <nmem0> [<nmem1>..<nmemN>] [<options>]");
+
+	fprintf(stderr, "master passphrase removed for %d nmem%s.\n", count >= 0 ? count : 0,
 			count > 1 ? "s" : "");
 	return count >= 0 ? 0 : EXIT_FAILURE;
 }

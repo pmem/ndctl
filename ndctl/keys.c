@@ -602,17 +602,24 @@ static int discard_key(struct ndctl_dimm *dimm)
 	return 0;
 }
 
-int ndctl_dimm_remove_key(struct ndctl_dimm *dimm)
+int ndctl_dimm_remove_key(struct ndctl_dimm *dimm, enum ndctl_key_type key_type)
 {
 	key_serial_t key;
 	int rc;
 
-	key = check_dimm_key(dimm, true, ND_USER_KEY);
+	key = check_dimm_key(dimm, true, key_type);
 	if (key < 0)
 		return key;
 
-	rc = run_key_op(dimm, key, ndctl_dimm_disable_passphrase,
-			"remove passphrase");
+	if (key_type == ND_USER_KEY)
+		rc = run_key_op(dimm, key, ndctl_dimm_disable_passphrase,
+				"remove passphrase");
+	else if (key_type == ND_MASTER_KEY)
+		rc = run_key_op(dimm, key, ndctl_dimm_disable_master_passphrase,
+				"remove master passphrase");
+	else
+		return -EINVAL;
+
 	if (rc < 0)
 		return rc;
 
