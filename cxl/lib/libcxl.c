@@ -769,6 +769,7 @@ static int cxl_port_init(struct cxl_port *port, struct cxl_port *parent_port,
 	if (sysfs_read_attr(ctx, path, buf) == 0)
 		port->module = util_modalias_to_module(ctx, buf);
 
+	free(path);
 	return 0;
 err:
 	free(port->dev_path);
