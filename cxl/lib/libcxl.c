@@ -25,6 +25,32 @@
 #include <cxl/libcxl.h>
 #include "private.h"
 
+const char *DEVICE_ERRORS[23] = {
+	"Success: The command completed successfully.",
+	"Background Command Started: The background command started successfully. Refer to the Background Command Status register to retrieve the command result.",
+	"Invalid Input: A command input was invalid.",
+	"Unsupported: The command is not supported.",
+	"Internal Error: The command was not completed due to an internal device error.",
+	"Retry Required: The command was not completed due to a temporary error. An optional single retry may resolve the issue.",
+	"Busy: The device is currently busy processing a background operation. Wait until background command completes and then retry the command.",
+	"Media Disabled: The command could not be completed because it requires media access and media is disabled.",
+	"FW Transfer in Progress: Only one FW package can be transferred at a time. Complete the current FW package transfer before starting a new one.",
+	"FW Transfer Out of Order: The FW package transfer was aborted because the FW package content was transferred out of order.",
+	"FW Authentication Failed: The FW package was not saved to the device because the FW package authentication failed.",
+	"Invalid Slot: The FW slot specified is not supported or not valid for the requested operation.",
+	"Activation Failed, FW Rolled Back: The new FW failed to activate and rolled back to the previous active FW.",
+	"Activation Failed, Cold Reset Required: The new FW failed to activate. A cold reset is required.",
+	"Invalid Handle: One or more Event Record Handles were invalid.",
+	"Invalid Physical Address: The physical address specified is invalid.",
+	"Inject Poison Limit Reached: The devices limit on allowed poison injection has been reached. Clear injected poison requests before attempting to inject more.",
+	"Permanent Media Failure: The device could not clear poison due to a permanent issue with the media.",
+	"Aborted: The background command was aborted by the device.",
+	"Invalid Security State: The command is not valid in the current security state.",
+	"Incorrect Passphrase: The passphrase does not match the currently set passphrase.",
+	"Unsupported Mailbox: The command is not supported on the mailbox it was issued on. Used to indicate an unsupported command issued on the secondary mailbox.",
+	"Invalid Payload Length: The payload length specified in the Command Register is not valid. The device is required to perform this check prior to processing any command defined in this specification.",
+};
+
 /**
  * struct cxl_ctx - library user context to find "nd" instances
  *
@@ -992,8 +1018,8 @@ static int lsa_op(struct cxl_memdev *memdev, int op, void **buf,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		err(ctx, "%s: firmware status: %d\n",
-			devname, rc);
+		err(ctx, "%s: firmware status: %d:\n%s\n",
+			devname, rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -1052,8 +1078,8 @@ CXL_EXPORT int cxl_memdev_cmd_identify(struct cxl_memdev *memdev)
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -1126,8 +1152,8 @@ CXL_EXPORT int cxl_memdev_get_supported_logs(struct cxl_memdev *memdev)
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -1197,8 +1223,8 @@ CXL_EXPORT int cxl_memdev_get_cel_log(struct cxl_memdev *memdev)
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -1256,8 +1282,8 @@ CXL_EXPORT int cxl_memdev_get_event_interrupt_policy(struct cxl_memdev *memdev)
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -1332,8 +1358,8 @@ CXL_EXPORT int cxl_memdev_set_event_interrupt_policy(struct cxl_memdev *memdev, 
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -1376,8 +1402,8 @@ CXL_EXPORT int cxl_memdev_get_timestamp(struct cxl_memdev *memdev)
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -1439,8 +1465,8 @@ CXL_EXPORT int cxl_memdev_set_timestamp(struct cxl_memdev *memdev, u64 timestamp
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -1492,8 +1518,8 @@ CXL_EXPORT int cxl_memdev_get_alert_config(struct cxl_memdev *memdev)
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -1599,8 +1625,8 @@ CXL_EXPORT int cxl_memdev_set_alert_config(struct cxl_memdev *memdev, u32 alert_
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -1651,8 +1677,8 @@ CXL_EXPORT int cxl_memdev_get_health_info(struct cxl_memdev *memdev)
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -1785,8 +1811,8 @@ CXL_EXPORT int cxl_memdev_get_event_records(struct cxl_memdev *memdev, u8 event_
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -1895,8 +1921,8 @@ CXL_EXPORT int cxl_memdev_get_ld_info(struct cxl_memdev *memdev)
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -1977,8 +2003,8 @@ CXL_EXPORT int cxl_memdev_ddr_info(struct cxl_memdev *memdev, u8 ddr_id)
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -2064,8 +2090,8 @@ CXL_EXPORT int cxl_memdev_clear_event_records(struct cxl_memdev *memdev, u8 even
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -2136,8 +2162,8 @@ CXL_EXPORT int cxl_memdev_hct_start_stop_trigger(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -2218,8 +2244,8 @@ CXL_EXPORT int cxl_memdev_hct_get_buffer_status(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -2292,8 +2318,8 @@ CXL_EXPORT int cxl_memdev_hct_enable(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -2363,8 +2389,8 @@ CXL_EXPORT int cxl_memdev_ltmon_capture_clear(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -2444,8 +2470,8 @@ CXL_EXPORT int cxl_memdev_ltmon_capture(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -2518,8 +2544,8 @@ CXL_EXPORT int cxl_memdev_ltmon_capture_freeze_and_restore(struct cxl_memdev *me
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -2594,8 +2620,8 @@ CXL_EXPORT int cxl_memdev_ltmon_l2r_count_dump(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -2668,8 +2694,8 @@ CXL_EXPORT int cxl_memdev_ltmon_l2r_count_clear(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -2743,8 +2769,8 @@ CXL_EXPORT int cxl_memdev_ltmon_basic_cfg(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -2832,8 +2858,8 @@ CXL_EXPORT int cxl_memdev_ltmon_watch(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -2913,8 +2939,8 @@ CXL_EXPORT int cxl_memdev_ltmon_capture_stat(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -3001,8 +3027,8 @@ CXL_EXPORT int cxl_memdev_ltmon_capture_log_dmp(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -3084,8 +3110,8 @@ CXL_EXPORT int cxl_memdev_ltmon_capture_trigger(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -3158,8 +3184,8 @@ CXL_EXPORT int cxl_memdev_ltmon_enable(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -3239,8 +3265,8 @@ CXL_EXPORT int cxl_memdev_osa_os_type_trig_cfg(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -3327,8 +3353,8 @@ CXL_EXPORT int cxl_memdev_osa_cap_ctrl(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -3423,8 +3449,8 @@ CXL_EXPORT int cxl_memdev_osa_cfg_dump(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -3528,8 +3554,8 @@ CXL_EXPORT int cxl_memdev_osa_ana_op(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -3610,8 +3636,8 @@ CXL_EXPORT int cxl_memdev_osa_status_query(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -3688,8 +3714,8 @@ CXL_EXPORT int cxl_memdev_osa_access_rel(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -3766,8 +3792,8 @@ CXL_EXPORT int cxl_memdev_perfcnt_mta_ltif_set(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -3843,8 +3869,8 @@ CXL_EXPORT int cxl_memdev_perfcnt_mta_get(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -3923,8 +3949,8 @@ CXL_EXPORT int cxl_memdev_perfcnt_mta_latch_val_get(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -3998,8 +4024,8 @@ CXL_EXPORT int cxl_memdev_perfcnt_mta_counter_clear(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -4070,8 +4096,8 @@ CXL_EXPORT int cxl_memdev_perfcnt_mta_cnt_val_latch(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -4148,8 +4174,8 @@ CXL_EXPORT int cxl_memdev_perfcnt_mta_hif_set(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -4223,8 +4249,8 @@ CXL_EXPORT int cxl_memdev_perfcnt_mta_hif_cfg_get(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -4301,8 +4327,8 @@ CXL_EXPORT int cxl_memdev_perfcnt_mta_hif_latch_val_get(struct cxl_memdev *memde
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -4374,8 +4400,8 @@ CXL_EXPORT int cxl_memdev_perfcnt_mta_hif_counter_clear(struct cxl_memdev *memde
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -4444,8 +4470,8 @@ CXL_EXPORT int cxl_memdev_perfcnt_mta_hif_cnt_val_latch(struct cxl_memdev *memde
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -4527,8 +4553,8 @@ CXL_EXPORT int cxl_memdev_perfcnt_ddr_generic_select(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -4604,8 +4630,8 @@ CXL_EXPORT int cxl_memdev_err_inj_drs_poison(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -4681,8 +4707,8 @@ CXL_EXPORT int cxl_memdev_err_inj_drs_ecc(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -4751,8 +4777,8 @@ CXL_EXPORT int cxl_memdev_err_inj_rxflit_crc(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -4821,8 +4847,8 @@ CXL_EXPORT int cxl_memdev_err_inj_txflit_crc(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -4891,8 +4917,8 @@ CXL_EXPORT int cxl_memdev_err_inj_viral(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -4965,8 +4991,8 @@ CXL_EXPORT int cxl_memdev_eh_eye_cap_run(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -5046,8 +5072,8 @@ CXL_EXPORT int cxl_memdev_eh_eye_cap_read(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -5151,8 +5177,8 @@ CXL_EXPORT int cxl_memdev_eh_adapt_get(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -5249,8 +5275,8 @@ CXL_EXPORT int cxl_memdev_eh_adapt_oneoff(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -5367,8 +5393,8 @@ CXL_EXPORT int cxl_memdev_eh_adapt_force(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -5418,8 +5444,8 @@ CXL_EXPORT int cxl_memdev_hbo_status(struct cxl_memdev *memdev)
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -5467,8 +5493,8 @@ CXL_EXPORT int cxl_memdev_hbo_transfer_fw(struct cxl_memdev *memdev)
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -5513,8 +5539,8 @@ CXL_EXPORT int cxl_memdev_hbo_activate_fw(struct cxl_memdev *memdev)
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -5583,8 +5609,8 @@ CXL_EXPORT int cxl_memdev_health_counters_clear(struct cxl_memdev *memdev,
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -5643,8 +5669,8 @@ CXL_EXPORT int cxl_memdev_health_counters_get(struct cxl_memdev *memdev)
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
@@ -5708,8 +5734,8 @@ CXL_EXPORT int cxl_memdev_hct_get_plat_param(struct cxl_memdev *memdev)
 
 	rc = cxl_cmd_get_mbox_status(cmd);
 	if (rc != 0) {
-		fprintf(stderr, "%s: firmware status: %d\n",
-				cxl_memdev_get_devname(memdev), rc);
+		fprintf(stderr, "%s: firmware status: %d:\n%s\n",
+				cxl_memdev_get_devname(memdev), rc, DEVICE_ERRORS[rc]);
 		rc = -ENXIO;
 		goto out;
 	}
