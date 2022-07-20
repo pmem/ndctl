@@ -465,4 +465,5 @@ LIBNDCTL_27 {
 
 LIBNDCTL_28 {
 	ndctl_dimm_disable_master_passphrase;
+	ndctl_bus_has_cxl;
 } LIBNDCTL_27;

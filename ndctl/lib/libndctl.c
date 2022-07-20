@@ -12,6 +12,7 @@
 #include <ctype.h>
 #include <fcntl.h>
 #include <dirent.h>
+#include <libgen.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
@@ -876,6 +877,48 @@ static enum ndctl_fwa_method fwa_method_to_method(const char *fwa_method)
 	return NDCTL_FWA_METHOD_RESET;
 }
 
+static int is_ndbus_cxl(const char *ctl_base)
+{
+	char *path, *ppath, *subsys;
+	char tmp_path[PATH_MAX];
+	int rc;
+
+	/* get the real path of ctl_base */
+	path = realpath(ctl_base, NULL);
+	if (!path)
+		return -errno;
+
+	/* setup to get the nd bridge device backing the ctl */
+	sprintf(tmp_path, "%s/device", path);
+	free(path);
+
+	path = realpath(tmp_path, NULL);
+	if (!path)
+		return -errno;
+
+	/* get the parent dir of the ndbus, which should be the nvdimm-bridge */
+	ppath = dirname(path);
+
+	/* setup to get the subsystem of the nvdimm-bridge */
+	sprintf(tmp_path, "%s/%s", ppath, "subsystem");
+	free(path);
+
+	path = realpath(tmp_path, NULL);
+	if (!path)
+		return -errno;
+
+	subsys = basename(path);
+
+	/* check if subsystem is cxl */
+	if (!strcmp(subsys, "cxl"))
+		rc = 1;
+	else
+		rc = 0;
+
+	free(path);
+	return rc;
+}
+
 static void *add_bus(void *parent, int id, const char *ctl_base)
 {
 	char buf[SYSFS_ATTR_SIZE];
@@ -918,6 +961,11 @@ static void *add_bus(void *parent, int id, const char *ctl_base)
 		bus->has_of_node = 0;
 	else
 		bus->has_of_node = 1;
+
+	if (is_ndbus_cxl(ctl_base))
+		bus->has_cxl = 1;
+	else
+		bus->has_cxl = 0;
 
 	sprintf(path, "%s/device/nfit/dsm_mask", ctl_base);
 	if (sysfs_read_attr(ctx, path, buf) < 0)
@@ -1048,6 +1096,11 @@ NDCTL_EXPORT int ndctl_bus_has_nfit(struct ndctl_bus *bus)
 NDCTL_EXPORT int ndctl_bus_has_of_node(struct ndctl_bus *bus)
 {
 	return bus->has_of_node;
+}
+
+NDCTL_EXPORT int ndctl_bus_has_cxl(struct ndctl_bus *bus)
+{
+	return bus->has_cxl;
 }
 
 NDCTL_EXPORT int ndctl_bus_is_papr_scm(struct ndctl_bus *bus)
