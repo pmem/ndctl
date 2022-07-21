@@ -213,6 +213,13 @@ if get_option('keyutils').enabled()
   ]
 endif
 
+if get_option('keyutils').enabled()
+  security_cxl = find_program('security-cxl.sh')
+  tests += [
+    [ 'security-cxl.sh', security_cxl, 'ndctl' ]
+  ]
+endif
+
 foreach t : tests
   test(t[0], t[1],
     is_parallel : false,
