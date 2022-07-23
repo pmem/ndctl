@@ -37,7 +37,7 @@ endif
 libdir = join_paths(prefixdir, get_option('libdir'))
 rootlibdir = get_option('rootlibdir')
 if rootlibdir == ''
-  rootlibdir = join_paths(rootprefixdir, libdir.split('/')[-1])
+  rootlibdir = join_paths(rootprefixdir, get_option('libdir'))
 endif
 datadir = prefixdir / get_option('datadir')
 includedir = prefixdir / get_option('includedir')
