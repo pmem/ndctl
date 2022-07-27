@@ -255,19 +255,27 @@ OPTIONS
 --port=::
 	Specify CXL Port device name(s), device id(s), and or port type
 	names to filter the listing. The supported port type names are "root"
-	and "switch". Note that since a bus object is also a port, the following
-	two syntaxes are equivalent:
+	and "switch". Note that a bus object is also a port, so the
+	following two syntaxes are equivalent:
 ----
 # cxl list -B
-# cxl list -P -p root
+# cxl list -P -p root -S
 ----
-	Additionally, endpoint objects are also ports so the following commands
-	are also equivalent.
+	...where the '-S/--single' is required since descendant ports are always
+	included in a port listing and '-S/--single' stops after listing the
+	bus.  Additionally, endpoint objects are ports so the following commands
+	are equivalent, and no '-S/--single' is required as endpoint ports are
+	terminal:
 ----
 # cxl list -E
 # cxl list -P -p endpoint
 ----
-	By default, only 'switch' ports are listed.
+	By default, only 'switch' ports are listed, i.e.
+----
+# cxl list -P
+# cxl list -P -p switch
+----
+	...are equivalent.
 
 -S::
 --single::
