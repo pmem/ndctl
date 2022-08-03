@@ -61,6 +61,7 @@ static int cmd_help(int argc, const char **argv, struct cxl_ctx *ctx)
 }
 
 static struct cmd_struct commands[] = {
+	{ "device-info-get", .c_fn = cmd_device_info_get },
 	{ "version", .c_fn = cmd_version },
 	{ "list", .c_fn = cmd_list },
 	{ "help", .c_fn = cmd_help },

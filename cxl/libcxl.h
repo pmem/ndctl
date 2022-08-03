@@ -52,6 +52,7 @@ int cxl_memdev_get_lsa(struct cxl_memdev *memdev, void *buf, size_t length,
 int cxl_memdev_set_lsa(struct cxl_memdev *memdev, void *buf, size_t length,
 		size_t offset);
 int cxl_memdev_cmd_identify(struct cxl_memdev *memdev);
+int cxl_memdev_device_info_get(struct cxl_memdev *memdev);
 int cxl_memdev_get_supported_logs(struct cxl_memdev *memdev);
 int cxl_memdev_get_cel_log(struct cxl_memdev *memdev);
 int cxl_memdev_get_event_interrupt_policy(struct cxl_memdev *memdev);

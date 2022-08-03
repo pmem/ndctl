@@ -130,6 +130,19 @@ static const struct option cmd_set_timestamp_options[] = {
 	OPT_END(),
 };
 
+static struct _device_info_get_params {
+	bool verbose;
+} device_info_get_params;
+
+#define DEVICE_INFO_GET_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &device_info_get_params.verbose, "turn on debug")
+
+
+static const struct option cmd_device_info_get_options[] = {
+	DEVICE_INFO_GET_BASE_OPTIONS(),
+	OPT_END(),
+};
+
 static const struct option cmd_get_alert_config_options[] = {
 	BASE_OPTIONS(),
 	OPT_END(),
@@ -1399,6 +1412,18 @@ static int action_cmd_ltmon_capture(struct cxl_memdev *memdev, struct action_con
 		ltmon_capture_params.ignore_rxl0_chg, ltmon_capture_params.trig_src_sel);
 }
 
+static int action_cmd_device_info_get(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort device_info_get\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_device_info_get(memdev);
+}
+
+
 static int action_cmd_ltmon_capture_freeze_and_restore(struct cxl_memdev *memdev, struct action_context *actx)
 {
 	if (cxl_memdev_is_active(memdev)) {
@@ -2193,6 +2218,14 @@ int cmd_get_timestamp(int argc, const char **argv, struct cxl_ctx *ctx)
 {
 	int rc = memdev_action(argc, argv, ctx, action_cmd_get_timestamp, cmd_get_timestamp_options,
 			"cxl get-timestamp <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_device_info_get(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_device_info_get, cmd_device_info_get_options,
+			"cxl device_info_get <mem0> [<mem1>..<memN>] [<options>]");
 
 	return rc >= 0 ? 0 : EXIT_FAILURE;
 }

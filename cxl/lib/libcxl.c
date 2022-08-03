@@ -1949,6 +1949,96 @@ out:
 
 // GET_LD_INFO END
 
+#define CXL_MEM_COMMAND_ID_DEVICE_INFO_GET CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_DEVICE_INFO_GET_OPCODE 49152
+#define CXL_MEM_COMMAND_ID_DEVICE_INFO_GET_PAYLOAD_OUT_SIZE 8
+#define CXL_MEM_COMMAND_ID_DEVICE_INFO_GET_PAYLOAD_IN_SIZE 0
+
+
+struct cxl_mbox_device_info_get_out {
+	__le16 device_id;
+	u8 chipinfo_rel_major;
+	u8 chipinfo_rel_minor;
+	u8 device_rev;
+	u8 configfile_ver_major;
+	__le16 configfile_ver_minor;
+}  __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_device_info_get(struct cxl_memdev *memdev)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_mbox_device_info_get_out *device_info_get_out;
+	int rc = 0;
+	char release_major;
+	release_major = 'A';
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_DEVICE_INFO_GET_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	/* this is hack to create right payload size */
+	cinfo->size_in = CXL_MEM_COMMAND_ID_DEVICE_INFO_GET_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		 cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		 goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d\n",
+				cxl_memdev_get_devname(memdev), rc);
+		rc = -ENXIO;
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_DEVICE_INFO_GET) {
+		 fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_DEVICE_INFO_GET);
+		return -EINVAL;
+	}
+
+	device_info_get_out = (void *)cmd->send_cmd->out.payload;
+	release_major = release_major + device_info_get_out->chipinfo_rel_major;
+	fprintf(stdout, "=========================== read device information ============================\n");
+
+	fprintf(stdout, "Release & Revision for Device ID %x: %c.%x Rev %x\n",
+				device_info_get_out->device_id,
+				release_major,
+				device_info_get_out->chipinfo_rel_minor,
+				device_info_get_out->device_rev);
+	fprintf(stdout, "Device ID: %x\n", device_info_get_out->device_id);
+	fprintf(stdout, "Chip Info Release Major: %x\n", device_info_get_out->chipinfo_rel_major);
+	fprintf(stdout, "Chip Info Release Minor: %x\n", device_info_get_out->chipinfo_rel_minor);
+	fprintf(stdout, "Device Revision: %x\n", device_info_get_out->device_rev);
+	fprintf(stdout, "ConfigFile version Major: %x\n", device_info_get_out->configfile_ver_major);
+	fprintf(stdout, "ConfigFile version Minor: %x\n", device_info_get_out->configfile_ver_minor);
+
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+	return 0;
+}
+
+
+
 #define CXL_MEM_COMMAND_ID_DDR_INFO CXL_MEM_COMMAND_ID_RAW
 #define CXL_MEM_COMMAND_ID_DDR_INFO_OPCODE 0xC500
 #define CXL_MEM_COMMAND_ID_DDR_INFO_PAYLOAD_IN_SIZE 0x1
