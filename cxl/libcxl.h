@@ -18,6 +18,9 @@ typedef unsigned char uuid_t[16];
 extern "C" {
 #endif
 
+#define FW_BLOCK_SIZE 128
+typedef unsigned char fwblock[FW_BLOCK_SIZE];
+
 struct cxl_ctx;
 struct cxl_ctx *cxl_ref(struct cxl_ctx *ctx);
 void cxl_unref(struct cxl_ctx *ctx);
@@ -53,6 +56,11 @@ int cxl_memdev_set_lsa(struct cxl_memdev *memdev, void *buf, size_t length,
 		size_t offset);
 int cxl_memdev_cmd_identify(struct cxl_memdev *memdev);
 int cxl_memdev_device_info_get(struct cxl_memdev *memdev);
+int cxl_memdev_get_fw_info(struct cxl_memdev *memdev);
+int cxl_memdev_transfer_fw(struct cxl_memdev *memdev, u8 action,
+	u8 slot, u32 offset, unsigned char *data);
+int cxl_memdev_activate_fw(struct cxl_memdev *memdev, u8 action,
+	u8 slot);
 int cxl_memdev_get_supported_logs(struct cxl_memdev *memdev);
 int cxl_memdev_get_cel_log(struct cxl_memdev *memdev);
 int cxl_memdev_get_event_interrupt_policy(struct cxl_memdev *memdev);

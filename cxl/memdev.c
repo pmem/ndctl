@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <limits.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <util/log.h>
 #include <util/filter.h>
@@ -15,6 +16,8 @@
 #include <ccan/endian/endian.h>
 #include <ccan/short_types/short_types.h>
 #include <cxl/libcxl.h>
+
+
 
 struct action_context {
 	FILE *f_out;
@@ -130,6 +133,24 @@ static const struct option cmd_set_timestamp_options[] = {
 	OPT_END(),
 };
 
+static struct _update_fw_params {
+	const char *filepath;
+	bool verbose;
+} update_fw_params;
+
+#define UPDATE_FW_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &update_fw_params.verbose, "turn on debug")
+
+#define UPDATE_FW_OPTIONS() \
+OPT_FILENAME('f', "file", &update_fw_params.filepath, "rom-file", \
+	"filepath to read ROM for firmware update")
+
+static const struct option cmd_update_fw_options[] = {
+	UPDATE_FW_BASE_OPTIONS(),
+	UPDATE_FW_OPTIONS(),
+	OPT_END(),
+};
+
 static struct _device_info_get_params {
 	bool verbose;
 } device_info_get_params;
@@ -140,6 +161,38 @@ OPT_BOOLEAN('v',"verbose", &device_info_get_params.verbose, "turn on debug")
 
 static const struct option cmd_device_info_get_options[] = {
 	DEVICE_INFO_GET_BASE_OPTIONS(),
+	OPT_END(),
+};
+
+static struct _get_fw_info_params {
+	bool verbose;
+} get_fw_info_params;
+
+#define GET_FW_INFO_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &get_fw_info_params.verbose, "turn on debug")
+
+
+static const struct option cmd_get_fw_info_options[] = {
+	GET_FW_INFO_BASE_OPTIONS(),
+	OPT_END(),
+};
+
+static struct _activate_fw_params {
+	u32 action;
+	u32 slot;
+	bool verbose;
+} activate_fw_params;
+
+#define ACTIVATE_FW_BASE_OPTIONS() \
+OPT_BOOLEAN('v',"verbose", &activate_fw_params.verbose, "turn on debug")
+
+#define ACTIVATE_FW_OPTIONS() \
+OPT_UINTEGER('a', "action", &activate_fw_params.action, "Action"), \
+OPT_UINTEGER('s', "slot", &activate_fw_params.slot, "Slot")
+
+static const struct option cmd_activate_fw_options[] = {
+	ACTIVATE_FW_BASE_OPTIONS(),
+	ACTIVATE_FW_OPTIONS(),
 	OPT_END(),
 };
 
@@ -1299,6 +1352,83 @@ static int action_cmd_set_timestamp(struct cxl_memdev *memdev, struct action_con
 	return cxl_memdev_set_timestamp(memdev, ts_params.timestamp);
 }
 
+#define initiate_transfer 1
+#define continue_transfer 2
+#define end_transfer 3
+static int action_cmd_update_fw(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	struct stat fileStat;
+	int filesize;
+	FILE *rom;
+	int rc;
+	int fd;
+	int num_blocks;
+	int num_read;
+	u8 slot;
+	fwblock *rom_buffer;
+
+	rom = fopen(update_fw_params.filepath, "rb");
+	if (rom == NULL) {
+		fprintf(stderr, "Error: File open returned %s\nCould not open file %s\n",
+									strerror(errno), update_fw_params.filepath);
+		return -ENOENT;
+	}
+
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, set_timestamp\n",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	printf("filepath: %s\n", update_fw_params.filepath);
+	fd = fileno(rom);
+	rc = fstat(fd, &fileStat);
+	if (rc != 0) {
+		fprintf(stderr, "Could not read filesize");
+		fclose(rom);
+		return 1;
+	}
+    filesize = fileStat.st_size;
+	printf("Filesize: %d bytes", filesize);
+	num_blocks = filesize / FW_BLOCK_SIZE;
+	rom_buffer = (fwblock*) malloc(filesize);
+	num_read = fread(rom_buffer, FW_BLOCK_SIZE, num_blocks, rom);
+	if (num_blocks != num_read)
+	{
+		fprintf(stderr, "Number of blocks read: %d\nNumber of blocks expected: %d\n", num_read, num_blocks);
+		free(rom_buffer);
+		fclose(rom);
+		return -ENOENT;
+	}
+	slot = 2;
+	rc = cxl_memdev_transfer_fw(memdev, initiate_transfer, slot, 0, rom_buffer[0]);
+	if (rc != 0)
+	{
+		fprintf(stderr, "transfer_fw failed to initiate");
+		free(rom_buffer);
+		fclose(rom);
+		return rc;
+	}
+	for (int i = 1; i < num_blocks; i++)
+	{
+		printf("\rTransfering block %d of %d", i, num_blocks);
+		fflush(stdout);
+		rc = cxl_memdev_transfer_fw(memdev, initiate_transfer, slot, FW_BLOCK_SIZE*i, rom_buffer[i]);
+		if (rc != 0)
+		{
+		fprintf(stderr, "transfer_fw failed on %d of %d\n", i, num_blocks);
+		goto abort;
+		}
+	}
+	printf("Transfer complete. Aborting.");
+abort:
+	rc = cxl_memdev_transfer_fw(memdev, 4, slot, FW_BLOCK_SIZE, rom_buffer[0]);
+	printf("Abord return status %d\n", rc);
+	free(rom_buffer);
+	fclose(rom);
+	return 0;
+}
+
 static int action_cmd_get_event_interrupt_policy(struct cxl_memdev *memdev, struct action_context *actx)
 {
 	if (cxl_memdev_is_active(memdev)) {
@@ -1423,6 +1553,27 @@ static int action_cmd_device_info_get(struct cxl_memdev *memdev, struct action_c
 	return cxl_memdev_device_info_get(memdev);
 }
 
+static int action_cmd_get_fw_info(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort get_fw_info",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_get_fw_info(memdev);
+}
+
+static int action_cmd_activate_fw(struct cxl_memdev *memdev, struct action_context *actx)
+{
+	if (cxl_memdev_is_active(memdev)) {
+		fprintf(stderr, "%s: memdev active, abort activate_fw",
+			cxl_memdev_get_devname(memdev));
+		return -EBUSY;
+	}
+
+	return cxl_memdev_activate_fw(memdev, activate_fw_params.action, activate_fw_params.slot);
+}
 
 static int action_cmd_ltmon_capture_freeze_and_restore(struct cxl_memdev *memdev, struct action_context *actx)
 {
@@ -2230,6 +2381,22 @@ int cmd_device_info_get(int argc, const char **argv, struct cxl_ctx *ctx)
 	return rc >= 0 ? 0 : EXIT_FAILURE;
 }
 
+int cmd_get_fw_info(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_get_fw_info, cmd_get_fw_info_options,
+			"cxl get_fw_info <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_activate_fw(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_activate_fw, cmd_activate_fw_options,
+			"cxl activate_fw <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
 int cmd_set_timestamp(int argc, const char **argv, struct cxl_ctx *ctx)
 {
 	int rc = memdev_action(argc, argv, ctx, action_cmd_set_timestamp, cmd_set_timestamp_options,
@@ -2241,6 +2408,14 @@ int cmd_set_timestamp(int argc, const char **argv, struct cxl_ctx *ctx)
 int cmd_get_alert_config(int argc, const char **argv, struct cxl_ctx *ctx)
 {
 	int rc = memdev_action(argc, argv, ctx, action_cmd_get_alert_config, cmd_get_alert_config_options,
+			"cxl get-alert-config <mem0> [<mem1>..<memN>] [<options>]");
+
+	return rc >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_update_fw(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int rc = memdev_action(argc, argv, ctx, action_cmd_update_fw, cmd_update_fw_options,
 			"cxl get-alert-config <mem0> [<mem1>..<memN>] [<options>]");
 
 	return rc >= 0 ? 0 : EXIT_FAILURE;

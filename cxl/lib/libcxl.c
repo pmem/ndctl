@@ -2037,6 +2037,224 @@ out:
 	return 0;
 }
 
+#define CXL_MEM_COMMAND_ID_GET_FW_INFO CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_GET_FW_INFO_OPCODE 512
+#define CXL_MEM_COMMAND_ID_GET_FW_INFO_PAYLOAD_OUT_SIZE 80
+
+
+struct cxl_mbox_get_fw_info_out {
+	u8 fw_slots_supp;
+	u8 fw_slot_info;
+	u8 fw_activation_capas;
+	u8 rsvd[13];
+	char slot_1_fw_rev[16];
+	char slot_2_fw_rev[16];
+	char slot_3_fw_rev[16];
+	char slot_4_fw_rev[16];
+}  __attribute__((packed));
+
+CXL_EXPORT int cxl_memdev_get_fw_info(struct cxl_memdev *memdev)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mbox_get_fw_info_out *get_fw_info_out;
+	int rc = 0;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_GET_FW_INFO_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		 goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d\n",
+				cxl_memdev_get_devname(memdev), rc);
+		rc = -ENXIO;
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_GET_FW_INFO) {
+		 fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_GET_FW_INFO);
+		return -EINVAL;
+	}
+
+	get_fw_info_out = (void *)cmd->send_cmd->out.payload;
+	fprintf(stdout, "================================= get fw info ==================================\n");
+	fprintf(stdout, "FW Slots Supported: %x\n", get_fw_info_out->fw_slots_supp);
+	fprintf(stdout, "Active FW Slot: %x\n", get_fw_info_out->fw_slot_info);
+	fprintf(stdout, "FW Activation Capabilities: %x\n", get_fw_info_out->fw_activation_capas);
+	fprintf(stdout, "Slot 1 FW Revision: %s\n", get_fw_info_out->slot_1_fw_rev);
+	fprintf(stdout, "Slot 2 FW Revision: %s\n", get_fw_info_out->slot_2_fw_rev);
+	fprintf(stdout, "Slot 3 FW Revision: %s\n", get_fw_info_out->slot_3_fw_rev);
+	fprintf(stdout, "Slot 4 FW Revision: %s\n", get_fw_info_out->slot_4_fw_rev);
+
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+	return 0;
+}
+
+
+#define CXL_MEM_COMMAND_ID_TRANSFER_FW CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_TRANSFER_FW_OPCODE 513
+#define CXL_MEM_COMMAND_ID_TRANSFER_FW_PAYLOAD_IN_SIZE 256 // 128 + FW_BLOCK_SIZE
+
+struct cxl_mbox_transfer_fw_in {
+	u8 action;
+	u8 slot;
+	__le16 rsvd;
+	__le32 offset;
+	__le64 rsvd8[15];
+	fwblock data;
+}  __attribute__((packed));
+
+
+CXL_EXPORT int cxl_memdev_transfer_fw(struct cxl_memdev *memdev,
+	u8 action, u8 slot, u32 offset, unsigned char *data)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_mbox_transfer_fw_in *transfer_fw_in;
+	int rc = 0;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_TRANSFER_FW_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	/* this is hack to create right payload size */
+	cinfo->size_in = CXL_MEM_COMMAND_ID_TRANSFER_FW_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		 cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+
+	transfer_fw_in = (struct cxl_mbox_transfer_fw_in *) cmd->send_cmd->in.payload;
+
+	transfer_fw_in->action = action;
+	transfer_fw_in->slot = slot;
+	transfer_fw_in->offset = cpu_to_le32(offset);
+	for(int i = 0; i < FW_BLOCK_SIZE; i++) {
+		transfer_fw_in->data[i] = data[i];
+	}
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		 goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d\n",
+				cxl_memdev_get_devname(memdev), rc);
+		rc = -ENXIO;
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_TRANSFER_FW) {
+		 fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_TRANSFER_FW);
+		return -EINVAL;
+	}
+
+
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+	return 0;
+}
+
+
+#define CXL_MEM_COMMAND_ID_ACTIVATE_FW CXL_MEM_COMMAND_ID_RAW
+#define CXL_MEM_COMMAND_ID_ACTIVATE_FW_OPCODE 514
+#define CXL_MEM_COMMAND_ID_ACTIVATE_FW_PAYLOAD_IN_SIZE 2
+
+struct cxl_mbox_activate_fw_in {
+	u8 action;
+	u8 slot;
+}  __attribute__((packed));
+
+
+CXL_EXPORT int cxl_memdev_activate_fw(struct cxl_memdev *memdev,
+	u8 action, u8 slot)
+{
+	struct cxl_cmd *cmd;
+	struct cxl_mem_query_commands *query;
+	struct cxl_command_info *cinfo;
+	struct cxl_mbox_activate_fw_in *activate_fw_in;
+	int rc = 0;
+
+	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_ACTIVATE_FW_OPCODE);
+	if (!cmd) {
+		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
+				cxl_memdev_get_devname(memdev));
+		return -ENOMEM;
+	}
+
+	query = cmd->query_cmd;
+	cinfo = &query->commands[cmd->query_idx];
+
+	/* this is hack to create right payload size */
+	cinfo->size_in = CXL_MEM_COMMAND_ID_ACTIVATE_FW_PAYLOAD_IN_SIZE;
+	if (cinfo->size_in > 0) {
+		 cmd->input_payload = calloc(1, cinfo->size_in);
+		if (!cmd->input_payload)
+			return -ENOMEM;
+		cmd->send_cmd->in.payload = (u64)cmd->input_payload;
+		cmd->send_cmd->in.size = cinfo->size_in;
+	}
+
+	activate_fw_in = (void *) cmd->send_cmd->in.payload;
+
+	activate_fw_in->action = action;
+	activate_fw_in->slot = slot;
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0) {
+		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
+				cxl_memdev_get_devname(memdev), rc, strerror(-rc));
+		 goto out;
+	}
+
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0) {
+		fprintf(stderr, "%s: firmware status: %d\n",
+				cxl_memdev_get_devname(memdev), rc);
+		rc = -ENXIO;
+		goto out;
+	}
+
+	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_ACTIVATE_FW) {
+		 fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
+				cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_ACTIVATE_FW);
+		return -EINVAL;
+	}
+
+
+out:
+	cxl_cmd_unref(cmd);
+	return rc;
+	return 0;
+}
 
 
 #define CXL_MEM_COMMAND_ID_DDR_INFO CXL_MEM_COMMAND_ID_RAW

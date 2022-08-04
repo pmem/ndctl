@@ -4,6 +4,10 @@
 #define _CXL_BUILTIN_H_
 
 struct cxl_ctx;
+int cmd_update_fw(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_get_fw_info(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_transfer_fw(int argc, const char **argv, struct cxl_ctx *ctx);
+int cmd_activate_fw(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_device_info_get(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_list(int argc, const char **argv, struct cxl_ctx *ctx);
 int cmd_write_labels(int argc, const char **argv, struct cxl_ctx *ctx);

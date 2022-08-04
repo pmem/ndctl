@@ -63,3 +63,9 @@ test/fio.job
 test/local-write-0-verify.state
 test/ack-shutdown-count-set
 test/list-smart-dimm
+cligen/gen/builtin.h
+cligen/gen/cxl.c
+cligen/gen/libcxl.c
+cligen/gen/libcxl.h
+cligen/gen/libcxl.sym
+cligen/gen/memdev.c

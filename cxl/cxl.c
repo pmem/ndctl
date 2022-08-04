@@ -61,6 +61,9 @@ static int cmd_help(int argc, const char **argv, struct cxl_ctx *ctx)
 }
 
 static struct cmd_struct commands[] = {
+	{ "update-fw", .c_fn = cmd_update_fw },
+	{ "get-fw-info", .c_fn = cmd_get_fw_info },
+	{ "activate-fw", .c_fn = cmd_activate_fw },
 	{ "device-info-get", .c_fn = cmd_device_info_get },
 	{ "version", .c_fn = cmd_version },
 	{ "list", .c_fn = cmd_list },

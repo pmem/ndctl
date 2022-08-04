@@ -40,7 +40,7 @@ except:
 
 import yaml
 
-YAMFILE = f"gen/cci_vendor_cmds_May31.yaml"
+YAMFILE = f"/data/users/eldonlake/fbsource/fbcode/scratch/eldonlake/cligen/gen/cci_vendor_cmds.yaml"
 OUTDIR = f"gen/"
 BASE = "base"
 BUILTINH = "builtin.h"
@@ -49,7 +49,7 @@ LIBCXLC = "libcxl.c"
 LIBCXLH = "libcxl.h"
 LIBCXLSYM = "libcxl.sym"
 MEMDEVC = "memdev.c"
-SIMPLE = True # Only process commands with simple payloads (1, 2, 4, 8 byte param types)
+SIMPLE = False # Only process commands with simple payloads (1, 2, 4, 8 byte param types)
 BLANK = False
 
 class Payload():

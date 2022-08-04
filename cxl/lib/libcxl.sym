@@ -59,6 +59,9 @@ global:
 LIBCXL_4 {
 global:
 	cxl_memdev_device_info_get;
+	cxl_memdev_get_fw_info;
+	cxl_memdev_transfer_fw;
+	cxl_memdev_activate_fw;
 	cxl_memdev_get_lsa_size;
 	cxl_memdev_is_active;
 	cxl_cmd_new_set_lsa;
