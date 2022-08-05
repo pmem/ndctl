@@ -442,6 +442,7 @@ struct json_object *util_cxl_decoder_to_json(struct cxl_decoder *decoder,
 	const char *devname = cxl_decoder_get_devname(decoder);
 	struct cxl_port *port = cxl_decoder_get_port(decoder);
 	struct json_object *jdecoder, *jobj;
+	struct cxl_region *region;
 	u64 val, size;
 
 	jdecoder = json_object_new_object();
@@ -484,6 +485,13 @@ struct json_object *util_cxl_decoder_to_json(struct cxl_decoder *decoder,
 						"interleave_granularity", jobj);
 			}
 		}
+	}
+
+	region = cxl_decoder_get_region(decoder);
+	if (region) {
+		jobj = json_object_new_string(cxl_region_get_devname(region));
+		if (jobj)
+			json_object_object_add(jdecoder, "region", jobj);
 	}
 
 	if (size == 0) {

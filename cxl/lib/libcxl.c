@@ -2125,6 +2125,40 @@ cxl_decoder_get_interleave_ways(struct cxl_decoder *decoder)
 }
 
 CXL_EXPORT struct cxl_region *
+cxl_decoder_get_region(struct cxl_decoder *decoder)
+{
+	struct cxl_port *port = cxl_decoder_get_port(decoder);
+	struct cxl_ctx *ctx = cxl_decoder_get_ctx(decoder);
+	char *path = decoder->dev_buf;
+	char buf[SYSFS_ATTR_SIZE];
+	struct cxl_region *region;
+	struct cxl_decoder *iter;
+	int rc;
+
+	if (cxl_port_is_root(port))
+		return NULL;
+
+	sprintf(path, "%s/region", decoder->dev_path);
+	rc = sysfs_read_attr(ctx, path, buf);
+	if (rc < 0) {
+		err(ctx, "failed to read region name: %s\n", strerror(-rc));
+		return NULL;
+	}
+
+	if (strcmp(buf, "") == 0)
+		return NULL;
+
+	while (!cxl_port_is_root(port))
+		port = cxl_port_get_parent(port);
+
+	cxl_decoder_foreach(port, iter)
+		cxl_region_foreach(iter, region)
+			if (strcmp(cxl_region_get_devname(region), buf) == 0)
+				return region;
+	return NULL;
+}
+
+CXL_EXPORT struct cxl_region *
 cxl_decoder_create_pmem_region(struct cxl_decoder *decoder)
 {
 	struct cxl_ctx *ctx = cxl_decoder_get_ctx(decoder);
