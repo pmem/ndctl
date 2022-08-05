@@ -466,6 +466,26 @@ struct json_object *util_cxl_decoder_to_json(struct cxl_decoder *decoder,
 			json_object_object_add(jdecoder, "size", jobj);
 	}
 
+	val = cxl_decoder_get_interleave_ways(decoder);
+	if (val < UINT_MAX) {
+		jobj = json_object_new_int(val);
+		if (jobj)
+			json_object_object_add(jdecoder, "interleave_ways",
+					       jobj);
+
+		/* granularity is a don't care if not interleaving */
+		if (val > 1) {
+			val = cxl_decoder_get_interleave_granularity(decoder);
+			if (val < UINT_MAX) {
+				jobj = json_object_new_int(val);
+				if (jobj)
+					json_object_object_add(
+						jdecoder,
+						"interleave_granularity", jobj);
+			}
+		}
+	}
+
 	if (size == 0) {
 		jobj = json_object_new_string("disabled");
 		if (jobj)
