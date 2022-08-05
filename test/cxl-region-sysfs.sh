@@ -44,8 +44,8 @@ uuidgen > /sys/bus/cxl/devices/$region/uuid
 # setup interleave geometry
 nr_targets=${#endpoint[@]}
 echo $nr_targets > /sys/bus/cxl/devices/$region/interleave_ways
-g=$(cat /sys/bus/cxl/devices/$decoder/interleave_granularity)
-echo $g > /sys/bus/cxl/devices/$region/interleave_granularity
+r_ig=$(cat /sys/bus/cxl/devices/$decoder/interleave_granularity)
+echo $r_ig > /sys/bus/cxl/devices/$region/interleave_granularity
 echo $((nr_targets * (256<<20))) > /sys/bus/cxl/devices/$region/size
 
 # grab the list of memdevs grouped by host-bridge interleave position
@@ -95,6 +95,22 @@ do
 	pos=$((pos+1))
 done
 echo "$region added ${#endpoint[@]} targets: ${endpoint[@]}"
+
+# validate all endpoint decoders have the correct setting
+region_size=$(cat /sys/bus/cxl/devices/$region/size)
+region_base=$(cat /sys/bus/cxl/devices/$region/resource)
+for i in ${endpoint[@]}
+do
+	iw=$(cat /sys/bus/cxl/devices/$i/interleave_ways)
+	ig=$(cat /sys/bus/cxl/devices/$i/interleave_granularity)
+	[ $iw -ne $nr_targets ] && err "$LINENO: decoder: $i iw: $iw targets: $nr_targets"
+	[ $ig -ne $r_ig] && err "$LINENO: decoder: $i ig: $ig root ig: $r_ig"
+
+	sz=$(cat /sys/bus/cxl/devices/$i/size)
+	res=$(cat /sys/bus/cxl/devices/$i/start)
+	[ $sz -ne $region_size ] && err "$LINENO: decoder: $i sz: $sz region_size: $region_size"
+	[ $res -ne $region_base ] && err "$LINENO: decoder: $i base: $res region_base: $region_base"
+done
 
 # walk up the topology and commit all decoders
 echo 1 > /sys/bus/cxl/devices/$region/commit
