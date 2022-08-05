@@ -652,6 +652,26 @@ struct cxl_region *util_cxl_region_filter(struct cxl_region *region,
 
 }
 
+static struct cxl_decoder *
+util_cxl_decoder_filter_by_region(struct cxl_decoder *decoder,
+				  const char *__ident)
+{
+	struct cxl_region *region;
+
+	if (!__ident)
+		return decoder;
+
+	region = cxl_decoder_get_region(decoder);
+	if (!region)
+		return NULL;
+
+	region = util_cxl_region_filter(region, __ident);
+	if (!region)
+		return NULL;
+
+	return decoder;
+}
+
 static unsigned long params_to_flags(struct cxl_filter_params *param)
 {
 	unsigned long flags = 0;
@@ -789,6 +809,9 @@ static void walk_decoders(struct cxl_port *port, struct cxl_filter_params *p,
 			goto walk_children;
 		if (!util_cxl_decoder_filter_by_memdev(
 			    decoder, p->memdev_filter, p->serial_filter))
+			goto walk_children;
+		if (!util_cxl_decoder_filter_by_region(decoder,
+						       p->region_filter))
 			goto walk_children;
 		if (!p->idle && cxl_decoder_get_size(decoder) == 0)
 			continue;
