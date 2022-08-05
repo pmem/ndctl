@@ -769,6 +769,10 @@ static struct json_object *__util_cxl_port_to_json(struct cxl_port *port,
 	if (jobj)
 		json_object_object_add(jport, "host", jobj);
 
+	jobj = json_object_new_int(cxl_port_get_depth(port));
+	if (jobj)
+		json_object_object_add(jport, "depth", jobj);
+
 	if (!cxl_port_is_enabled(port)) {
 		jobj = json_object_new_string("disabled");
 		if (jobj)

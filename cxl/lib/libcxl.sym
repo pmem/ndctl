@@ -96,6 +96,7 @@ global:
 	cxl_port_get_parent;
 	cxl_port_is_root;
 	cxl_port_is_switch;
+	cxl_port_get_depth;
 	cxl_port_to_bus;
 	cxl_port_is_endpoint;
 	cxl_port_to_endpoint;

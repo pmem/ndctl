@@ -2417,6 +2417,11 @@ CXL_EXPORT bool cxl_port_is_endpoint(struct cxl_port *port)
 	return port->type == CXL_PORT_ENDPOINT;
 }
 
+CXL_EXPORT int cxl_port_get_depth(struct cxl_port *port)
+{
+	return port->depth;
+}
+
 CXL_EXPORT struct cxl_bus *cxl_port_get_bus(struct cxl_port *port)
 {
 	struct cxl_bus *bus;
