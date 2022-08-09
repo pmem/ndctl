@@ -2213,7 +2213,6 @@ CXL_EXPORT int cxl_memdev_transfer_fw(struct cxl_memdev *memdev,
 	if (rc != 0) {
 		fprintf(stderr, "%s: firmware status: %d\n",
 				cxl_memdev_get_devname(memdev), rc);
-		rc = -ENXIO;
 		goto out;
 	}
 
@@ -5776,10 +5775,29 @@ struct cxl_mbox_hbo_status_out {
 	__le64 bo_status;
 }  __attribute__((packed));
 
+struct hbo_status_fields {
+	u16 opcode;
+	u8 percent_complete;
+	u8 is_running;
+	u16 return_code;
+	u16 extended_status;
+};
+
 CXL_EXPORT int cxl_memdev_hbo_status(struct cxl_memdev *memdev)
 {
 	struct cxl_cmd *cmd;
 	struct cxl_mbox_hbo_status_out *hbo_status_out;
+	struct hbo_status_fields *status_fields;
+	u8 opcode_shift = 0;
+	u8 percent_shift = 16;
+	u8 running_shift = 23;
+	u8 retcode_shift = 32;
+	u8 extended_shift = 48;
+	u64 opcode_mask = (1 << percent_shift) - (1 << opcode_shift); // 0-15
+	u64 percent_mask = (1 << running_shift) - (1 << percent_shift); // 16-22
+	u64 running_mask = (1 << running_shift); // 23
+	u64 retcode_mask = (1 << extended_shift) - (1 << retcode_shift); // 32-47
+	u64 extended_mask = 0xffffffffffffffff - (1 << extended_shift) + 1; // 48-63
 	int rc = 0;
 
 	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_HBO_STATUS_OPCODE);
@@ -5811,8 +5829,19 @@ CXL_EXPORT int cxl_memdev_hbo_status(struct cxl_memdev *memdev)
 	}
 
 	hbo_status_out = (void *)cmd->send_cmd->out.payload;
+	status_fields->opcode = (hbo_status_out->bo_status & opcode_mask) >> opcode_shift;
+	status_fields->percent_complete = (hbo_status_out->bo_status & percent_mask) >> percent_shift;
+	status_fields->is_running = (hbo_status_out->bo_status & running_mask) >> running_shift;
+	status_fields->return_code = (hbo_status_out->bo_status & retcode_mask) >> retcode_shift;
+	status_fields->extended_status = (hbo_status_out->bo_status & extended_mask) >> extended_shift;
+
 	fprintf(stdout, "=============================== hidden bo status ===============================\n");
-	fprintf(stdout, "BO status: %lx\n", le64_to_cpu(hbo_status_out->bo_status));
+	fprintf(stdout, "BO status: %08lx\n", le64_to_cpu(hbo_status_out->bo_status));
+	fprintf(stdout, " - Opcode: %x\n", status_fields->opcode);
+	fprintf(stdout, " - Percent complete: %d\n", status_fields->percent_complete);
+	fprintf(stdout, " - Is running: %d\n", status_fields->is_running);
+	fprintf(stdout, " - Return code: %d\n", status_fields->return_code);
+	fprintf(stdout, " - Extended status: %x\n", status_fields->extended_status);
 
 out:
 	cxl_cmd_unref(cmd);

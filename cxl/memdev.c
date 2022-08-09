@@ -1378,6 +1378,8 @@ for every call to transfer-fw, but will only be read during the end_transfer cal
 	int fd;
 	int num_blocks;
 	int num_read;
+	const int max_retries = 25;
+	int retry_count;
 	u32 offset;
 	fwblock *rom_buffer;
 
@@ -1421,23 +1423,37 @@ for every call to transfer-fw, but will only be read during the end_transfer cal
 		fprintf(stderr, "transfer_fw failed to initiate, terminating...\n");
 		free(rom_buffer);
 		fclose(rom);
-		return rc;
+		goto abort;
 	}
 	for (int i = 1; i < num_blocks; i++)
 	{
-		printf("\rTransfering block %d of %d", i, num_blocks);
+		printf("Transfering block %d of %d\n", i, num_blocks);
+		offset = i;
 		fflush(stdout);
-		rc = cxl_memdev_transfer_fw(memdev, continue_transfer, update_fw_params.slot, FW_BLOCK_SIZE*i, rom_buffer[i]);
+		rc = cxl_memdev_transfer_fw(memdev, continue_transfer, update_fw_params.slot, offset, rom_buffer[i]);
+		retry_count = 0;
+		while (rc != 0)
+		{
+			if (retry_count > max_retries)
+			{
+				printf("Maximum %d retries exceeded while transferring block %d\n", max_retries, i);
+			}
+			printf("Mailbox returned %d, retrying...\n", rc);
+			sleep(0.25);
+			rc = cxl_memdev_transfer_fw(memdev, continue_transfer, update_fw_params.slot, offset, rom_buffer[i]);
+			retry_count++;
+		}
 		if (rc != 0)
 		{
-		fprintf(stderr, "transfer_fw failed on %d of %d\n", i, num_blocks);
-		goto abort;
+			fprintf(stderr, "transfer_fw failed on %d of %d\n", i, num_blocks);
+			goto abort;
 		}
 	}
 	printf("Transfer complete. Aborting.");
 	// End transfer will be added here when fully debugged.
 	// For now we will simply abort the fw update once transfer is complete.
 abort:
+	sleep(2.0);
 	rc = cxl_memdev_transfer_fw(memdev, abort_transfer, update_fw_params.slot, FW_BLOCK_SIZE, rom_buffer[0]);
 	printf("Abort return status %d\n", rc);
 	free(rom_buffer);
