@@ -135,6 +135,7 @@ static const struct option cmd_set_timestamp_options[] = {
 
 static struct _update_fw_params {
 	const char *filepath;
+	u32 slot;
 	bool verbose;
 } update_fw_params;
 
@@ -143,7 +144,8 @@ OPT_BOOLEAN('v',"verbose", &update_fw_params.verbose, "turn on debug")
 
 #define UPDATE_FW_OPTIONS() \
 OPT_FILENAME('f', "file", &update_fw_params.filepath, "rom-file", \
-	"filepath to read ROM for firmware update")
+	"filepath to read ROM for firmware update"), \
+OPT_UINTEGER('s', "slot", &update_fw_params.slot, "slot to use for firmware loading")
 
 static const struct option cmd_update_fw_options[] = {
 	UPDATE_FW_BASE_OPTIONS(),
@@ -1355,8 +1357,20 @@ static int action_cmd_set_timestamp(struct cxl_memdev *memdev, struct action_con
 #define initiate_transfer 1
 #define continue_transfer 2
 #define end_transfer 3
+#define abort_transfer 4
 static int action_cmd_update_fw(struct cxl_memdev *memdev, struct action_context *actx)
 {
+/*
+Performs inband FW update through a series of successive calls to transfer-fw. The rom
+is loaded into memory and transfered in 128 byte chunks. transfer-fw supports several
+actions that are specified as part of the input payload. The first call sets the action
+to initiate_transfer and includes the first chunk. The remaining chunks are then sent
+with the continue_transfer action. Finally, the end_transfer action will cause the
+device to validate the binary and transfer it to the indicated slot.
+
+User must provide available FW slot as indicated from get-fw-info. This slot is provided
+for every call to transfer-fw, but will only be read during the end_transfer call.
+*/
 	struct stat fileStat;
 	int filesize;
 	FILE *rom;
@@ -1364,7 +1378,7 @@ static int action_cmd_update_fw(struct cxl_memdev *memdev, struct action_context
 	int fd;
 	int num_blocks;
 	int num_read;
-	u8 slot;
+	u32 offset;
 	fwblock *rom_buffer;
 
 	rom = fopen(update_fw_params.filepath, "rb");
@@ -1380,7 +1394,7 @@ static int action_cmd_update_fw(struct cxl_memdev *memdev, struct action_context
 		return -EBUSY;
 	}
 
-	printf("filepath: %s\n", update_fw_params.filepath);
+	printf("Rom filepath: %s\n", update_fw_params.filepath);
 	fd = fileno(rom);
 	rc = fstat(fd, &fileStat);
 	if (rc != 0) {
@@ -1389,7 +1403,7 @@ static int action_cmd_update_fw(struct cxl_memdev *memdev, struct action_context
 		return 1;
 	}
     filesize = fileStat.st_size;
-	printf("Filesize: %d bytes", filesize);
+	printf("ROM size: %d bytes\n", filesize);
 	num_blocks = filesize / FW_BLOCK_SIZE;
 	rom_buffer = (fwblock*) malloc(filesize);
 	num_read = fread(rom_buffer, FW_BLOCK_SIZE, num_blocks, rom);
@@ -1400,11 +1414,11 @@ static int action_cmd_update_fw(struct cxl_memdev *memdev, struct action_context
 		fclose(rom);
 		return -ENOENT;
 	}
-	slot = 2;
-	rc = cxl_memdev_transfer_fw(memdev, initiate_transfer, slot, 0, rom_buffer[0]);
+	offset = 0;
+	rc = cxl_memdev_transfer_fw(memdev, initiate_transfer, update_fw_params.slot, offset, rom_buffer[0]);
 	if (rc != 0)
 	{
-		fprintf(stderr, "transfer_fw failed to initiate");
+		fprintf(stderr, "transfer_fw failed to initiate, terminating...\n");
 		free(rom_buffer);
 		fclose(rom);
 		return rc;
@@ -1413,7 +1427,7 @@ static int action_cmd_update_fw(struct cxl_memdev *memdev, struct action_context
 	{
 		printf("\rTransfering block %d of %d", i, num_blocks);
 		fflush(stdout);
-		rc = cxl_memdev_transfer_fw(memdev, initiate_transfer, slot, FW_BLOCK_SIZE*i, rom_buffer[i]);
+		rc = cxl_memdev_transfer_fw(memdev, continue_transfer, update_fw_params.slot, FW_BLOCK_SIZE*i, rom_buffer[i]);
 		if (rc != 0)
 		{
 		fprintf(stderr, "transfer_fw failed on %d of %d\n", i, num_blocks);
@@ -1421,9 +1435,11 @@ static int action_cmd_update_fw(struct cxl_memdev *memdev, struct action_context
 		}
 	}
 	printf("Transfer complete. Aborting.");
+	// End transfer will be added here when fully debugged.
+	// For now we will simply abort the fw update once transfer is complete.
 abort:
-	rc = cxl_memdev_transfer_fw(memdev, 4, slot, FW_BLOCK_SIZE, rom_buffer[0]);
-	printf("Abord return status %d\n", rc);
+	rc = cxl_memdev_transfer_fw(memdev, abort_transfer, update_fw_params.slot, FW_BLOCK_SIZE, rom_buffer[0]);
+	printf("Abort return status %d\n", rc);
 	free(rom_buffer);
 	fclose(rom);
 	return 0;

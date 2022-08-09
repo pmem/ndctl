@@ -51,6 +51,7 @@ const char *DEVICE_ERRORS[23] = {
 	"Invalid Payload Length: The payload length specified in the Command Register is not valid. The device is required to perform this check prior to processing any command defined in this specification.",
 };
 
+
 /**
  * struct cxl_ctx - library user context to find "nd" instances
  *
@@ -2058,6 +2059,10 @@ CXL_EXPORT int cxl_memdev_get_fw_info(struct cxl_memdev *memdev)
 	struct cxl_cmd *cmd;
 	struct cxl_mbox_get_fw_info_out *get_fw_info_out;
 	int rc = 0;
+	u8 active_slot_mask;
+	u8 active_slot;
+	u8 staged_slot_mask;
+	u8 staged_slot;
 
 	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_GET_FW_INFO_OPCODE);
 	if (!cmd) {
@@ -2088,9 +2093,18 @@ CXL_EXPORT int cxl_memdev_get_fw_info(struct cxl_memdev *memdev)
 	}
 
 	get_fw_info_out = (void *)cmd->send_cmd->out.payload;
+	active_slot_mask = 0b00000111;
+	active_slot = get_fw_info_out->fw_slot_info && active_slot_mask;
+	staged_slot_mask = 0b00111000;
+	staged_slot = get_fw_info_out->fw_slot_info && staged_slot_mask;
+	staged_slot = staged_slot>>3;
 	fprintf(stdout, "================================= get fw info ==================================\n");
 	fprintf(stdout, "FW Slots Supported: %x\n", get_fw_info_out->fw_slots_supp);
-	fprintf(stdout, "Active FW Slot: %x\n", get_fw_info_out->fw_slot_info);
+	fprintf(stdout, "Active FW Slot: %x\n", active_slot);
+	if (staged_slot)
+	{
+		fprintf(stdout, "Staged FW Slot: %x\n", staged_slot);
+	}
 	fprintf(stdout, "FW Activation Capabilities: %x\n", get_fw_info_out->fw_activation_capas);
 	fprintf(stdout, "Slot 1 FW Revision: %s\n", get_fw_info_out->slot_1_fw_rev);
 	fprintf(stdout, "Slot 2 FW Revision: %s\n", get_fw_info_out->slot_2_fw_rev);
@@ -2105,8 +2119,8 @@ out:
 
 
 #define CXL_MEM_COMMAND_ID_TRANSFER_FW CXL_MEM_COMMAND_ID_RAW
-#define CXL_MEM_COMMAND_ID_TRANSFER_FW_OPCODE 513
-#define CXL_MEM_COMMAND_ID_TRANSFER_FW_PAYLOAD_IN_SIZE 256 // 128 + FW_BLOCK_SIZE
+#define CXL_MEM_COMMAND_ID_TRANSFER_FW_OPCODE 0xCD01 // 0x0201 for generic
+#define CXL_MEM_COMMAND_ID_TRANSFER_FW_PAYLOAD_IN_SIZE 128 + FW_BLOCK_SIZE
 
 struct cxl_mbox_transfer_fw_in {
 	u8 action;
@@ -2126,6 +2140,8 @@ CXL_EXPORT int cxl_memdev_transfer_fw(struct cxl_memdev *memdev,
 	struct cxl_command_info *cinfo;
 	struct cxl_mbox_transfer_fw_in *transfer_fw_in;
 	int rc = 0;
+	u8 transfer_in_buf[CXL_MEM_COMMAND_ID_TRANSFER_FW_PAYLOAD_IN_SIZE];
+	// transfer_in_buf is for debugging purposes and is used to inspect the payload
 
 	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_TRANSFER_FW_OPCODE);
 	if (!cmd) {
@@ -2137,7 +2153,7 @@ CXL_EXPORT int cxl_memdev_transfer_fw(struct cxl_memdev *memdev,
 	query = cmd->query_cmd;
 	cinfo = &query->commands[cmd->query_idx];
 
-	/* this is hack to create right payload size */
+	/* used to force correct payload size */
 	cinfo->size_in = CXL_MEM_COMMAND_ID_TRANSFER_FW_PAYLOAD_IN_SIZE;
 	if (cinfo->size_in > 0) {
 		 cmd->input_payload = calloc(1, cinfo->size_in);
@@ -2152,9 +2168,39 @@ CXL_EXPORT int cxl_memdev_transfer_fw(struct cxl_memdev *memdev,
 	transfer_fw_in->action = action;
 	transfer_fw_in->slot = slot;
 	transfer_fw_in->offset = cpu_to_le32(offset);
-	for(int i = 0; i < FW_BLOCK_SIZE; i++) {
-		transfer_fw_in->data[i] = data[i];
+	memcpy(transfer_fw_in->data, data, sizeof(fwblock));
+
+	// Begin manual payload inspection for debugging purposes
+	memcpy(transfer_in_buf, (u8*) cmd->send_cmd->in.payload, CXL_MEM_COMMAND_ID_TRANSFER_FW_PAYLOAD_IN_SIZE);
+	printf("===== Payload Data From cmd->send_cmd->in.payload =====\n");
+	printf("Byte 0 (Action): %02x ", transfer_in_buf[0]);
+	if (transfer_in_buf[0] == 1)
+	{
+		printf("(Initiate FW transfer)");
 	}
+	printf("\nByte 1 (Slot): %02x\n", transfer_in_buf[1]);
+	printf("Bytes 2-3 (Reserved): %02x %02x\n", transfer_in_buf[2], transfer_in_buf[3]);
+	printf("Bytes 4-7 (Offset): ");
+	for (int i = 4; i < 8; i++) {
+		printf("%02x ", transfer_in_buf[i]);
+	}
+	printf("\nBytes 8-127 (Reserved): ");
+	for (int i = 8; i < 128; i++) {
+		printf("%02x ", transfer_in_buf[i]);
+	}
+	printf("\nBytes 128-%d (Data): ", 127+FW_BLOCK_SIZE);
+	for (int i = 128; i < CXL_MEM_COMMAND_ID_TRANSFER_FW_PAYLOAD_IN_SIZE; i++) {
+		if (i % 16 == 0)
+		{
+			printf("\n%08x  %02x ", i-128, transfer_in_buf[i]);
+		}
+		else
+		{
+			printf("%02x ", transfer_in_buf[i]);
+		}
+	}
+	printf("\n");
+	// End manual payload inspection
 
 	rc = cxl_cmd_submit(cmd);
 	if (rc < 0) {
