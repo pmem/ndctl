@@ -1422,11 +1422,11 @@ for every call to transfer-fw, but will only be read during the end_transfer cal
 	offset = 0;
 	if (&update_fw_params.hbo)
 	{
-		opcode = 0xCD01;
+		opcode = 0xCD01; // Pioneer vendor opcode for hbo-transfer-fw
 	}
 	else
 	{
-		opcode = 0x0201;
+		opcode = 0x0201; // Spec defined transfer-fw
 	}
 	rc = cxl_memdev_transfer_fw(memdev, INITIATE_TRANSFER, update_fw_params.slot, offset, rom_buffer[0], opcode);
 	if (rc != 0)
@@ -1466,7 +1466,7 @@ for every call to transfer-fw, but will only be read during the end_transfer cal
 	// For now we will simply abort the fw update once transfer is complete.
 abort:
 	sleep(2.0);
-	rc = cxl_memdev_transfer_fw(memdev, ABORT_TRANSFER, update_fw_params.slot, FW_BLOCK_SIZE, rom_buffer[0]);
+	rc = cxl_memdev_transfer_fw(memdev, ABORT_TRANSFER, update_fw_params.slot, FW_BLOCK_SIZE, rom_buffer[0], opcode);
 	printf("Abort return status %d\n", rc);
 	free(rom_buffer);
 	fclose(rom);
