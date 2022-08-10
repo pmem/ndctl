@@ -137,6 +137,7 @@ static struct _update_fw_params {
 	const char *filepath;
 	u32 slot;
 	bool hbo;
+	bool mock;
 	bool verbose;
 } update_fw_params;
 
@@ -147,7 +148,8 @@ OPT_BOOLEAN('v',"verbose", &update_fw_params.verbose, "turn on debug")
 OPT_FILENAME('f', "file", &update_fw_params.filepath, "rom-file", \
 	"filepath to read ROM for firmware update"), \
 OPT_UINTEGER('s', "slot", &update_fw_params.slot, "slot to use for firmware loading"), \
-OPT_BOOLEAN('b', "background", &update_fw_params.hbo, "runs as hidden background option")
+OPT_BOOLEAN('b', "background", &update_fw_params.hbo, "runs as hidden background option"), \
+OPT_BOOLEAN('m', "mock", &update_fw_params.mock, "For testing purposes. Mock transfer with only 1 continue then abort")
 
 static const struct option cmd_update_fw_options[] = {
 	UPDATE_FW_BASE_OPTIONS(),
@@ -1420,7 +1422,7 @@ for every call to transfer-fw, but will only be read during the end_transfer cal
 		return -ENOENT;
 	}
 	offset = 0;
-	if (&update_fw_params.hbo)
+	if (update_fw_params.hbo)
 	{
 		opcode = 0xCD01; // Pioneer vendor opcode for hbo-transfer-fw
 	}
@@ -1436,6 +1438,7 @@ for every call to transfer-fw, but will only be read during the end_transfer cal
 		fclose(rom);
 		goto abort;
 	}
+
 	for (int i = 1; i < num_blocks; i++)
 	{
 		printf("Transfering block %d of %d\n", i, num_blocks);
@@ -1458,6 +1461,10 @@ for every call to transfer-fw, but will only be read during the end_transfer cal
 		if (rc != 0)
 		{
 			fprintf(stderr, "transfer_fw failed on %d of %d\n", i, num_blocks);
+			goto abort;
+		}
+		if (update_fw_params.mock)
+		{
 			goto abort;
 		}
 	}
