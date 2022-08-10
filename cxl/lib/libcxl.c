@@ -2133,17 +2133,15 @@ struct cxl_mbox_transfer_fw_in {
 
 
 CXL_EXPORT int cxl_memdev_transfer_fw(struct cxl_memdev *memdev,
-	u8 action, u8 slot, u32 offset, unsigned char *data)
+	u8 action, u8 slot, u32 offset, unsigned char *data, u32 transfer_fw_opcode)
 {
 	struct cxl_cmd *cmd;
 	struct cxl_mem_query_commands *query;
 	struct cxl_command_info *cinfo;
 	struct cxl_mbox_transfer_fw_in *transfer_fw_in;
 	int rc = 0;
-	u8 transfer_in_buf[CXL_MEM_COMMAND_ID_TRANSFER_FW_PAYLOAD_IN_SIZE];
-	// transfer_in_buf is for debugging purposes and is used to inspect the payload
 
-	cmd = cxl_cmd_new_raw(memdev, CXL_MEM_COMMAND_ID_TRANSFER_FW_OPCODE);
+	cmd = cxl_cmd_new_raw(memdev, transfer_fw_opcode);
 	if (!cmd) {
 		fprintf(stderr, "%s: cxl_cmd_new_raw returned Null output\n",
 				cxl_memdev_get_devname(memdev));
@@ -2164,44 +2162,10 @@ CXL_EXPORT int cxl_memdev_transfer_fw(struct cxl_memdev *memdev,
 	}
 
 	transfer_fw_in = (struct cxl_mbox_transfer_fw_in *) cmd->send_cmd->in.payload;
-
 	transfer_fw_in->action = action;
 	transfer_fw_in->slot = slot;
 	transfer_fw_in->offset = cpu_to_le32(offset);
 	memcpy(transfer_fw_in->data, data, sizeof(fwblock));
-
-	// Begin manual payload inspection for debugging purposes
-	memcpy(transfer_in_buf, (u8*) cmd->send_cmd->in.payload, CXL_MEM_COMMAND_ID_TRANSFER_FW_PAYLOAD_IN_SIZE);
-	printf("===== Payload Data From cmd->send_cmd->in.payload =====\n");
-	printf("Byte 0 (Action): %02x ", transfer_in_buf[0]);
-	if (transfer_in_buf[0] == 1)
-	{
-		printf("(Initiate FW transfer)");
-	}
-	printf("\nByte 1 (Slot): %02x\n", transfer_in_buf[1]);
-	printf("Bytes 2-3 (Reserved): %02x %02x\n", transfer_in_buf[2], transfer_in_buf[3]);
-	printf("Bytes 4-7 (Offset): ");
-	for (int i = 4; i < 8; i++) {
-		printf("%02x ", transfer_in_buf[i]);
-	}
-	printf("\nBytes 8-127 (Reserved): ");
-	for (int i = 8; i < 128; i++) {
-		printf("%02x ", transfer_in_buf[i]);
-	}
-	printf("\nBytes 128-%d (Data): ", 127+FW_BLOCK_SIZE);
-	for (int i = 128; i < CXL_MEM_COMMAND_ID_TRANSFER_FW_PAYLOAD_IN_SIZE; i++) {
-		if (i % 16 == 0)
-		{
-			printf("\n%08x  %02x ", i-128, transfer_in_buf[i]);
-		}
-		else
-		{
-			printf("%02x ", transfer_in_buf[i]);
-		}
-	}
-	printf("\n");
-	// End manual payload inspection
-
 	rc = cxl_cmd_submit(cmd);
 	if (rc < 0) {
 		fprintf(stderr, "%s: cmd submission failed: %d (%s)\n",
@@ -2219,7 +2183,8 @@ CXL_EXPORT int cxl_memdev_transfer_fw(struct cxl_memdev *memdev,
 	if (cmd->send_cmd->id != CXL_MEM_COMMAND_ID_TRANSFER_FW) {
 		 fprintf(stderr, "%s: invalid command id 0x%x (expecting 0x%x)\n",
 				cxl_memdev_get_devname(memdev), cmd->send_cmd->id, CXL_MEM_COMMAND_ID_TRANSFER_FW);
-		return -EINVAL;
+		rc = -EINVAL;
+		goto out;
 	}
 
 

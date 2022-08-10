@@ -136,6 +136,7 @@ static const struct option cmd_set_timestamp_options[] = {
 static struct _update_fw_params {
 	const char *filepath;
 	u32 slot;
+	bool hbo;
 	bool verbose;
 } update_fw_params;
 
@@ -145,7 +146,8 @@ OPT_BOOLEAN('v',"verbose", &update_fw_params.verbose, "turn on debug")
 #define UPDATE_FW_OPTIONS() \
 OPT_FILENAME('f', "file", &update_fw_params.filepath, "rom-file", \
 	"filepath to read ROM for firmware update"), \
-OPT_UINTEGER('s', "slot", &update_fw_params.slot, "slot to use for firmware loading")
+OPT_UINTEGER('s', "slot", &update_fw_params.slot, "slot to use for firmware loading"), \
+OPT_BOOLEAN('b', "background", &update_fw_params.hbo, "runs as hidden background option")
 
 static const struct option cmd_update_fw_options[] = {
 	UPDATE_FW_BASE_OPTIONS(),
@@ -1354,10 +1356,10 @@ static int action_cmd_set_timestamp(struct cxl_memdev *memdev, struct action_con
 	return cxl_memdev_set_timestamp(memdev, ts_params.timestamp);
 }
 
-#define initiate_transfer 1
-#define continue_transfer 2
-#define end_transfer 3
-#define abort_transfer 4
+#define INITIATE_TRANSFER 1
+#define CONTINUE_TRANSFER 2
+#define END_TRANSFER 3
+#define ABORT_TRANSFER 4
 static int action_cmd_update_fw(struct cxl_memdev *memdev, struct action_context *actx)
 {
 /*
@@ -1382,6 +1384,7 @@ for every call to transfer-fw, but will only be read during the end_transfer cal
 	int retry_count;
 	u32 offset;
 	fwblock *rom_buffer;
+	u32 opcode;
 
 	rom = fopen(update_fw_params.filepath, "rb");
 	if (rom == NULL) {
@@ -1417,7 +1420,15 @@ for every call to transfer-fw, but will only be read during the end_transfer cal
 		return -ENOENT;
 	}
 	offset = 0;
-	rc = cxl_memdev_transfer_fw(memdev, initiate_transfer, update_fw_params.slot, offset, rom_buffer[0]);
+	if (&update_fw_params.hbo)
+	{
+		opcode = 0xCD01;
+	}
+	else
+	{
+		opcode = 0x0201;
+	}
+	rc = cxl_memdev_transfer_fw(memdev, INITIATE_TRANSFER, update_fw_params.slot, offset, rom_buffer[0], opcode);
 	if (rc != 0)
 	{
 		fprintf(stderr, "transfer_fw failed to initiate, terminating...\n");
@@ -1430,17 +1441,18 @@ for every call to transfer-fw, but will only be read during the end_transfer cal
 		printf("Transfering block %d of %d\n", i, num_blocks);
 		offset = i;
 		fflush(stdout);
-		rc = cxl_memdev_transfer_fw(memdev, continue_transfer, update_fw_params.slot, offset, rom_buffer[i]);
+		rc = cxl_memdev_transfer_fw(memdev, CONTINUE_TRANSFER, update_fw_params.slot, offset, rom_buffer[i], opcode);
 		retry_count = 0;
 		while (rc != 0)
 		{
 			if (retry_count > max_retries)
 			{
 				printf("Maximum %d retries exceeded while transferring block %d\n", max_retries, i);
+				goto abort;
 			}
 			printf("Mailbox returned %d, retrying...\n", rc);
 			sleep(0.25);
-			rc = cxl_memdev_transfer_fw(memdev, continue_transfer, update_fw_params.slot, offset, rom_buffer[i]);
+			rc = cxl_memdev_transfer_fw(memdev, CONTINUE_TRANSFER, update_fw_params.slot, offset, rom_buffer[i], opcode);
 			retry_count++;
 		}
 		if (rc != 0)
@@ -1449,12 +1461,12 @@ for every call to transfer-fw, but will only be read during the end_transfer cal
 			goto abort;
 		}
 	}
-	printf("Transfer complete. Aborting.");
+	printf("Transfer complete. Aborting...\n");
 	// End transfer will be added here when fully debugged.
 	// For now we will simply abort the fw update once transfer is complete.
 abort:
 	sleep(2.0);
-	rc = cxl_memdev_transfer_fw(memdev, abort_transfer, update_fw_params.slot, FW_BLOCK_SIZE, rom_buffer[0]);
+	rc = cxl_memdev_transfer_fw(memdev, ABORT_TRANSFER, update_fw_params.slot, FW_BLOCK_SIZE, rom_buffer[0]);
 	printf("Abort return status %d\n", rc);
 	free(rom_buffer);
 	fclose(rom);
@@ -2448,7 +2460,7 @@ int cmd_get_alert_config(int argc, const char **argv, struct cxl_ctx *ctx)
 int cmd_update_fw(int argc, const char **argv, struct cxl_ctx *ctx)
 {
 	int rc = memdev_action(argc, argv, ctx, action_cmd_update_fw, cmd_update_fw_options,
-			"cxl get-alert-config <mem0> [<mem1>..<memN>] [<options>]");
+			"cxl update-fw <mem0> [<mem1>..<memN>] [<options>]");
 
 	return rc >= 0 ? 0 : EXIT_FAILURE;
 }
