@@ -213,4 +213,5 @@ global:
 	cxl_decoder_get_memdev;
 	cxl_decoder_get_interleave_granularity;
 	cxl_decoder_get_interleave_ways;
+	cxl_decoder_get_max_available_extent;
 } LIBCXL_2;

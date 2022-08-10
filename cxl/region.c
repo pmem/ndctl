@@ -438,9 +438,9 @@ static int create_region(struct cxl_ctx *ctx, int *count,
 	struct json_object *jregion;
 	unsigned int i, granularity;
 	struct cxl_region *region;
+	u64 size, max_extent;
 	const char *devname;
 	uuid_t uuid;
-	u64 size;
 	int rc;
 
 	rc = create_region_validate_config(ctx, p);
@@ -454,6 +454,18 @@ static int create_region(struct cxl_ctx *ctx, int *count,
 	} else {
 		log_err(&rl, "%s: unable to determine region size\n", __func__);
 		return -ENXIO;
+	}
+	max_extent = cxl_decoder_get_max_available_extent(p->root_decoder);
+	if (max_extent == ULLONG_MAX) {
+		log_err(&rl, "%s: unable to determine max extent\n",
+			cxl_decoder_get_devname(p->root_decoder));
+		return -EINVAL;
+	}
+	if (size > max_extent) {
+		log_err(&rl,
+			"%s: region size %#lx exceeds max available space\n",
+			cxl_decoder_get_devname(p->root_decoder), size);
+		return -ENOSPC;
 	}
 
 	if (p->mode == CXL_DECODER_MODE_PMEM) {
