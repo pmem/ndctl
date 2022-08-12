@@ -26,6 +26,7 @@ struct cxl_filter_params {
 	bool human;
 	bool health;
 	bool partition;
+	int verbose;
 	struct log_ctx ctx;
 };
 

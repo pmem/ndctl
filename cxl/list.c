@@ -52,6 +52,8 @@ static const struct option options[] = {
 		    "include memory device health information"),
 	OPT_BOOLEAN('I', "partition", &param.partition,
 		    "include memory device partition information"),
+	OPT_INCR('v', "verbose", &param.verbose,
+		 "increase output detail"),
 #ifdef ENABLE_DEBUG
 	OPT_BOOLEAN(0, "debug", &debug, "debug list walk"),
 #endif
@@ -104,6 +106,25 @@ int cmd_list(int argc, const char **argv, struct cxl_ctx *ctx)
 	if (num_list_flags() == 0) {
 		param.regions = true;
 		param.memdevs = true;
+	}
+
+	switch(param.verbose){
+	default:
+	case 3:
+		param.health = true;
+		param.partition = true;
+		/* fallthrough */
+	case 2:
+		param.idle = true;
+		/* fallthrough */
+	case 1:
+		param.buses = true;
+		param.ports = true;
+		param.decoders = true;
+		param.targets = true;
+		/*fallthrough*/
+	case 0:
+		break;
 	}
 
 	log_init(&param.ctx, "cxl list", "CXL_LIST_LOG");
