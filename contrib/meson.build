@@ -26,6 +26,6 @@ endif
 
 modprobedatadir = get_option('modprobedatadir')
 if modprobedatadir == ''
-  modprobedatadir = get_option('modprobedatadir')
+  modprobedatadir = sysconfdir + '/modprobe.d/'
 endif
 install_data('nvdimm-security.conf', install_dir : modprobedatadir)
