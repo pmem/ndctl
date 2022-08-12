@@ -4,6 +4,7 @@
 #define _LIBCXL_H_
 
 #include <stdarg.h>
+#include <string.h>
 #include <unistd.h>
 #include <stdbool.h>
 
@@ -152,6 +153,18 @@ static inline const char *cxl_decoder_mode_name(enum cxl_decoder_mode mode)
 	if (mode < CXL_DECODER_MODE_NONE || mode > CXL_DECODER_MODE_RAM)
 		mode = CXL_DECODER_MODE_NONE;
 	return names[mode];
+}
+
+static inline enum cxl_decoder_mode
+cxl_decoder_mode_from_ident(const char *ident)
+{
+	if (strcmp(ident, "ram") == 0)
+		return CXL_DECODER_MODE_RAM;
+	else if (strcmp(ident, "volatile") == 0)
+		return CXL_DECODER_MODE_RAM;
+	else if (strcmp(ident, "pmem") == 0)
+		return CXL_DECODER_MODE_PMEM;
+	return CXL_DECODER_MODE_NONE;
 }
 
 enum cxl_decoder_mode cxl_decoder_get_mode(struct cxl_decoder *decoder);
