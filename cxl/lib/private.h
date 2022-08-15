@@ -110,6 +110,8 @@ struct cxl_decoder {
 	int nr_targets;
 	int id;
 	enum cxl_decoder_mode mode;
+	unsigned int interleave_ways;
+	unsigned int interleave_granularity;
 	bool pmem_capable;
 	bool volatile_capable;
 	bool mem_capable;

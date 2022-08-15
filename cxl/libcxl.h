@@ -195,7 +195,13 @@ bool cxl_decoder_is_volatile_capable(struct cxl_decoder *decoder);
 bool cxl_decoder_is_mem_capable(struct cxl_decoder *decoder);
 bool cxl_decoder_is_accelmem_capable(struct cxl_decoder *decoder);
 bool cxl_decoder_is_locked(struct cxl_decoder *decoder);
-
+unsigned int
+cxl_decoder_get_interleave_granularity(struct cxl_decoder *decoder);
+unsigned int cxl_decoder_get_interleave_ways(struct cxl_decoder *decoder);
+struct cxl_region *cxl_decoder_create_pmem_region(struct cxl_decoder *decoder);
+struct cxl_decoder *cxl_decoder_get_by_name(struct cxl_ctx *ctx,
+					    const char *ident);
+struct cxl_memdev *cxl_decoder_get_memdev(struct cxl_decoder *decoder);
 #define cxl_decoder_foreach(port, decoder)                                     \
 	for (decoder = cxl_decoder_get_first(port); decoder != NULL;           \
 	     decoder = cxl_decoder_get_next(decoder))
@@ -244,6 +250,7 @@ int cxl_region_decode_is_committed(struct cxl_region *region);
 int cxl_region_is_enabled(struct cxl_region *region);
 int cxl_region_disable(struct cxl_region *region);
 int cxl_region_enable(struct cxl_region *region);
+int cxl_region_delete(struct cxl_region *region);
 struct cxl_ctx *cxl_region_get_ctx(struct cxl_region *region);
 struct cxl_decoder *cxl_region_get_decoder(struct cxl_region *region);
 int cxl_region_get_id(struct cxl_region *region);
@@ -253,6 +260,20 @@ unsigned long long cxl_region_get_size(struct cxl_region *region);
 unsigned long long cxl_region_get_resource(struct cxl_region *region);
 unsigned int cxl_region_get_interleave_ways(struct cxl_region *region);
 unsigned int cxl_region_get_interleave_granularity(struct cxl_region *region);
+struct cxl_decoder *cxl_region_get_target_decoder(struct cxl_region *region,
+						  int position);
+int cxl_region_set_size(struct cxl_region *region, unsigned long long size);
+int cxl_region_set_uuid(struct cxl_region *region, uuid_t uu);
+int cxl_region_set_interleave_ways(struct cxl_region *region,
+				   unsigned int ways);
+int cxl_region_set_interleave_granularity(struct cxl_region *region,
+					  unsigned int granularity);
+int cxl_region_set_target(struct cxl_region *region, int position,
+			  struct cxl_decoder *decoder);
+int cxl_region_clear_target(struct cxl_region *region, int position);
+int cxl_region_clear_all_targets(struct cxl_region *region);
+int cxl_region_decode_commit(struct cxl_region *region);
+int cxl_region_decode_reset(struct cxl_region *region);
 
 #define cxl_region_foreach(decoder, region)                                    \
 	for (region = cxl_region_get_first(decoder); region != NULL;           \
