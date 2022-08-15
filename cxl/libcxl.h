@@ -237,6 +237,47 @@ int cxl_memdev_is_enabled(struct cxl_memdev *memdev);
 	for (endpoint = cxl_endpoint_get_first(port); endpoint != NULL;        \
 	     endpoint = cxl_endpoint_get_next(endpoint))
 
+struct cxl_region;
+struct cxl_region *cxl_region_get_first(struct cxl_decoder *decoder);
+struct cxl_region *cxl_region_get_next(struct cxl_region *region);
+int cxl_region_decode_is_committed(struct cxl_region *region);
+int cxl_region_is_enabled(struct cxl_region *region);
+int cxl_region_disable(struct cxl_region *region);
+int cxl_region_enable(struct cxl_region *region);
+struct cxl_ctx *cxl_region_get_ctx(struct cxl_region *region);
+struct cxl_decoder *cxl_region_get_decoder(struct cxl_region *region);
+int cxl_region_get_id(struct cxl_region *region);
+const char *cxl_region_get_devname(struct cxl_region *region);
+void cxl_region_get_uuid(struct cxl_region *region, uuid_t uu);
+unsigned long long cxl_region_get_size(struct cxl_region *region);
+unsigned long long cxl_region_get_resource(struct cxl_region *region);
+unsigned int cxl_region_get_interleave_ways(struct cxl_region *region);
+unsigned int cxl_region_get_interleave_granularity(struct cxl_region *region);
+
+#define cxl_region_foreach(decoder, region)                                    \
+	for (region = cxl_region_get_first(decoder); region != NULL;           \
+	     region = cxl_region_get_next(region))
+
+#define cxl_region_foreach_safe(decoder, region, _region)                      \
+	for (region = cxl_region_get_first(decoder),                           \
+	     _region = region ? cxl_region_get_next(region) : NULL;            \
+	     region != NULL;                                                   \
+	     region = _region,                                                 \
+	     _region = _region ? cxl_region_get_next(_region) : NULL)
+
+struct cxl_memdev_mapping;
+struct cxl_memdev_mapping *cxl_mapping_get_first(struct cxl_region *region);
+struct cxl_memdev_mapping *
+cxl_mapping_get_next(struct cxl_memdev_mapping *mapping);
+struct cxl_decoder *cxl_mapping_get_decoder(struct cxl_memdev_mapping *mapping);
+struct cxl_region *cxl_mapping_get_region(struct cxl_memdev_mapping *mapping);
+unsigned int cxl_mapping_get_position(struct cxl_memdev_mapping *mapping);
+
+#define cxl_mapping_foreach(region, mapping) \
+        for (mapping = cxl_mapping_get_first(region); \
+             mapping != NULL; \
+             mapping = cxl_mapping_get_next(mapping))
+
 struct cxl_cmd;
 const char *cxl_cmd_get_devname(struct cxl_cmd *cmd);
 struct cxl_cmd *cxl_cmd_new_raw(struct cxl_memdev *memdev, int opcode);
