@@ -317,8 +317,9 @@ OPTIONS
 
 -T::
 --targets::
-	Extend decoder listings with downstream port target information, and /
-	or port and bus listings with the downstream port information.
+	Extend decoder listings with downstream port target information, port
+	and bus listings with the downstream port information, and / or regions
+	with mapping information.
 ----
 # cxl list -BTu -b ACPI.CXL
 {
@@ -334,6 +335,14 @@ OPTIONS
   ]
 }
 ----
+
+-R::
+--regions::
+	Include region objects in the listing.
+
+-r::
+--region::
+	Specify CXL region device name(s), or device id(s), to filter the listing.
 
 --debug::
 	If the cxl tool was built with debug enabled, turn on debug
