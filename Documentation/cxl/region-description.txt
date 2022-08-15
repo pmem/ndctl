@@ -1,0 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0
+
+DESCRIPTION
+-----------
+A CXL region is composed of one or more slices of CXL memdevs, with configurable
+interleave settings - both the number of interleave ways, and the interleave
+granularity.
