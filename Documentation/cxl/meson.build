@@ -24,6 +24,7 @@ filedeps = [
   'labels-options.txt',
   'debug-option.txt',
   'region-description.txt',
+  'decoder-option.txt',
 ]
 
 cxl_manpages = [
@@ -41,6 +42,9 @@ cxl_manpages = [
   'cxl-reserve-dpa.txt',
   'cxl-free-dpa.txt',
   'cxl-create-region.txt',
+  'cxl-disable-region.txt',
+  'cxl-enable-region.txt',
+  'cxl-destroy-region.txt',
 ]
 
 foreach man : cxl_manpages
