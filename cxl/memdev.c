@@ -154,15 +154,8 @@ static int __reserve_dpa(struct cxl_memdev *memdev,
 	int rc;
 
 	if (param.type) {
-		if (strcmp(param.type, "ram") == 0)
-			mode = CXL_DECODER_MODE_RAM;
-		else if (strcmp(param.type, "volatile") == 0)
-			mode = CXL_DECODER_MODE_RAM;
-		else if (strcmp(param.type, "ram") == 0)
-			mode = CXL_DECODER_MODE_RAM;
-		else if (strcmp(param.type, "pmem") == 0)
-			mode = CXL_DECODER_MODE_PMEM;
-		else {
+		mode = cxl_decoder_mode_from_ident(param.type);
+		if (mode == CXL_DECODER_MODE_NONE) {
 			log_err(&ml, "%s: unsupported type: %s\n", devname,
 				param.type);
 			return -EINVAL;
