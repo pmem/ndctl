@@ -455,6 +455,16 @@ CXL_EXPORT int cxl_region_delete(struct cxl_region *region)
 	return 0;
 }
 
+static int region_start_cmp(struct cxl_region *r1, struct cxl_region *r2)
+{
+	if (r1->start == r2->start)
+		return 0;
+	else if (r1->start < r2->start)
+		return -1;
+	else
+		return 1;
+}
+
 static void *add_cxl_region(void *parent, int id, const char *cxlregion_base)
 {
 	const char *devname = devpath_to_devname(cxlregion_base);
@@ -539,7 +549,7 @@ static void *add_cxl_region(void *parent, int id, const char *cxlregion_base)
 			break;
 		}
 
-	list_add(&decoder->regions, &region->list);
+	list_add_sorted(&decoder->regions, region, list, region_start_cmp);
 
 	return region;
 err:
@@ -1618,6 +1628,70 @@ cxl_endpoint_get_memdev(struct cxl_endpoint *endpoint)
 	return NULL;
 }
 
+static bool cxl_region_is_configured(struct cxl_region *region)
+{
+	return region->size && (region->decode_state != CXL_DECODE_RESET);
+}
+
+/**
+ * cxl_decoder_calc_max_available_extent() - calculate max available free space
+ * @decoder - the root decoder to calculate the free extents for
+ *
+ * The add_cxl_region() function  adds regions to the parent decoder's list
+ * sorted by the region's start HPAs. It can also be assumed that regions have
+ * no overlapped / aliased HPA space. Therefore, calculating each extent is as
+ * simple as walking the region list in order, and subtracting the previous
+ * region's end HPA from the next region's start HPA (and taking into account
+ * the decoder's start and end HPAs as well).
+ */
+static unsigned long long
+cxl_decoder_calc_max_available_extent(struct cxl_decoder *decoder)
+{
+	u64 prev_end, decoder_end, cur_extent, max_extent = 0;
+	struct cxl_port *port = cxl_decoder_get_port(decoder);
+	struct cxl_ctx *ctx = cxl_decoder_get_ctx(decoder);
+	struct cxl_region *region;
+
+	if (!cxl_port_is_root(port)) {
+		err(ctx, "%s: not a root decoder\n",
+		    cxl_decoder_get_devname(decoder));
+		return ULLONG_MAX;
+	}
+
+	/*
+	 * Preload prev_end with an imaginary region that ends just before
+	 * the decoder's start, so that the extent calculation for the
+	 * first region Just Works
+	 */
+	prev_end = decoder->start - 1;
+
+	cxl_region_foreach(decoder, region) {
+		if (!cxl_region_is_configured(region))
+			continue;
+
+		/*
+		 * region->start - prev_end would get the difference in
+		 * addresses, but a difference of 1 in addresses implies
+		 * an extent of 0. Hence the '-1'.
+		 */
+		cur_extent = region->start - prev_end - 1;
+		max_extent = max(max_extent, cur_extent);
+		prev_end = region->start + region->size - 1;
+	}
+
+	/*
+	 * Finally, consider the extent after the last region, up to the end
+	 * of the decoder's address space, if any. If there were no regions,
+	 * this simply reduces to decoder->size.
+	 * Subtracting two addrs gets us a 'size' directly, no need for +/- 1.
+	 */
+	decoder_end = decoder->start + decoder->size - 1;
+	cur_extent = decoder_end - prev_end;
+	max_extent = max(max_extent, cur_extent);
+
+	return max_extent;
+}
+
 static int decoder_id_cmp(struct cxl_decoder *d1, struct cxl_decoder *d2)
 {
 	return d1->id - d2->id;
@@ -1748,6 +1822,8 @@ static void *add_cxl_decoder(void *parent, int id, const char *cxldecoder_base)
 			if (sysfs_read_attr(ctx, path, buf) == 0)
 				*(flag->flag) = !!strtoul(buf, NULL, 0);
 		}
+		decoder->max_available_extent =
+			cxl_decoder_calc_max_available_extent(decoder);
 		break;
 	}
 	}
@@ -1910,6 +1986,12 @@ cxl_decoder_get_dpa_size(struct cxl_decoder *decoder)
 	}
 
 	return decoder->dpa_size;
+}
+
+CXL_EXPORT unsigned long long
+cxl_decoder_get_max_available_extent(struct cxl_decoder *decoder)
+{
+	return decoder->max_available_extent;
 }
 
 CXL_EXPORT int cxl_decoder_set_dpa_size(struct cxl_decoder *decoder,

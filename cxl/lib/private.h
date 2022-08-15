@@ -104,6 +104,7 @@ struct cxl_decoder {
 	u64 size;
 	u64 dpa_resource;
 	u64 dpa_size;
+	u64 max_available_extent;
 	void *dev_buf;
 	size_t buf_len;
 	char *dev_path;
