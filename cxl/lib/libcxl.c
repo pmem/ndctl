@@ -19,6 +19,7 @@
 #include <ccan/short_types/short_types.h>
 
 #include <util/log.h>
+#include <util/list.h>
 #include <util/size.h>
 #include <util/sysfs.h>
 #include <util/bitmap.h>
@@ -909,6 +910,11 @@ cxl_endpoint_get_memdev(struct cxl_endpoint *endpoint)
 	return NULL;
 }
 
+static int decoder_id_cmp(struct cxl_decoder *d1, struct cxl_decoder *d2)
+{
+	return d1->id - d2->id;
+}
+
 static void *add_cxl_decoder(void *parent, int id, const char *cxldecoder_base)
 {
 	const char *devname = devpath_to_devname(cxldecoder_base);
@@ -955,9 +961,35 @@ static void *add_cxl_decoder(void *parent, int id, const char *cxldecoder_base)
 	else
 		decoder->size = strtoull(buf, NULL, 0);
 
+	sprintf(path, "%s/mode", cxldecoder_base);
+	if (sysfs_read_attr(ctx, path, buf) == 0) {
+		if (strcmp(buf, "ram") == 0)
+			decoder->mode = CXL_DECODER_MODE_RAM;
+		else if (strcmp(buf, "pmem") == 0)
+			decoder->mode = CXL_DECODER_MODE_PMEM;
+		else if (strcmp(buf, "mixed") == 0)
+			decoder->mode = CXL_DECODER_MODE_MIXED;
+		else if (strcmp(buf, "none") == 0)
+			decoder->mode = CXL_DECODER_MODE_NONE;
+		else
+			decoder->mode = CXL_DECODER_MODE_MIXED;
+	} else
+		decoder->mode = CXL_DECODER_MODE_NONE;
+
 	switch (port->type) {
-	case CXL_PORT_SWITCH:
 	case CXL_PORT_ENDPOINT:
+		sprintf(path, "%s/dpa_resource", cxldecoder_base);
+		if (sysfs_read_attr(ctx, path, buf) < 0)
+			decoder->dpa_resource = ULLONG_MAX;
+		else
+			decoder->dpa_resource = strtoull(buf, NULL, 0);
+		sprintf(path, "%s/dpa_size", cxldecoder_base);
+		if (sysfs_read_attr(ctx, path, buf) < 0)
+			decoder->dpa_size = ULLONG_MAX;
+		else
+			decoder->dpa_size = strtoull(buf, NULL, 0);
+
+	case CXL_PORT_SWITCH:
 		decoder->pmem_capable = true;
 		decoder->volatile_capable = true;
 		decoder->mem_capable = true;
@@ -1039,7 +1071,7 @@ static void *add_cxl_decoder(void *parent, int id, const char *cxldecoder_base)
 			return decoder_dup;
 		}
 
-	list_add(&port->decoders, &decoder->list);
+	list_add_sorted(&port->decoders, decoder, list, decoder_id_cmp);
 
 	free(path);
 	return decoder;
@@ -1089,6 +1121,20 @@ CXL_EXPORT struct cxl_decoder *cxl_decoder_get_next(struct cxl_decoder *decoder)
 	return list_next(&port->decoders, decoder, list);
 }
 
+CXL_EXPORT struct cxl_decoder *cxl_decoder_get_last(struct cxl_port *port)
+{
+	cxl_decoders_init(port);
+
+	return list_tail(&port->decoders, struct cxl_decoder, list);
+}
+
+CXL_EXPORT struct cxl_decoder *cxl_decoder_get_prev(struct cxl_decoder *decoder)
+{
+	struct cxl_port *port = decoder->port;
+
+	return list_prev(&port->decoders, decoder, list);
+}
+
 CXL_EXPORT struct cxl_ctx *cxl_decoder_get_ctx(struct cxl_decoder *decoder)
 {
 	return decoder->ctx;
@@ -1112,6 +1158,123 @@ CXL_EXPORT unsigned long long cxl_decoder_get_resource(struct cxl_decoder *decod
 CXL_EXPORT unsigned long long cxl_decoder_get_size(struct cxl_decoder *decoder)
 {
 	return decoder->size;
+}
+
+CXL_EXPORT unsigned long long
+cxl_decoder_get_dpa_resource(struct cxl_decoder *decoder)
+{
+	struct cxl_port *port = cxl_decoder_get_port(decoder);
+	struct cxl_ctx *ctx = cxl_decoder_get_ctx(decoder);
+
+	if (!cxl_port_is_endpoint(port)) {
+		err(ctx, "%s: not an endpoint decoder\n",
+		    cxl_decoder_get_devname(decoder));
+		return ULLONG_MAX;
+	}
+
+	return decoder->dpa_resource;
+}
+
+CXL_EXPORT unsigned long long
+cxl_decoder_get_dpa_size(struct cxl_decoder *decoder)
+{
+	struct cxl_port *port = cxl_decoder_get_port(decoder);
+	struct cxl_ctx *ctx = cxl_decoder_get_ctx(decoder);
+
+	if (!cxl_port_is_endpoint(port)) {
+		err(ctx, "%s: not an endpoint decoder\n",
+		    cxl_decoder_get_devname(decoder));
+		return ULLONG_MAX;
+	}
+
+	return decoder->dpa_size;
+}
+
+CXL_EXPORT int cxl_decoder_set_dpa_size(struct cxl_decoder *decoder,
+					unsigned long long size)
+{
+	struct cxl_port *port = cxl_decoder_get_port(decoder);
+	struct cxl_ctx *ctx = cxl_decoder_get_ctx(decoder);
+	char *path = decoder->dev_buf;
+	int len = decoder->buf_len, rc;
+	char buf[SYSFS_ATTR_SIZE];
+
+	if (!cxl_port_is_endpoint(port)) {
+		err(ctx, "%s: not an endpoint decoder\n",
+		    cxl_decoder_get_devname(decoder));
+		return -EINVAL;
+	}
+
+	if (snprintf(path, len, "%s/dpa_size", decoder->dev_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+		    cxl_decoder_get_devname(decoder));
+		return -ENOMEM;
+	}
+
+	sprintf(buf, "%#llx\n", size);
+	rc = sysfs_write_attr(ctx, path, buf);
+	if (rc < 0)
+		return rc;
+
+	decoder->dpa_size = size;
+	return 0;
+}
+
+CXL_EXPORT int cxl_decoder_set_mode(struct cxl_decoder *decoder,
+				    enum cxl_decoder_mode mode)
+{
+	struct cxl_port *port = cxl_decoder_get_port(decoder);
+	struct cxl_ctx *ctx = cxl_decoder_get_ctx(decoder);
+	char *path = decoder->dev_buf;
+	int len = decoder->buf_len, rc;
+	char buf[SYSFS_ATTR_SIZE];
+
+	if (!cxl_port_is_endpoint(port)) {
+		err(ctx, "%s: not an endpoint decoder\n",
+		    cxl_decoder_get_devname(decoder));
+		return -EINVAL;
+	}
+
+	switch (mode) {
+	case CXL_DECODER_MODE_PMEM:
+		sprintf(buf, "pmem");
+		break;
+	case CXL_DECODER_MODE_RAM:
+		sprintf(buf, "ram");
+		break;
+	default:
+		err(ctx, "%s: unsupported mode: %d\n",
+		    cxl_decoder_get_devname(decoder), mode);
+		return -EINVAL;
+	}
+
+	if (snprintf(path, len, "%s/mode", decoder->dev_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+		    cxl_decoder_get_devname(decoder));
+		return -ENOMEM;
+	}
+
+	rc = sysfs_write_attr(ctx, path, buf);
+	if (rc < 0)
+		return rc;
+
+	decoder->mode = mode;
+	return 0;
+}
+
+CXL_EXPORT enum cxl_decoder_mode
+cxl_decoder_get_mode(struct cxl_decoder *decoder)
+{
+	struct cxl_port *port = cxl_decoder_get_port(decoder);
+	struct cxl_ctx *ctx = cxl_decoder_get_ctx(decoder);
+
+	if (!cxl_port_is_endpoint(port)) {
+		err(ctx, "%s: not an endpoint decoder\n",
+		    cxl_decoder_get_devname(decoder));
+		return CXL_DECODER_MODE_NONE;
+	}
+
+	return decoder->mode;
 }
 
 CXL_EXPORT enum cxl_decoder_target_type

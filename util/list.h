@@ -1,40 +1,39 @@
 /* SPDX-License-Identifier: GPL-2.0 */
-/* Copyright (C) 2015-2020 Intel Corporation. All rights reserved. */
+/* Copyright (C) 2022 Intel Corporation. All rights reserved. */
 #ifndef _NDCTL_LIST_H_
 #define _NDCTL_LIST_H_
 
 #include <ccan/list/list.h>
 
-/**
- * list_add_after - add an entry after the given node in the linked list.
- * @h: the list_head to add the node to
- * @l: the list_node after which to add to
- * @n: the list_node to add to the list.
- *
- * The list_node does not need to be initialized; it will be overwritten.
- * Example:
- *	struct child *child = malloc(sizeof(*child));
- *
- *	child->name = "geoffrey";
- *	list_add_after(&parent->children, &child1->list, &child->list);
- *	parent->num_children++;
- */
-#define list_add_after(h, l, n) list_add_after_(h, l, n, LIST_LOC)
-static inline void list_add_after_(struct list_head *h,
-				   struct list_node *l,
-				   struct list_node *n,
-				   const char *abortstr)
-{
-	if (l->next == &h->n) {
-		/* l is the last element, this becomes a list_add_tail */
-		list_add_tail(h, n);
-		return;
-	}
-	n->next = l->next;
-	n->prev = l;
-	l->next->prev = n;
-	l->next = n;
-	(void)list_debug(h, abortstr);
-}
+#define list_add_sorted(head, n, node, cmp)                                    \
+	do {                                                                   \
+		struct list_head *__head = (head);                             \
+		typeof(n) __iter, __next;                                      \
+		typeof(n) __new = (n);                                         \
+                                                                               \
+		if (list_empty(__head)) {                                      \
+			list_add(__head, &__new->node);                        \
+			break;                                                 \
+		}                                                              \
+                                                                               \
+		list_for_each (__head, __iter, node) {                         \
+			if (cmp(__new, __iter) < 0) {                          \
+				list_add_before(__head, &__iter->node,         \
+						&__new->node);                 \
+				break;                                         \
+			}                                                      \
+			__next = list_next(__head, __iter, node);              \
+			if (!__next) {                                         \
+				list_add_after(__head, &__iter->node,          \
+					       &__new->node);                  \
+				break;                                         \
+			}                                                      \
+			if (cmp(__new, __next) < 0) {                          \
+				list_add_before(__head, &__next->node,         \
+						&__new->node);                 \
+				break;                                         \
+			}                                                      \
+		}                                                              \
+	} while (0)
 
 #endif /* _NDCTL_LIST_H_ */

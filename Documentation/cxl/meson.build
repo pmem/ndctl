@@ -36,6 +36,8 @@ cxl_manpages = [
   'cxl-disable-port.txt',
   'cxl-disable-bus.txt',
   'cxl-set-partition.txt',
+  'cxl-reserve-dpa.txt',
+  'cxl-free-dpa.txt',
 ]
 
 foreach man : cxl_manpages
