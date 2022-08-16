@@ -1,0 +1,41 @@
+// SPDX-License-Identifier: GPL-2.0
+
+cxl-destroy-region(1)
+=====================
+
+NAME
+----
+cxl-destroy-region - destroy specified region(s).
+
+SYNOPSIS
+--------
+[verse]
+'cxl destroy-region <region> [<options>]'
+
+include::region-description.txt[]
+
+EXAMPLE
+-------
+----
+# cxl destroy-region all
+destroyed 2 regions
+----
+
+OPTIONS
+-------
+include::bus-option.txt[]
+
+-f::
+--force::
+	Force a destroy operation even if the region is active.
+	This will attempt to disable the region first.
+
+include::decoder-option.txt[]
+
+include::debug-option.txt[]
+
+include::../copyright.txt[]
+
+SEE ALSO
+--------
+linkcxl:cxl-list[1], linkcxl:cxl-create-region[1]

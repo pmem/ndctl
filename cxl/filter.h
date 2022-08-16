@@ -13,9 +13,11 @@ struct cxl_filter_params {
 	const char *port_filter;
 	const char *endpoint_filter;
 	const char *decoder_filter;
+	const char *region_filter;
 	bool single;
 	bool endpoints;
 	bool decoders;
+	bool regions;
 	bool targets;
 	bool memdevs;
 	bool ports;
@@ -33,6 +35,10 @@ struct cxl_memdev *util_cxl_memdev_filter(struct cxl_memdev *memdev,
 struct cxl_port *util_cxl_port_filter_by_memdev(struct cxl_port *port,
 						const char *ident,
 						const char *serial);
+struct cxl_decoder *util_cxl_decoder_filter(struct cxl_decoder *decoder,
+					    const char *__ident);
+struct cxl_region *util_cxl_region_filter(struct cxl_region *region,
+					  const char *__ident);
 
 enum cxl_port_filter_mode {
 	CXL_PF_SINGLE,

@@ -1,0 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0
+
+-d::
+--decoder=::
+	The root decoder to limit the operation to. Only regions that are
+	children of the specified decoder will be acted upon.
