@@ -99,14 +99,12 @@ static struct _interrupt_policy_params {
 	bool verbose;
 } interrupt_policy_params;
 
-#define INT_POLICY_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &interrupt_policy_params.verbose, "turn on debug")
 
 #define SET_INTERRUPT_POLICY_OPTIONS() \
 OPT_UINTEGER('i', "int_policy", &interrupt_policy_params.policy, "Set event interrupt policy. Fields: Informational Event Log Interrupt Settings (1B), Warning Event Log Interrupt Settings (1B), Failure Event Log Interrupt Settings (1B), Fatal Event Log Interrupt Settings (1B)")
 
 static const struct option cmd_set_event_interrupt_policy_options[] = {
-	INT_POLICY_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	SET_INTERRUPT_POLICY_OPTIONS(),
 	OPT_END(),
 };
@@ -121,14 +119,12 @@ static struct _ts_params {
 	bool verbose;
 } ts_params;
 
-#define TS_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &ts_params.verbose, "turn on debug")
 
 #define SET_TIMESTAMP_OPTIONS() \
 OPT_U64('t', "timestamp", &ts_params.timestamp, "Set the timestamp on the device")
 
 static const struct option cmd_set_timestamp_options[] = {
-	TS_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	SET_TIMESTAMP_OPTIONS(),
 	OPT_END(),
 };
@@ -141,9 +137,6 @@ static struct _update_fw_params {
 	bool verbose;
 } update_fw_params;
 
-#define UPDATE_FW_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &update_fw_params.verbose, "turn on debug")
-
 #define UPDATE_FW_OPTIONS() \
 OPT_FILENAME('f', "file", &update_fw_params.filepath, "rom-file", \
 	"filepath to read ROM for firmware update"), \
@@ -152,34 +145,24 @@ OPT_BOOLEAN('b', "background", &update_fw_params.hbo, "runs as hidden background
 OPT_BOOLEAN('m', "mock", &update_fw_params.mock, "For testing purposes. Mock transfer with only 1 continue then abort")
 
 static const struct option cmd_update_fw_options[] = {
-	UPDATE_FW_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	UPDATE_FW_OPTIONS(),
 	OPT_END(),
 };
 
-static struct _device_info_get_params {
-	bool verbose;
-} device_info_get_params;
 
-#define DEVICE_INFO_GET_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &device_info_get_params.verbose, "turn on debug")
 
 
 static const struct option cmd_device_info_get_options[] = {
-	DEVICE_INFO_GET_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	OPT_END(),
 };
 
-static struct _get_fw_info_params {
-	bool verbose;
-} get_fw_info_params;
 
-#define GET_FW_INFO_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &get_fw_info_params.verbose, "turn on debug")
 
 
 static const struct option cmd_get_fw_info_options[] = {
-	GET_FW_INFO_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	OPT_END(),
 };
 
@@ -189,15 +172,13 @@ static struct _activate_fw_params {
 	bool verbose;
 } activate_fw_params;
 
-#define ACTIVATE_FW_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &activate_fw_params.verbose, "turn on debug")
 
 #define ACTIVATE_FW_OPTIONS() \
 OPT_UINTEGER('a', "action", &activate_fw_params.action, "Action"), \
 OPT_UINTEGER('s', "slot", &activate_fw_params.slot, "Slot")
 
 static const struct option cmd_activate_fw_options[] = {
-	ACTIVATE_FW_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	ACTIVATE_FW_OPTIONS(),
 	OPT_END(),
 };
@@ -214,8 +195,6 @@ static struct _alert_config_params {
 	bool verbose;
 } alert_config_params;
 
-#define SET_ALERT_CONFIG_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &interrupt_policy_params.verbose, "turn on debug")
 
 #define SET_ALERT_CONFIG_OPTIONS() \
 OPT_UINTEGER('a', "alert_prog_threshold", &alert_config_params.alert_prog_threshold, "Set valid, enable alert actions and life used programmable threshold. Fields: Valid Alert Actions (1B), Enable Alert Actions (1B), Life Used Programmable Warning Threshold (1B)"), \
@@ -223,7 +202,7 @@ OPT_UINTEGER('d', "device_temp_threshold", &alert_config_params.device_temp_thre
 OPT_UINTEGER('m', "mem_error_threshold", &alert_config_params.mem_error_threshold, "Set memory corrected thresholds. Fields: Corrected Volatile Memory Error Programmable Warning Threshold (2B), Corrected Persistent Memory Error Programmable Warning Threshold (2B)")
 
 static const struct option cmd_set_alert_config_options[] = {
-	SET_ALERT_CONFIG_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	SET_ALERT_CONFIG_OPTIONS(),
 	OPT_END(),
 };
@@ -233,15 +212,10 @@ static const struct option cmd_get_health_info_options[] = {
 	OPT_END(),
 };
 
-static struct _get_ld_info_params {
-	bool verbose;
-} get_ld_info_params;
 
-#define GET_LD_INFO_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &get_ld_info_params.verbose, "turn on debug")
 
 static const struct option cmd_get_ld_info_options[] = {
-	GET_LD_INFO_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	OPT_END(),
 };
 
@@ -250,15 +224,13 @@ static struct _ddr_info_params {
 	int ddr_id;
 } ddr_info_params;
 
-#define DDR_INFO_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &ddr_info_params.verbose, "turn on debug")
 
 #define DDR_INFO_OPTIONS() \
 OPT_INTEGER('i', "ddr_id", &ddr_info_params.ddr_id, "DDR instance id")
 
 
 static const struct option cmd_ddr_info_options[] = {
-	DDR_INFO_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	DDR_INFO_OPTIONS(),
 	OPT_END(),
 };
@@ -268,14 +240,12 @@ static struct _get_event_records_params {
 	bool verbose;
 } get_event_records_params;
 
-#define GET_EVENT_RECORDS_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &get_event_records_params.verbose, "turn on debug")
 
 #define GET_EVENT_RECORDS_OPTIONS() \
 OPT_INTEGER('t', "log_type", &get_event_records_params.event_log_type, "Event log type (00 - information (default), 01 - warning, 02 - failure, 03 - fatal)")
 
 static const struct option cmd_get_event_records_options[] = {
-	GET_EVENT_RECORDS_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	GET_EVENT_RECORDS_OPTIONS(),
 	OPT_END(),
 };
@@ -287,8 +257,6 @@ static struct _clear_event_records_params {
 	bool verbose;
 } clear_event_records_params;
 
-#define CLEAR_EVENT_RECORDS_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &clear_event_records_params.verbose, "turn on debug")
 
 #define CLEAR_EVENT_RECORDS_OPTIONS() \
 OPT_INTEGER('t', "log_type", &clear_event_records_params.event_log_type, "Event log type (00 - information (default), 01 - warning, 02 - failure, 03 - fatal)"), \
@@ -296,7 +264,7 @@ OPT_INTEGER('f', "event_flag", &clear_event_records_params.clear_event_flags, "C
 OPT_UINTEGER('i', "event_record_handle", &clear_event_records_params.event_record_handle, "Clear Specific Event specific by Event Record Handle")
 
 static const struct option cmd_clear_event_records_options[] = {
-	CLEAR_EVENT_RECORDS_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	CLEAR_EVENT_RECORDS_OPTIONS(),
 	OPT_END(),
 };
@@ -307,15 +275,13 @@ static struct _hct_start_stop_trigger_params {
 	bool verbose;
 } hct_start_stop_trigger_params;
 
-#define HCT_START_STOP_TRIGGER_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &hct_start_stop_trigger_params.verbose, "turn on debug")
 
 #define HCT_START_STOP_TRIGGER_OPTIONS() \
 OPT_UINTEGER('h', "hct_inst", &hct_start_stop_trigger_params.hct_inst, "HCT Instance"), \
 OPT_UINTEGER('b', "buf_control", &hct_start_stop_trigger_params.buf_control, "Buffer Control")
 
 static const struct option cmd_hct_start_stop_trigger_options[] = {
-	HCT_START_STOP_TRIGGER_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	HCT_START_STOP_TRIGGER_OPTIONS(),
 	OPT_END(),
 };
@@ -325,14 +291,12 @@ static struct _hct_get_buffer_status_params {
 	bool verbose;
 } hct_get_buffer_status_params;
 
-#define HCT_GET_BUFFER_STATUS_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &hct_get_buffer_status_params.verbose, "turn on debug")
 
 #define HCT_GET_BUFFER_STATUS_OPTIONS() \
 OPT_UINTEGER('h', "hct_inst", &hct_get_buffer_status_params.hct_inst, "HCT Instance")
 
 static const struct option cmd_hct_get_buffer_status_options[] = {
-	HCT_GET_BUFFER_STATUS_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	HCT_GET_BUFFER_STATUS_OPTIONS(),
 	OPT_END(),
 };
@@ -342,14 +306,12 @@ static struct _hct_enable_params {
 	bool verbose;
 } hct_enable_params;
 
-#define HCT_ENABLE_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &hct_enable_params.verbose, "turn on debug")
 
 #define HCT_ENABLE_OPTIONS() \
 OPT_UINTEGER('h', "hct_inst", &hct_enable_params.hct_inst, "HCT Instance")
 
 static const struct option cmd_hct_enable_options[] = {
-	HCT_ENABLE_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	HCT_ENABLE_OPTIONS(),
 	OPT_END(),
 };
@@ -359,14 +321,12 @@ static struct _ltmon_capture_clear_params {
 	bool verbose;
 } ltmon_capture_clear_params;
 
-#define LTMON_CAPTURE_CLEAR_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &ltmon_capture_clear_params.verbose, "turn on debug")
 
 #define LTMON_CAPTURE_CLEAR_OPTIONS() \
 OPT_UINTEGER('c', "cxl_mem_id", &ltmon_capture_clear_params.cxl_mem_id, "CXL.MEM ID")
 
 static const struct option cmd_ltmon_capture_clear_options[] = {
-	LTMON_CAPTURE_CLEAR_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	LTMON_CAPTURE_CLEAR_OPTIONS(),
 	OPT_END(),
 };
@@ -380,8 +340,6 @@ static struct _ltmon_capture_params {
 	bool verbose;
 } ltmon_capture_params;
 
-#define LTMON_CAPTURE_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &ltmon_capture_params.verbose, "turn on debug")
 
 #define LTMON_CAPTURE_OPTIONS() \
 OPT_UINTEGER('c', "cxl_mem_id", &ltmon_capture_params.cxl_mem_id, "CXL.MEM ID"), \
@@ -391,7 +349,7 @@ OPT_UINTEGER('j', "ignore_rxl0_chg", &ltmon_capture_params.ignore_rxl0_chg, "Ign
 OPT_UINTEGER('t', "trig_src_sel", &ltmon_capture_params.trig_src_sel, "Trigger Source Selection")
 
 static const struct option cmd_ltmon_capture_options[] = {
-	LTMON_CAPTURE_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	LTMON_CAPTURE_OPTIONS(),
 	OPT_END(),
 };
@@ -402,15 +360,13 @@ static struct _ltmon_capture_freeze_and_restore_params {
 	bool verbose;
 } ltmon_capture_freeze_and_restore_params;
 
-#define LTMON_CAPTURE_FREEZE_AND_RESTORE_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &ltmon_capture_freeze_and_restore_params.verbose, "turn on debug")
 
 #define LTMON_CAPTURE_FREEZE_AND_RESTORE_OPTIONS() \
 OPT_UINTEGER('c', "cxl_mem_id", &ltmon_capture_freeze_and_restore_params.cxl_mem_id, "CXL.MEM ID"), \
 OPT_UINTEGER('f', "freeze_restore", &ltmon_capture_freeze_and_restore_params.freeze_restore, "Freeze Restore")
 
 static const struct option cmd_ltmon_capture_freeze_and_restore_options[] = {
-	LTMON_CAPTURE_FREEZE_AND_RESTORE_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	LTMON_CAPTURE_FREEZE_AND_RESTORE_OPTIONS(),
 	OPT_END(),
 };
@@ -420,14 +376,12 @@ static struct _ltmon_l2r_count_dump_params {
 	bool verbose;
 } ltmon_l2r_count_dump_params;
 
-#define LTMON_L2R_COUNT_DUMP_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &ltmon_l2r_count_dump_params.verbose, "turn on debug")
 
 #define LTMON_L2R_COUNT_DUMP_OPTIONS() \
 OPT_UINTEGER('c', "cxl_mem_id", &ltmon_l2r_count_dump_params.cxl_mem_id, "CXL.MEM ID")
 
 static const struct option cmd_ltmon_l2r_count_dump_options[] = {
-	LTMON_L2R_COUNT_DUMP_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	LTMON_L2R_COUNT_DUMP_OPTIONS(),
 	OPT_END(),
 };
@@ -437,14 +391,12 @@ static struct _ltmon_l2r_count_clear_params {
 	bool verbose;
 } ltmon_l2r_count_clear_params;
 
-#define LTMON_L2R_COUNT_CLEAR_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &ltmon_l2r_count_clear_params.verbose, "turn on debug")
 
 #define LTMON_L2R_COUNT_CLEAR_OPTIONS() \
 OPT_UINTEGER('c', "cxl_mem_id", &ltmon_l2r_count_clear_params.cxl_mem_id, "CXL.MEM ID")
 
 static const struct option cmd_ltmon_l2r_count_clear_options[] = {
-	LTMON_L2R_COUNT_CLEAR_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	LTMON_L2R_COUNT_CLEAR_OPTIONS(),
 	OPT_END(),
 };
@@ -456,8 +408,6 @@ static struct _ltmon_basic_cfg_params {
 	bool verbose;
 } ltmon_basic_cfg_params;
 
-#define LTMON_BASIC_CFG_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &ltmon_basic_cfg_params.verbose, "turn on debug")
 
 #define LTMON_BASIC_CFG_OPTIONS() \
 OPT_UINTEGER('c', "cxl_mem_id", &ltmon_basic_cfg_params.cxl_mem_id, "CXL.MEM ID"), \
@@ -465,7 +415,7 @@ OPT_UINTEGER('t', "tick_cnt", &ltmon_basic_cfg_params.tick_cnt, "Tick Count"), \
 OPT_UINTEGER('g', "global_ts", &ltmon_basic_cfg_params.global_ts, "Global Time Stamp")
 
 static const struct option cmd_ltmon_basic_cfg_options[] = {
-	LTMON_BASIC_CFG_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	LTMON_BASIC_CFG_OPTIONS(),
 	OPT_END(),
 };
@@ -483,8 +433,6 @@ static struct _ltmon_watch_params {
 	bool verbose;
 } ltmon_watch_params;
 
-#define LTMON_WATCH_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &ltmon_watch_params.verbose, "turn on debug")
 
 #define LTMON_WATCH_OPTIONS() \
 OPT_UINTEGER('c', "cxl_mem_id", &ltmon_watch_params.cxl_mem_id, "CXL.MEM ID"), \
@@ -498,7 +446,7 @@ OPT_UINTEGER('e', "dst_min_st", &ltmon_watch_params.dst_min_st, "Destination Min
 OPT_UINTEGER('f', "dst_l0_st", &ltmon_watch_params.dst_l0_st, "Destination L0 State")
 
 static const struct option cmd_ltmon_watch_options[] = {
-	LTMON_WATCH_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	LTMON_WATCH_OPTIONS(),
 	OPT_END(),
 };
@@ -508,14 +456,12 @@ static struct _ltmon_capture_stat_params {
 	bool verbose;
 } ltmon_capture_stat_params;
 
-#define LTMON_CAPTURE_STAT_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &ltmon_capture_stat_params.verbose, "turn on debug")
 
 #define LTMON_CAPTURE_STAT_OPTIONS() \
 OPT_UINTEGER('c', "cxl_mem_id", &ltmon_capture_stat_params.cxl_mem_id, "CXL.MEM ID")
 
 static const struct option cmd_ltmon_capture_stat_options[] = {
-	LTMON_CAPTURE_STAT_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	LTMON_CAPTURE_STAT_OPTIONS(),
 	OPT_END(),
 };
@@ -527,8 +473,6 @@ static struct _ltmon_capture_log_dmp_params {
 	bool verbose;
 } ltmon_capture_log_dmp_params;
 
-#define LTMON_CAPTURE_LOG_DMP_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &ltmon_capture_log_dmp_params.verbose, "turn on debug")
 
 #define LTMON_CAPTURE_LOG_DMP_OPTIONS() \
 OPT_UINTEGER('c', "cxl_mem_id", &ltmon_capture_log_dmp_params.cxl_mem_id, "CXL.MEM ID"), \
@@ -536,7 +480,7 @@ OPT_UINTEGER('d', "dump_idx", &ltmon_capture_log_dmp_params.dump_idx, "Dump Inde
 OPT_UINTEGER('e', "dump_cnt", &ltmon_capture_log_dmp_params.dump_cnt, "Dump Count")
 
 static const struct option cmd_ltmon_capture_log_dmp_options[] = {
-	LTMON_CAPTURE_LOG_DMP_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	LTMON_CAPTURE_LOG_DMP_OPTIONS(),
 	OPT_END(),
 };
@@ -547,15 +491,13 @@ static struct _ltmon_capture_trigger_params {
 	bool verbose;
 } ltmon_capture_trigger_params;
 
-#define LTMON_CAPTURE_TRIGGER_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &ltmon_capture_trigger_params.verbose, "turn on debug")
 
 #define LTMON_CAPTURE_TRIGGER_OPTIONS() \
 OPT_UINTEGER('c', "cxl_mem_id", &ltmon_capture_trigger_params.cxl_mem_id, "CXL.MEM ID"), \
 OPT_UINTEGER('t', "trig_src", &ltmon_capture_trigger_params.trig_src, "Trigger Source")
 
 static const struct option cmd_ltmon_capture_trigger_options[] = {
-	LTMON_CAPTURE_TRIGGER_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	LTMON_CAPTURE_TRIGGER_OPTIONS(),
 	OPT_END(),
 };
@@ -566,15 +508,13 @@ static struct _ltmon_enable_params {
 	bool verbose;
 } ltmon_enable_params;
 
-#define LTMON_ENABLE_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &ltmon_enable_params.verbose, "turn on debug")
 
 #define LTMON_ENABLE_OPTIONS() \
 OPT_UINTEGER('c', "cxl_mem_id", &ltmon_enable_params.cxl_mem_id, "CXL.MEM ID"), \
 OPT_UINTEGER('e', "enable", &ltmon_enable_params.enable, "Enable")
 
 static const struct option cmd_ltmon_enable_options[] = {
-	LTMON_ENABLE_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	LTMON_ENABLE_OPTIONS(),
 	OPT_END(),
 };
@@ -588,8 +528,6 @@ static struct _osa_os_type_trig_cfg_params {
 	bool verbose;
 } osa_os_type_trig_cfg_params;
 
-#define OSA_OS_TYPE_TRIG_CFG_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &osa_os_type_trig_cfg_params.verbose, "turn on debug")
 
 #define OSA_OS_TYPE_TRIG_CFG_OPTIONS() \
 OPT_UINTEGER('c', "cxl_mem_id", &osa_os_type_trig_cfg_params.cxl_mem_id, "CXL.MEM ID"), \
@@ -599,7 +537,7 @@ OPT_UINTEGER('r', "rate_mask", &osa_os_type_trig_cfg_params.rate_mask, "Link Rat
 OPT_UINTEGER('o', "os_type_mask", &osa_os_type_trig_cfg_params.os_type_mask, "OS Type mask (see OSA_OS_TYPE_TRIG_BITMSK_*)")
 
 static const struct option cmd_osa_os_type_trig_cfg_options[] = {
-	OSA_OS_TYPE_TRIG_CFG_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	OSA_OS_TYPE_TRIG_CFG_OPTIONS(),
 	OPT_END(),
 };
@@ -616,8 +554,6 @@ static struct _osa_cap_ctrl_params {
 	bool verbose;
 } osa_cap_ctrl_params;
 
-#define OSA_CAP_CTRL_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &osa_cap_ctrl_params.verbose, "turn on debug")
 
 #define OSA_CAP_CTRL_OPTIONS() \
 OPT_UINTEGER('c', "cxl_mem_id", &osa_cap_ctrl_params.cxl_mem_id, "CXL.MEM ID"), \
@@ -630,7 +566,7 @@ OPT_UINTEGER('p', "post_trig_num", &osa_cap_ctrl_params.post_trig_num, "Number o
 OPT_UINTEGER('o', "os_type_mask", &osa_cap_ctrl_params.os_type_mask, "OS Type mask (see OSA_OS_TYPE_CAP_BITMSK_*)")
 
 static const struct option cmd_osa_cap_ctrl_options[] = {
-	OSA_CAP_CTRL_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	OSA_CAP_CTRL_OPTIONS(),
 	OPT_END(),
 };
@@ -640,14 +576,12 @@ static struct _osa_cfg_dump_params {
 	bool verbose;
 } osa_cfg_dump_params;
 
-#define OSA_CFG_DUMP_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &osa_cfg_dump_params.verbose, "turn on debug")
 
 #define OSA_CFG_DUMP_OPTIONS() \
 OPT_UINTEGER('c', "cxl_mem_id", &osa_cfg_dump_params.cxl_mem_id, "CXL.MEM ID")
 
 static const struct option cmd_osa_cfg_dump_options[] = {
-	OSA_CFG_DUMP_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	OSA_CFG_DUMP_OPTIONS(),
 	OPT_END(),
 };
@@ -658,15 +592,13 @@ static struct _osa_ana_op_params {
 	bool verbose;
 } osa_ana_op_params;
 
-#define OSA_ANA_OP_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &osa_ana_op_params.verbose, "turn on debug")
 
 #define OSA_ANA_OP_OPTIONS() \
 OPT_UINTEGER('c', "cxl_mem_id", &osa_ana_op_params.cxl_mem_id, "CXL.MEM ID"), \
 OPT_UINTEGER('o', "op", &osa_ana_op_params.op, "Operation (see osa_op_enum)")
 
 static const struct option cmd_osa_ana_op_options[] = {
-	OSA_ANA_OP_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	OSA_ANA_OP_OPTIONS(),
 	OPT_END(),
 };
@@ -676,14 +608,12 @@ static struct _osa_status_query_params {
 	bool verbose;
 } osa_status_query_params;
 
-#define OSA_STATUS_QUERY_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &osa_status_query_params.verbose, "turn on debug")
 
 #define OSA_STATUS_QUERY_OPTIONS() \
 OPT_UINTEGER('c', "cxl_mem_id", &osa_status_query_params.cxl_mem_id, "CXL.MEM ID")
 
 static const struct option cmd_osa_status_query_options[] = {
-	OSA_STATUS_QUERY_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	OSA_STATUS_QUERY_OPTIONS(),
 	OPT_END(),
 };
@@ -693,14 +623,12 @@ static struct _osa_access_rel_params {
 	bool verbose;
 } osa_access_rel_params;
 
-#define OSA_ACCESS_REL_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &osa_access_rel_params.verbose, "turn on debug")
 
 #define OSA_ACCESS_REL_OPTIONS() \
 OPT_UINTEGER('c', "cxl_mem_id", &osa_access_rel_params.cxl_mem_id, "CXL.MEM ID")
 
 static const struct option cmd_osa_access_rel_options[] = {
-	OSA_ACCESS_REL_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	OSA_ACCESS_REL_OPTIONS(),
 	OPT_END(),
 };
@@ -714,8 +642,6 @@ static struct _perfcnt_mta_ltif_set_params {
 	bool verbose;
 } perfcnt_mta_ltif_set_params;
 
-#define PERFCNT_MTA_LTIF_SET_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &perfcnt_mta_ltif_set_params.verbose, "turn on debug")
 
 #define PERFCNT_MTA_LTIF_SET_OPTIONS() \
 OPT_UINTEGER('c', "counter", &perfcnt_mta_ltif_set_params.counter, "Counter"), \
@@ -725,7 +651,7 @@ OPT_UINTEGER('n', "meta_field", &perfcnt_mta_ltif_set_params.meta_field, "Meta F
 OPT_UINTEGER('p', "meta_value", &perfcnt_mta_ltif_set_params.meta_value, "Meta Value")
 
 static const struct option cmd_perfcnt_mta_ltif_set_options[] = {
-	PERFCNT_MTA_LTIF_SET_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	PERFCNT_MTA_LTIF_SET_OPTIONS(),
 	OPT_END(),
 };
@@ -736,15 +662,13 @@ static struct _perfcnt_mta_get_params {
 	bool verbose;
 } perfcnt_mta_get_params;
 
-#define PERFCNT_MTA_GET_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &perfcnt_mta_get_params.verbose, "turn on debug")
 
 #define PERFCNT_MTA_GET_OPTIONS() \
 OPT_UINTEGER('t', "type", &perfcnt_mta_get_params.type, "Type"), \
 OPT_UINTEGER('c', "counter", &perfcnt_mta_get_params.counter, "Counter")
 
 static const struct option cmd_perfcnt_mta_get_options[] = {
-	PERFCNT_MTA_GET_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	PERFCNT_MTA_GET_OPTIONS(),
 	OPT_END(),
 };
@@ -755,15 +679,13 @@ static struct _perfcnt_mta_latch_val_get_params {
 	bool verbose;
 } perfcnt_mta_latch_val_get_params;
 
-#define PERFCNT_MTA_LATCH_VAL_GET_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &perfcnt_mta_latch_val_get_params.verbose, "turn on debug")
 
 #define PERFCNT_MTA_LATCH_VAL_GET_OPTIONS() \
 OPT_UINTEGER('t', "type", &perfcnt_mta_latch_val_get_params.type, "Type"), \
 OPT_UINTEGER('c', "counter", &perfcnt_mta_latch_val_get_params.counter, "Counter")
 
 static const struct option cmd_perfcnt_mta_latch_val_get_options[] = {
-	PERFCNT_MTA_LATCH_VAL_GET_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	PERFCNT_MTA_LATCH_VAL_GET_OPTIONS(),
 	OPT_END(),
 };
@@ -774,15 +696,13 @@ static struct _perfcnt_mta_counter_clear_params {
 	bool verbose;
 } perfcnt_mta_counter_clear_params;
 
-#define PERFCNT_MTA_COUNTER_CLEAR_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &perfcnt_mta_counter_clear_params.verbose, "turn on debug")
 
 #define PERFCNT_MTA_COUNTER_CLEAR_OPTIONS() \
 OPT_UINTEGER('t', "type", &perfcnt_mta_counter_clear_params.type, "Type"), \
 OPT_UINTEGER('c', "counter", &perfcnt_mta_counter_clear_params.counter, "Counter")
 
 static const struct option cmd_perfcnt_mta_counter_clear_options[] = {
-	PERFCNT_MTA_COUNTER_CLEAR_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	PERFCNT_MTA_COUNTER_CLEAR_OPTIONS(),
 	OPT_END(),
 };
@@ -793,15 +713,13 @@ static struct _perfcnt_mta_cnt_val_latch_params {
 	bool verbose;
 } perfcnt_mta_cnt_val_latch_params;
 
-#define PERFCNT_MTA_CNT_VAL_LATCH_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &perfcnt_mta_cnt_val_latch_params.verbose, "turn on debug")
 
 #define PERFCNT_MTA_CNT_VAL_LATCH_OPTIONS() \
 OPT_UINTEGER('t', "type", &perfcnt_mta_cnt_val_latch_params.type, "Type"), \
 OPT_UINTEGER('c', "counter", &perfcnt_mta_cnt_val_latch_params.counter, "Counter")
 
 static const struct option cmd_perfcnt_mta_cnt_val_latch_options[] = {
-	PERFCNT_MTA_CNT_VAL_LATCH_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	PERFCNT_MTA_CNT_VAL_LATCH_OPTIONS(),
 	OPT_END(),
 };
@@ -815,8 +733,6 @@ static struct _perfcnt_mta_hif_set_params {
 	bool verbose;
 } perfcnt_mta_hif_set_params;
 
-#define PERFCNT_MTA_HIF_SET_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &perfcnt_mta_hif_set_params.verbose, "turn on debug")
 
 #define PERFCNT_MTA_HIF_SET_OPTIONS() \
 OPT_UINTEGER('c', "counter", &perfcnt_mta_hif_set_params.counter, "Counter"), \
@@ -826,7 +742,7 @@ OPT_UINTEGER('r', "req_ty", &perfcnt_mta_hif_set_params.req_ty, "Req Type"), \
 OPT_UINTEGER('s', "sc_ty", &perfcnt_mta_hif_set_params.sc_ty, "Scrub Req")
 
 static const struct option cmd_perfcnt_mta_hif_set_options[] = {
-	PERFCNT_MTA_HIF_SET_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	PERFCNT_MTA_HIF_SET_OPTIONS(),
 	OPT_END(),
 };
@@ -836,14 +752,12 @@ static struct _perfcnt_mta_hif_cfg_get_params {
 	bool verbose;
 } perfcnt_mta_hif_cfg_get_params;
 
-#define PERFCNT_MTA_HIF_CFG_GET_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &perfcnt_mta_hif_cfg_get_params.verbose, "turn on debug")
 
 #define PERFCNT_MTA_HIF_CFG_GET_OPTIONS() \
 OPT_UINTEGER('c', "counter", &perfcnt_mta_hif_cfg_get_params.counter, "Counter")
 
 static const struct option cmd_perfcnt_mta_hif_cfg_get_options[] = {
-	PERFCNT_MTA_HIF_CFG_GET_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	PERFCNT_MTA_HIF_CFG_GET_OPTIONS(),
 	OPT_END(),
 };
@@ -853,14 +767,12 @@ static struct _perfcnt_mta_hif_latch_val_get_params {
 	bool verbose;
 } perfcnt_mta_hif_latch_val_get_params;
 
-#define PERFCNT_MTA_HIF_LATCH_VAL_GET_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &perfcnt_mta_hif_latch_val_get_params.verbose, "turn on debug")
 
 #define PERFCNT_MTA_HIF_LATCH_VAL_GET_OPTIONS() \
 OPT_UINTEGER('c', "counter", &perfcnt_mta_hif_latch_val_get_params.counter, "Counter")
 
 static const struct option cmd_perfcnt_mta_hif_latch_val_get_options[] = {
-	PERFCNT_MTA_HIF_LATCH_VAL_GET_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	PERFCNT_MTA_HIF_LATCH_VAL_GET_OPTIONS(),
 	OPT_END(),
 };
@@ -870,14 +782,12 @@ static struct _perfcnt_mta_hif_counter_clear_params {
 	bool verbose;
 } perfcnt_mta_hif_counter_clear_params;
 
-#define PERFCNT_MTA_HIF_COUNTER_CLEAR_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &perfcnt_mta_hif_counter_clear_params.verbose, "turn on debug")
 
 #define PERFCNT_MTA_HIF_COUNTER_CLEAR_OPTIONS() \
 OPT_UINTEGER('c', "counter", &perfcnt_mta_hif_counter_clear_params.counter, "Counter")
 
 static const struct option cmd_perfcnt_mta_hif_counter_clear_options[] = {
-	PERFCNT_MTA_HIF_COUNTER_CLEAR_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	PERFCNT_MTA_HIF_COUNTER_CLEAR_OPTIONS(),
 	OPT_END(),
 };
@@ -887,14 +797,12 @@ static struct _perfcnt_mta_hif_cnt_val_latch_params {
 	bool verbose;
 } perfcnt_mta_hif_cnt_val_latch_params;
 
-#define PERFCNT_MTA_HIF_CNT_VAL_LATCH_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &perfcnt_mta_hif_cnt_val_latch_params.verbose, "turn on debug")
 
 #define PERFCNT_MTA_HIF_CNT_VAL_LATCH_OPTIONS() \
 OPT_UINTEGER('c', "counter", &perfcnt_mta_hif_cnt_val_latch_params.counter, "Counter")
 
 static const struct option cmd_perfcnt_mta_hif_cnt_val_latch_options[] = {
-	PERFCNT_MTA_HIF_CNT_VAL_LATCH_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	PERFCNT_MTA_HIF_CNT_VAL_LATCH_OPTIONS(),
 	OPT_END(),
 };
@@ -909,8 +817,6 @@ static struct _perfcnt_ddr_generic_select_params {
 	bool verbose;
 } perfcnt_ddr_generic_select_params;
 
-#define PERFCNT_DDR_GENERIC_SELECT_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &perfcnt_ddr_generic_select_params.verbose, "turn on debug")
 
 #define PERFCNT_DDR_GENERIC_SELECT_OPTIONS() \
 OPT_UINTEGER('d', "ddr_id", &perfcnt_ddr_generic_select_params.ddr_id, "DDR instance"), \
@@ -921,7 +827,7 @@ OPT_UINTEGER('e', "bankgroup", &perfcnt_ddr_generic_select_params.bankgroup, "Ba
 OPT_U64('f', "event", &perfcnt_ddr_generic_select_params.event, "Events selection")
 
 static const struct option cmd_perfcnt_ddr_generic_select_options[] = {
-	PERFCNT_DDR_GENERIC_SELECT_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	PERFCNT_DDR_GENERIC_SELECT_OPTIONS(),
 	OPT_END(),
 };
@@ -934,8 +840,6 @@ static struct _err_inj_drs_poison_params {
 	bool verbose;
 } err_inj_drs_poison_params;
 
-#define ERR_INJ_DRS_POISON_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &err_inj_drs_poison_params.verbose, "turn on debug")
 
 #define ERR_INJ_DRS_POISON_OPTIONS() \
 OPT_UINTEGER('c', "ch_id", &err_inj_drs_poison_params.ch_id, "DRS channel"), \
@@ -944,7 +848,7 @@ OPT_UINTEGER('i', "inj_mode", &err_inj_drs_poison_params.inj_mode, "Injection mo
 OPT_UINTEGER('t', "tag", &err_inj_drs_poison_params.tag, "Tag")
 
 static const struct option cmd_err_inj_drs_poison_options[] = {
-	ERR_INJ_DRS_POISON_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	ERR_INJ_DRS_POISON_OPTIONS(),
 	OPT_END(),
 };
@@ -957,8 +861,6 @@ static struct _err_inj_drs_ecc_params {
 	bool verbose;
 } err_inj_drs_ecc_params;
 
-#define ERR_INJ_DRS_ECC_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &err_inj_drs_ecc_params.verbose, "turn on debug")
 
 #define ERR_INJ_DRS_ECC_OPTIONS() \
 OPT_UINTEGER('c', "ch_id", &err_inj_drs_ecc_params.ch_id, "DRS channel"), \
@@ -967,7 +869,7 @@ OPT_UINTEGER('i', "inj_mode", &err_inj_drs_ecc_params.inj_mode, "Injection mode"
 OPT_UINTEGER('t', "tag", &err_inj_drs_ecc_params.tag, "Tag")
 
 static const struct option cmd_err_inj_drs_ecc_options[] = {
-	ERR_INJ_DRS_ECC_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	ERR_INJ_DRS_ECC_OPTIONS(),
 	OPT_END(),
 };
@@ -977,14 +879,12 @@ static struct _err_inj_rxflit_crc_params {
 	bool verbose;
 } err_inj_rxflit_crc_params;
 
-#define ERR_INJ_RXFLIT_CRC_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &err_inj_rxflit_crc_params.verbose, "turn on debug")
 
 #define ERR_INJ_RXFLIT_CRC_OPTIONS() \
 OPT_UINTEGER('c', "cxl_mem_id", &err_inj_rxflit_crc_params.cxl_mem_id, "CXL.mem instance")
 
 static const struct option cmd_err_inj_rxflit_crc_options[] = {
-	ERR_INJ_RXFLIT_CRC_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	ERR_INJ_RXFLIT_CRC_OPTIONS(),
 	OPT_END(),
 };
@@ -994,14 +894,12 @@ static struct _err_inj_txflit_crc_params {
 	bool verbose;
 } err_inj_txflit_crc_params;
 
-#define ERR_INJ_TXFLIT_CRC_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &err_inj_txflit_crc_params.verbose, "turn on debug")
 
 #define ERR_INJ_TXFLIT_CRC_OPTIONS() \
 OPT_UINTEGER('c', "cxl_mem_id", &err_inj_txflit_crc_params.cxl_mem_id, "CXL.mem instance")
 
 static const struct option cmd_err_inj_txflit_crc_options[] = {
-	ERR_INJ_TXFLIT_CRC_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	ERR_INJ_TXFLIT_CRC_OPTIONS(),
 	OPT_END(),
 };
@@ -1011,14 +909,12 @@ static struct _err_inj_viral_params {
 	bool verbose;
 } err_inj_viral_params;
 
-#define ERR_INJ_VIRAL_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &err_inj_viral_params.verbose, "turn on debug")
 
 #define ERR_INJ_VIRAL_OPTIONS() \
 OPT_UINTEGER('l', "ld_id", &err_inj_viral_params.ld_id, "ld_id")
 
 static const struct option cmd_err_inj_viral_options[] = {
-	ERR_INJ_VIRAL_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	ERR_INJ_VIRAL_OPTIONS(),
 	OPT_END(),
 };
@@ -1029,15 +925,13 @@ static struct _eh_eye_cap_run_params {
 	bool verbose;
 } eh_eye_cap_run_params;
 
-#define EH_EYE_CAP_RUN_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &eh_eye_cap_run_params.verbose, "turn on debug")
 
 #define EH_EYE_CAP_RUN_OPTIONS() \
 OPT_UINTEGER('d', "depth", &eh_eye_cap_run_params.depth, "capture depth (BT_DEPTH_MIN to BT_DEPTH_MAX)"), \
 OPT_UINTEGER('l', "lane_mask", &eh_eye_cap_run_params.lane_mask, "lane mask")
 
 static const struct option cmd_eh_eye_cap_run_options[] = {
-	EH_EYE_CAP_RUN_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	EH_EYE_CAP_RUN_OPTIONS(),
 	OPT_END(),
 };
@@ -1048,15 +942,13 @@ static struct _eh_eye_cap_read_params {
 	bool verbose;
 } eh_eye_cap_read_params;
 
-#define EH_EYE_CAP_READ_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &eh_eye_cap_read_params.verbose, "turn on debug")
 
 #define EH_EYE_CAP_READ_OPTIONS() \
 OPT_UINTEGER('l', "lane_id", &eh_eye_cap_read_params.lane_id, "lane ID"), \
 OPT_UINTEGER('b', "bin_num", &eh_eye_cap_read_params.bin_num, "bin number [0 .. BT_BIN_TOT - 1]")
 
 static const struct option cmd_eh_eye_cap_read_options[] = {
-	EH_EYE_CAP_READ_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	EH_EYE_CAP_READ_OPTIONS(),
 	OPT_END(),
 };
@@ -1066,14 +958,12 @@ static struct _eh_adapt_get_params {
 	bool verbose;
 } eh_adapt_get_params;
 
-#define EH_ADAPT_GET_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &eh_adapt_get_params.verbose, "turn on debug")
 
 #define EH_ADAPT_GET_OPTIONS() \
 OPT_UINTEGER('l', "lane_id", &eh_adapt_get_params.lane_id, "lane id")
 
 static const struct option cmd_eh_adapt_get_options[] = {
-	EH_ADAPT_GET_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	EH_ADAPT_GET_OPTIONS(),
 	OPT_END(),
 };
@@ -1086,8 +976,6 @@ static struct _eh_adapt_oneoff_params {
 	bool verbose;
 } eh_adapt_oneoff_params;
 
-#define EH_ADAPT_ONEOFF_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &eh_adapt_oneoff_params.verbose, "turn on debug")
 
 #define EH_ADAPT_ONEOFF_OPTIONS() \
 OPT_UINTEGER('l', "lane_id", &eh_adapt_oneoff_params.lane_id, "lane id"), \
@@ -1096,7 +984,7 @@ OPT_UINTEGER('m', "loops", &eh_adapt_oneoff_params.loops, "Adaptions loop"), \
 OPT_UINTEGER('o', "objects", &eh_adapt_oneoff_params.objects, "Adaption objects enable")
 
 static const struct option cmd_eh_adapt_oneoff_options[] = {
-	EH_ADAPT_ONEOFF_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	EH_ADAPT_ONEOFF_OPTIONS(),
 	OPT_END(),
 };
@@ -1128,8 +1016,6 @@ static struct _eh_adapt_force_params {
 	bool verbose;
 } eh_adapt_force_params;
 
-#define EH_ADAPT_FORCE_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &eh_adapt_force_params.verbose, "turn on debug")
 
 #define EH_ADAPT_FORCE_OPTIONS() \
 OPT_UINTEGER('l', "lane_id", &eh_adapt_force_params.lane_id, "lane id"), \
@@ -1157,44 +1043,29 @@ OPT_UINTEGER('A', "zobel_a_gain", &eh_adapt_force_params.zobel_a_gain, "Zobel a_
 OPT_UINTEGER('x', "ph_ofs_t", &eh_adapt_force_params.ph_ofs_t, "Timing phase offset preload")
 
 static const struct option cmd_eh_adapt_force_options[] = {
-	EH_ADAPT_FORCE_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	EH_ADAPT_FORCE_OPTIONS(),
 	OPT_END(),
 };
 
-static struct _hbo_status_params {
-	bool verbose;
-} hbo_status_params;
 
-#define HBO_STATUS_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &hbo_status_params.verbose, "turn on debug")
 
 static const struct option cmd_hbo_status_options[] = {
-	HBO_STATUS_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	OPT_END(),
 };
 
-static struct _hbo_transfer_fw_params {
-	bool verbose;
-} hbo_transfer_fw_params;
 
-#define HBO_TRANSFER_FW_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &hbo_transfer_fw_params.verbose, "turn on debug")
 
 static const struct option cmd_hbo_transfer_fw_options[] = {
-	HBO_TRANSFER_FW_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	OPT_END(),
 };
 
-static struct _hbo_activate_fw_params {
-	bool verbose;
-} hbo_activate_fw_params;
 
-#define HBO_ACTIVATE_FW_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &hbo_activate_fw_params.verbose, "turn on debug")
 
 static const struct option cmd_hbo_activate_fw_options[] = {
-	HBO_ACTIVATE_FW_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	OPT_END(),
 };
 
@@ -1203,39 +1074,27 @@ static struct _health_counters_clear_params {
 	bool verbose;
 } health_counters_clear_params;
 
-#define HEALTH_COUNTERS_CLEAR_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &health_counters_clear_params.verbose, "turn on debug")
 
 #define HEALTH_COUNTERS_CLEAR_OPTIONS() \
 OPT_UINTEGER('b', "bitmask", &health_counters_clear_params.bitmask, "health counters bitmask")
 
 static const struct option cmd_health_counters_clear_options[] = {
-	HEALTH_COUNTERS_CLEAR_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	HEALTH_COUNTERS_CLEAR_OPTIONS(),
 	OPT_END(),
 };
 
-static struct _health_counters_get_params {
-	bool verbose;
-} health_counters_get_params;
 
-#define HEALTH_COUNTERS_GET_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &health_counters_get_params.verbose, "turn on debug")
 
 static const struct option cmd_health_counters_get_options[] = {
-	HEALTH_COUNTERS_GET_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	OPT_END(),
 };
 
-static struct _hct_get_plat_param_params {
-	bool verbose;
-} hct_get_plat_param_params;
 
-#define HCT_GET_PLAT_PARAM_BASE_OPTIONS() \
-OPT_BOOLEAN('v',"verbose", &hct_get_plat_param_params.verbose, "turn on debug")
 
 static const struct option cmd_hct_get_plat_param_options[] = {
-	HCT_GET_PLAT_PARAM_BASE_OPTIONS(),
+	BASE_OPTIONS(),
 	OPT_END(),
 };
 
@@ -1362,11 +1221,28 @@ static int action_cmd_set_timestamp(struct cxl_memdev *memdev, struct action_con
 #define CONTINUE_TRANSFER 2
 #define END_TRANSFER 3
 #define ABORT_TRANSFER 4
+const char *TRANSFER_FW_ERRORS[15] = {
+	"Success",
+	"Background Command Started",
+	"Invalid Parameter",
+	"Unsupported",
+	"Internal Error",
+	"Retry Required",
+	"Busy",
+	"Media Disabled",
+	"FW Transfer in Progress",
+	"FW Transfer Out of Order",
+	"FW Authentication Failed",
+	"Invalid Slot",
+	"Aborted",
+	"Invalid Security State",
+	"Invalid Payload Length"
+};
 static int action_cmd_update_fw(struct cxl_memdev *memdev, struct action_context *actx)
 {
 /*
 Performs inband FW update through a series of successive calls to transfer-fw. The rom
-is loaded into memory and transfered in 128 byte chunks. transfer-fw supports several
+is loaded into memory and transfered in 128*n byte chunks. transfer-fw supports several
 actions that are specified as part of the input payload. The first call sets the action
 to initiate_transfer and includes the first chunk. The remaining chunks are then sent
 with the continue_transfer action. Finally, the end_transfer action will cause the
@@ -1382,11 +1258,12 @@ for every call to transfer-fw, but will only be read during the end_transfer cal
 	int fd;
 	int num_blocks;
 	int num_read;
-	const int max_retries = 25;
+	const int max_retries = 6;
 	int retry_count;
 	u32 offset;
 	fwblock *rom_buffer;
 	u32 opcode;
+	int sleep_time = 1;
 
 	rom = fopen(update_fw_params.filepath, "rb");
 	if (rom == NULL) {
@@ -1412,9 +1289,13 @@ for every call to transfer-fw, but will only be read during the end_transfer cal
     filesize = fileStat.st_size;
 	printf("ROM size: %d bytes\n", filesize);
 	num_blocks = filesize / FW_BLOCK_SIZE;
+	if (filesize % FW_BLOCK_SIZE != 0 && false)
+	{
+		num_blocks++;
+	}
 	rom_buffer = (fwblock*) malloc(filesize);
-	num_read = fread(rom_buffer, FW_BLOCK_SIZE, num_blocks, rom);
-	if (num_blocks != num_read)
+	num_read = fread(rom_buffer, 1, filesize, rom);
+	if (filesize != num_read)
 	{
 		fprintf(stderr, "Number of blocks read: %d\nNumber of blocks expected: %d\n", num_read, num_blocks);
 		free(rom_buffer);
@@ -1430,6 +1311,7 @@ for every call to transfer-fw, but will only be read during the end_transfer cal
 	{
 		opcode = 0x0201; // Spec defined transfer-fw
 	}
+	printf("Transfering block 0 of %d at offset 0\n", num_blocks-1);
 	rc = cxl_memdev_transfer_fw(memdev, INITIATE_TRANSFER, update_fw_params.slot, offset, rom_buffer[0], opcode);
 	if (rc != 0)
 	{
@@ -1441,11 +1323,15 @@ for every call to transfer-fw, but will only be read during the end_transfer cal
 
 	for (int i = 1; i < num_blocks; i++)
 	{
-		printf("Transfering block %d of %d\n", i, num_blocks);
-		offset = i;
+		offset = i * (FW_BLOCK_SIZE / FW_BYTE_ALIGN);
+		if (i % 100 == 0 || i == num_blocks - 1)
+		{
+			printf("Transfering block %d of %d at offset %d\n", i, num_blocks-1, offset);
+		}
 		fflush(stdout);
 		rc = cxl_memdev_transfer_fw(memdev, CONTINUE_TRANSFER, update_fw_params.slot, offset, rom_buffer[i], opcode);
 		retry_count = 0;
+		sleep_time = 1;
 		while (rc != 0)
 		{
 			if (retry_count > max_retries)
@@ -1453,9 +1339,19 @@ for every call to transfer-fw, but will only be read during the end_transfer cal
 				printf("Maximum %d retries exceeded while transferring block %d\n", max_retries, i);
 				goto abort;
 			}
-			printf("Mailbox returned %d, retrying...\n", rc);
-			sleep(0.25);
-			rc = cxl_memdev_transfer_fw(memdev, CONTINUE_TRANSFER, update_fw_params.slot, offset, rom_buffer[i], opcode);
+			printf("Mailbox returned %d: %s\nretrying in %d seconds...\n", rc, TRANSFER_FW_ERRORS[rc], sleep_time);
+			sleep(sleep_time);
+			sleep_time = sleep_time * 2;
+			if (i == num_blocks - 1)
+			{
+				rc = cxl_memdev_transfer_fw(memdev, END_TRANSFER, update_fw_params.slot, offset, rom_buffer[i], opcode);
+				printf("End transfer return code: %d", rc);
+			}
+			else
+			{
+				rc = cxl_memdev_transfer_fw(memdev, CONTINUE_TRANSFER, update_fw_params.slot, offset, rom_buffer[i], opcode);
+
+			}
 			retry_count++;
 		}
 		if (rc != 0)
@@ -1468,13 +1364,13 @@ for every call to transfer-fw, but will only be read during the end_transfer cal
 			goto abort;
 		}
 	}
-	printf("Transfer complete. Aborting...\n");
-	// End transfer will be added here when fully debugged.
-	// For now we will simply abort the fw update once transfer is complete.
+	printf("Transfer completed successfully and fw was transferred to slot %d\n", update_fw_params.slot);
+	goto out;
 abort:
 	sleep(2.0);
 	rc = cxl_memdev_transfer_fw(memdev, ABORT_TRANSFER, update_fw_params.slot, FW_BLOCK_SIZE, rom_buffer[0], opcode);
 	printf("Abort return status %d\n", rc);
+out:
 	free(rom_buffer);
 	fclose(rom);
 	return 0;
@@ -2287,9 +2183,10 @@ static int memdev_action(int argc, const char **argv, struct cxl_ctx *ctx,
 		}
 	}
 
-	if (param.verbose)
+	if (param.verbose){
 		cxl_set_log_priority(ctx, LOG_DEBUG);
-
+		printf("log prio set %d", LOG_DEBUG);
+	}
 	rc = 0;
 	err = 0;
 	count = 0;

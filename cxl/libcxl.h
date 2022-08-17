@@ -18,7 +18,8 @@ typedef unsigned char uuid_t[16];
 extern "C" {
 #endif
 
-#define FW_BLOCK_SIZE 128
+#define FW_BYTE_ALIGN 128
+#define FW_BLOCK_SIZE 256
 typedef unsigned char fwblock[FW_BLOCK_SIZE];
 
 struct cxl_ctx;
