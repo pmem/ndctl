@@ -9,6 +9,7 @@ project('ndctl', 'c',
   default_options : [
     'c_std=gnu99',
     'prefix=/usr',
+    'libdir=/usr/lib',
     'sysconfdir=/etc',
     'localstatedir=/var',
   ],
