@@ -90,6 +90,7 @@ int cxl_port_is_enabled(struct cxl_port *port);
 struct cxl_port *cxl_port_get_parent(struct cxl_port *port);
 bool cxl_port_is_root(struct cxl_port *port);
 bool cxl_port_is_switch(struct cxl_port *port);
+int cxl_port_get_depth(struct cxl_port *port);
 struct cxl_bus *cxl_port_to_bus(struct cxl_port *port);
 bool cxl_port_is_endpoint(struct cxl_port *port);
 struct cxl_endpoint *cxl_port_to_endpoint(struct cxl_port *port);
@@ -201,6 +202,7 @@ bool cxl_decoder_is_locked(struct cxl_decoder *decoder);
 unsigned int
 cxl_decoder_get_interleave_granularity(struct cxl_decoder *decoder);
 unsigned int cxl_decoder_get_interleave_ways(struct cxl_decoder *decoder);
+struct cxl_region *cxl_decoder_get_region(struct cxl_decoder *decoder);
 struct cxl_region *cxl_decoder_create_pmem_region(struct cxl_decoder *decoder);
 struct cxl_decoder *cxl_decoder_get_by_name(struct cxl_ctx *ctx,
 					    const char *ident);

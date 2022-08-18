@@ -290,6 +290,7 @@ int cxl_port_is_enabled(struct cxl_port *port);
 bool cxl_port_is_root(struct cxl_port *port);
 bool cxl_port_is_switch(struct cxl_port *port);
 bool cxl_port_is_endpoint(struct cxl_port *port);
+int cxl_port_get_depth(struct cxl_port *port);
 bool cxl_port_hosts_memdev(struct cxl_port *port, struct cxl_memdev *memdev);
 int cxl_port_get_nr_dports(struct cxl_port *port);
 ----
@@ -398,6 +399,7 @@ int cxl_decoder_set_dpa_size(struct cxl_decoder *decoder, unsigned long long siz
 const char *cxl_decoder_get_devname(struct cxl_decoder *decoder);
 int cxl_decoder_get_id(struct cxl_decoder *decoder);
 int cxl_decoder_get_nr_targets(struct cxl_decoder *decoder);
+struct cxl_region *cxl_decoder_get_region(struct cxl_decoder *decoder);
 
 enum cxl_decoder_target_type {
        CXL_DECODER_TTYPE_UNKNOWN,
@@ -445,6 +447,12 @@ devices require CXL_DECODER_TTYPE_EXPANDER.
 Platform firmware may setup the CXL decode hierarchy before the OS
 boots, and may additionally require that the OS not change the decode
 settings. This property is indicated by the cxl_decoder_is_locked() API.
+
+When a decoder is associated with a region cxl_decoder_get_region()
+returns that region object. Note that it is only applicable to switch
+and endpoint decoders as root decoders have a 1:N relationship with
+regions.  Use cxl_region_foreach() for the similar functionality for
+root decoders.
 
 ==== TARGETS
 A root or switch level decoder takes an SPA (system-physical-address) as

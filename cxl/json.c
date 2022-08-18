@@ -442,6 +442,7 @@ struct json_object *util_cxl_decoder_to_json(struct cxl_decoder *decoder,
 	const char *devname = cxl_decoder_get_devname(decoder);
 	struct cxl_port *port = cxl_decoder_get_port(decoder);
 	struct json_object *jdecoder, *jobj;
+	struct cxl_region *region;
 	u64 val, size;
 
 	jdecoder = json_object_new_object();
@@ -464,6 +465,33 @@ struct json_object *util_cxl_decoder_to_json(struct cxl_decoder *decoder,
 		jobj = util_json_object_size(size, flags);
 		if (jobj)
 			json_object_object_add(jdecoder, "size", jobj);
+	}
+
+	val = cxl_decoder_get_interleave_ways(decoder);
+	if (val < UINT_MAX) {
+		jobj = json_object_new_int(val);
+		if (jobj)
+			json_object_object_add(jdecoder, "interleave_ways",
+					       jobj);
+
+		/* granularity is a don't care if not interleaving */
+		if (val > 1) {
+			val = cxl_decoder_get_interleave_granularity(decoder);
+			if (val < UINT_MAX) {
+				jobj = json_object_new_int(val);
+				if (jobj)
+					json_object_object_add(
+						jdecoder,
+						"interleave_granularity", jobj);
+			}
+		}
+	}
+
+	region = cxl_decoder_get_region(decoder);
+	if (region) {
+		jobj = json_object_new_string(cxl_region_get_devname(region));
+		if (jobj)
+			json_object_object_add(jdecoder, "region", jobj);
 	}
 
 	if (size == 0) {
@@ -740,6 +768,10 @@ static struct json_object *__util_cxl_port_to_json(struct cxl_port *port,
 	jobj = json_object_new_string(cxl_port_get_host(port));
 	if (jobj)
 		json_object_object_add(jport, "host", jobj);
+
+	jobj = json_object_new_int(cxl_port_get_depth(port));
+	if (jobj)
+		json_object_object_add(jport, "depth", jobj);
 
 	if (!cxl_port_is_enabled(port)) {
 		jobj = json_object_new_string("disabled");

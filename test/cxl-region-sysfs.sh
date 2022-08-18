@@ -44,8 +44,8 @@ uuidgen > /sys/bus/cxl/devices/$region/uuid
 # setup interleave geometry
 nr_targets=${#endpoint[@]}
 echo $nr_targets > /sys/bus/cxl/devices/$region/interleave_ways
-g=$(cat /sys/bus/cxl/devices/$decoder/interleave_granularity)
-echo $g > /sys/bus/cxl/devices/$region/interleave_granularity
+r_ig=$(cat /sys/bus/cxl/devices/$decoder/interleave_granularity)
+echo $r_ig > /sys/bus/cxl/devices/$region/interleave_granularity
 echo $((nr_targets * (256<<20))) > /sys/bus/cxl/devices/$region/size
 
 # grab the list of memdevs grouped by host-bridge interleave position
@@ -95,6 +95,54 @@ do
 	pos=$((pos+1))
 done
 echo "$region added ${#endpoint[@]} targets: ${endpoint[@]}"
+
+# validate all endpoint decoders have the correct setting
+region_size=$(cat /sys/bus/cxl/devices/$region/size)
+region_base=$(cat /sys/bus/cxl/devices/$region/resource)
+for i in ${endpoint[@]}
+do
+	iw=$(cat /sys/bus/cxl/devices/$i/interleave_ways)
+	ig=$(cat /sys/bus/cxl/devices/$i/interleave_granularity)
+	[ $iw -ne $nr_targets ] && err "$LINENO: decoder: $i iw: $iw targets: $nr_targets"
+	[ $ig -ne $r_ig] && err "$LINENO: decoder: $i ig: $ig root ig: $r_ig"
+
+	sz=$(cat /sys/bus/cxl/devices/$i/size)
+	res=$(cat /sys/bus/cxl/devices/$i/start)
+	[ $sz -ne $region_size ] && err "$LINENO: decoder: $i sz: $sz region_size: $region_size"
+	[ $res -ne $region_base ] && err "$LINENO: decoder: $i base: $res region_base: $region_base"
+done
+
+# validate all switch decoders have the correct settings
+nr_switches=$((nr_targets/2))
+nr_host_bridges=$((nr_switches/2))
+nr_switch_decoders=$((nr_switches + nr_host_bridges))
+
+json=$($CXL list -D -r $region -d switch)
+readarray -t switch_decoders < <(echo $json | jq -r ".[].decoder")
+
+[ ${#switch_decoders[@]} -ne $nr_switch_decoders ] && err \
+"$LINENO: expected $nr_switch_decoders got ${#switch_decoders[@]} switch decoders"
+
+for i in ${switch_decoders[@]}
+do
+	decoder=$(echo $json | jq -r ".[] | select(.decoder == \"$i\")")
+	id=${i#decoder}
+	port_id=${id%.*}
+	depth=$($CXL list -p $port_id -S | jq -r ".[].depth")
+	iw=$(echo $decoder | jq -r ".interleave_ways")
+	ig=$(echo $decoder | jq -r ".interleave_granularity")
+
+	[ $iw -ne 2 ] && err "$LINENO: decoder: $i iw: $iw targets: 2"
+	[ $ig -ne $((r_ig << depth)) ] && err \
+	"$LINENO: decoder: $i ig: $ig switch_ig: $((r_ig << depth))"
+
+	res=$(echo $decoder | jq -r ".resource")
+	sz=$(echo $decoder | jq -r ".size")
+	[ $sz -ne $region_size ] && err \
+	"$LINENO: decoder: $i sz: $sz region_size: $region_size"
+	[ $res -ne $region_base ] && err \
+	"$LINENO: decoder: $i base: $res region_base: $region_base"
+done
 
 # walk up the topology and commit all decoders
 echo 1 > /sys/bus/cxl/devices/$region/commit
