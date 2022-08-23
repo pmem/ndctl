@@ -482,7 +482,7 @@ static void *add_cxl_region(void *parent, int id, const char *cxlregion_base)
 
 	region = calloc(1, sizeof(*region));
 	if (!region)
-		goto err;
+		goto err_path;
 
 	region->id = id;
 	region->ctx = ctx;
@@ -551,11 +551,13 @@ static void *add_cxl_region(void *parent, int id, const char *cxlregion_base)
 
 	list_add_sorted(&decoder->regions, region, list, region_start_cmp);
 
+	free(path);
 	return region;
 err:
 	free(region->dev_path);
 	free(region->dev_buf);
 	free(region);
+err_path:
 	free(path);
 	return NULL;
 }
