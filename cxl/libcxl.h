@@ -19,7 +19,7 @@ extern "C" {
 #endif
 
 #define FW_BYTE_ALIGN 128
-#define FW_BLOCK_SIZE 256
+#define FW_BLOCK_SIZE 128
 typedef unsigned char fwblock[FW_BLOCK_SIZE];
 
 struct cxl_ctx;
@@ -59,7 +59,7 @@ int cxl_memdev_cmd_identify(struct cxl_memdev *memdev);
 int cxl_memdev_device_info_get(struct cxl_memdev *memdev);
 int cxl_memdev_get_fw_info(struct cxl_memdev *memdev);
 int cxl_memdev_transfer_fw(struct cxl_memdev *memdev, u8 action,
-	u8 slot, u32 offset, unsigned char *data, u32 transfer_fw_opcode);
+	u8 slot, u32 offset, int size, unsigned char *data, u32 transfer_fw_opcode);
 int cxl_memdev_activate_fw(struct cxl_memdev *memdev, u8 action,
 	u8 slot);
 int cxl_memdev_get_supported_logs(struct cxl_memdev *memdev);

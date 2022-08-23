@@ -2160,7 +2160,8 @@ struct cxl_mbox_transfer_fw_in {
 
 
 CXL_EXPORT int cxl_memdev_transfer_fw(struct cxl_memdev *memdev,
-	u8 action, u8 slot, u32 offset, unsigned char *data, u32 transfer_fw_opcode)
+	u8 action, u8 slot, u32 offset, int size,
+    unsigned char *data, u32 transfer_fw_opcode)
 {
 	struct cxl_cmd *cmd;
 	struct cxl_mem_query_commands *query;
@@ -2169,7 +2170,6 @@ CXL_EXPORT int cxl_memdev_transfer_fw(struct cxl_memdev *memdev,
 	struct cxl_ctx *ctx = cxl_memdev_get_ctx(memdev);
 	int rc = 0;
 	u8 *input_inspection_ptr;
-
 
 	cmd = cxl_cmd_new_raw(memdev, transfer_fw_opcode);
 	if (!cmd) {
@@ -2182,7 +2182,7 @@ CXL_EXPORT int cxl_memdev_transfer_fw(struct cxl_memdev *memdev,
 	cinfo = &query->commands[cmd->query_idx];
 
 	/* used to force correct payload size */
-	cinfo->size_in = CXL_MEM_COMMAND_ID_TRANSFER_FW_PAYLOAD_IN_SIZE;
+	cinfo->size_in = 128 + size;
 	if (cinfo->size_in > 0) {
 		 cmd->input_payload = calloc(1, cinfo->size_in);
 		if (!cmd->input_payload)
@@ -2195,7 +2195,7 @@ CXL_EXPORT int cxl_memdev_transfer_fw(struct cxl_memdev *memdev,
 	transfer_fw_in->action = action;
 	transfer_fw_in->slot = slot;
 	transfer_fw_in->offset = cpu_to_le32(offset);
-	memcpy(transfer_fw_in->data, data, sizeof(fwblock));
+	memcpy(transfer_fw_in->data, data, size);
 
 	// Begin manual payload inspection for debugging purposes
 	input_inspection_ptr = (u8*) cmd->send_cmd->in.payload;
@@ -5874,6 +5874,9 @@ CXL_EXPORT int cxl_memdev_hbo_status(struct cxl_memdev *memdev)
 	fprintf(stdout, " - Return code: %d\n", status_fields->return_code);
 	fprintf(stdout, " - Extended status: %x\n", status_fields->extended_status);
 
+    if (status_fields->is_running) {
+        rc = 1;
+    }
 out:
 	cxl_cmd_unref(cmd);
 	return rc;
