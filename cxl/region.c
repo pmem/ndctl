@@ -686,9 +686,8 @@ static int region_action(int argc, const char **argv, struct cxl_ctx *ctx,
 			continue;
 
 		cxl_decoder_foreach (port, decoder) {
-			decoder = util_cxl_decoder_filter(decoder,
-							  param.root_decoder);
-			if (!decoder)
+			if (!util_cxl_decoder_filter(decoder,
+						     param.root_decoder))
 				continue;
 			rc = decoder_region_action(p, decoder, action, count);
 			if (rc)

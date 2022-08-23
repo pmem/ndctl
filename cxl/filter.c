@@ -796,7 +796,7 @@ static void walk_decoders(struct cxl_port *port, struct cxl_filter_params *p,
 	cxl_decoder_foreach(port, decoder) {
 		const char *devname = cxl_decoder_get_devname(decoder);
 		struct json_object *jchildregions = NULL;
-		struct json_object *jdecoder;
+		struct json_object *jdecoder = NULL;
 
 		if (!p->decoders)
 			goto walk_children;
