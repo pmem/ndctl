@@ -15,12 +15,10 @@ dimms
 # DESCRIPTION
 
 The namespace label area is a small persistent partition of capacity
-available on some NVDIMM devices. The label area is used to resolve
-aliasing between *pmem* and *blk* capacity by delineating namespace
-boundaries. By default, and in kernels prior to v4.10, the kernel only
-honors labels when a DIMM aliases PMEM and BLK capacity. Starting with
-v4.10 the kernel will honor labels for sub-dividing PMEM if all the
-DIMMs in an interleave set / region have a valid namespace index block.
+available on some NVDIMM devices. The label area is used to provision
+one, or more, namespaces from regions. Starting with v4.10 the kernel
+will honor labels for sub-dividing PMEM if all the DIMMs in an
+interleave set / region have a valid namespace index block.
 
 This command can be used to initialize the namespace index block if it
 is missing or reinitialize it if it is damaged. Note that
@@ -109,7 +107,7 @@ specification. Defaults to 1.1
 
 # COPYRIGHT
 
-Copyright © 2016 - 2020, Intel Corporation. License GPLv2: GNU GPL
+Copyright © 2016 - 2022, Intel Corporation. License GPLv2: GNU GPL
 version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
 are free to change and redistribute it. There is NO WARRANTY, to the
 extent permitted by law.

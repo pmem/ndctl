@@ -3,7 +3,7 @@ title: ndctl
 layout: pmdk
 ---
 [View the Project on GitHub](https://github.com/pmem/ndctl)  
-**Generated from [ndctl-72.1](https://github.com/pmem/ndctl/releases/tag/v72.1) [[tree]](https://github.com/pmem/ndctl/tree/v72.1)**  
+**Generated from [ndctl-74](https://github.com/pmem/ndctl/releases/tag/v74) [[tree]](https://github.com/pmem/ndctl/tree/v74)**  
 
 ---
 
@@ -58,8 +58,20 @@ layout: pmdk
 ---
 #### cxl-cli man pages
 * [cxl](cxl.md)
+* [cxl-create-region](cxl-create-region.md)
+* [cxl-destroy-region](cxl-destroy-region.md)
+* [cxl-disable-bus](cxl-disable-bus.md)
+* [cxl-disable-memdev](cxl-disable-memdev.md)
+* [cxl-disable-port](cxl-disable-port.md)
+* [cxl-disable-region](cxl-disable-region.md)
+* [cxl-enable-memdev](cxl-enable-memdev.md)
+* [cxl-enable-port](cxl-enable-port.md)
+* [cxl-enable-region](cxl-enable-region.md)
+* [cxl-free-dpa](cxl-free-dpa.md)
 * [cxl-list](cxl-list.md)
 * [cxl-read-labels](cxl-read-labels.md)
+* [cxl-reserve-dpa](cxl-reserve-dpa.md)
+* [cxl-set-partition](cxl-set-partition.md)
 * [cxl-write-labels](cxl-write-labels.md)
 * [cxl-zero-labels](cxl-zero-labels.md)
 

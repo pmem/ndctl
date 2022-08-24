@@ -19,7 +19,7 @@ a logfile.
 
 The objects to monitor and smart events to notify can be selected by
 setting options and/or configuration files with .conf suffix under
-/etc/ndctl.conf.d
+{ndctl_confdir}
 
 Both, the values in configuration file and in options will work. If
 there is a conflict, the values in options will override the values in
@@ -80,7 +80,7 @@ will not work if "--daemon" is specified.
 
 `-c; --config-file=`  
 Provide the config file(s) to use. This overrides the default config
-typically found in /etc/ndctl.conf.d
+typically found in {ndctl_confdir}
 
 `--daemon`  
 Run a monitor as a daemon.

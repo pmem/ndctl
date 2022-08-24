@@ -57,7 +57,67 @@ update, or ignore firmware activate arm overflows and force-arm devices.
 Arm a device for firmware activation. This is enabled by default when a
 firmware image is specified. Specify --no-arm to disable this default.
 Otherwise, without a firmware image, this option can be used to manually
-arm a device for firmware activate.
+arm a device for firmware activate. When a device transitions from
+unarmed to armed the platform recalculates the firmware activation time
+and compares it against the maximum platform supported time. If the
+activation time would exceed the platform maximum the arm attempt is
+aborted:
+
+>     ndctl update-firmware --arm --bus=nfit_test.0 all
+>       Error: update firmware: nmem4: arm aborted, tripped overflow
+>     [
+>       {
+>         "dev":"nmem1",
+>         "id":"cdab-0a-07e0-ffffffff",
+>         "handle":"0",
+>         "phys_id":"0",
+>         "security":"disabled",
+>         "firmware":{
+>           "current_version":"0",
+>           "can_update":true
+>         }
+>       },
+>       {
+>         "dev":"nmem3",
+>         "id":"cdab-0a-07e0-fffeffff",
+>         "handle":"0x100",
+>         "phys_id":"0x2",
+>         "security":"disabled",
+>         "firmware":{
+>           "current_version":"0",
+>           "can_update":true
+>         }
+>       },
+>       {
+>         "dev":"nmem2",
+>         "id":"cdab-0a-07e0-feffffff",
+>         "handle":"0x1",
+>         "phys_id":"0x1",
+>         "security":"disabled",
+>         "firmware":{
+>           "current_version":"0",
+>           "can_update":true
+>         }
+>       }
+>     ]
+>     updated 3 nmems.
+
+    It is possible, but not recommended, to ignore timeout overflows
+    with the --force option. At any point to view the 'armed' state of the
+    bus do:
+
+>     ndctl list -BF -b nfit_test.0
+>     [
+>       {
+>         "provider":"nfit_test.0",
+>         "dev":"ndbus2",
+>         "scrub_state":"idle",
+>         "firmware":{
+>           "activate_method":"suspend",
+>           "activate_state":"overflow"
+>         }
+>       }
+>     ]
 
 `-D; --disarm`  
 Disarm devices after uploading the firmware file, or manually disarm
@@ -69,7 +129,7 @@ Emit debug messages for the namespace check process.
 
 # COPYRIGHT
 
-Copyright © 2016 - 2020, Intel Corporation. License GPLv2: GNU GPL
+Copyright © 2016 - 2022, Intel Corporation. License GPLv2: GNU GPL
 version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
 are free to change and redistribute it. There is NO WARRANTY, to the
 extent permitted by law.

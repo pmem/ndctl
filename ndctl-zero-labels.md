@@ -14,10 +14,9 @@ ndctl-zero-labels - zero out the label area on a dimm or set of dimms
 # DESCRIPTION
 
 The namespace label area is a small persistent partition of capacity
-available on some NVDIMM devices. The label area is used to resolve
-aliasing between *pmem* and *blk* capacity by delineating namespace
-boundaries. This command resets the device to its default state by
-deleting all labels.
+available on some NVDIMM devices. The label area is used to provision
+one, or more, namespaces from regions. This command resets the device to
+its default state by deleting all labels.
 
 # OPTIONS
 
@@ -46,7 +45,7 @@ logging and debug enabled).
 
 # COPYRIGHT
 
-Copyright © 2016 - 2020, Intel Corporation. License GPLv2: GNU GPL
+Copyright © 2016 - 2022, Intel Corporation. License GPLv2: GNU GPL
 version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
 are free to change and redistribute it. There is NO WARRANTY, to the
 extent permitted by law.

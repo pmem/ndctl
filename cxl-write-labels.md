@@ -29,6 +29,10 @@ A *memX* device name, or a memdev id number. Restrict the operation to
 the specified memdev(s). The keyword *all* can be specified to indicate
 the lack of any restriction.
 
+`-S; --serial`  
+Rather an a memdev id number, interpret the \<memdev> argument(s) as a
+list of serial numbers.
+
 `-s; --size=`  
 Limit the operation to the given number of bytes. A size of 0 indicates
 to operate over the entire label capacity.

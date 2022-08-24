@@ -5,19 +5,11 @@ layout: pmdk
 
 # NAME
 
-cxl-zero-labels - zero out the label area on a set of memdevs
+cxl-disable-memdev - deactivate / hot-remove a given CXL memdev
 
 # SYNOPSIS
 
->     cxl zero-labels <mem0> [<mem1>..<memN>] [<options>]
-
-# DESCRIPTION
-
-The region label area is a small persistent partition of capacity
-available on some CXL memory devices. The label area is used to and
-configure or determine the set of memory devices participating in
-different interleave sets. This command resets the device to its default
-state by deleting all labels.
+>     cxl disable-memdev <mem0> [<mem1>..<memN>] [<options>]
 
 # OPTIONS
 
@@ -30,12 +22,12 @@ the lack of any restriction.
 Rather an a memdev id number, interpret the \<memdev> argument(s) as a
 list of serial numbers.
 
-`-s; --size=`  
-Limit the operation to the given number of bytes. A size of 0 indicates
-to operate over the entire label capacity.
-
-`-O; --offset=`  
-Begin the operation at the given offset into the label area.
+`-f; --force`  
+DANGEROUS: Override the safety measure that blocks attempts to disable a
+device if the tool determines the memdev is in active usage. Recall that
+CXL memory ranges might have been established by platform firmware and
+disabling an active device is akin to force removing memory from a
+running system.
 
 `-v`  
 Turn on verbose debug messages in the library (if libcxl was built with
@@ -50,5 +42,4 @@ extent permitted by law.
 
 # SEE ALSO
 
-[cxl-read-labels](cxl-read-labels.md), [cxl-write-labels](cxl-write-labels.md), CXL-2.0
-9.13.2
+[cxl-enable-memdev](cxl-enable-memdev.md)

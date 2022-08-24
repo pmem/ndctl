@@ -20,27 +20,136 @@ sysfs interfaces for most kernel interactions, and the ioctl() interface
 for command submission.
 
 The starting point for all library interfaces is a *cxl_ctx* object,
-returned by [cxl_new](cxl_new.md). CXL *Type 3* memory devices are
-children of the cxl_ctx object, and can be iterated through using an
-iterator API.
+returned by [cxl_new](cxl_new.md). CXL *Type 3* memory devices and
+other CXL device objects are descendants of the cxl_ctx object, and can
+be iterated via an object an iterator API of the form
+cxl\_\<object>\_foreach(\<parent object>, \<object iterator>).
 
-Library level interfaces that are agnostic to any device, or a specific
-subclass of operations have the prefix *cxl\_*
+# MEMDEVS
 
-The object representing a CXL Type 3 device is *cxl_memdev*. Library
-interfaces related to these devices have the prefix *cxl_memdev\_*.
-These interfaces are mostly associated with sysfs interactions (unless
-otherwise noted in their respective documentation pages). They are
-typically used to retrieve data published by the kernel, or to send data
-or trigger kernel operations for a given device.
+The object representing a CXL memory expander (Type 3 device) is *struct
+cxl_memdev*. Library interfaces related to these devices have the prefix
+*cxl_memdev\_*. These interfaces are mostly associated with sysfs
+interactions (unless otherwise noted in their respective documentation
+sections). They are typically used to retrieve data published by the
+kernel, or to send data or trigger kernel operations for a given device.
+
+## MEMDEV: Enumeration
+
+    struct cxl_memdev *cxl_memdev_get_first(struct cxl_ctx *ctx);
+    struct cxl_memdev *cxl_memdev_get_next(struct cxl_memdev *memdev);
+    struct cxl_ctx *cxl_memdev_get_ctx(struct cxl_memdev *memdev);
+    const char *cxl_memdev_get_host(struct cxl_memdev *memdev)
+    struct cxl_memdev *cxl_endpoint_get_memdev(struct cxl_endpoint *endpoint);
+
+    #define cxl_memdev_foreach(ctx, memdev) \
+            for (memdev = cxl_memdev_get_first(ctx); \
+                 memdev != NULL; \
+                 memdev = cxl_memdev_get_next(memdev))
+
+CXL memdev instances are enumerated from the global library context
+*struct cxl_ctx*. By default a memdev only offers a portal to submit
+memory device commands, see the port, decoder, and endpoint APIs to
+determine what if any CXL Memory Resources are reachable given a
+specific memdev.
+
+The host of a memdev is the PCIe Endpoint device that registered its CXL
+capabilities with the Linux CXL core.
+
+## MEMDEV: Attributes
+
+    int cxl_memdev_get_id(struct cxl_memdev *memdev);
+    unsigned long long cxl_memdev_get_serial(struct cxl_memdev *memdev);
+    const char *cxl_memdev_get_devname(struct cxl_memdev *memdev);
+    int cxl_memdev_get_major(struct cxl_memdev *memdev);
+    int cxl_memdev_get_minor(struct cxl_memdev *memdev);
+    unsigned long long cxl_memdev_get_pmem_size(struct cxl_memdev *memdev);
+    unsigned long long cxl_memdev_get_ram_size(struct cxl_memdev *memdev);
+    const char *cxl_memdev_get_firmware_verison(struct cxl_memdev *memdev);
+    size_t cxl_memdev_get_label_size(struct cxl_memdev *memdev);
+    int cxl_memdev_nvdimm_bridge_active(struct cxl_memdev *memdev);
+    int cxl_memdev_get_numa_node(struct cxl_memdev *memdev);
+
+A memdev is given a kernel device name of the form "mem%d" where an id
+(cxl_memdev_get_id()) is dynamically allocated as devices are
+discovered. Note that there are no guarantees that ids / kernel device
+names for memdevs are stable from one boot to the next, devices are
+enumerated asynchronously. If a stable identifier is use
+cxl_memdev_get_serial() which returns a value according to the *Device
+Serial Number Extended Capability* in the PCIe 5.0 Base Specification.
+
+The character device node for command submission can be found by default
+at /dev/cxl/mem%d, or created with a major / minor returned from
+cxl_memdev_get\_{major,minor}().
+
+The *pmem_size* and *ram_size* attributes return the current
+provisioning of DPA (Device Physical Address / local capacity) in the
+device.
+
+cxl_memdev_get_numa_node() returns the affinitized CPU node number if
+available or -1 otherwise.
+
+## MEMDEV: Control
+
+    int cxl_memdev_disable_invalidate(struct cxl_memdev *memdev);
+    int cxl_memdev_enable(struct cxl_memdev *memdev);
+
+When a memory device is disabled it unregisters its associated endpoints
+and potentially intervening switch ports if there are no other memdevs
+pinning that port active. That means that any existing port objects that
+the library has previously returned are in valid and need to be re-read.
+Callers must be careful to re-retrieve port objects after
+cxl_memdev_disable_invalidate(). Any usage of a previously obtained port
+object after a cxl_memdev_disable_invalidate() call is a use-after-free
+programming error. It follows that after cxl_memdev_enable() new ports
+may appear in the topology that were not previously enumerable.
+
+<div class="note">
+
+cxl_memdev_disable_invalidate() will force disable the memdev regardless
+of whether the memory provided by the device is in active use by the
+operating system. Callers take responisbility for assuring that it is
+safe to disable the memory device. Otherwise, this call can be as
+destructive as ripping a DIMM out of a running system. Like all other
+libcxl calls that mutate the system state or divulge security sensitive
+information this call requires root / CAP_SYS_ADMIN.
+
+</div>
+
+## MEMDEV: Commands
+
+    struct cxl_cmd *cxl_cmd_new_raw(struct cxl_memdev *memdev, int opcode);
+    struct cxl_cmd *cxl_cmd_new_identify(struct cxl_memdev *memdev);
+    struct cxl_cmd *cxl_cmd_new_get_health_info(struct cxl_memdev *memdev);
+    struct cxl_cmd *cxl_cmd_new_read_label(struct cxl_memdev *memdev,
+                        unsigned int offset, unsigned int length);
+    struct cxl_cmd *cxl_cmd_new_write_label(struct cxl_memdev *memdev, void *buf,
+                        unsigned int offset, unsigned int length);
+    int cxl_memdev_zero_label(struct cxl_memdev *memdev, size_t length,
+                  size_t offset);
+    int cxl_memdev_read_label(struct cxl_memdev *memdev, void *buf, size_t length,
+                  size_t offset);
+    int cxl_memdev_write_label(struct cxl_memdev *memdev, void *buf, size_t length,
+                   size_t offset);
+    struct cxl_cmd *cxl_cmd_new_get_partition(struct cxl_memdev *memdev);
+    struct cxl_cmd *cxl_cmd_new_set_partition(struct cxl_memdev *memdev,
+                          unsigned long long volatile_size);
 
 A *cxl_cmd* is a reference counted object which is used to perform
 *Mailbox* commands as described in the CXL Specification. A *cxl_cmd*
 object is tied to a *cxl_memdev*. Associated library interfaces have the
 prefix *cxl_cmd\_*. Within this sub-class of interfaces, there are:
 
--   *cxl_cmd_new\_\** interfaces that allocate a new cxl_cmd object for
-    a given command type.
+-   *cxl_cmd_new\_\*()* interfaces that allocate a new cxl_cmd object
+    for a given command type targeted at a given memdev. As part of the
+    command instantiation process the library validates that the command
+    is supported by the memory device, otherwise it returns NULL to
+    indicate *no support*. The libcxl command id is translated by the
+    kernel into a CXL standard opcode. See the potential command ids in
+    /usr/include/linux/cxl_mem.h.
+
+-   *cxl_cmd\_\<name>\_set\_\<field>* interfaces that set specific
+    fields in a cxl_cmd
 
 -   *cxl_cmd_submit* which submits the command via ioctl()
 
@@ -50,9 +159,428 @@ prefix *cxl_cmd\_*. Within this sub-class of interfaces, there are:
 -   *cxl_cmd_get\_\** interfaces to get general command related
     information.
 
+cxl_cmd_new_raw() supports so called *RAW* commands where the command id
+is *RAW* and it carries an unmodified CXL memory device command payload
+associated with the *opcode* argument. Given the kernel does minimal
+input validation on these commands typically raw commands are not
+supported by the kernel outside debug build scenarios. libcxl is limited
+to supporting commands that appear in the CXL standard / public
+specifications.
+
+cxl_memdev{read,write,zero}\_label() are helpers for marshaling multiple
+label access commands over an arbitrary extent of the device’s label
+area.
+
+cxl_cmd_partition_set_mode() supports selecting NEXTBOOT or IMMEDIATE
+mode. When CXL_SETPART_IMMEDIATE mode is set, it is the caller’s
+responsibility to avoid immediate changes to partitioning when the
+device is in use. When CXL_SETPART_NEXTBOOT mode is set, the change in
+partitioning shall become the “next” configuration, to become active on
+the next device reset.
+
+# BUSES
+
+The CXL Memory space is CPU and Device coherent. The address ranges that
+support coherent access are described by platform firmware and
+communicated to the operating system via a CXL root object *struct
+cxl_bus*.
+
+## BUS: Enumeration
+
+    struct cxl_bus *cxl_bus_get_first(struct cxl_ctx *ctx);
+    struct cxl_bus *cxl_bus_get_next(struct cxl_bus *bus);
+    struct cxl_ctx *cxl_bus_get_ctx(struct cxl_bus *bus);
+    struct cxl_bus *cxl_memdev_get_bus(struct cxl_memdev *memdev);
+    struct cxl_bus *cxl_port_get_bus(struct cxl_port *port);
+    struct cxl_bus *cxl_endpoint_get_bus(struct cxl_endpoint *endpoint);
+
+    #define cxl_bus_foreach(ctx, bus)                                           \
+           for (bus = cxl_bus_get_first(ctx); bus != NULL;                      \
+                bus = cxl_bus_get_next(bus))
+
+When a memdev is active it has established a CXL port hierarchy between
+itself and the root of its associated CXL topology. The
+cxl\_{memdev,endpoint}\_get_bus() helpers walk that topology to retrieve
+the associated bus object.
+
+## BUS: Attributes
+
+    const char *cxl_bus_get_provider(struct cxl_bus *bus);
+    const char *cxl_bus_get_devname(struct cxl_bus *bus);
+    int cxl_bus_get_id(struct cxl_bus *bus);
+
+The provider name of a bus is a persistent name that is independent of
+discovery order. The possible provider names are *ACPI.CXL* and
+*cxl_test*. The devname and id attributes, like other objects, are just
+the kernel device names that are subject to change based on discovery
+order.
+
+## BUS: Control
+
+    int cxl_bus_disable_invalidate(struct cxl_bus *bus);
+
+An entire CXL topology can be torn down with this API. Like other
+\_invalidate APIs callers must assume that all library objects have been
+freed. This one goes one step further and also frees the @bus argument.
+This may crash the system and is only useful in kernel driver
+development scenarios.
+
+# PORTS
+
+CXL ports track the PCIe hierarchy between a platform firmware CXL root
+object, through CXL / PCIe Host Bridges, CXL / PCIe Root Ports, and CXL
+/ PCIe Switch Ports.
+
+## PORT: Enumeration
+
+    struct cxl_port *cxl_bus_get_port(struct cxl_bus *bus);
+    struct cxl_port *cxl_port_get_first(struct cxl_port *parent);
+    struct cxl_port *cxl_port_get_next(struct cxl_port *port);
+    struct cxl_port *cxl_port_get_parent(struct cxl_port *port);
+    struct cxl_ctx *cxl_port_get_ctx(struct cxl_port *port);
+    const char *cxl_port_get_host(struct cxl_port *port);
+    struct cxl_port *cxl_decoder_get_port(struct cxl_decoder *decoder);
+    struct cxl_port *cxl_port_get_next_all(struct cxl_port *port,
+                                           const struct cxl_port *top);
+    struct cxl_port *cxl_dport_get_port(struct cxl_dport *dport);
+
+    #define cxl_port_foreach(parent, port)                                      \
+           for (port = cxl_port_get_first(parent); port != NULL;                \
+                port = cxl_port_get_next(port))
+
+    #define cxl_port_foreach_all(top, port)                                        \
+           for (port = cxl_port_get_first(top); port != NULL;                     \
+                port = cxl_port_get_next_all(port, top))
+
+A bus object encapsulates a CXL port object. Use cxl_bus_get_port() to
+use generic port APIs on root objects.
+
+Ports are hierarchical. All but the a root object have another CXL port
+as a parent object retrievable via cxl_port_get_parent().
+
+The root port of a hiearchy can be retrieved via any port instance in
+that hierarchy via cxl_port_get_bus().
+
+The host of a port is the corresponding device name of the PCIe Root
+Port, or Switch Upstream Port with CXL capabilities.
+
+The cxl_port_foreach_all() helper does a depth first iteration of all
+ports beneath the *top* port argument.
+
+## PORT: Control
+
+int cxl_port_disable_invalidate(struct cxl_port \*port); int
+cxl_port_enable(struct cxl_port \*port); ---
+cxl_port_disable_invalidate() is a violent operation that disables
+entire sub-tree of CXL Memory Device and Ports, only use it for test /
+debug scenarios, or ensuring that all impacted devices are deactivated
+first.
+
+## PORT: Attributes
+
+    const char *cxl_port_get_devname(struct cxl_port *port);
+    int cxl_port_get_id(struct cxl_port *port);
+    int cxl_port_is_enabled(struct cxl_port *port);
+    bool cxl_port_is_root(struct cxl_port *port);
+    bool cxl_port_is_switch(struct cxl_port *port);
+    bool cxl_port_is_endpoint(struct cxl_port *port);
+    int cxl_port_get_depth(struct cxl_port *port);
+    bool cxl_port_hosts_memdev(struct cxl_port *port, struct cxl_memdev *memdev);
+    int cxl_port_get_nr_dports(struct cxl_port *port);
+
+The port type is communicated via cxl_port_is\_\<type>(). An *enabled*
+port is one that has succeeded in discovering the CXL component
+registers in the host device and has enumerated its downstream ports. In
+order for a memdev to be enabled for CXL memory operation all CXL ports
+in its ancestry must also be enabled including a root port, an arbitrary
+number of intervening switch ports, and a terminal endpoint port.
+
+cxl_port_hosts_memdev() returns true if the port’s host appears in the
+memdev host’s device topology ancestry.
+
+### DPORTS
+
+A CXL dport object represents a CXL / PCIe Switch Downstream Port, or a
+CXL / PCIe host bridge.
+
+#### DPORT: Enumeration
+
+    struct cxl_dport *cxl_dport_get_first(struct cxl_port *port);
+    struct cxl_dport *cxl_dport_get_next(struct cxl_dport *dport);
+    struct cxl_dport *cxl_port_get_dport_by_memdev(struct cxl_port *port,
+                                                   struct cxl_memdev *memdev);
+
+    #define cxl_dport_foreach(port, dport)                                     \
+           for (dport = cxl_dport_get_first(port); dport != NULL;              \
+                dport = cxl_dport_get_next(dport))
+
+#### DPORT: Attributes
+
+    const char *cxl_dport_get_devname(struct cxl_dport *dport);
+    const char *cxl_dport_get_physical_node(struct cxl_dport *dport);
+    int cxl_dport_get_id(struct cxl_dport *dport);
+    bool cxl_dport_maps_memdev(struct cxl_dport *dport, struct cxl_memdev *memdev);
+
+The id of a dport is the hardware idenfifier used by an upstream port to
+reference a downstream port. The physical node of a dport is only
+available for platform firmware defined downstream ports and alias the
+companion object, like a PCI host bridge, in the PCI device hierarchy.
+
+The cxl_dport_maps_memdev() helper checks if a dport is an ancestor of a
+given memdev.
+
+# ENDPOINTS
+
+CXL endpoint objects encapsulate the set of host-managed device-memory
+(HDM) decoders in a physical memory device. The endpoint is the last hop
+in a decoder chain that translate SPA to DPA (system-physical-address to
+device-local-physical-address).
+
+## ENDPOINT: Enumeration
+
+    struct cxl_endpoint *cxl_endpoint_get_first(struct cxl_port *parent);
+    struct cxl_endpoint *cxl_endpoint_get_next(struct cxl_endpoint *endpoint);
+    struct cxl_ctx *cxl_endpoint_get_ctx(struct cxl_endpoint *endpoint);
+    struct cxl_port *cxl_endpoint_get_parent(struct cxl_endpoint *endpoint);
+    struct cxl_port *cxl_endpoint_get_port(struct cxl_endpoint *endpoint);
+    const char *cxl_endpoint_get_host(struct cxl_endpoint *endpoint);
+    struct cxl_endpoint *cxl_memdev_get_endpoint(struct cxl_memdev *memdev);
+    struct cxl_endpoint *cxl_port_to_endpoint(struct cxl_port *port);
+
+    #define cxl_endpoint_foreach(port, endpoint)                                 \
+           for (endpoint = cxl_endpoint_get_first(port); endpoint != NULL;       \
+                endpoint = cxl_endpoint_get_next(endpoint))
+
+## ENDPOINT: Attributes
+
+    const char *cxl_endpoint_get_devname(struct cxl_endpoint *endpoint);
+    int cxl_endpoint_get_id(struct cxl_endpoint *endpoint);
+    int cxl_endpoint_is_enabled(struct cxl_endpoint *endpoint);
+
+# DECODERS
+
+Decoder objects are associated with the "HDM Decoder Capability"
+published in Port devices and CXL capable PCIe endpoints. The kernel
+additionally models platform firmware described CXL memory ranges (like
+the ACPI CEDT.CFMWS) as static decoder objects. They route System
+Physical Addresses through a port topology to an endpoint decoder that
+does the final translation from SPA to DPA (system-physical-address to
+device-local-physical-address).
+
+## DECODER: Enumeration
+
+    struct cxl_decoder *cxl_decoder_get_first(struct cxl_port *port);
+    struct cxl_decoder *cxl_decoder_get_next(struct cxl_decoder *decoder);
+    struct cxl_ctx *cxl_decoder_get_ctx(struct cxl_decoder *decoder);
+    struct cxl_decoder *cxl_target_get_decoder(struct cxl_target *target);
+
+    #define cxl_decoder_foreach(port, decoder)                                  \
+           for (decoder = cxl_decoder_get_first(port); decoder != NULL;         \
+                decoder = cxl_decoder_get_next(decoder))
+
+The definition of a CXL port in libcxl is an object that hosts one or
+more CXL decoder objects.
+
+## DECODER: Attributes
+
+    unsigned long long cxl_decoder_get_resource(struct cxl_decoder *decoder);
+    unsigned long long cxl_decoder_get_size(struct cxl_decoder *decoder);
+    unsigned long long cxl_decoder_get_dpa_resource(struct cxl_decoder *decoder);
+    unsigned long long cxl_decoder_get_dpa_size(struct cxl_decoder *decoder);
+    int cxl_decoder_set_dpa_size(struct cxl_decoder *decoder, unsigned long long size);
+    const char *cxl_decoder_get_devname(struct cxl_decoder *decoder);
+    int cxl_decoder_get_id(struct cxl_decoder *decoder);
+    int cxl_decoder_get_nr_targets(struct cxl_decoder *decoder);
+    struct cxl_region *cxl_decoder_get_region(struct cxl_decoder *decoder);
+
+    enum cxl_decoder_target_type {
+           CXL_DECODER_TTYPE_UNKNOWN,
+           CXL_DECODER_TTYPE_EXPANDER,
+           CXL_DECODER_TTYPE_ACCELERATOR,
+    };
+
+    cxl_decoder_get_target_type(struct cxl_decoder *decoder);
+
+    enum cxl_decoder_mode {
+        CXL_DECODER_MODE_NONE,
+        CXL_DECODER_MODE_MIXED,
+        CXL_DECODER_MODE_PMEM,
+        CXL_DECODER_MODE_RAM,
+    };
+    enum cxl_decoder_mode cxl_decoder_get_mode(struct cxl_decoder *decoder);
+    int cxl_decoder_set_mode(struct cxl_decoder *decoder, enum cxl_decoder_mode mode);
+
+    bool cxl_decoder_is_pmem_capable(struct cxl_decoder *decoder);
+    bool cxl_decoder_is_volatile_capable(struct cxl_decoder *decoder);
+    bool cxl_decoder_is_mem_capable(struct cxl_decoder *decoder);
+    bool cxl_decoder_is_accelmem_capable(struct cxl_decoder *decoder);
+    bool cxl_decoder_is_locked(struct cxl_decoder *decoder);
+
+The kernel protects the enumeration of the physical address layout of
+the system. Without CAP_SYS_ADMIN cxl_decoder_get_resource() returns
+ULLONG_MAX to indicate that the address information was not retrievable.
+Otherwise, cxl_decoder_get_resource() returns the currently programmed
+value of the base of the decoder’s decode range. A zero-sized decoder
+indicates a disabled decoder.
+
+Root level decoders only support limited set of memory types in their
+address range. The cxl_decoder_is\_\<memtype>\_capable() helpers
+identify what is supported. Switch level decoders, in contrast are
+capable of routing any memory type, i.e. they just forward along the
+memory type support from their parent port. Endpoint decoders follow the
+capabilities of their host memory device.
+
+The capabilities of a decoder are not to be confused with their type /
+mode. The type ultimately depends on the endpoint. For example an
+accelerator requires all decoders in its ancestry to be set to
+CXL_DECODER_TTYPE_ACCELERATOR, and conversely plain memory expander
+devices require CXL_DECODER_TTYPE_EXPANDER.
+
+Platform firmware may setup the CXL decode hierarchy before the OS
+boots, and may additionally require that the OS not change the decode
+settings. This property is indicated by the cxl_decoder_is_locked() API.
+
+When a decoder is associated with a region cxl_decoder_get_region()
+returns that region object. Note that it is only applicable to switch
+and endpoint decoders as root decoders have a 1:N relationship with
+regions. Use cxl_region_foreach() for the similar functionality for root
+decoders.
+
+### TARGETS
+
+A root or switch level decoder takes an SPA (system-physical-address) as
+input and routes it to a downstream port. Which downstream port depends
+on the downstream port’s position in the interleave. A *struct
+cxl_target* object represents the properties of a given downstream port
+relative to its interleave configuration.
+
+#### TARGET: Enumeration
+
+    struct cxl_target *cxl_decoder_get_target_by_memdev(struct cxl_decoder *decoder,
+                                                       struct cxl_memdev *memdev);
+    struct cxl_target *
+    cxl_decoder_get_target_by_position(struct cxl_decoder *decoder, int position);
+    struct cxl_target *cxl_target_get_first(struct cxl_decoder *decoder);
+    struct cxl_target *cxl_target_get_next(struct cxl_target *target);
+
+    #define cxl_target_foreach(decoder, target)                                   \
+           for (target = cxl_target_get_first(decoder); target != NULL;           \
+                target = cxl_target_get_next(target))
+
+Target objects can only be enumerated if the decoder has been
+configured, for switch decoders. For root decoders they are always
+available since the root decoder target mapping is static. The
+cxl_decoder_get_target_by_memdev() helper walks the topology to validate
+if the given memory device is capable of receiving cycles from this
+upstream decoder. It does not validate if the memory device is currently
+configured to participate in that decode.
+
+#### TARGET: Attributes
+
+    int cxl_target_get_position(struct cxl_target *target);
+    unsigned long cxl_target_get_id(struct cxl_target *target);
+    const char *cxl_target_get_devname(struct cxl_target *target);
+    bool cxl_target_maps_memdev(struct cxl_target *target,
+                               struct cxl_memdev *memdev);
+    const char *cxl_target_get_physical_node(struct cxl_target *target);
+
+The position of a decoder along with the interleave granularity dictate
+which address in the decoder’s resource range map to which port.
+
+The target id is an identifier that the CXL port uses to reference this
+downstream port. For CXL / PCIe downstream switch ports the id is
+defined by the PCIe Link Capability Port Number field. For root decoders
+the id is specified by platform firmware specific mechanism. For
+ACPI.CXL defined root ports the id comes from the CEDT.CHBS / ACPI0016
+\_UID.
+
+The device name of a target is the name of the host device for the
+downstream port. For CXL / PCIe downstream ports the devname is
+downstream switch port PCI device. For CXL root ports the devname is a
+platform firmware object for the host bridge like a ACPI0016 device
+instance.
+
+The cxl_target_maps_memdev() helper is the companion of
+cxl_decoder_get_target_by_memdev() to determine which downstream ports /
+targets are capable of mapping which memdevs.
+
+Some platform firmware implementations define an alias / companion
+device to represent the root of a PCI device hierarchy. The
+cxl_target_get_physical_node() helper returns the device name of that
+companion object in the PCI hierarchy.
+
+### REGIONS
+
+A CXL region is composed of one or more slices of CXL memdevs, with
+configurable interleave settings - both the number of interleave ways,
+and the interleave granularity. In terms of hierarchy, it is the child
+of a CXL root decoder. A root decoder (recall that this corresponds to
+an ACPI CEDT.CFMWS *window*), may have multiple child regions, but a
+region is strictly tied to one root decoder.
+
+The slices that compose a region are called mappings. A mapping is a
+tuple of *memdev*, *endpoint decoder*, and the *position*.
+
+#### REGION: Enumeration
+
+    struct cxl_region *cxl_region_get_first(struct cxl_decoder *decoder);
+    struct cxl_region *cxl_region_get_next(struct cxl_region *region);
+
+    #define cxl_region_foreach(decoder, region)                                    \
+        for (region = cxl_region_get_first(decoder); region != NULL;           \
+             region = cxl_region_get_next(region))
+
+    #define cxl_region_foreach_safe(decoder, region, _region)                      \
+        for (region = cxl_region_get_first(decoder),                           \
+             _region = region ? cxl_region_get_next(region) : NULL;            \
+             region != NULL;                                                   \
+             region = _region,                                                 \
+             _region = _region ? cxl_region_get_next(_region) : NULL)
+
+#### REGION: Attributes
+
+    int cxl_region_get_id(struct cxl_region *region);
+    const char *cxl_region_get_devname(struct cxl_region *region);
+    void cxl_region_get_uuid(struct cxl_region *region, uuid_t uu);
+    unsigned long long cxl_region_get_size(struct cxl_region *region);
+    unsigned long long cxl_region_get_resource(struct cxl_region *region);
+    unsigned int cxl_region_get_interleave_ways(struct cxl_region *region);
+    unsigned int cxl_region_get_interleave_granularity(struct cxl_region *region);
+    struct cxl_decoder *cxl_region_get_target_decoder(struct cxl_region *region,
+                              int position);
+    int cxl_region_set_size(struct cxl_region *region, unsigned long long size);
+    int cxl_region_set_uuid(struct cxl_region *region, uuid_t uu);
+    int cxl_region_set_interleave_ways(struct cxl_region *region,
+                       unsigned int ways);
+    int cxl_region_set_interleave_granularity(struct cxl_region *region,
+                          unsigned int granularity);
+    int cxl_region_set_target(struct cxl_region *region, int position,
+                  struct cxl_decoder *decoder);
+    int cxl_region_clear_target(struct cxl_region *region, int position);
+    int cxl_region_clear_all_targets(struct cxl_region *region);
+    int cxl_region_decode_commit(struct cxl_region *region);
+    int cxl_region_decode_reset(struct cxl_region *region);
+
+A region’s resource attribute is the Host Physical Address at which the
+region’s address space starts. The region’s address space is a subset of
+the parent root decoder’s address space.
+
+The interleave ways is the number of component memdevs participating in
+the region.
+
+The interleave granularity depends on the root decoder’s granularity,
+and must follow the interleave math rules defined in the CXL spec.
+
+Regions have a list of targets 0..N, which are programmed with the name
+of an endpoint decoder under each participating memdev.
+
+The *decode_commit* and *decode_reset* attributes reserve and free DPA
+space on a given memdev by allocating an endpoint decoder, and
+programming it based on the region’s interleave geometry.
+
 # COPYRIGHT
 
-Copyright © 2016 - 2020, Intel Corporation. License GPLv2: GNU GPL
+Copyright © 2016 - 2022, Intel Corporation. License GPLv2: GNU GPL
 version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
 are free to change and redistribute it. There is NO WARRANTY, to the
 extent permitted by law.

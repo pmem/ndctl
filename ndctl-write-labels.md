@@ -14,12 +14,11 @@ ndctl-write-labels - write data to the label area on a dimm
 # DESCRIPTION
 
 The namespace label area is a small persistent partition of capacity
-available on some NVDIMM devices. The label area is used to resolve
-aliasing between *pmem* and *blk* capacity by delineating namespace
-boundaries. Read data from the input filename, or stdin, and write it to
-the given \<nmem> device. Note that the device must not be active in any
-region, otherwise the kernel will not allow write access to the device’s
-label data area.
+available on some NVDIMM devices. The label area is used to provision
+one, or more, namespaces from regions. Read data from the input
+filename, or stdin, and write it to the given \<nmem> device. Note that
+the device must not be active in any region, otherwise the kernel will
+not allow write access to the device’s label data area.
 
 # OPTIONS
 

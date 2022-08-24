@@ -81,9 +81,6 @@ example to see all namespaces comprised of storage capacity on nmem0:
 An *namespaceX.Y* device name, or namespace region plus id tuple *X.Y*.
 Limit the namespace list to the single identified device if present.
 
-`-t; --type=`  
-Filter listing by region type (*pmem* or *blk*)
-
 `-m; --mode=`  
 Filter listing by the mode (*raw*, *fsdax*, *sector* or *devdax*) of the
 namespace(s).
@@ -328,7 +325,7 @@ applies the following fixups:
 
 # COPYRIGHT
 
-Copyright © 2016 - 2020, Intel Corporation. License GPLv2: GNU GPL
+Copyright © 2016 - 2022, Intel Corporation. License GPLv2: GNU GPL
 version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
 are free to change and redistribute it. There is NO WARRANTY, to the
 extent permitted by law.

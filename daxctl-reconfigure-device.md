@@ -99,8 +99,8 @@ details.
 Outside of the NUMA performance details linked above the other method to
 detect the presence of "Soft Reserved" memory is to dump /proc/iomem and
 look for "Soft Reserved" ranges. If the kernel was not built with
-CONFIG_EFI_SOFTRESERVE, predates the introduction of
-CONFIG_EFI_SOFTRESERVE (v5.5), or was booted with the efi=nosoftreserve
+CONFIG_EFI_SOFT_RESERVE, predates the introduction of
+CONFIG_EFI_SOFT_RESERVE (v5.5), or was booted with the efi=nosoftreserve
 command line then device-dax will not attach and the expectation is that
 the memory shows up as a memory-only NUMA node. Otherwise the memory
 shows up as a device-dax instance and DAXCTL(1) can be used to
@@ -320,15 +320,15 @@ system-ram conversion.
     ndctl create-namespace --mode=devdax | \
         jq -r "\"[reconfigure-device $(uuidgen)]\", \"nvdimm.uuid = \(.uuid)\", \"mode = system-ram\"" >> $config_path
 
-The default location for daxctl config files is under
-/etc/daxctl.conf.d/, and any file with a *.conf* suffix at this location
-is considered. It is acceptable to have multiple files containing
-ini-style config sections, but the {section, subsection} tuple must be
-unique across all config files under /etc/daxctl.conf.d/.
+The default location for daxctl config files is under {daxctl_confdir}/,
+and any file with a *.conf* suffix at this location is considered. It is
+acceptable to have multiple files containing ini-style config sections,
+but the {section, subsection} tuple must be unique across all config
+files under {daxctl_confdir}/.
 
 # COPYRIGHT
 
-Copyright © 2016 - 2020, Intel Corporation. License GPLv2: GNU GPL
+Copyright © 2016 - 2022, Intel Corporation. License GPLv2: GNU GPL
 version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
 are free to change and redistribute it. There is NO WARRANTY, to the
 extent permitted by law.

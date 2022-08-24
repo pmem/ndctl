@@ -88,23 +88,14 @@ Convert namespace0.0 to *sector* mode
 
 # OPTIONS
 
-`-t; --type=`  
-Create a *pmem* or *blk* namespace (subject to available capacity). A
-pmem namespace supports the dax (direct access) capability to mmap2
-persistent memory directly into a process address space. A blk namespace
-access persistent memory through a block-window-aperture. Compared to
-pmem it supports a traditional storage error model (EIO on error rather
-than a cpu exception on a bad memory access), but it does not support
-dax.
-
 `-m; --mode=`  
--   "raw": expose the namespace capacity directly with limitations.
-    Neither a raw pmem namepace nor raw blk namespace support sector
-    atomicity by default (see "sector" mode below). A raw pmem namespace
-    may have limited to no dax support depending the kernel. In other
-    words operations like direct-I/O targeting a dax buffer may fail for
-    a pmem namespace in raw mode or indirect through a page-cache
-    buffer. See "fsdax" and "devdax" mode for dax operation.
+-   "raw": expose the namespace capacity directly with limitations. A
+    raw pmem namepace namespace does not support sector atomicity (see
+    "sector" mode below). A raw pmem namespace may have limited to no
+    dax support depending the kernel. In other words operations like
+    direct-I/O targeting a dax buffer may fail for a pmem namespace in
+    raw mode or indirect through a page-cache buffer. See "fsdax" and
+    "devdax" mode for dax operation.
 
 -   "sector": persistent memory, given that it is byte addressable, does
     not support sector atomicity. The problematic aspect of sector
@@ -244,8 +235,7 @@ namespace" operation.
     -   NVDIMM does not support labels
 
     -   The NVDIMM supports labels, but the Label Index Block (see UEFI
-        2.7) is not present and there is no capacity aliasing between
-        *blk* and *pmem* regions.
+        2.7) is not present.
 
 -   In the latter case the configuration can be upgraded to labelled
     operation by writing an index block on all DIMMs in a region and
@@ -289,7 +279,7 @@ supplying a --bus option at all.
 
 # COPYRIGHT
 
-Copyright © 2016 - 2020, Intel Corporation. License GPLv2: GNU GPL
+Copyright © 2016 - 2022, Intel Corporation. License GPLv2: GNU GPL
 version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
 are free to change and redistribute it. There is NO WARRANTY, to the
 extent permitted by law.
