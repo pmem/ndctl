@@ -12,8 +12,9 @@ badtree()
 	exit 1
 }
 
-wdir="build"
+wdir="docs-build"
 ndir="ndctl"
+bdir="$ndir/build"
 tree="$wdir/$ndir"
 deftree="https://github.com/pmem/ndctl.git"
 
@@ -45,19 +46,15 @@ build_ver=""
 build_tag=""
 build_tree()
 {
-	./autogen.sh
-	./configure --enable-asciidoctor
-	make -C Documentation/ndctl attrs.adoc
-	make -C Documentation/ndctl asciidoctor-extensions.rb
-	make -C Documentation/daxctl attrs.adoc
-	make -C Documentation/daxctl asciidoctor-extensions.rb
-	make -C Documentation/cxl asciidoctor-extensions.rb
-	make -C Documentation/cxl/lib asciidoctor-extensions.rb
+	rm -rf build
+	meson setup build
+	meson configure -Dasciidoctor=enabled build
+	meson compile -C build #Documentation #/ndctl #/attrs.adoc
 	build_ver=$(git describe HEAD --tags)
 	build_tag=${build_type}-${build_ver#v}
 }
 
-build_tree >/dev/null
+build_tree
 popd >/dev/null
 
 # convert to md
@@ -94,6 +91,10 @@ man_to_md()
 			-I $ndir/Documentation/daxctl \
 			-I $ndir/Documentation/cxl \
 			-I $ndir/Documentation/cxl/lib \
+			-I $bdir/Documentation/ndctl \
+			-I $bdir/Documentation/daxctl \
+			-I $bdir/Documentation/cxl \
+			-I $bdir/Documentation/cxl/lib \
 			-r asciidoctor-extensions \
 			-amansource=ndctl \
 			-amanmanual="ndctl Manual" \
@@ -118,6 +119,7 @@ man_to_md()
 	# and 3 useless. Keep markdown_gfm for now until our hand is forced
 }
 
+pwd
 mkdir -p md
 for file in $ndir/Documentation/ndctl/*.txt; do
 	test -f "$file" || continue
