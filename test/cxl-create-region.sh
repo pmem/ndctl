@@ -4,7 +4,7 @@
 
 . $(dirname $0)/common
 
-rc=1
+rc=77
 
 set -ex
 
@@ -14,6 +14,7 @@ check_prereq "jq"
 
 modprobe -r cxl_test
 modprobe cxl_test
+rc=1
 udevadm settle
 
 destroy_regions()
