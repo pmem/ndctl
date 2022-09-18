@@ -231,19 +231,18 @@ conf.set('ENABLE_DESTRUCTIVE', get_option('destructive').enabled())
 conf.set('ENABLE_LOGGING', get_option('logging').enabled())
 conf.set('ENABLE_DEBUG', get_option('dbg').enabled())
 
-typeof = cc.run('''
-  int main() {
+typeof_code = '''
+  void func() {
     struct {
       char a[16];
     } x;
     typeof(x) y;
 
-    return sizeof(x) == sizeof(y);
+    char static_assert[2 * (sizeof(x) == sizeof(y)) - 1];
   }
   '''
-)
 
-if typeof.compiled() and typeof.returncode() == 1
+if cc.compiles(typeof_code)
   conf.set('HAVE_TYPEOF', 1)
   conf.set('HAVE_STATEMENT_EXPR', 1)
 endif
