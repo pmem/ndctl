@@ -42,3 +42,5 @@ custom_target(
 )
 
 install_data('daxctl.conf', install_dir : datadir / 'daxctl')
+
+meson.override_dependency('libdaxctl', ndctl_dep)

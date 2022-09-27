@@ -46,3 +46,5 @@ custom_target(
   install : true,
   install_dir : pkgconfiglibdir,
 )
+
+meson.override_dependency('libndctl', ndctl_dep)

@@ -25,3 +25,5 @@ cxl_tool = executable('cxl',
 )
 
 install_headers('libcxl.h', subdir : 'cxl')
+
+meson.override_find_program('cxl', cxl_tool)

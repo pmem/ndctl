@@ -33,3 +33,5 @@ custom_target(
   install : true,
   install_dir : pkgconfiglibdir,
 )
+
+meson.override_dependency('libcxl', cxl_dep)
