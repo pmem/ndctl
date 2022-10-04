@@ -6,7 +6,7 @@
 
 # Notes:
 #  - Checkout to the appropriate branch beforehand
-#     master - for major release
+#     main - for major release
 #     ndctl-xx.y - for fixup release
 #    This is important for generating the shortlog
 #  - Add a temporary commit that updates the libtool versions as needed.
@@ -50,9 +50,9 @@ check_branch()
 			err "expected an ndctl-xx.y branch for fixup release"
 		fi
 	else
-		# major release, expect master branch
-		if ! grep -Eq "^master$" <<< "$cur"; then
-			err "expected master branch for a major release"
+		# major release, expect main branch
+		if ! grep -Eq "^main$" <<< "$cur"; then
+			err "expected main branch for a major release"
 		fi
 	fi
 	if ! git diff-index --quiet HEAD --; then
@@ -99,7 +99,7 @@ gen_lists()
 	c_count=$(git log --pretty=format:"%s" "$range" | wc -l)
 }
 
-# Check libtool versions in Makefile.am.in
+# Check libtool versions in meson.build
 # $1: lib name (currently libndctl, libdaxctl, or libcxl)
 check_libtool_vers()
 {
@@ -107,13 +107,13 @@ check_libtool_vers()
 	local lib_u="${lib^^}"
 	local libdir="${lib##lib}/lib/"
 	local symfile="${libdir}/${lib}.sym"
-	local last_cur=$(git show $last_ref:Makefile.am.in | grep -E "^${lib_u}_CURRENT" | cut -d'=' -f2)
-	local last_rev=$(git show $last_ref:Makefile.am.in | grep -E "^${lib_u}_REVISION" | cut -d'=' -f2)
-	local last_age=$(git show $last_ref:Makefile.am.in | grep -E "^${lib_u}_AGE" | cut -d'=' -f2)
+	local last_cur=$(git show $last_ref:meson.build | grep -E "^${lib_u}_CURRENT" | cut -d'=' -f2)
+	local last_rev=$(git show $last_ref:meson.build | grep -E "^${lib_u}_REVISION" | cut -d'=' -f2)
+	local last_age=$(git show $last_ref:meson.build | grep -E "^${lib_u}_AGE" | cut -d'=' -f2)
 	local last_soname=$((last_cur - last_age))
-	local next_cur=$(git show HEAD:Makefile.am.in | grep -E "^${lib_u}_CURRENT" | cut -d'=' -f2)
-	local next_rev=$(git show HEAD:Makefile.am.in | grep -E "^${lib_u}_REVISION" | cut -d'=' -f2)
-	local next_age=$(git show HEAD:Makefile.am.in | grep -E "^${lib_u}_AGE" | cut -d'=' -f2)
+	local next_cur=$(git show HEAD:meson.build | grep -E "^${lib_u}_CURRENT" | cut -d'=' -f2)
+	local next_rev=$(git show HEAD:meson.build | grep -E "^${lib_u}_REVISION" | cut -d'=' -f2)
+	local next_age=$(git show HEAD:meson.build | grep -E "^${lib_u}_AGE" | cut -d'=' -f2)
 	local next_soname=$((next_cur - next_age))
 	local soname_diff=$((next_soname - last_soname))
 
@@ -195,6 +195,6 @@ sed -i -e "s/DEF_VER=[0-9]\+.*/DEF_VER=${next_ref#v}/" git-version
 echo "Ready to release ndctl-$next_ref with $c_count new commits."
 echo "Add git-version to the top commit to get the updated version."
 echo "Use release/commits and release/shortlog to compose the release message"
-echo "The release commit typically contains the Makefile.am.in libtool version"
+echo "The release commit typically contains the meson.build libtool version"
 echo "update, and the git-version update."
 echo "Finally, ensure the release commit as well as the tag are PGP signed."

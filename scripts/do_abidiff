@@ -17,13 +17,11 @@ build_rpm()
 	local version=""
 
 	# prepare ndctl tree
-	rm -rf results_ndctl
+	rm -rf results_ndctl build
 	git checkout -b rel_${ref} $ref
-	./autogen.sh
-	./configure CFLAGS='-g -O2' --prefix=/usr --sysconfdir=/etc --libdir=/usr/lib64
-	make clean
-	make rhel/ndctl.spec
-	cp rhel/ndctl.spec .
+	meson setup build
+	meson compile -C build rhel/ndctl.spec
+	cp build/rhel/ndctl.spec .
 
 	# build and copy RPMs
 	version="$(./git-version)"
@@ -46,8 +44,8 @@ build_rpm()
 do_diff()
 {
 	local pkg="$1"
-	local old_base="$(find . -regex "./release/rel_${old}/${pkg}-[0-9]+.*" | head -1)"
-	local new_base="$(find . -regex "./release/rel_${new}/${pkg}-[0-9]+.*" | head -1)"
+	local old_base="$(find . -regex "./release/rel_${old}/${pkg}[-cli]*-[0-9]+.*" | head -1)"
+	local new_base="$(find . -regex "./release/rel_${new}/${pkg}[-cli]*-[0-9]+.*" | head -1)"
 	local old_dev="$(find . -regex "./release/rel_${old}/${pkg}-devel-[0-9]+.*" | head -1)"
 	local new_dev="$(find . -regex "./release/rel_${new}/${pkg}-devel-[0-9]+.*" | head -1)"
 	local old_lib="$(find . -regex "./release/rel_${old}/${pkg}-libs-[0-9]+.*" | head -1)"
