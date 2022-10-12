@@ -120,6 +120,7 @@ int cmd_list(int argc, const char **argv, struct cxl_ctx *ctx)
 	case 1:
 		param.buses = true;
 		param.ports = true;
+		param.endpoints = true;
 		param.decoders = true;
 		param.targets = true;
 		/*fallthrough*/
