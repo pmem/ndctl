@@ -1036,7 +1036,9 @@ int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *p)
 	struct json_object *jbusdecoders = NULL;
 	struct json_object *jepdecoders = NULL;
 	struct json_object *janondevs = NULL;
+	struct json_object *jbusdevs = NULL;
 	struct json_object *jregions = NULL;
+	struct json_object *jbuseps = NULL;
 	struct json_object *jeps = NULL;
 	struct cxl_memdev *memdev;
 	int top_level_objs = 0;
@@ -1051,12 +1053,20 @@ int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *p)
 	if (!janondevs)
 		goto err;
 
+	jbusdevs = json_object_new_array();
+	if (!jbusdevs)
+		goto err;
+
 	jbuses = json_object_new_array();
 	if (!jbuses)
 		goto err;
 
 	jports = json_object_new_array();
 	if (!jports)
+		goto err;
+
+	jbuseps = json_object_new_array();
+	if (!jbuseps)
 		goto err;
 
 	jeps = json_object_new_array();
@@ -1108,6 +1118,8 @@ int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *p)
 	cxl_bus_foreach(ctx, bus) {
 		struct json_object *jbus = NULL;
 		struct json_object *jchilddecoders = NULL;
+		struct json_object *jchildbusdevs = NULL;
+		struct json_object *jchildbuseps = NULL;
 		struct json_object *jchildports = NULL;
 		struct json_object *jchilddevs = NULL;
 		struct json_object *jchildeps = NULL;
@@ -1149,6 +1161,13 @@ int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *p)
 					    devname);
 					continue;
 				}
+				jchildbuseps = json_object_new_array();
+				if (!jchildbuseps) {
+					err(p,
+					    "%s: failed to enumerate child rch endpoints\n",
+					    devname);
+					continue;
+				}
 			}
 
 			if (p->memdevs) {
@@ -1156,6 +1175,13 @@ int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *p)
 				if (!jchilddevs) {
 					err(p,
 					    "%s: failed to enumerate child memdevs\n",
+					    devname);
+					continue;
+				}
+				jchildbusdevs = json_object_new_array();
+				if (!jchildbusdevs) {
+					err(p,
+					    "%s: failed to enumerate child rch memdevs\n",
 					    devname);
 					continue;
 				}
@@ -1184,6 +1210,14 @@ walk_children:
 		walk_decoders(port, p, pick_array(jchilddecoders, jbusdecoders),
 			      pick_array(jchildregions, jregions), flags);
 
+		dbg(p, "walk rch endpoints\n");
+		if (p->endpoints || p->memdevs || p->decoders)
+			walk_endpoints(port, p,
+				       pick_array(jchildbuseps, jbuseps),
+				       pick_array(jchildbusdevs, jbusdevs),
+				       pick_array(jchilddecoders, jepdecoders),
+				       flags);
+
 		dbg(p, "walk ports\n");
 		walk_child_ports(port, p, pick_array(jchildports, jports),
 				 pick_array(jchilddecoders, jportdecoders),
@@ -1192,19 +1226,27 @@ walk_children:
 				 pick_array(jchilddevs, jdevs), flags);
 		cond_add_put_array_suffix(jbus, "ports", devname, jchildports);
 		cond_add_put_array_suffix(jbus, "endpoints", devname,
+					  jchildbuseps);
+		cond_add_put_array_suffix(jbus, "endpoints", devname,
 					  jchildeps);
 		cond_add_put_array_suffix(jbus, "decoders", devname,
 					  jchilddecoders);
 		cond_add_put_array_suffix(jbus, "regions", devname,
 					  jchildregions);
+		cond_add_put_array_suffix(jbus, "memdevs", devname,
+					  jchildbusdevs);
 		cond_add_put_array_suffix(jbus, "memdevs", devname, jchilddevs);
 	}
 
 	if (json_object_array_length(janondevs))
 		top_level_objs++;
+	if (json_object_array_length(jbusdevs))
+		top_level_objs++;
 	if (json_object_array_length(jbuses))
 		top_level_objs++;
 	if (json_object_array_length(jports))
+		top_level_objs++;
+	if (json_object_array_length(jbuseps))
 		top_level_objs++;
 	if (json_object_array_length(jeps))
 		top_level_objs++;
@@ -1222,7 +1264,9 @@ walk_children:
 	splice_array(p, janondevs, jplatform, "anon memdevs", top_level_objs > 1);
 	splice_array(p, jbuses, jplatform, "buses", top_level_objs > 1);
 	splice_array(p, jports, jplatform, "ports", top_level_objs > 1);
+	splice_array(p, jbuseps, jplatform, "endpoints", top_level_objs > 1);
 	splice_array(p, jeps, jplatform, "endpoints", top_level_objs > 1);
+	splice_array(p, jbusdevs, jplatform, "memdevs", top_level_objs > 1);
 	splice_array(p, jdevs, jplatform, "memdevs", top_level_objs > 1);
 	splice_array(p, jbusdecoders, jplatform, "root decoders",
 		     top_level_objs > 1);
@@ -1237,8 +1281,10 @@ walk_children:
 	return 0;
 err:
 	json_object_put(janondevs);
+	json_object_put(jbusdevs);
 	json_object_put(jbuses);
 	json_object_put(jports);
+	json_object_put(jbuseps);
 	json_object_put(jeps);
 	json_object_put(jdevs);
 	json_object_put(jbusdecoders);
