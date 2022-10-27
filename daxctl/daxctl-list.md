@@ -1,0 +1,96 @@
+---
+layout: page
+---
+
+# NAME
+
+daxctl-list - dump the platform Device-DAX regions, devices, and
+attributes in json.
+
+# SYNOPSIS
+
+>     daxctl list [<options>]
+
+Walk all the device-dax-regions in the system and list all device
+instances along with some of their major attributes.
+
+Options can be specified to limit the output to objects of a certain
+class. Where the classes are regions or devices. By default, *daxctl
+list* with no options is equivalent to:
+
+>     daxctl list --devices
+
+# EXAMPLE
+
+    # daxctl list --regions --devices
+
+    {
+      "id":1,
+      "devices":[
+        {
+          "chardev":"dax1.0",
+          "size":3233808384
+        }
+      ]
+    }
+
+# OPTIONS
+
+`-r; --region=`  
+A device-dax region is a contiguous range of memory that hosts one or
+more /dev/daxX.Y devices, where X is the region id and Y is the device
+instance id. The keyword *all* can be specified to carry out the
+operation on every region in the system.
+
+`-d; --dev=`  
+Specify a dax device name, \<region id>.\<instance id> tuple, or keyword
+*all* to filter the listing. For example to list the first device
+instance in region1:
+
+<!-- -->
+
+    # daxctl list --dev=1.0
+
+    {
+      "chardev":"dax1.0",
+      "size":3233808384
+    }
+
+`-D; --devices`  
+Include device-dax instance info in the listing (default)
+
+`-M; --mappings`  
+Include device-dax instance mappings info in the listing
+
+`-R; --regions`  
+Include region info in the listing
+
+`-i; --idle`  
+Include idle (not enabled / zero-sized) devices in the listing
+
+`-u; --human`  
+By default *daxctl list* will output machine-friendly raw-integer data.
+Instead, with this flag, numbers representing storage size will be
+formatted as human readable strings with units, other fields are
+converted to hexadecimal strings. Example:
+
+<!-- -->
+
+    # daxctl list
+    {
+      "chardev":"dax1.0",
+      "size":32828817408
+    }
+
+    # daxctl list --human
+    {
+      "chardev":"dax1.0",
+      "size":"30.57 GiB (32.83 GB)"
+    }
+
+# COPYRIGHT
+
+Copyright © 2016 - 2022, Intel Corporation. License GPLv2: GNU GPL
+version 2 <http://gnu.org/licenses/gpl.html>. This is free software: you
+are free to change and redistribute it. There is NO WARRANTY, to the
+extent permitted by law.
