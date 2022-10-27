@@ -1,6 +1,24 @@
-highlighter: rouge
+title: Documentation for Linux PMEM and CXL tools
+author: https://github.com/pmem/ndctl
+description: > # this means to ignore newlines until "show_excerpts:"
+  Documentation site for man pages and other information related to the
+  ndctl, daxctl, and cxl-cli set of tools and libraries.
+
+show_excerpts: false # set to true to show excerpts on the homepage
+
+# Minima date format
+# refer to https://shopify.github.io/liquid/filters/date/ if you want to customize this
+minima:
+  date_format: "%b %-d, %Y"
+
+# If you want to link only specific pages in your header, uncomment
+# this and add the path to the pages in order as they should show up
+#header_pages:
+# - about.md
+
+# Build settings
+theme: minima
 
 plugins:
-  - jekyll-mentions
-
-exclude: ['vendor', 'LICENSE', 'README.md', 'build-docs.sh', 'build', 'Gemfile*']
+ - jekyll-feed
+ - jekyll-seo-tag
