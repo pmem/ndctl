@@ -13,8 +13,12 @@ minima:
 
 # If you want to link only specific pages in your header, uncomment
 # this and add the path to the pages in order as they should show up
-#header_pages:
-# - about.md
+header_pages:
+ - collab/index.md
+ - ndctl/index.md
+ - daxctl/index.md
+ - cxl/index.md
+ - libcxl/index.md
 
 # Build settings
 theme: minima
