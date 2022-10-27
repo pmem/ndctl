@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash -ex
 
 usage()
 {
@@ -12,38 +12,6 @@ badtree()
 	exit 1
 }
 
-wdir="docs-build"
-ndir="ndctl"
-bdir="$ndir/build"
-tree="$wdir/$ndir"
-deftree="https://github.com/pmem/ndctl.git"
-
-test -d "$wdir" && rm -rf "$wdir"
-mkdir -p "$wdir"
-pushd "$wdir" >/dev/null
-
-loc="$1"
-test -z "$loc" && usage
-
-# parse 'loc' and populate $tree
-build_type=""
-if git ls-remote -q --exit-code "$deftree" "$loc"; then
-	git clone -q --branch="$loc" --depth=1 "$deftree" "$ndir"
-	build_type="ndctl"
-else
-	git clone "$loc"
-	build_type="local-build"
-fi
-
-# make sure tree appears to be valid
-pushd "$ndir" >/dev/null
-test -d "Documentation/ndctl" || badtree
-test -d "Documentation/daxctl" || badtree
-test -d "Documentation/cxl" || badtree
-
-# build the asciidoc config
-build_ver=""
-build_tag=""
 build_tree()
 {
 	rm -rf build
@@ -54,10 +22,6 @@ build_tree()
 	build_tag=${build_type}-${build_ver#v}
 }
 
-build_tree
-popd >/dev/null
-
-# convert to md
 man_to_md()
 {
 	local file="$1"
@@ -67,11 +31,11 @@ man_to_md()
 	[[ "$fname" == ndctl*.txt ]] || [[ "$fname" == daxctl*.txt ]] || \
 		[[ "$fname" == cxl*.txt ]] || [[ "$fname" == libcxl*.txt ]] || return 0
 	cfg=$(dirname $file)/asciidoc.conf
+	mkdir -p md
 	out="md/${fname/%.txt/.md}"
 	cat <<- EOF > $out
 		---
-		title: ndctl
-		layout: pmdk
+		layout: page
 		---
 
 	EOF
@@ -101,14 +65,14 @@ man_to_md()
 			-andctl_version=$build_ver \
 			-o- $file | \
 		pandoc -f docbook -t gfm | \
-		sed -e 's/\(ndctl-[a-z-]*\)1/[\1](\1.md)/g' | \
-		sed -e 's/\(ndctl[a-z-]*\)\\\[1\\\]/[\1](\1.md)/g' | \
+		sed -e 's/\(ndctl-[a-z-]*\)1/[\1](\1)/g' | \
+		sed -e 's/\(ndctl[a-z-]*\)\\\[1\\\]/[\1](\1)/g' | \
 		sed -e "s/linkdaxctl://g" | \
 		sed -e "s/linkcxl://g" | \
 		sed -e "s/linklibcxl://g" | \
-		sed -e 's/\(daxctl[a-z-]*\)\\\[1\\\]/[\1](\1.md)/g' | \
-		sed -e 's/\(cxl[a-z-]*\)\\\[1\\\]/[\1](\1.md)/g' | \
-		sed -e 's/\(cxl_[a-z_]*\)\\\[3\\\]/[\1](\1.md)/g' | \
+		sed -e 's/\(daxctl[a-z-]*\)\\\[1\\\]/[\1](\1)/g' | \
+		sed -e 's/\(cxl[a-z-]*\)\\\[1\\\]/[\1](\1)/g' | \
+		sed -e 's/\(cxl_[a-z_]*\)\\\[3\\\]/[\1](\1)/g' | \
 		sed -e 's/^\([-]\{1,2\}.*\)  $/`\1`  /g' | \
 		sed -e 's/^&lt;/`</g' -e 's/&gt;  $/>`  /g' \
 			>> $out
@@ -119,89 +83,109 @@ man_to_md()
 	# and 3 useless. Keep markdown_gfm for now until our hand is forced
 }
 
-pwd
-mkdir -p md
-for file in $ndir/Documentation/ndctl/*.txt; do
-	test -f "$file" || continue
-	man_to_md $file
-done
-for file in $ndir/Documentation/daxctl/*.txt; do
-	test -f "$file" || continue
-	man_to_md $file
-done
-for file in $ndir/Documentation/cxl/*.txt; do
-	test -f "$file" || continue
-	man_to_md $file
-done
-for file in $ndir/Documentation/cxl/lib/*.txt; do
-	test -f "$file" || continue
-	man_to_md $file
-done
+build_index()
+{
+	name="$1"
+
+	pushd "$name" > /dev/null
+
+	release_url="$ndc_url/releases/tag/$build_ver"
+	tree_url="$ndc_url/tree/$build_ver"
+
+	cat <<- EOF > index.md
+		---
+		title: $name
+		layout: home
+		---
+		[View the Project on GitHub]($ndc_url)  
+		**Generated from [$build_tag]($release_url) [[tree]]($tree_url)**  
+
+		---
+
+		* [$name]($name)
+	EOF
+
+	for file in ./"$name"-*.md; do
+		test -f "$file" || continue
+		file=$(basename $file)
+		printf "* [${file%%.*}](${file%%.*})\n" >> index.md
+	done
+	if [[ $name == "lib"* ]]; then
+		lib_prefix=${name##lib}
+		for file in ./"$lib_prefix"_*.md; do
+			test -f "$file" || continue
+			file=$(basename $file)
+			printf "* [${file%%.*}](${file%%.*})\n" >> index.md
+		done
+	fi
+	popd > /dev/null
+}
+
+generate_man_subdirs()
+{
+	local name="$1"
+
+	pushd "$wdir" >/dev/null
+
+	if [[ $name == "lib"* ]]; then
+		path="$ndir/Documentation/${name##lib}/lib"
+	else
+		path="$ndir/Documentation/$name"
+	fi
+
+	for file in $path/*.txt; do
+		test -f "$file" || continue
+		man_to_md $file
+	done
+	popd >/dev/null
+
+	test -d "$name" && rm -rf "$name"
+	mkdir -p "$name"
+	mv $wdir/md/*.md $name
+
+	build_index $name
+}
+
+wdir="docs-build"
+ndir="ndctl"
+bdir="$ndir/build"
+tree="$wdir/$ndir"
+ndc_url="https://github.com/pmem/ndctl"
+deftree="$ndc_url.git"
+
+test -d "$wdir" && rm -rf "$wdir"
+mkdir -p "$wdir"
+pushd "$wdir" >/dev/null
+
+loc="$1"
+test -z "$loc" && usage
+
+# parse 'loc' and populate $tree
+build_type=""
+if git ls-remote -q --exit-code "$deftree" "$loc"; then
+	git clone -q --branch="$loc" --depth=1 "$deftree" "$ndir"
+	build_type="ndctl"
+else
+	git clone "$loc"
+	build_type="local-build"
+fi
+
+# make sure tree appears to be valid
+pushd "$ndir" >/dev/null
+test -d "Documentation/ndctl" || badtree
+test -d "Documentation/daxctl" || badtree
+test -d "Documentation/cxl" || badtree
+
+build_tree
+popd >/dev/null
 popd >/dev/null
 
-cp $wdir/md/*.md .
+generate_man_subdirs ndctl
+generate_man_subdirs daxctl
+generate_man_subdirs cxl
+generate_man_subdirs libcxl
 
-# generate index
-rm -f index.md
-
-cat <<- EOF > index.md
-	---
-	title: ndctl
-	layout: pmdk
-	---
-	[View the Project on GitHub](https://github.com/pmem/ndctl)  
-	**Generated from [$build_tag](https://github.com/pmem/ndctl/releases/tag/$build_ver) [[tree]](https://github.com/pmem/ndctl/tree/$build_ver)**  
-
-	---
-
-	#### ndctl man pages
-	* [ndctl](ndctl.md)
-EOF
-
-for file in ./ndctl-*.md; do
-	test -f "$file" || continue
-	file=$(basename $file)
-	printf "* [${file%%.*}](${file})\n" >> index.md
-done
-
-cat <<- EOF >> index.md
-
-	---
-	#### daxctl man pages
-	* [daxctl](daxctl.md)
-EOF
-
-for file in ./daxctl-*.md; do
-	test -f "$file" || continue
-	file=$(basename $file)
-	printf "* [${file%%.*}](${file})\n" >> index.md
-done
-
-cat <<- EOF >> index.md
-
-	---
-	#### cxl-cli man pages
-	* [cxl](cxl.md)
-EOF
-
-for file in ./cxl-*.md; do
-	test -f "$file" || continue
-	file=$(basename $file)
-	printf "* [${file%%.*}](${file})\n" >> index.md
-done
-
-cat <<- EOF >> index.md
-
-	---
-	#### libcxl man pages
-	* [libcxl](libcxl.md)
-EOF
-
-for file in ./cxl_*.md; do
-	test -f "$file" || continue
-	file=$(basename $file)
-	printf "* [${file%%.*}](${file})\n" >> index.md
-done
+rm -rf "$wdir"
 
 cat <<- EOF
 
