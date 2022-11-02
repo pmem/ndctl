@@ -110,7 +110,7 @@ may appear in the topology that were not previously enumerable.
 
 NOTE: cxl_memdev_disable_invalidate() will force disable the memdev
 regardless of whether the memory provided by the device is in active use
-by the operating system. Callers take responisbility for assuring that
+by the operating system. Callers take responsibility for assuring that
 it is safe to disable the memory device. Otherwise, this call can be as
 destructive as ripping a DIMM out of a running system. Like all other
 libcxl calls that mutate the system state or divulge security sensitive
@@ -328,7 +328,7 @@ const char *cxl_dport_get_physical_node(struct cxl_dport *dport);
 int cxl_dport_get_id(struct cxl_dport *dport);
 bool cxl_dport_maps_memdev(struct cxl_dport *dport, struct cxl_memdev *memdev);
 ----
-The id of a dport is the hardware idenfifier used by an upstream port to
+The id of a dport is the hardware identifier used by an upstream port to
 reference a downstream port. The physical node of a dport is only
 available for platform firmware defined downstream ports and alias the
 companion object, like a PCI host bridge, in the PCI device hierarchy.
