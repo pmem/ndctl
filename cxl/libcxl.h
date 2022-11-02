@@ -48,6 +48,14 @@ struct cxl_ctx *cxl_memdev_get_ctx(struct cxl_memdev *memdev);
 unsigned long long cxl_memdev_get_pmem_size(struct cxl_memdev *memdev);
 unsigned long long cxl_memdev_get_ram_size(struct cxl_memdev *memdev);
 const char *cxl_memdev_get_firmware_verison(struct cxl_memdev *memdev);
+
+/* ABI spelling mistakes are forever */
+static inline const char *cxl_memdev_get_firmware_version(
+		struct cxl_memdev *memdev)
+{
+	return cxl_memdev_get_firmware_verison(memdev);
+}
+
 size_t cxl_memdev_get_label_size(struct cxl_memdev *memdev);
 int cxl_memdev_disable_invalidate(struct cxl_memdev *memdev);
 int cxl_memdev_enable(struct cxl_memdev *memdev);
