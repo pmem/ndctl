@@ -334,7 +334,7 @@ NDCTL_EXPORT int ndctl_new(struct ndctl_ctx **ctx)
 		char *end;
 
 		tmo = strtoul(env, &end, 0);
-		if (tmo < ULONG_MAX && !end)
+		if (tmo < ULONG_MAX && !*end)
 			c->timeout = tmo;
 		dbg(c, "timeout = %ld\n", tmo);
 	}
