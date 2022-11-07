@@ -686,6 +686,8 @@ static unsigned long params_to_flags(struct cxl_filter_params *param)
 		flags |= UTIL_JSON_TARGETS;
 	if (param->partition)
 		flags |= UTIL_JSON_PARTITION;
+	if (param->alert_config)
+		flags |= UTIL_JSON_ALERT_CONFIG;
 	return flags;
 }
 
