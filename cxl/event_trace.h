@@ -20,5 +20,8 @@ struct event_ctx {
 };
 
 int cxl_parse_events(struct tracefs_instance *inst, struct event_ctx *ectx);
+int cxl_event_tracing_enable(struct tracefs_instance *inst, const char *system,
+		const char *event);
+int cxl_event_tracing_disable(struct tracefs_instance *inst);
 
 #endif

@@ -228,3 +228,24 @@ int cxl_parse_events(struct tracefs_instance *inst, struct event_ctx *ectx)
 	tep_free(tep);
 	return rc;
 }
+
+int cxl_event_tracing_enable(struct tracefs_instance *inst, const char *system,
+		const char *event)
+{
+	int rc;
+
+	rc = tracefs_event_enable(inst, system, event);
+	if (rc == -1)
+		return -errno;
+
+	if (tracefs_trace_is_on(inst))
+		return 0;
+
+	tracefs_trace_on(inst);
+	return 0;
+}
+
+int cxl_event_tracing_disable(struct tracefs_instance *inst)
+{
+	return tracefs_trace_off(inst);
+}
