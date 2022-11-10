@@ -45,6 +45,7 @@ cxl_manpages = [
   'cxl-disable-region.txt',
   'cxl-enable-region.txt',
   'cxl-destroy-region.txt',
+  'cxl-monitor.txt',
 ]
 
 foreach man : cxl_manpages
