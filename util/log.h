@@ -14,9 +14,15 @@ struct log_ctx {
 	log_fn log_fn;
 	const char *owner;
 	int log_priority;
+	FILE *log_file;
 };
 
-
+void log_syslog(struct log_ctx *ctx, int priority, const char *file, int line,
+		const char *fn, const char *format, va_list args);
+void log_standard(struct log_ctx *ctx, int priority, const char *file, int line,
+		  const char *fn, const char *format, va_list args);
+void log_file(struct log_ctx *ctx, int priority, const char *file, int line,
+	      const char *fn, const char *format, va_list args);
 void do_log(struct log_ctx *ctx, int priority, const char *file, int line,
 		const char *fn, const char *format, ...)
 	__attribute__((format(printf, 6, 7)));

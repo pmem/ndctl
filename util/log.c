@@ -2,10 +2,44 @@
 // Copyright (C) 2016-2020, Intel Corporation. All rights reserved.
 #include <syslog.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <ctype.h>
 #include <string.h>
 #include <errno.h>
+#include <time.h>
 #include <util/log.h>
+
+void log_syslog(struct log_ctx *ctx, int priority, const char *file, int line,
+		const char *fn, const char *format, va_list args)
+{
+	vsyslog(priority, format, args);
+}
+
+void log_standard(struct log_ctx *ctx, int priority, const char *file, int line,
+		  const char *fn, const char *format, va_list args)
+{
+	if (priority == 6)
+		vfprintf(stdout, format, args);
+	else
+		vfprintf(stderr, format, args);
+}
+
+void log_file(struct log_ctx *ctx, int priority, const char *file, int line,
+	      const char *fn, const char *format, va_list args)
+{
+	FILE *f = ctx->log_file;
+
+	if (priority != LOG_NOTICE) {
+		struct timespec ts;
+
+		clock_gettime(CLOCK_REALTIME, &ts);
+		fprintf(f, "[%10ld.%09ld] [%d] ", ts.tv_sec, ts.tv_nsec,
+			getpid());
+	}
+
+	vfprintf(f, format, args);
+	fflush(f);
+}
 
 void do_log(struct log_ctx *ctx, int priority, const char *file,
 		int line, const char *fn, const char *format, ...)
