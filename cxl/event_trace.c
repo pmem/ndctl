@@ -9,6 +9,7 @@
 #include <ccan/list/list.h>
 #include <uuid/uuid.h>
 #include <traceevent/event-parse.h>
+#include <tracefs/tracefs.h>
 #include "event_trace.h"
 
 #define _GNU_SOURCE
@@ -189,5 +190,41 @@ err_jevent:
 	json_object_put(jevent);
 err_jnode:
 	free(jnode);
+	return rc;
+}
+
+static int cxl_event_parse(struct tep_event *event, struct tep_record *record,
+			   int cpu, void *ctx)
+{
+	struct event_ctx *event_ctx = (struct event_ctx *)ctx;
+
+	/* Filter out all the events that the caller isn't interested in. */
+	if (strcmp(event->system, event_ctx->system) != 0)
+		return 0;
+
+	if (event_ctx->event_name) {
+		if (strcmp(event->name, event_ctx->event_name) != 0)
+			return 0;
+	}
+
+	if (event_ctx->parse_event)
+		return event_ctx->parse_event(event, record,
+					      &event_ctx->jlist_head);
+
+	return cxl_event_to_json(event, record, &event_ctx->jlist_head);
+}
+
+int cxl_parse_events(struct tracefs_instance *inst, struct event_ctx *ectx)
+{
+	struct tep_handle *tep;
+	int rc;
+
+	tep = tracefs_local_events(NULL);
+	if (!tep)
+		return -ENOMEM;
+
+	rc = tracefs_iterate_raw_events(tep, inst, NULL, 0, cxl_event_parse,
+					ectx);
+	tep_free(tep);
 	return rc;
 }

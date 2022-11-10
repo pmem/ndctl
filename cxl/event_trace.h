@@ -11,4 +11,14 @@ struct jlist_node {
 	struct list_node list;
 };
 
+struct event_ctx {
+	const char *system;
+	struct list_head jlist_head;
+	const char *event_name; /* optional */
+	int (*parse_event)(struct tep_event *event, struct tep_record *record,
+			   struct list_head *jlist_head); /* optional */
+};
+
+int cxl_parse_events(struct tracefs_instance *inst, struct event_ctx *ectx);
+
 #endif
