@@ -43,6 +43,9 @@ setup_keys()
 		backup_handle=1
 	fi
 
+	# Make sure there is a session and a user keyring linked into it
+	keyctl new_session
+	keyctl link @u @s
 	dd if=/dev/urandom bs=1 count=32 2>/dev/null | keyctl padd user "$masterkey" @u
 	keyctl pipe "$(keyctl search @u user $masterkey)" > "$masterpath"
 }
