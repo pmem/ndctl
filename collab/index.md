@@ -12,6 +12,67 @@ layout: page
 * Do use IRC as a supplement for this sync meeting
   * `#cxl` on `irc.oftc.net`
 
+## November 2022
+
+# Agenda 11/29
+* Opens:
+  * FSDAX ->notify_failure() regression work still pending
+  * Others?
+* Fixes merged for v6.1-rc4
+* v6.2 merge window status
+* Post v6.2 Features
+
+# v6.1-rc4 Fixes
+
+[https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tag/?h=v6.1-rc4](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tag/?h=v6.1-rc4)
+
+Merged:
+
+* Mailbox input payload fix
+* Decoder commit crash
+* LSA payload handling fix
+* CFMWS NUMA Node setup
+* Fix switch attached to single-port host-bridge
+* BUG in create-region when no more intermediate port decoders available
+* Fix region object memory leak
+* Fix memdev object memory leak
+* cxl_pmem static analysis fix
+
+# v6.2 Merge Window Status
+
+Merged:
+* Cache invalidation for region physical invalidation scenarios
+* DOE kernel/user access collision detection
+* RCH preparation patches
+
+In the queue (has review):
+* RCH Support (including DVSEC Range Register enumeration)
+* Security commands (including background commands)
+* CXL Events to Linux Trace Events (including interrupts)
+* RAS Capability Tracing on RCH and VH AER events
+
+In the queue (needs review):
+* Forward and reverse address translation (DPA <==> HPA)
+* cxl_pmem_wq removal
+* EFI CPER record parsing for CXL error records
+
+At risk:
+* Volatile Region Discovery
+* Volatile Region Provisioning
+* CXL perf monitoring
+
+# Post v6.2 Features
+* Standalone CXL IDE
+  * PCIE SPDM pre-requisite
+* Dynamic Capacity Device support
+  * Sparse DAX Region infrastructure
+  * DCD event plumbing
+* Maintenance Feature Support (DRAM PPR)
+* Switch mailbox CCI
+  * Multi-head device mailbox tunneling
+* Default "Soft Reserved" (EFI_MEMORY_SP) handling policy (cxl-cli + daxctl)
+
+
 ## October 2022
 
 # Agenda 10/25
