@@ -52,24 +52,29 @@ In the queue (has review):
 * RAS Capability Tracing on RCH and VH AER events
 
 In the queue (needs review):
+* XOR Interleave Math support
 * Forward and reverse address translation (DPA <==> HPA)
+* Poison retrieval
 * cxl_pmem_wq removal
 * EFI CPER record parsing for CXL error records
 
 At risk:
 * Volatile Region Discovery
 * Volatile Region Provisioning
+  * CDAT + QTG _DSM integration
+* Poison inject and clear
 * CXL perf monitoring
 
 # Post v6.2 Features
-* Standalone CXL IDE
-  * PCIE SPDM pre-requisite
+* MLD Mailbox support for DCD event injection
 * Dynamic Capacity Device support
   * Sparse DAX Region infrastructure
   * DCD event plumbing
-* Maintenance Feature Support (DRAM PPR)
 * Switch mailbox CCI
   * Multi-head device mailbox tunneling
+* Standalone CXL IDE
+  * PCIE SPDM pre-requisite
+* Maintenance Feature Support (DRAM PPR)
 * Default "Soft Reserved" (EFI_MEMORY_SP) handling policy (cxl-cli + daxctl)
 
 
