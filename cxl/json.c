@@ -185,6 +185,185 @@ err_jobj:
 	return NULL;
 }
 
+static struct json_object *
+util_cxl_memdev_alert_config_to_json(struct cxl_memdev *memdev,
+				     unsigned long flags)
+{
+	struct json_object *jalert_config;
+	struct json_object *jobj;
+	struct cxl_cmd *cmd;
+	int rc;
+
+	jalert_config = json_object_new_object();
+	if (!jalert_config)
+		return NULL;
+	if (!memdev)
+		goto err_jobj;
+
+	cmd = cxl_cmd_new_get_alert_config(memdev);
+	if (!cmd)
+		goto err_jobj;
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0)
+		goto err_cmd;
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0)
+		goto err_cmd;
+
+	rc = cxl_cmd_alert_config_life_used_prog_warn_threshold_valid(cmd);
+	jobj = json_object_new_boolean(rc);
+	if (jobj)
+		json_object_object_add(jalert_config,
+				       "life_used_prog_warn_threshold_valid",
+				       jobj);
+
+	rc = cxl_cmd_alert_config_dev_over_temperature_prog_warn_threshold_valid(
+		cmd);
+	jobj = json_object_new_boolean(rc);
+	if (jobj)
+		json_object_object_add(
+			jalert_config,
+			"dev_over_temperature_prog_warn_threshold_valid", jobj);
+
+	rc = cxl_cmd_alert_config_dev_under_temperature_prog_warn_threshold_valid(
+		cmd);
+	jobj = json_object_new_boolean(rc);
+	if (jobj)
+		json_object_object_add(
+			jalert_config,
+			"dev_under_temperature_prog_warn_threshold_valid",
+			jobj);
+
+	rc = cxl_cmd_alert_config_corrected_volatile_mem_err_prog_warn_threshold_valid(
+		cmd);
+	jobj = json_object_new_boolean(rc);
+	if (jobj)
+		json_object_object_add(
+			jalert_config,
+			"corrected_volatile_mem_err_prog_warn_threshold_valid",
+			jobj);
+
+	rc = cxl_cmd_alert_config_corrected_pmem_err_prog_warn_threshold_valid(
+		cmd);
+	jobj = json_object_new_boolean(rc);
+	if (jobj)
+		json_object_object_add(
+			jalert_config,
+			"corrected_pmem_err_prog_warn_threshold_valid",
+			jobj);
+
+	rc = cxl_cmd_alert_config_life_used_prog_warn_threshold_writable(cmd);
+	jobj = json_object_new_boolean(rc);
+	if (jobj)
+		json_object_object_add(jalert_config,
+			"life_used_prog_warn_threshold_writable",
+		  jobj);
+
+	rc = cxl_cmd_alert_config_dev_over_temperature_prog_warn_threshold_writable(
+		cmd);
+	jobj = json_object_new_boolean(rc);
+	if (jobj)
+		json_object_object_add(
+			jalert_config,
+			"dev_over_temperature_prog_warn_threshold_writable",
+			jobj);
+
+	rc = cxl_cmd_alert_config_dev_under_temperature_prog_warn_threshold_writable(
+		cmd);
+	jobj = json_object_new_boolean(rc);
+	if (jobj)
+		json_object_object_add(
+			jalert_config,
+			"dev_under_temperature_prog_warn_threshold_writable",
+			jobj);
+
+	rc = cxl_cmd_alert_config_corrected_volatile_mem_err_prog_warn_threshold_writable(
+		cmd);
+	jobj = json_object_new_boolean(rc);
+	if (jobj)
+		json_object_object_add(
+			jalert_config,
+			"corrected_volatile_mem_err_prog_warn_threshold_writable",
+			jobj);
+
+	rc = cxl_cmd_alert_config_corrected_pmem_err_prog_warn_threshold_writable(
+		cmd);
+	jobj = json_object_new_boolean(rc);
+	if (jobj)
+		json_object_object_add(
+			jalert_config,
+			"corrected_pmem_err_prog_warn_threshold_writable", jobj);
+
+	rc = cxl_cmd_alert_config_get_life_used_crit_alert_threshold(cmd);
+	jobj = json_object_new_int(rc);
+	if (jobj)
+		json_object_object_add(jalert_config,
+				       "life_used_crit_alert_threshold", jobj);
+
+	rc = cxl_cmd_alert_config_get_life_used_prog_warn_threshold(cmd);
+	jobj = json_object_new_int(rc);
+	if (jobj)
+		json_object_object_add(jalert_config,
+				       "life_used_prog_warn_threshold", jobj);
+
+	rc = cxl_cmd_alert_config_get_dev_over_temperature_crit_alert_threshold(
+		cmd);
+	jobj = json_object_new_int(rc);
+	if (jobj)
+		json_object_object_add(
+			jalert_config,
+			"dev_over_temperature_crit_alert_threshold", jobj);
+
+	rc = cxl_cmd_alert_config_get_dev_under_temperature_crit_alert_threshold(
+		cmd);
+	jobj = json_object_new_int(rc);
+	if (jobj)
+		json_object_object_add(
+			jalert_config,
+			"dev_under_temperature_crit_alert_threshold", jobj);
+
+	rc = cxl_cmd_alert_config_get_dev_over_temperature_prog_warn_threshold(
+		cmd);
+	jobj = json_object_new_int(rc);
+	if (jobj)
+		json_object_object_add(
+			jalert_config,
+			"dev_over_temperature_prog_warn_threshold", jobj);
+
+	rc = cxl_cmd_alert_config_get_dev_under_temperature_prog_warn_threshold(
+		cmd);
+	jobj = json_object_new_int(rc);
+	if (jobj)
+		json_object_object_add(
+			jalert_config,
+			"dev_under_temperature_prog_warn_threshold", jobj);
+
+	rc = cxl_cmd_alert_config_get_corrected_volatile_mem_err_prog_warn_threshold(
+		cmd);
+	jobj = json_object_new_int(rc);
+	if (jobj)
+		json_object_object_add(
+			jalert_config,
+			"corrected_volatile_mem_err_prog_warn_threshold", jobj);
+
+	rc = cxl_cmd_alert_config_get_corrected_pmem_err_prog_warn_threshold(
+		cmd);
+	jobj = json_object_new_int(rc);
+	if (jobj)
+		json_object_object_add(jalert_config,
+		"corrected_pmem_err_prog_warn_threshold", jobj);
+
+	cxl_cmd_unref(cmd);
+	return jalert_config;
+
+err_cmd:
+	cxl_cmd_unref(cmd);
+err_jobj:
+	json_object_put(jalert_config);
+	return NULL;
+}
+
 /*
  * Present complete view of memdev partition by presenting fields from
  * both GET_PARTITION_INFO and IDENTIFY mailbox commands.
@@ -328,6 +507,12 @@ struct json_object *util_cxl_memdev_to_json(struct cxl_memdev *memdev,
 		jobj = util_cxl_memdev_health_to_json(memdev, flags);
 		if (jobj)
 			json_object_object_add(jdev, "health", jobj);
+	}
+
+	if (flags & UTIL_JSON_ALERT_CONFIG) {
+		jobj = util_cxl_memdev_alert_config_to_json(memdev, flags);
+		if (jobj)
+			json_object_object_add(jdev, "alert_config", jobj);
 	}
 
 	serial = cxl_memdev_get_serial(memdev);

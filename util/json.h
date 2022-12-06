@@ -20,6 +20,7 @@ enum util_json_flags {
 	UTIL_JSON_HEALTH	= (1 << 10),
 	UTIL_JSON_TARGETS	= (1 << 11),
 	UTIL_JSON_PARTITION	= (1 << 12),
+	UTIL_JSON_ALERT_CONFIG	= (1 << 13),
 };
 
 void util_display_json_array(FILE *f_out, struct json_object *jarray,

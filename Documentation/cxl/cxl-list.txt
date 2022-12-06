@@ -219,6 +219,39 @@ OPTIONS
   }
 ]
 ----
+-A::
+--alert-config::
+	Include alert configuration in the memdev listing. Example listing:
+----
+# cxl list -m mem0 -A
+[
+  {
+    "memdev":"mem0",
+    "pmem_size":0,
+    "ram_size":273535729664,
+    "alert_config":{
+      "life_used_prog_warn_threshold_valid":false,
+      "dev_over_temperature_prog_warn_threshold_valid":false,
+      "dev_under_temperature_prog_warn_threshold_valid":false,
+      "corrected_volatile_mem_err_prog_warn_threshold_valid":true,
+      "corrected_pmem_err_prog_warn_threshold_valid":false,
+      "life_used_prog_warn_threshold_writable":false,
+      "dev_over_temperature_prog_warn_threshold_writable":false,
+      "dev_under_temperature_prog_warn_threshold_writable":false,
+      "corrected_volatile_mem_err_prog_warn_threshold_writable":true,
+      "corrected_pmem_err_prog_warn_threshold_writable":false,
+      "life_used_crit_alert_threshold":0,
+      "life_used_prog_warn_threshold":0,
+      "dev_over_temperature_crit_alert_threshold":0,
+      "dev_under_temperature_crit_alert_threshold":0,
+      "dev_over_temperature_prog_warn_threshold":0,
+      "dev_under_temperature_prog_warn_threshold":0,
+      "corrected_volatile_mem_err_prog_warn_threshold":0,
+      "corrected_pmem_err_prog_warn_threshold":0
+    },
+  }
+]
+----
 
 -B::
 --buses::
