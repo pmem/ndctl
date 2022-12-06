@@ -89,6 +89,7 @@ env = find_program('env')
 if git.found()
   run_command('clean_config.sh',
     env : 'GIT_DIR=@0@/.git'.format(project_source_root),
+    check : false,
   )
 endif
 
