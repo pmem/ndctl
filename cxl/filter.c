@@ -672,25 +672,6 @@ util_cxl_decoder_filter_by_region(struct cxl_decoder *decoder,
 	return decoder;
 }
 
-static unsigned long params_to_flags(struct cxl_filter_params *param)
-{
-	unsigned long flags = 0;
-
-	if (param->idle)
-		flags |= UTIL_JSON_IDLE;
-	if (param->human)
-		flags |= UTIL_JSON_HUMAN;
-	if (param->health)
-		flags |= UTIL_JSON_HEALTH;
-	if (param->targets)
-		flags |= UTIL_JSON_TARGETS;
-	if (param->partition)
-		flags |= UTIL_JSON_PARTITION;
-	if (param->alert_config)
-		flags |= UTIL_JSON_ALERT_CONFIG;
-	return flags;
-}
-
 static void splice_array(struct cxl_filter_params *p, struct json_object *jobjs,
 			 struct json_object *platform,
 			 const char *container_name, bool do_container)
@@ -1029,11 +1010,12 @@ walk_children:
 	}
 }
 
-int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *p)
+struct json_object *cxl_filter_walk(struct cxl_ctx *ctx,
+				    struct cxl_filter_params *p)
 {
 	struct json_object *jdevs = NULL, *jbuses = NULL, *jports = NULL;
 	struct json_object *jplatform = json_object_new_array();
-	unsigned long flags = params_to_flags(p);
+	unsigned long flags = cxl_filter_to_flags(p);
 	struct json_object *jportdecoders = NULL;
 	struct json_object *jbusdecoders = NULL;
 	struct json_object *jepdecoders = NULL;
@@ -1046,7 +1028,7 @@ int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *p)
 
 	if (!jplatform) {
 		dbg(p, "platform object allocation failure\n");
-		return -ENOMEM;
+		return NULL;
 	}
 
 	janondevs = json_object_new_array();
@@ -1234,9 +1216,7 @@ walk_children:
 		     top_level_objs > 1);
 	splice_array(p, jregions, jplatform, "regions", top_level_objs > 1);
 
-	util_display_json_array(stdout, jplatform, flags);
-
-	return 0;
+	return jplatform;
 err:
 	json_object_put(janondevs);
 	json_object_put(jbuses);
@@ -1248,5 +1228,5 @@ err:
 	json_object_put(jepdecoders);
 	json_object_put(jregions);
 	json_object_put(jplatform);
-	return -ENOMEM;
+	return NULL;
 }
