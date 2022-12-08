@@ -21,24 +21,25 @@
 static struct region_params {
 	const char *bus;
 	const char *size;
-	const char *granularity;
 	const char *type;
 	const char *root_decoder;
 	const char *region;
 	int ways;
+	int granularity;
 	bool memdevs;
 	bool force;
 	bool human;
 	bool debug;
 } param = {
 	.ways = INT_MAX,
+	.granularity = INT_MAX,
 };
 
 struct parsed_params {
 	u64 size;
 	u64 ep_min_size;
 	int ways;
-	unsigned int granularity;
+	int granularity;
 	const char **targets;
 	int num_targets;
 	struct cxl_decoder *root_decoder;
@@ -67,9 +68,8 @@ OPT_STRING('s', "size", &param.size, \
 	   "total size desired for the resulting region."), \
 OPT_INTEGER('w', "ways", &param.ways, \
 	    "number of memdevs participating in the regions interleave set"), \
-OPT_STRING('g', "granularity", \
-	   &param.granularity, "interleave granularity", \
-	   "granularity of the interleave set"), \
+OPT_INTEGER('g', "granularity", &param.granularity,  \
+	    "granularity of the interleave set"), \
 OPT_STRING('t', "type", &param.type, \
 	   "region type", "region type - 'pmem' or 'ram'"), \
 OPT_BOOLEAN('m', "memdevs", &param.memdevs, \
@@ -140,17 +140,14 @@ static int parse_create_options(int argc, const char **argv,
 		return -EINVAL;
 	}
 
-	if (param.granularity) {
-		unsigned long granularity = strtoul(param.granularity, NULL, 0);
-
-		if (granularity == ULONG_MAX || (int)granularity <= 0) {
-			log_err(&rl, "Invalid interleave granularity: %s\n",
+	if (param.granularity < INT_MAX) {
+		if (param.granularity <= 0) {
+			log_err(&rl, "Invalid interleave granularity: %d\n",
 				param.granularity);
 			return -EINVAL;
 		}
-		p->granularity = granularity;
+		p->granularity = param.granularity;
 	}
-
 
 	if (argc > p->ways) {
 		for (i = p->ways; i < argc; i++)
@@ -390,12 +387,11 @@ static int cxl_region_determine_granularity(struct cxl_region *region,
 					    struct parsed_params *p)
 {
 	const char *devname = cxl_region_get_devname(region);
-	unsigned int granularity;
-	int ways;
+	int granularity, ways;
 
 	/* Default granularity will be the root decoder's granularity */
 	granularity = cxl_decoder_get_interleave_granularity(p->root_decoder);
-	if (granularity == 0 || granularity == UINT_MAX) {
+	if (granularity == 0 || granularity == -1) {
 		log_err(&rl, "%s: unable to determine root decoder granularity\n",
 			devname);
 		return -ENXIO;
