@@ -21,21 +21,23 @@
 static struct region_params {
 	const char *bus;
 	const char *size;
-	const char *ways;
 	const char *granularity;
 	const char *type;
 	const char *root_decoder;
 	const char *region;
+	int ways;
 	bool memdevs;
 	bool force;
 	bool human;
 	bool debug;
-} param;
+} param = {
+	.ways = INT_MAX,
+};
 
 struct parsed_params {
 	u64 size;
 	u64 ep_min_size;
-	unsigned int ways;
+	int ways;
 	unsigned int granularity;
 	const char **targets;
 	int num_targets;
@@ -63,9 +65,8 @@ OPT_BOOLEAN(0, "debug", &param.debug, "turn on debug")
 OPT_STRING('s', "size", &param.size, \
 	   "size in bytes or with a K/M/G etc. suffix", \
 	   "total size desired for the resulting region."), \
-OPT_STRING('w', "ways", &param.ways, \
-	   "number of interleave ways", \
-	   "number of memdevs participating in the regions interleave set"), \
+OPT_INTEGER('w', "ways", &param.ways, \
+	    "number of memdevs participating in the regions interleave set"), \
 OPT_STRING('g', "granularity", \
 	   &param.granularity, "interleave granularity", \
 	   "granularity of the interleave set"), \
@@ -126,15 +127,11 @@ static int parse_create_options(int argc, const char **argv,
 		}
 	}
 
-	if (param.ways) {
-		unsigned long ways = strtoul(param.ways, NULL, 0);
-
-		if (ways == ULONG_MAX || (int)ways <= 0) {
-			log_err(&rl, "Invalid interleave ways: %s\n",
-				param.ways);
-			return -EINVAL;
-		}
-		p->ways = ways;
+	if (param.ways <= 0) {
+		log_err(&rl, "Invalid interleave ways: %d\n", param.ways);
+		return -EINVAL;
+	} else if (param.ways < INT_MAX) {
+		p->ways = param.ways;
 	} else if (argc) {
 		p->ways = argc;
 	} else {
@@ -155,13 +152,13 @@ static int parse_create_options(int argc, const char **argv,
 	}
 
 
-	if (argc > (int)p->ways) {
+	if (argc > p->ways) {
 		for (i = p->ways; i < argc; i++)
 			log_err(&rl, "extra argument: %s\n", p->targets[i]);
 		return -EINVAL;
 	}
 
-	if (argc < (int)p->ways) {
+	if (argc < p->ways) {
 		log_err(&rl,
 			"too few target arguments (%d) for interleave ways (%u)\n",
 			argc, p->ways);
@@ -253,7 +250,7 @@ static bool validate_memdev(struct cxl_memdev *memdev, const char *target,
 
 static int validate_config_memdevs(struct cxl_ctx *ctx, struct parsed_params *p)
 {
-	unsigned int i, matched = 0;
+	int i, matched = 0;
 
 	for (i = 0; i < p->ways; i++) {
 		struct cxl_memdev *memdev;
@@ -393,7 +390,8 @@ static int cxl_region_determine_granularity(struct cxl_region *region,
 					    struct parsed_params *p)
 {
 	const char *devname = cxl_region_get_devname(region);
-	unsigned int granularity, ways;
+	unsigned int granularity;
+	int ways;
 
 	/* Default granularity will be the root decoder's granularity */
 	granularity = cxl_decoder_get_interleave_granularity(p->root_decoder);
@@ -408,7 +406,7 @@ static int cxl_region_determine_granularity(struct cxl_region *region,
 		return granularity;
 
 	ways = cxl_decoder_get_interleave_ways(p->root_decoder);
-	if (ways == 0 || ways == UINT_MAX) {
+	if (ways == 0 || ways == -1) {
 		log_err(&rl, "%s: unable to determine root decoder ways\n",
 			devname);
 		return -ENXIO;
@@ -436,12 +434,11 @@ static int create_region(struct cxl_ctx *ctx, int *count,
 {
 	unsigned long flags = UTIL_JSON_TARGETS;
 	struct json_object *jregion;
-	unsigned int i, granularity;
 	struct cxl_region *region;
+	int i, rc, granularity;
 	u64 size, max_extent;
 	const char *devname;
 	uuid_t uuid;
-	int rc;
 
 	rc = create_region_validate_config(ctx, p);
 	if (rc)
