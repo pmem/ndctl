@@ -550,6 +550,8 @@ struct json_object *util_cxl_memdev_to_json(struct cxl_memdev *memdev,
 		if (jobj)
 			json_object_object_add(jdev, "partition_info", jobj);
 	}
+
+	json_object_set_userdata(jdev, memdev, NULL);
 	return jdev;
 }
 
@@ -608,6 +610,7 @@ void util_cxl_dports_append_json(struct json_object *jport,
 			json_object_object_add(jdport, "id", jobj);
 
 		json_object_array_add(jdports, jdport);
+		json_object_set_userdata(jdport, dport, NULL);
 	}
 
 	json_object_object_add(jport, "dports", jdports);
@@ -631,6 +634,7 @@ struct json_object *util_cxl_bus_to_json(struct cxl_bus *bus,
 	if (jobj)
 		json_object_object_add(jbus, "provider", jobj);
 
+	json_object_set_userdata(jbus, bus, NULL);
 	return jbus;
 }
 
@@ -755,6 +759,7 @@ struct json_object *util_cxl_decoder_to_json(struct cxl_decoder *decoder,
 					       jobj);
 	}
 
+	json_object_set_userdata(jdecoder, decoder, NULL);
 	return jdecoder;
 }
 
@@ -813,6 +818,7 @@ void util_cxl_mappings_append_json(struct json_object *jregion,
 			json_object_object_add(jmapping, "decoder", jobj);
 
 		json_object_array_add(jmappings, jmapping);
+		json_object_set_userdata(jmapping, mapping, NULL);
 	}
 
 	json_object_object_add(jregion, "mappings", jmappings);
@@ -878,6 +884,7 @@ struct json_object *util_cxl_region_to_json(struct cxl_region *region,
 
 	util_cxl_mappings_append_json(jregion, region, flags);
 
+	json_object_set_userdata(jregion, region, NULL);
 	return jregion;
 }
 
@@ -950,6 +957,7 @@ void util_cxl_targets_append_json(struct json_object *jdecoder,
 			json_object_object_add(jtarget, "id", jobj);
 
 		json_object_array_add(jtargets, jtarget);
+		json_object_set_userdata(jtarget, target, NULL);
 	}
 
 	json_object_object_add(jdecoder, "targets", jtargets);
@@ -992,6 +1000,7 @@ static struct json_object *__util_cxl_port_to_json(struct cxl_port *port,
 			json_object_object_add(jport, "state", jobj);
 	}
 
+	json_object_set_userdata(jport, port, NULL);
 	return jport;
 }
 
