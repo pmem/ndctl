@@ -110,6 +110,34 @@ create_subregions()
 	done
 }
 
+create_single()
+{
+	# the 5th cxl_test decoder is expected to target a single-port
+	# host-bridge. Older cxl_test implementations may not define it,
+	# so skip the test in that case.
+	decoder=$($CXL list -b cxl_test -D -d root |
+		  jq -r ".[4] |
+		  select(.pmem_capable == true) |
+		  select(.nr_targets == 1) |
+		  .decoder")
+
+        if [[ ! $decoder ]]; then
+                echo "no single-port host-bridge decoder found, skipping"
+                return
+        fi
+
+	region=$($CXL create-region -d "$decoder" | jq -r ".region")
+	if [[ ! $region ]]; then
+		echo "failed to create single-port host-bridge region"
+		err "$LINENO"
+	fi
+
+	destroy_regions "$region"
+}
+
+# test region creation on devices behind a single-port host-bridge
+create_single
+
 # test reading labels directly through cxl-cli
 readarray -t mems < <("$CXL" list -b cxl_test -M | jq -r '.[].memdev')
 
