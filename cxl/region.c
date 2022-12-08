@@ -269,10 +269,13 @@ static int parse_create_options(struct cxl_ctx *ctx, int count,
 	}
 
 	/*
-	 * For all practical purposes, -m is the default target type, but
-	 * hold off on actively making that decision until a second target
-	 * option is available.
+	 * For all practical purposes, -m is the default target type, but hold
+	 * off on actively making that decision until a second target option is
+	 * available. Unless there are no arguments then just assume memdevs.
 	 */
+	if (!count)
+		param.memdevs = true;
+
 	if (!param.memdevs) {
 		log_err(&rl,
 			"must specify option for target object types (-m)\n");
@@ -314,11 +317,8 @@ static int parse_create_options(struct cxl_ctx *ctx, int count,
 		p->ways = count;
 		if (!validate_ways(p, count))
 			return -EINVAL;
-	} else {
-		log_err(&rl,
-			"couldn't determine interleave ways from options or arguments\n");
-		return -EINVAL;
-	}
+	} else
+		p->ways = p->num_memdevs;
 
 	if (param.granularity < INT_MAX) {
 		if (param.granularity <= 0) {
