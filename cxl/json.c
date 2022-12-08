@@ -484,7 +484,7 @@ struct json_object *util_cxl_memdev_to_json(struct cxl_memdev *memdev,
 {
 	const char *devname = cxl_memdev_get_devname(memdev);
 	struct json_object *jdev, *jobj;
-	unsigned long long serial;
+	unsigned long long serial, size;
 	int numa_node;
 
 	jdev = json_object_new_object();
@@ -495,13 +495,19 @@ struct json_object *util_cxl_memdev_to_json(struct cxl_memdev *memdev,
 	if (jobj)
 		json_object_object_add(jdev, "memdev", jobj);
 
-	jobj = util_json_object_size(cxl_memdev_get_pmem_size(memdev), flags);
-	if (jobj)
-		json_object_object_add(jdev, "pmem_size", jobj);
+	size = cxl_memdev_get_pmem_size(memdev);
+	if (size) {
+		jobj = util_json_object_size(size, flags);
+		if (jobj)
+			json_object_object_add(jdev, "pmem_size", jobj);
+	}
 
-	jobj = util_json_object_size(cxl_memdev_get_ram_size(memdev), flags);
-	if (jobj)
-		json_object_object_add(jdev, "ram_size", jobj);
+	size = cxl_memdev_get_ram_size(memdev);
+	if (size) {
+		jobj = util_json_object_size(size, flags);
+		if (jobj)
+			json_object_object_add(jdev, "ram_size", jobj);
+	}
 
 	if (flags & UTIL_JSON_HEALTH) {
 		jobj = util_cxl_memdev_health_to_json(memdev, flags);
