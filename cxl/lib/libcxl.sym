@@ -248,4 +248,5 @@ global:
 	cxl_region_get_mode;
 	cxl_decoder_create_ram_region;
 	cxl_region_get_daxctl_region;
+	cxl_port_get_parent_dport;
 } LIBCXL_4;

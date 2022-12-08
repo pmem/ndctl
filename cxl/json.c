@@ -1005,6 +1005,14 @@ static struct json_object *__util_cxl_port_to_json(struct cxl_port *port,
 	if (jobj)
 		json_object_object_add(jport, "host", jobj);
 
+	if (cxl_port_get_parent_dport(port)) {
+		struct cxl_dport *dport = cxl_port_get_parent_dport(port);
+
+		jobj = json_object_new_string(cxl_dport_get_devname(dport));
+		if (jobj)
+			json_object_object_add(jport, "parent_dport", jobj);
+	}
+
 	jobj = json_object_new_int(cxl_port_get_depth(port));
 	if (jobj)
 		json_object_object_add(jport, "depth", jobj);
