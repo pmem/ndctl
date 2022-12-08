@@ -45,6 +45,7 @@ struct cxl_dport {
 	size_t buf_len;
 	char *dev_path;
 	char *phys_path;
+	char *fw_path;
 	struct cxl_port *port;
 	struct list_node list;
 };
@@ -93,6 +94,7 @@ struct cxl_target {
 	struct cxl_decoder *decoder;
 	char *dev_path;
 	char *phys_path;
+	char *fw_path;
 	int id, position;
 };
 

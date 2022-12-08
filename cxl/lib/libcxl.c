@@ -77,6 +77,7 @@ static void free_target(struct cxl_target *target, struct list_head *head)
 		list_del_from(head, &target->list);
 	free(target->dev_path);
 	free(target->phys_path);
+	free(target->fw_path);
 	free(target);
 }
 
@@ -134,6 +135,7 @@ static void free_dport(struct cxl_dport *dport, struct list_head *head)
 	free(dport->dev_buf);
 	free(dport->dev_path);
 	free(dport->phys_path);
+	free(dport->fw_path);
 	free(dport);
 }
 
@@ -1856,6 +1858,15 @@ static void *add_cxl_decoder(void *parent, int id, const char *cxldecoder_base)
 		dbg(ctx, "%s: target%ld %s phys_path: %s\n", devname, i,
 		    target->dev_path,
 		    target->phys_path ? target->phys_path : "none");
+
+		sprintf(port->dev_buf, "%s/dport%d/firmware_node", port->dev_path, did);
+		target->fw_path = realpath(port->dev_buf, NULL);
+		dbg(ctx, "%s: target%ld %s fw_path: %s\n", devname, i,
+		    target->dev_path,
+		    target->fw_path ? target->fw_path : "none");
+
+		if (!target->phys_path && target->fw_path)
+			target->phys_path = strdup(target->dev_path);
 		list_add(&decoder->targets, &target->list);
 	}
 
@@ -2288,6 +2299,13 @@ CXL_EXPORT const char *cxl_target_get_physical_node(struct cxl_target *target)
 	return devpath_to_devname(target->phys_path);
 }
 
+CXL_EXPORT const char *cxl_target_get_firmware_node(struct cxl_target *target)
+{
+	if (!target->fw_path)
+		return NULL;
+	return devpath_to_devname(target->fw_path);
+}
+
 CXL_EXPORT struct cxl_target *
 cxl_decoder_get_target_by_memdev(struct cxl_decoder *decoder,
 				 struct cxl_memdev *memdev)
@@ -2569,6 +2587,12 @@ static void *add_cxl_dport(void *parent, int id, const char *cxldport_base)
 	sprintf(dport->dev_buf, "%s/physical_node", cxldport_base);
 	dport->phys_path = realpath(dport->dev_buf, NULL);
 
+	sprintf(dport->dev_buf, "%s/firmware_node", cxldport_base);
+	dport->fw_path = realpath(dport->dev_buf, NULL);
+
+	if (!dport->phys_path && dport->fw_path)
+		dport->phys_path = strdup(dport->dev_path);
+
 	cxl_dport_foreach(port, dport_dup)
 		if (dport_dup->id == dport->id) {
 			free_dport(dport, NULL);
@@ -2627,6 +2651,13 @@ CXL_EXPORT const char *cxl_dport_get_physical_node(struct cxl_dport *dport)
 	if (!dport->phys_path)
 		return NULL;
 	return devpath_to_devname(dport->phys_path);
+}
+
+CXL_EXPORT const char *cxl_dport_get_firmware_node(struct cxl_dport *dport)
+{
+	if (!dport->fw_path)
+		return NULL;
+	return devpath_to_devname(dport->fw_path);
 }
 
 CXL_EXPORT int cxl_dport_get_id(struct cxl_dport *dport)

@@ -569,7 +569,7 @@ void util_cxl_dports_append_json(struct json_object *jport,
 
 	cxl_dport_foreach(port, dport) {
 		struct json_object *jdport;
-		const char *phys_node;
+		const char *phys_node, *fw_node;
 
 		if (!util_cxl_dport_filter_by_memdev(dport, ident, serial))
 			continue;
@@ -585,6 +585,13 @@ void util_cxl_dports_append_json(struct json_object *jport,
 		phys_node = cxl_dport_get_physical_node(dport);
 		if (phys_node) {
 			jobj = json_object_new_string(phys_node);
+			if (jobj)
+				json_object_object_add(jdport, "alias", jobj);
+		}
+
+		fw_node = cxl_dport_get_firmware_node(dport);
+		if (fw_node) {
+			jobj = json_object_new_string(fw_node);
 			if (jobj)
 				json_object_object_add(jdport, "alias", jobj);
 		}
@@ -896,9 +903,9 @@ void util_cxl_targets_append_json(struct json_object *jdecoder,
 		return;
 
 	cxl_target_foreach(decoder, target) {
-		struct json_object *jtarget;
-		const char *phys_node;
 		const char *devname;
+		struct json_object *jtarget;
+		const char *phys_node, *fw_node;
 
 		if (!util_cxl_target_filter_by_memdev(target, ident, serial))
 			continue;
@@ -915,6 +922,13 @@ void util_cxl_targets_append_json(struct json_object *jdecoder,
 		phys_node = cxl_target_get_physical_node(target);
 		if (phys_node) {
 			jobj = json_object_new_string(phys_node);
+			if (jobj)
+				json_object_object_add(jtarget, "alias", jobj);
+		}
+
+		fw_node = cxl_target_get_firmware_node(target);
+		if (fw_node) {
+			jobj = json_object_new_string(fw_node);
 			if (jobj)
 				json_object_object_add(jtarget, "alias", jobj);
 		}

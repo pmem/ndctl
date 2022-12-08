@@ -239,4 +239,6 @@ global:
 	cxl_cmd_alert_config_get_dev_under_temperature_prog_warn_threshold;
 	cxl_cmd_alert_config_get_corrected_volatile_mem_err_prog_warn_threshold;
 	cxl_cmd_alert_config_get_corrected_pmem_err_prog_warn_threshold;
+	cxl_target_get_firmware_node;
+	cxl_dport_get_firmware_node;
 } LIBCXL_3;
