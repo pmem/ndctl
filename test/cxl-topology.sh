@@ -29,27 +29,30 @@ count=$(jq "length" <<< $json)
 root=$(jq -r ".[] | .bus" <<< $json)
 
 
-# validate 2 host bridges under a root port
+# validate 2 or 3 host bridges under a root port
 port_sort="sort_by(.port | .[4:] | tonumber)"
 json=$($CXL list -b cxl_test -BP)
 count=$(jq ".[] | .[\"ports:$root\"] | length" <<< $json)
-((count == 2)) || err "$LINENO"
+((count == 2)) || ((count == 3)) || err "$LINENO"
+bridges=$count
 
 bridge[0]=$(jq -r ".[] | .[\"ports:$root\"] | $port_sort | .[0].port" <<< $json)
 bridge[1]=$(jq -r ".[] | .[\"ports:$root\"] | $port_sort | .[1].port" <<< $json)
+((bridges > 2)) && bridge[2]=$(jq -r ".[] | .[\"ports:$root\"] | $port_sort | .[2].port" <<< $json)
 
+# validate root ports per host bridge
+check_host_bridge()
+{
+	json=$($CXL list -b cxl_test -T -p $1)
+	count=$(jq ".[] | .dports | length" <<< $json)
+	((count == $2)) || err "$3"
+}
 
-# validate 2 root ports per host bridge
-json=$($CXL list -b cxl_test -T -p ${bridge[0]})
-count=$(jq ".[] | .dports | length" <<< $json)
-((count == 2)) || err "$LINENO"
+check_host_bridge ${bridge[0]} 2 $LINENO
+check_host_bridge ${bridge[1]} 2 $LINENO
+((bridges > 2)) && check_host_bridge ${bridge[2]} 1 $LINENO
 
-json=$($CXL list -b cxl_test -T -p ${bridge[1]})
-count=$(jq ".[] | .dports | length" <<< $json)
-((count == 2)) || err "$LINENO"
-
-
-# validate 2 switches per-root port
+# validate 2 switches per root-port
 json=$($CXL list -b cxl_test -P -p ${bridge[0]})
 count=$(jq ".[] | .[\"ports:${bridge[0]}\"] | length" <<< $json)
 ((count == 2)) || err "$LINENO"
@@ -65,9 +68,9 @@ switch[2]=$(jq -r ".[] | .[\"ports:${bridge[1]}\"] | $port_sort | .[0].host" <<<
 switch[3]=$(jq -r ".[] | .[\"ports:${bridge[1]}\"] | $port_sort | .[1].host" <<< $json)
 
 
-# validate the expected properties of the 4 root decoders
-# use the size of the first decoder to determine the cxl_test version /
-# properties
+# validate the expected properties of the 4 or 5 root decoders
+# use the size of the first decoder to determine the
+# cxl_test version / properties
 json=$($CXL list -b cxl_test -D -d root)
 port_id=${root:4}
 port_id_len=${#port_id}
@@ -103,12 +106,19 @@ count=$(jq "[ $decoder_sort | .[3] |
 	select(.nr_targets == 2) ] | length" <<< $json)
 ((count == 1)) || err "$LINENO"
 
+if (( bridges == 3 )); then
+	count=$(jq "[ $decoder_sort | .[4] |
+		select(.pmem_capable == true) |
+		select(.size == $decoder_base_size) |
+		select(.nr_targets == 1) ] | length" <<< $json)
+	((count == 1)) || err "$LINENO"
+fi
 
-# check that all 8 cxl_test memdevs are enabled by default and have a
+# check that all 8 or 10 cxl_test memdevs are enabled by default and have a
 # pmem size of 256M, or 1G
 json=$($CXL list -b cxl_test -M)
 count=$(jq "map(select(.pmem_size == $pmem_size)) | length" <<< $json)
-((count == 8)) || err "$LINENO"
+((bridges == 2 && count == 8 || bridges == 3 && count == 10)) || err "$LINENO"
 
 
 # check that switch ports disappear after all of their memdevs have been
@@ -151,8 +161,8 @@ do
 done
 
 
-# validate host bridge tear down
-for b in ${bridge[@]}
+# validate host bridge tear down for the first 2 bridges
+for b in ${bridge[0]} ${bridge[1]}
 do
 	$CXL disable-port $b -f
 	json=$($CXL list -M -i -p $b)
