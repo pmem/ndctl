@@ -132,3 +132,13 @@ json2var()
 {
 	sed -e "s/[{}\",]//g; s/\[//g; s/\]//g; s/:/=/g"
 }
+
+# check_dmesg
+# $1: line number where this is called
+check_dmesg()
+{
+	# validate no WARN or lockdep report during the run
+	log=$(journalctl -r -k --since "-$((SECONDS+1))s")
+	grep -q "Call Trace" <<< $log && err $1
+	true
+}

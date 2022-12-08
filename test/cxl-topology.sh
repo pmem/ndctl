@@ -169,9 +169,6 @@ done
 # validate that the bus can be disabled without issue
 $CXL disable-bus $root -f
 
-
-# validate no WARN or lockdep report during the run
-log=$(journalctl -r -k --since "-$((SECONDS+1))s")
-grep -q "Call Trace" <<< $log && err "$LINENO"
+check_dmesg "$LINENO"
 
 modprobe -r cxl_test

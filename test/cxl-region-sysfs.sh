@@ -164,8 +164,6 @@ readarray -t endpoint < <($CXL free-dpa -t pmem ${mem[*]} |
 			  jq -r ".[] | .decoder.decoder")
 echo "$region released ${#endpoint[@]} targets: ${endpoint[@]}"
 
-# validate no WARN or lockdep report during the run
-log=$(journalctl -r -k --since "-$((SECONDS+1))s")
-grep -q "Call Trace" <<< $log && err "$LINENO"
+check_dmesg "$LINENO"
 
 modprobe -r cxl_test

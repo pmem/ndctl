@@ -71,6 +71,8 @@ if read sector len < /sys/bus/platform/devices/nfit_test.0/$busdev/$region/badbl
 fi
 [ -n "$sector" ] && echo "fail: $LINENO" && exit 1
 
+check_dmesg "$LINENO"
+
 _cleanup
 
 exit 0

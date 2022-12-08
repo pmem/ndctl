@@ -118,4 +118,6 @@ else
 	run_xfs
 fi
 
+check_dmesg "$LINENO"
+
 exit 0

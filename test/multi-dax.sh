@@ -28,6 +28,8 @@ chardev1=$(echo $json | jq ". | select(.mode == \"devdax\") | .daxregion.devices
 json=$($NDCTL create-namespace -b $NFIT_TEST_BUS0 -r $region -t pmem -m devdax -a $ALIGN_SIZE -s 16M)
 chardev2=$(echo $json | jq ". | select(.mode == \"devdax\") | .daxregion.devices[0].chardev")
 
+check_dmesg "$LINENO"
+
 _cleanup
 
 exit 0
