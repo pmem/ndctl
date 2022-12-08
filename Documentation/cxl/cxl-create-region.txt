@@ -28,7 +28,7 @@ be emitted on stderr.
 EXAMPLE
 -------
 ----
-#cxl create - region - m - d decoder0 .1 - w 2 - g 1024 mem0 mem1
+#cxl create-region -m -d decoder0.1 -w 2 -g 1024 mem0 mem1
 {
   "region":"region0",
   "resource":"0xc90000000",
