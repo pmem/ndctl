@@ -973,7 +973,7 @@ walk_child_ports(struct cxl_port *parent_port, struct cxl_filter_params *p,
 				continue;
 			}
 
-			if (p->memdevs && !p->endpoints) {
+			if (p->memdevs) {
 				jchilddevs = json_object_new_array();
 				if (!jchilddevs) {
 					err(p,
@@ -1153,7 +1153,7 @@ int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *p)
 				}
 			}
 
-			if (p->memdevs && !p->ports && !p->endpoints) {
+			if (p->memdevs) {
 				jchilddevs = json_object_new_array();
 				if (!jchilddevs) {
 					err(p,
@@ -1171,7 +1171,7 @@ int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *p)
 					continue;
 				}
 			}
-			if (p->regions && !p->decoders) {
+			if (p->regions) {
 				jchildregions = json_object_new_array();
 				if (!jchildregions) {
 					err(p,
