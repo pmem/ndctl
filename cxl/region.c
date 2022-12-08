@@ -544,6 +544,7 @@ static int create_region(struct cxl_ctx *ctx, int *count,
 	unsigned long flags = UTIL_JSON_TARGETS;
 	struct json_object *jregion;
 	struct cxl_region *region;
+	bool default_size = true;
 	int i, rc, granularity;
 	u64 size, max_extent;
 	const char *devname;
@@ -555,6 +556,7 @@ static int create_region(struct cxl_ctx *ctx, int *count,
 
 	if (p->size) {
 		size = p->size;
+		default_size = false;
 	} else if (p->ep_min_size) {
 		size = p->ep_min_size * p->ways;
 	} else {
@@ -567,12 +569,15 @@ static int create_region(struct cxl_ctx *ctx, int *count,
 			cxl_decoder_get_devname(p->root_decoder));
 		return -EINVAL;
 	}
-	if (size > max_extent) {
+	if (!default_size && size > max_extent) {
 		log_err(&rl,
 			"%s: region size %#lx exceeds max available space\n",
 			cxl_decoder_get_devname(p->root_decoder), size);
 		return -ENOSPC;
 	}
+
+	if (size > max_extent)
+		size = ALIGN_DOWN(max_extent, SZ_256M * p->ways);
 
 	if (p->mode == CXL_DECODER_MODE_PMEM) {
 		region = cxl_decoder_create_pmem_region(p->root_decoder);
