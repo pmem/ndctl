@@ -171,7 +171,6 @@ tests = [
   [ 'btt-errors.sh',          btt_errors,	  'ndctl' ],
   [ 'hugetlb',                hugetlb,		  'ndctl' ],
   [ 'btt-pad-compat.sh',      btt_pad_compat,	  'ndctl' ],
-  [ 'firmware-update.sh',     firmware_update,	  'ndctl' ],
   [ 'ack-shutdown-count-set', ack_shutdown_count, 'ndctl' ],
   [ 'rescan-partitions.sh',   rescan_partitions,  'ndctl' ],
   [ 'inject-smart.sh',        inject_smart,	  'ndctl' ],
@@ -198,6 +197,7 @@ if get_option('destructive').enabled()
   mmap_test = find_program('mmap.sh')
 
   tests += [
+    [ 'firmware-update.sh',     firmware_update,	  'ndctl' ],
     [ 'pmem-ns',           pmem_ns,	   'ndctl' ],
     [ 'sub-section.sh',    sub_section,	   'dax'   ],
     [ 'dax-dev',           dax_dev,	   'dax'   ],
