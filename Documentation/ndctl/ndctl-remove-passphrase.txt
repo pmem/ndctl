@@ -33,6 +33,11 @@ include::xable-bus-options.txt[]
 --verbose::
         Emit debug messages.
 
+-m::
+--master-passphrase::
+	Indicates that we are managing the master passphrase instead of the
+	user passphrase.
+
 include::intel-nvdimm-security.txt[]
 
 include::../copyright.txt[]

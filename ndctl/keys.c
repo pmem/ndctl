@@ -589,11 +589,11 @@ static int run_key_op(struct ndctl_dimm *dimm,
 	return 0;
 }
 
-static int discard_key(struct ndctl_dimm *dimm)
+static int discard_key(struct ndctl_dimm *dimm, enum ndctl_key_type key_type)
 {
 	int rc;
 
-	rc = dimm_remove_key(dimm, ND_USER_KEY);
+	rc = dimm_remove_key(dimm, key_type);
 	if (rc < 0) {
 		fprintf(stderr, "Unable to cleanup key.\n");
 		return rc;
@@ -602,21 +602,25 @@ static int discard_key(struct ndctl_dimm *dimm)
 	return 0;
 }
 
-int ndctl_dimm_remove_key(struct ndctl_dimm *dimm)
+int ndctl_dimm_remove_key(struct ndctl_dimm *dimm, enum ndctl_key_type key_type)
 {
 	key_serial_t key;
 	int rc;
 
-	key = check_dimm_key(dimm, true, ND_USER_KEY);
+	key = check_dimm_key(dimm, true, key_type);
 	if (key < 0)
 		return key;
 
-	rc = run_key_op(dimm, key, ndctl_dimm_disable_passphrase,
-			"remove passphrase");
+	if (key_type == ND_MASTER_KEY)
+		rc = run_key_op(dimm, key, ndctl_dimm_disable_master_passphrase,
+				"remove master passphrase");
+	else
+		rc = run_key_op(dimm, key, ndctl_dimm_disable_passphrase,
+				"remove passphrase");
 	if (rc < 0)
 		return rc;
 
-	return discard_key(dimm);
+	return discard_key(dimm, key_type);
 }
 
 int ndctl_dimm_secure_erase_key(struct ndctl_dimm *dimm,
@@ -643,7 +647,7 @@ int ndctl_dimm_secure_erase_key(struct ndctl_dimm *dimm,
 		return rc;
 
 	if (key_type == ND_USER_KEY)
-		return discard_key(dimm);
+		return discard_key(dimm, key_type);
 
 	return 0;
 }

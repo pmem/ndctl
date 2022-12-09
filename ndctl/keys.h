@@ -25,7 +25,8 @@ int ndctl_dimm_setup_key(struct ndctl_dimm *dimm, const char *kek,
 				enum ndctl_key_type key_type);
 int ndctl_dimm_update_key(struct ndctl_dimm *dimm, const char *kek,
 				enum ndctl_key_type key_type);
-int ndctl_dimm_remove_key(struct ndctl_dimm *dimm);
+int ndctl_dimm_remove_key(struct ndctl_dimm *dimm,
+			  enum ndctl_key_type key_type);
 int ndctl_dimm_secure_erase_key(struct ndctl_dimm *dimm,
 		enum ndctl_key_type key_type);
 int ndctl_dimm_overwrite_key(struct ndctl_dimm *dimm);

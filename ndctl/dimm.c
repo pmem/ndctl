@@ -1028,7 +1028,8 @@ static int action_remove_passphrase(struct ndctl_dimm *dimm,
 		return -EOPNOTSUPP;
 	}
 
-	return ndctl_dimm_remove_key(dimm);
+	return ndctl_dimm_remove_key(dimm, param.master_pass ? ND_MASTER_KEY :
+							       ND_USER_KEY);
 }
 
 static int action_security_freeze(struct ndctl_dimm *dimm,
@@ -1281,6 +1282,12 @@ static const struct option key_options[] = {
 static const struct option sanitize_options[] = {
 	BASE_OPTIONS(),
 	SANITIZE_OPTIONS(),
+	MASTER_OPTIONS(),
+	OPT_END(),
+};
+
+static const struct option remove_options[] = {
+	BASE_OPTIONS(),
 	MASTER_OPTIONS(),
 	OPT_END(),
 };
@@ -1586,9 +1593,9 @@ int cmd_setup_passphrase(int argc, const char **argv, struct ndctl_ctx *ctx)
 
 int cmd_remove_passphrase(int argc, const char **argv, void *ctx)
 {
-	int count = dimm_action(argc, argv, ctx, action_remove_passphrase,
-			base_options,
-			"ndctl remove-passphrase <nmem0> [<nmem1>..<nmemN>] [<options>]");
+	int count = dimm_action(
+		argc, argv, ctx, action_remove_passphrase, remove_options,
+		"ndctl remove-passphrase <nmem0> [<nmem1>..<nmemN>] [<options>]");
 
 	fprintf(stderr, "passphrase removed for %d nmem%s.\n", count >= 0 ? count : 0,
 			count > 1 ? "s" : "");
