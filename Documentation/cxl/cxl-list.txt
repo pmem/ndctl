@@ -70,7 +70,6 @@ configured.
 {
   "memdev":"mem0",
   "pmem_size":"256.00 MiB (268.44 MB)",
-  "ram_size":0,
   "serial":"0",
   "host":"0000:35:00.0"
 }
@@ -88,7 +87,6 @@ EXAMPLE
   {
     "memdev":"mem0",
     "pmem_size":268435456,
-    "ram_size":0,
     "serial":0,
     "host":"0000:35:00.0"
   }
@@ -101,7 +99,6 @@ EXAMPLE
       {
         "memdev":"mem0",
         "pmem_size":"256.00 MiB (268.44 MB)",
-        "ram_size":0,
         "serial":"0"
       }
     ]
@@ -129,7 +126,6 @@ OPTIONS
   {
     "memdev":"mem0",
     "pmem_size":268435456,
-    "ram_size":0,
     "serial":0
   },
   {
@@ -204,7 +200,6 @@ OPTIONS
 [
   {
     "memdev":"mem0",
-    "pmem_size":0,
     "ram_size":273535729664,
     "partition_info":{
       "total_size":273535729664,

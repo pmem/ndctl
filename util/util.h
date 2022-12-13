@@ -79,6 +79,15 @@ static inline const char *skip_prefix(const char *str, const char *prefix)
         return strncmp(str, prefix, len) ? NULL : str + len;
 }
 
+static inline const char *which_sep(const char *filter)
+{
+	if (strchr(filter, ' '))
+		return " ";
+	if (strchr(filter, ','))
+		return ",";
+	return " ";
+}
+
 static inline int is_absolute_path(const char *path)
 {
 	return path[0] == '/';

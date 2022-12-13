@@ -5,6 +5,7 @@
 
 #include <stdbool.h>
 #include <util/log.h>
+#include <util/json.h>
 
 struct cxl_filter_params {
 	const char *memdev_filter;
@@ -60,6 +61,27 @@ struct cxl_dport *util_cxl_dport_filter_by_memdev(struct cxl_dport *dport,
 						  const char *serial);
 struct cxl_decoder *util_cxl_decoder_filter(struct cxl_decoder *decoder,
 					    const char *__ident);
-int cxl_filter_walk(struct cxl_ctx *ctx, struct cxl_filter_params *param);
+struct json_object *cxl_filter_walk(struct cxl_ctx *ctx,
+				    struct cxl_filter_params *param);
+
+static inline unsigned long cxl_filter_to_flags(struct cxl_filter_params *param)
+{
+	unsigned long flags = 0;
+
+	if (param->idle)
+		flags |= UTIL_JSON_IDLE;
+	if (param->human)
+		flags |= UTIL_JSON_HUMAN;
+	if (param->health)
+		flags |= UTIL_JSON_HEALTH;
+	if (param->targets)
+		flags |= UTIL_JSON_TARGETS;
+	if (param->partition)
+		flags |= UTIL_JSON_PARTITION;
+	if (param->alert_config)
+		flags |= UTIL_JSON_ALERT_CONFIG;
+	return flags;
+}
+
 bool cxl_filter_has(const char *needle, const char *__filter);
 #endif /* _CXL_UTIL_FILTER_H_ */

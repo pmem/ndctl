@@ -73,6 +73,7 @@ int cmd_list(int argc, const char **argv, struct cxl_ctx *ctx)
 		"cxl list [<options>]",
 		NULL
 	};
+	struct json_object *jtopology;
 	int i;
 
 	argc = parse_options(argc, argv, options, u, 0);
@@ -142,5 +143,9 @@ int cmd_list(int argc, const char **argv, struct cxl_ctx *ctx)
 		param.endpoints = true;
 
 	dbg(&param, "walk topology\n");
-	return cxl_filter_walk(ctx, &param);
+	jtopology = cxl_filter_walk(ctx, &param);
+	if (!jtopology)
+		return -ENOMEM;
+	util_display_json_array(stdout, jtopology, cxl_filter_to_flags(&param));
+	return 0;
 }

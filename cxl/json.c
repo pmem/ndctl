@@ -484,7 +484,7 @@ struct json_object *util_cxl_memdev_to_json(struct cxl_memdev *memdev,
 {
 	const char *devname = cxl_memdev_get_devname(memdev);
 	struct json_object *jdev, *jobj;
-	unsigned long long serial;
+	unsigned long long serial, size;
 	int numa_node;
 
 	jdev = json_object_new_object();
@@ -495,13 +495,19 @@ struct json_object *util_cxl_memdev_to_json(struct cxl_memdev *memdev,
 	if (jobj)
 		json_object_object_add(jdev, "memdev", jobj);
 
-	jobj = util_json_object_size(cxl_memdev_get_pmem_size(memdev), flags);
-	if (jobj)
-		json_object_object_add(jdev, "pmem_size", jobj);
+	size = cxl_memdev_get_pmem_size(memdev);
+	if (size) {
+		jobj = util_json_object_size(size, flags);
+		if (jobj)
+			json_object_object_add(jdev, "pmem_size", jobj);
+	}
 
-	jobj = util_json_object_size(cxl_memdev_get_ram_size(memdev), flags);
-	if (jobj)
-		json_object_object_add(jdev, "ram_size", jobj);
+	size = cxl_memdev_get_ram_size(memdev);
+	if (size) {
+		jobj = util_json_object_size(size, flags);
+		if (jobj)
+			json_object_object_add(jdev, "ram_size", jobj);
+	}
 
 	if (flags & UTIL_JSON_HEALTH) {
 		jobj = util_cxl_memdev_health_to_json(memdev, flags);
@@ -544,6 +550,8 @@ struct json_object *util_cxl_memdev_to_json(struct cxl_memdev *memdev,
 		if (jobj)
 			json_object_object_add(jdev, "partition_info", jobj);
 	}
+
+	json_object_set_userdata(jdev, memdev, NULL);
 	return jdev;
 }
 
@@ -569,7 +577,7 @@ void util_cxl_dports_append_json(struct json_object *jport,
 
 	cxl_dport_foreach(port, dport) {
 		struct json_object *jdport;
-		const char *phys_node;
+		const char *phys_node, *fw_node;
 
 		if (!util_cxl_dport_filter_by_memdev(dport, ident, serial))
 			continue;
@@ -589,12 +597,20 @@ void util_cxl_dports_append_json(struct json_object *jport,
 				json_object_object_add(jdport, "alias", jobj);
 		}
 
+		fw_node = cxl_dport_get_firmware_node(dport);
+		if (fw_node) {
+			jobj = json_object_new_string(fw_node);
+			if (jobj)
+				json_object_object_add(jdport, "alias", jobj);
+		}
+
 		val = cxl_dport_get_id(dport);
 		jobj = util_json_object_hex(val, flags);
 		if (jobj)
 			json_object_object_add(jdport, "id", jobj);
 
 		json_object_array_add(jdports, jdport);
+		json_object_set_userdata(jdport, dport, NULL);
 	}
 
 	json_object_object_add(jport, "dports", jdports);
@@ -618,6 +634,7 @@ struct json_object *util_cxl_bus_to_json(struct cxl_bus *bus,
 	if (jobj)
 		json_object_object_add(jbus, "provider", jobj);
 
+	json_object_set_userdata(jbus, bus, NULL);
 	return jbus;
 }
 
@@ -742,6 +759,7 @@ struct json_object *util_cxl_decoder_to_json(struct cxl_decoder *decoder,
 					       jobj);
 	}
 
+	json_object_set_userdata(jdecoder, decoder, NULL);
 	return jdecoder;
 }
 
@@ -800,6 +818,7 @@ void util_cxl_mappings_append_json(struct json_object *jregion,
 			json_object_object_add(jmapping, "decoder", jobj);
 
 		json_object_array_add(jmappings, jmapping);
+		json_object_set_userdata(jmapping, mapping, NULL);
 	}
 
 	json_object_object_add(jregion, "mappings", jmappings);
@@ -865,6 +884,7 @@ struct json_object *util_cxl_region_to_json(struct cxl_region *region,
 
 	util_cxl_mappings_append_json(jregion, region, flags);
 
+	json_object_set_userdata(jregion, region, NULL);
 	return jregion;
 }
 
@@ -896,9 +916,9 @@ void util_cxl_targets_append_json(struct json_object *jdecoder,
 		return;
 
 	cxl_target_foreach(decoder, target) {
-		struct json_object *jtarget;
-		const char *phys_node;
 		const char *devname;
+		struct json_object *jtarget;
+		const char *phys_node, *fw_node;
 
 		if (!util_cxl_target_filter_by_memdev(target, ident, serial))
 			continue;
@@ -919,6 +939,13 @@ void util_cxl_targets_append_json(struct json_object *jdecoder,
 				json_object_object_add(jtarget, "alias", jobj);
 		}
 
+		fw_node = cxl_target_get_firmware_node(target);
+		if (fw_node) {
+			jobj = json_object_new_string(fw_node);
+			if (jobj)
+				json_object_object_add(jtarget, "alias", jobj);
+		}
+
 		val = cxl_target_get_position(target);
 		jobj = json_object_new_int(val);
 		if (jobj)
@@ -930,6 +957,7 @@ void util_cxl_targets_append_json(struct json_object *jdecoder,
 			json_object_object_add(jtarget, "id", jobj);
 
 		json_object_array_add(jtargets, jtarget);
+		json_object_set_userdata(jtarget, target, NULL);
 	}
 
 	json_object_object_add(jdecoder, "targets", jtargets);
@@ -954,6 +982,14 @@ static struct json_object *__util_cxl_port_to_json(struct cxl_port *port,
 	if (jobj)
 		json_object_object_add(jport, "host", jobj);
 
+	if (cxl_port_get_parent_dport(port)) {
+		struct cxl_dport *dport = cxl_port_get_parent_dport(port);
+
+		jobj = json_object_new_string(cxl_dport_get_devname(dport));
+		if (jobj)
+			json_object_object_add(jport, "parent_dport", jobj);
+	}
+
 	jobj = json_object_new_int(cxl_port_get_depth(port));
 	if (jobj)
 		json_object_object_add(jport, "depth", jobj);
@@ -964,6 +1000,7 @@ static struct json_object *__util_cxl_port_to_json(struct cxl_port *port,
 			json_object_object_add(jport, "state", jobj);
 	}
 
+	json_object_set_userdata(jport, port, NULL);
 	return jport;
 }
 

@@ -96,6 +96,7 @@ bool cxl_port_is_endpoint(struct cxl_port *port);
 struct cxl_endpoint *cxl_port_to_endpoint(struct cxl_port *port);
 struct cxl_bus *cxl_port_get_bus(struct cxl_port *port);
 const char *cxl_port_get_host(struct cxl_port *port);
+struct cxl_dport *cxl_port_get_parent_dport(struct cxl_port *port);
 bool cxl_port_hosts_memdev(struct cxl_port *port, struct cxl_memdev *memdev);
 int cxl_port_get_nr_dports(struct cxl_port *port);
 int cxl_port_disable_invalidate(struct cxl_port *port);
@@ -116,6 +117,7 @@ struct cxl_dport *cxl_dport_get_first(struct cxl_port *port);
 struct cxl_dport *cxl_dport_get_next(struct cxl_dport *dport);
 const char *cxl_dport_get_devname(struct cxl_dport *dport);
 const char *cxl_dport_get_physical_node(struct cxl_dport *dport);
+const char *cxl_dport_get_firmware_node(struct cxl_dport *dport);
 struct cxl_port *cxl_dport_get_port(struct cxl_dport *dport);
 int cxl_dport_get_id(struct cxl_dport *dport);
 bool cxl_dport_maps_memdev(struct cxl_dport *dport, struct cxl_memdev *memdev);
@@ -225,6 +227,7 @@ const char *cxl_target_get_devname(struct cxl_target *target);
 bool cxl_target_maps_memdev(struct cxl_target *target,
 			    struct cxl_memdev *memdev);
 const char *cxl_target_get_physical_node(struct cxl_target *target);
+const char *cxl_target_get_firmware_node(struct cxl_target *target);
 
 #define cxl_target_foreach(decoder, target)                                    \
 	for (target = cxl_target_get_first(decoder); target != NULL;           \
