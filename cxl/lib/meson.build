@@ -15,6 +15,7 @@ cxl = library('cxl',
   dependencies : [
     uuid,
     kmod,
+    libudev,
   ],
   version : libcxl_version,
   install : true,

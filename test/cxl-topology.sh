@@ -15,7 +15,6 @@ check_prereq "jq"
 modprobe -r cxl_test
 modprobe cxl_test
 rc=1
-udevadm settle
 
 # THEORY OF OPERATION: Validate the hard coded assumptions of the
 # cxl_test.ko module that defines its topology in

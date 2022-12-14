@@ -15,7 +15,6 @@ check_prereq "jq"
 modprobe -r cxl_test
 modprobe cxl_test
 rc=1
-udevadm settle
 
 destroy_regions()
 {
@@ -97,7 +96,6 @@ create_subregions()
 			echo "create sub-region failed for $decoder / $mem"
 			err "$LINENO"
 		fi
-		udevadm settle
 	done
 
 	echo "created $num_regions subregions:"

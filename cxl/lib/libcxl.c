@@ -43,6 +43,9 @@ struct cxl_ctx {
 	void *userdata;
 	int memdevs_init;
 	int buses_init;
+	unsigned long timeout;
+	struct udev *udev;
+	struct udev_queue *udev_queue;
 	struct list_head memdevs;
 	struct list_head buses;
 	struct kmod_ctx *kmod_ctx;
@@ -229,7 +232,9 @@ CXL_EXPORT void *cxl_get_private_data(struct cxl_ctx *ctx)
  */
 CXL_EXPORT int cxl_new(struct cxl_ctx **ctx)
 {
+	struct udev_queue *udev_queue;
 	struct kmod_ctx *kmod_ctx;
+	struct udev *udev;
 	struct cxl_ctx *c;
 	int rc = 0;
 
@@ -240,7 +245,19 @@ CXL_EXPORT int cxl_new(struct cxl_ctx **ctx)
 	kmod_ctx = kmod_new(NULL, NULL);
 	if (check_kmod(kmod_ctx) != 0) {
 		rc = -ENXIO;
-		goto out;
+		goto err_kmod;
+	}
+
+	udev = udev_new();
+	if (!udev) {
+		rc = -ENOMEM;
+		goto err_udev;
+	}
+
+	udev_queue = udev_queue_new(udev);
+	if (!udev_queue) {
+		rc = -ENOMEM;
+		goto err_udev_queue;
 	}
 
 	c->refcount = 1;
@@ -251,9 +268,17 @@ CXL_EXPORT int cxl_new(struct cxl_ctx **ctx)
 	list_head_init(&c->memdevs);
 	list_head_init(&c->buses);
 	c->kmod_ctx = kmod_ctx;
+	c->udev = udev;
+	c->udev_queue = udev_queue;
+	c->timeout = 5000;
 
 	return 0;
-out:
+
+err_udev_queue:
+	udev_queue_unref(udev_queue);
+err_udev:
+	kmod_unref(kmod_ctx);
+err_kmod:
 	free(c);
 	return rc;
 }
@@ -294,14 +319,11 @@ CXL_EXPORT void cxl_unref(struct cxl_ctx *ctx)
 	list_for_each_safe(&ctx->buses, bus, _b, port.list)
 		free_bus(bus, &ctx->buses);
 
+	udev_queue_unref(ctx->udev_queue);
+	udev_unref(ctx->udev);
 	kmod_unref(ctx->kmod_ctx);
 	info(ctx, "context %p released\n", ctx);
 	free(ctx);
-}
-
-static int cxl_flush(struct cxl_ctx *ctx)
-{
-	return sysfs_write_attr(ctx, "/sys/bus/cxl/flush", "1\n");
 }
 
 /**
@@ -565,6 +587,40 @@ err_path:
 	return NULL;
 }
 
+static int cxl_flush(struct cxl_ctx *ctx)
+{
+	return sysfs_write_attr(ctx, "/sys/bus/cxl/flush", "1\n");
+}
+
+static int cxl_wait_probe(struct cxl_ctx *ctx)
+{
+	unsigned long tmo = ctx->timeout;
+	int rc, sleep = 0;
+
+	do {
+		rc = cxl_flush(ctx);
+		if (rc < 0)
+			break;
+		if (udev_queue_get_queue_is_empty(ctx->udev_queue))
+			break;
+		sleep++;
+		usleep(1000);
+	} while (ctx->timeout == 0 || tmo-- != 0);
+
+	if (sleep)
+		dbg(ctx, "waited %d millisecond%s...\n", sleep,
+		    sleep == 1 ? "" : "s");
+
+	return rc < 0 ? -ENXIO : 0;
+}
+
+static int device_parse(struct cxl_ctx *ctx, const char *base_path,
+			const char *dev_name, void *parent, add_dev_fn add_dev)
+{
+	cxl_wait_probe(ctx);
+	return sysfs_device_parse(ctx, base_path, dev_name, parent, add_dev);
+}
+
 static void cxl_regions_init(struct cxl_decoder *decoder)
 {
 	struct cxl_port *port = cxl_decoder_get_port(decoder);
@@ -579,8 +635,7 @@ static void cxl_regions_init(struct cxl_decoder *decoder)
 
 	decoder->regions_init = 1;
 
-	sysfs_device_parse(ctx, decoder->dev_path, "region", decoder,
-			   add_cxl_region);
+	device_parse(ctx, decoder->dev_path, "region", decoder, add_cxl_region);
 }
 
 CXL_EXPORT struct cxl_region *cxl_region_get_first(struct cxl_decoder *decoder)
@@ -1157,7 +1212,7 @@ static void *add_cxl_memdev(void *parent, int id, const char *cxlmem_base)
 		goto err_read;
 	memdev->buf_len = strlen(cxlmem_base) + 50;
 
-	sysfs_device_parse(ctx, cxlmem_base, "pmem", memdev, add_cxl_pmem);
+	device_parse(ctx, cxlmem_base, "pmem", memdev, add_cxl_pmem);
 
 	cxl_memdev_foreach(ctx, memdev_dup)
 		if (memdev_dup->id == memdev->id) {
@@ -1188,8 +1243,7 @@ static void cxl_memdevs_init(struct cxl_ctx *ctx)
 
 	ctx->memdevs_init = 1;
 
-	sysfs_device_parse(ctx, "/sys/bus/cxl/devices", "mem", ctx,
-			   add_cxl_memdev);
+	device_parse(ctx, "/sys/bus/cxl/devices", "mem", ctx, add_cxl_memdev);
 }
 
 CXL_EXPORT struct cxl_ctx *cxl_memdev_get_ctx(struct cxl_memdev *memdev)
@@ -1559,8 +1613,7 @@ static void cxl_endpoints_init(struct cxl_port *port)
 
 	port->endpoints_init = 1;
 
-	sysfs_device_parse(ctx, port->dev_path, "endpoint", port,
-			   add_cxl_endpoint);
+	device_parse(ctx, port->dev_path, "endpoint", port, add_cxl_endpoint);
 }
 
 CXL_EXPORT struct cxl_ctx *cxl_endpoint_get_ctx(struct cxl_endpoint *endpoint)
@@ -1927,8 +1980,7 @@ static void cxl_decoders_init(struct cxl_port *port)
 
 	port->decoders_init = 1;
 
-	sysfs_device_parse(ctx, port->dev_path, decoder_fmt, port,
-			   add_cxl_decoder);
+	device_parse(ctx, port->dev_path, decoder_fmt, port, add_cxl_decoder);
 
 	free(decoder_fmt);
 }
@@ -2387,7 +2439,7 @@ static void cxl_ports_init(struct cxl_port *port)
 
 	port->ports_init = 1;
 
-	sysfs_device_parse(ctx, port->dev_path, "port", port, add_cxl_port);
+	device_parse(ctx, port->dev_path, "port", port, add_cxl_port);
 }
 
 CXL_EXPORT struct cxl_ctx *cxl_port_get_ctx(struct cxl_port *port)
@@ -2655,7 +2707,7 @@ static void cxl_dports_init(struct cxl_port *port)
 
 	port->dports_init = 1;
 
-	sysfs_device_parse(ctx, port->dev_path, "dport", port, add_cxl_dport);
+	device_parse(ctx, port->dev_path, "dport", port, add_cxl_dport);
 }
 
 CXL_EXPORT int cxl_port_get_nr_dports(struct cxl_port *port)
@@ -2771,8 +2823,7 @@ static void cxl_buses_init(struct cxl_ctx *ctx)
 
 	ctx->buses_init = 1;
 
-	sysfs_device_parse(ctx, "/sys/bus/cxl/devices", "root", ctx,
-			   add_cxl_bus);
+	device_parse(ctx, "/sys/bus/cxl/devices", "root", ctx, add_cxl_bus);
 }
 
 CXL_EXPORT struct cxl_bus *cxl_bus_get_first(struct cxl_ctx *ctx)

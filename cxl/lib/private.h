@@ -4,6 +4,7 @@
 #define _LIBCXL_PRIVATE_H_
 
 #include <libkmod.h>
+#include <libudev.h>
 #include <cxl/cxl_mem.h>
 #include <ccan/endian/endian.h>
 #include <ccan/short_types/short_types.h>

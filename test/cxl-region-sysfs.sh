@@ -15,7 +15,6 @@ check_prereq "jq"
 modprobe -r cxl_test
 modprobe cxl_test
 rc=1
-udevadm settle
 
 # THEORY OF OPERATION: Create a x8 interleave across the pmem capacity
 # of the 8 endpoints defined by cxl_test, commit the decoders (which
