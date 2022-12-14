@@ -149,4 +149,6 @@ for mem in ${mems[@]}; do
 	create_subregions "$mem"
 done
 
+check_dmesg "$LINENO"
+
 modprobe -r cxl_test

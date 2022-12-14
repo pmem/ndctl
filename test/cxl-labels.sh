@@ -66,4 +66,6 @@ for nmem in ${nmems[@]}; do
 	test_label_ops "$nmem"
 done
 
+check_dmesg "$LINENO"
+
 modprobe -r cxl_test
