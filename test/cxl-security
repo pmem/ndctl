@@ -1,0 +1,40 @@
+# SPDX-License-Identifier: GPL-2.0
+# Copyright (C) 2022, Intel Corp. All rights reserved.
+
+detect()
+{
+	dev="$($NDCTL list -b "$CXL_TEST_BUS" -D | jq -r 'sort_by(.id) | .[0].dev')"
+	[ -n "$dev" ] || err "$LINENO"
+	id="$($NDCTL list -b "$CXL_TEST_BUS" -D | jq -r 'sort_by(.id) | .[0].id')"
+	[ -n "$id" ] || err "$LINENO"
+}
+
+lock_dimm()
+{
+	$NDCTL disable-dimm "$dev"
+	test_dimm_path=""
+
+	nmem_rpath=$(readlink -f "/sys/bus/nd/devices/${dev}")
+	nmem_bus=$(dirname ${nmem_rpath});
+	bus_provider_path="${nmem_bus}/provider"
+	test -e "$bus_provider_path" || err "$LINENO"
+	bus_provider=$(cat ${bus_provider_path})
+
+	[[ "$bus_provider" == "$CXL_TEST_BUS" ]] || err "$LINENO"
+	bus="cxl"
+	nmem_provider_path="/sys/bus/nd/devices/${dev}/${bus}/provider"
+	nmem_provider=$(cat ${nmem_provider_path})
+
+	test_dimm_path=$(readlink -f /sys/bus/$bus/devices/${nmem_provider})
+	test_dimm_path=$(dirname $(dirname ${test_dimm_path}))/security_lock
+
+	test -e "$test_dimm_path"
+
+	# now lock the dimm
+	echo 1 > "${test_dimm_path}"
+	sstate="$(get_security_state)"
+	if [ "$sstate" != "locked" ]; then
+		echo "Incorrect security state: $sstate expected: locked"
+		err "$LINENO"
+	fi
+}
