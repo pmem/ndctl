@@ -1725,6 +1725,33 @@ NDCTL_EXPORT void ndctl_dimm_refresh_flags(struct ndctl_dimm *dimm)
 		parse_papr_flags(dimm, buf);
 }
 
+static int populate_cxl_dimm_attributes(struct ndctl_dimm *dimm,
+					const char *dimm_base)
+{
+	int rc = 0;
+	char buf[SYSFS_ATTR_SIZE];
+	struct ndctl_ctx *ctx = dimm->bus->ctx;
+	char *path = calloc(1, strlen(dimm_base) + 100);
+	const char *bus_prefix = dimm->bus_prefix;
+
+	if (!path)
+		return -ENOMEM;
+
+	sprintf(path, "%s/%s/id", dimm_base, bus_prefix);
+	if (sysfs_read_attr(ctx, path, buf) == 0) {
+		dimm->unique_id = strdup(buf);
+		if (!dimm->unique_id) {
+			rc = -ENOMEM;
+			goto err_read;
+		}
+	}
+
+ err_read:
+
+	free(path);
+	return rc;
+}
+
 static int populate_dimm_attributes(struct ndctl_dimm *dimm,
 				    const char *dimm_base)
 {
@@ -1994,6 +2021,7 @@ static void *add_dimm(void *parent, int id, const char *dimm_base)
 			rc = -ENOMEM;
 			goto out;
 		}
+		rc = populate_cxl_dimm_attributes(dimm, dimm_base);
 	}
 
 	if (rc == -ENODEV) {
