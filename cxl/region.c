@@ -183,7 +183,7 @@ static int memdev_filter_pos(struct json_object *jobj, const char *_csv)
 	for (pos = 0, arg = strtok_r(csv, which_sep(csv), &save); arg;
 	     arg = strtok_r(NULL, which_sep(csv), &save), pos++)
 		if (util_cxl_memdev_filter(memdev, arg, NULL))
-			return pos;
+			break;
 	free(csv);
 
 	return pos;
