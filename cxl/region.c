@@ -172,6 +172,7 @@ static struct sort_context {
 static int memdev_filter_pos(struct json_object *jobj, const char *_csv)
 {
 	struct cxl_memdev *memdev = json_object_get_userdata(jobj);
+	const char *sep = which_sep(_csv);
 	char *csv, *save;
 	const char *arg;
 	int pos;
@@ -180,8 +181,8 @@ static int memdev_filter_pos(struct json_object *jobj, const char *_csv)
 	if (!csv)
 		return -1;
 
-	for (pos = 0, arg = strtok_r(csv, which_sep(csv), &save); arg;
-	     arg = strtok_r(NULL, which_sep(csv), &save), pos++)
+	for (pos = 0, arg = strtok_r(csv, sep, &save); arg;
+	     arg = strtok_r(NULL, sep, &save), pos++)
 		if (util_cxl_memdev_filter(memdev, arg, NULL))
 			break;
 	free(csv);
