@@ -15,7 +15,6 @@ check_prereq "jq"
 modprobe -r cxl_test
 modprobe cxl_test
 rc=1
-udevadm settle
 
 # THEORY OF OPERATION: Validate the hard coded assumptions of the
 # cxl_test.ko module that defines its topology in
@@ -118,7 +117,8 @@ fi
 # pmem size of 256M, or 1G
 json=$($CXL list -b cxl_test -M)
 count=$(jq "map(select(.pmem_size == $pmem_size)) | length" <<< $json)
-((bridges == 2 && count == 8 || bridges == 3 && count == 10)) || err "$LINENO"
+((bridges == 2 && count == 8 || bridges == 3 && count == 10 ||
+  bridges == 4 && count == 11)) || err "$LINENO"
 
 
 # check that switch ports disappear after all of their memdevs have been

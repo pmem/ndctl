@@ -1168,6 +1168,14 @@ walk_children:
 		walk_decoders(port, p, pick_array(jchilddecoders, jbusdecoders),
 			      pick_array(jchildregions, jregions), flags);
 
+		dbg(p, "walk rch endpoints\n");
+		if (p->endpoints || p->memdevs || p->decoders)
+			walk_endpoints(port, p,
+				       pick_array(jchildeps, jeps),
+				       pick_array(jchilddevs, jdevs),
+				       pick_array(jchilddecoders, jepdecoders),
+				       flags);
+
 		dbg(p, "walk ports\n");
 		walk_child_ports(port, p, pick_array(jchildports, jports),
 				 pick_array(jchilddecoders, jportdecoders),

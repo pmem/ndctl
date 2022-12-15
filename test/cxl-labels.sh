@@ -15,7 +15,6 @@ check_prereq "jq"
 modprobe -r cxl_test
 modprobe cxl_test
 rc=1
-udevadm settle
 
 test_label_ops()
 {
@@ -66,5 +65,7 @@ readarray -t nmems < <("$NDCTL" list -b cxl_test -Di | jq -r '.[].dev')
 for nmem in ${nmems[@]}; do
 	test_label_ops "$nmem"
 done
+
+check_dmesg "$LINENO"
 
 modprobe -r cxl_test
