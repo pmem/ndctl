@@ -47,6 +47,7 @@ fi
 #
 NFIT_TEST_BUS0="nfit_test.0"
 NFIT_TEST_BUS1="nfit_test.1"
+CXL_TEST_BUS="cxl_test"
 ACPI_BUS="ACPI.NFIT"
 E820_BUS="e820"
 
@@ -123,6 +124,12 @@ _cleanup()
 	$NDCTL disable-region -b $NFIT_TEST_BUS0 all
 	$NDCTL disable-region -b $NFIT_TEST_BUS1 all
 	modprobe -r nfit_test
+}
+
+_cxl_cleanup()
+{
+	$NDCTL disable-region -b $CXL_TEST_BUS all
+	modprobe -r cxl_test
 }
 
 # json2var

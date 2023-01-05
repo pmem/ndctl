@@ -17,15 +17,7 @@ trap 'err $LINENO' ERR
 
 setup()
 {
-	$NDCTL disable-region -b "$NFIT_TEST_BUS0" all
-}
-
-detect()
-{
-	dev="$($NDCTL list -b "$NFIT_TEST_BUS0" -D | jq -r .[0].dev)"
-	[ -n "$dev" ] || err "$LINENO"
-	id="$($NDCTL list -b "$NFIT_TEST_BUS0" -D | jq -r .[0].id)"
-	[ -n "$id" ] || err "$LINENO"
+	$NDCTL disable-region -b "$TEST_BUS" all
 }
 
 setup_keys()
@@ -78,44 +70,14 @@ post_cleanup()
 	fi
 }
 
-lock_dimm()
-{
-	$NDCTL disable-dimm "$dev"
-	# convert nmemX --> test_dimmY
-	# For now this is the only user of such a conversion so we can leave it
-	# inline. Once a subsequent user arrives we can refactor this to a
-	# helper in test/common:
-	#   get_test_dimm_path "nfit_test.0" "nmem3"
-	handle="$($NDCTL list -b "$NFIT_TEST_BUS0"  -d "$dev" -i | jq -r .[].dimms[0].handle)"
-	test_dimm_path=""
-	for test_dimm in /sys/devices/platform/"$NFIT_TEST_BUS0"/nfit_test_dimm/test_dimm*; do
-		td_handle_file="$test_dimm/handle"
-		test -e "$td_handle_file" || continue
-		td_handle="$(cat "$td_handle_file")"
-		if [[ "$td_handle" -eq "$handle" ]]; then
-			test_dimm_path="$test_dimm"
-			break
-		fi
-	done
-	test -d "$test_dimm_path"
-
-	# now lock the dimm
-	echo 1 > "${test_dimm_path}/lock_dimm"
-	sstate="$(get_security_state)"
-	if [ "$sstate" != "locked" ]; then
-		echo "Incorrect security state: $sstate expected: locked"
-		err "$LINENO"
-	fi
-}
-
 get_frozen_state()
 {
-	$NDCTL list -i -b "$NFIT_TEST_BUS0" -d "$dev" | jq -r .[].dimms[0].security_frozen
+	$NDCTL list -i -b "$TEST_BUS" -d "$dev" | jq -r .[].dimms[0].security_frozen
 }
 
 get_security_state()
 {
-	$NDCTL list -i -b "$NFIT_TEST_BUS0" -d "$dev" | jq -r .[].dimms[0].security
+	$NDCTL list -i -b "$TEST_BUS" -d "$dev" | jq -r .[].dimms[0].security
 }
 
 setup_passphrase()
@@ -192,7 +154,7 @@ test_4_security_unlock()
 		echo "Incorrect security state: $sstate expected: unlocked"
 		err "$LINENO"
 	fi
-	$NDCTL disable-region -b "$NFIT_TEST_BUS0" all
+	$NDCTL disable-region -b "$TEST_BUS" all
 	remove_passphrase
 }
 
@@ -243,13 +205,26 @@ test_6_load_keys()
 	fi
 }
 
-check_min_kver "5.0" || do_skip "may lack security handling"
+if [ "$1" = "nfit" ]; then
+	. $(dirname $0)/nfit-security
+	TEST_BUS="$NFIT_TEST_BUS0"
+	check_min_kver "5.0" || do_skip "may lack security handling"
+	KMOD_TEST="nfit_test"
+elif [ "$1" = "cxl" ]; then
+	. $(dirname $0)/cxl-security
+	TEST_BUS="$CXL_TEST_BUS"
+	check_min_kver "6.2" || do_skip "may lack security handling"
+	KMOD_TEST="cxl_test"
+else
+	do_skip "Missing input parameters"
+fi
+
 uid="$(keyctl show | grep -Eo "_uid.[0-9]+" | head -1 | cut -d. -f2-)"
 if [ "$uid" -ne 0 ]; then
 	do_skip "run as root or with a sudo login shell for test to work"
 fi
 
-modprobe nfit_test
+modprobe "$KMOD_TEST"
 setup
 check_prereq "keyctl"
 rc=1
@@ -278,5 +253,10 @@ test_6_load_keys
 
 test_cleanup
 post_cleanup
-_cleanup
+if [ "$1" = "nfit" ]; then
+	_cleanup
+elif [ "$1" = "cxl" ]; then
+	_cxl_cleanup
+fi
+
 exit 0

@@ -215,9 +215,11 @@ if get_option('destructive').enabled()
 endif
 
 if get_option('keyutils').enabled()
-  security = find_program('security.sh')
+  nfit_security = find_program('nfit-security.sh')
+  cxl_security = find_program('cxl-security.sh')
   tests += [
-    [ 'security.sh', security, 'ndctl' ]
+    [ 'nfit-security.sh', nfit_security, 'ndctl' ],
+    [ 'cxl-security.sh', cxl_security, 'cxl' ],
   ]
 endif
 
