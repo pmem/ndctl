@@ -165,7 +165,6 @@ static void __free_port(struct cxl_port *port, struct list_head *head)
 	free(port->dev_buf);
 	free(port->dev_path);
 	free(port->uport);
-	free(port->parent_dport_path);
 }
 
 static void free_port(struct cxl_port *port, struct list_head *head)
@@ -1543,20 +1542,6 @@ static int cxl_port_init(struct cxl_port *port, struct cxl_port *parent_port,
 	if (!port->uport)
 		goto err;
 
-	/*
-	 * CXL root devices have no parents and level 1 ports are both
-	 * CXL root targets and hosts of the next level, so:
-	 *     parent_dport == uport
-	 * ...at depth == 1
-	 */
-	if (port->depth > 1) {
-		rc = snprintf(port->dev_buf, port->buf_len, "%s/parent_dport",
-			      cxlport_base);
-		if (rc >= port->buf_len)
-			goto err;
-		port->parent_dport_path = realpath(port->dev_buf, NULL);
-	}
-
 	sprintf(path, "%s/modalias", cxlport_base);
 	if (sysfs_read_attr(ctx, path, buf) == 0)
 		port->module = util_modalias_to_module(ctx, buf);
@@ -2530,29 +2515,6 @@ CXL_EXPORT struct cxl_bus *cxl_port_get_bus(struct cxl_port *port)
 CXL_EXPORT const char *cxl_port_get_host(struct cxl_port *port)
 {
 	return devpath_to_devname(port->uport);
-}
-
-CXL_EXPORT struct cxl_dport *cxl_port_get_parent_dport(struct cxl_port *port)
-{
-	struct cxl_port *parent;
-	struct cxl_dport *dport;
-	const char *name;
-
-	if (port->parent_dport)
-		return port->parent_dport;
-
-	if (!port->parent_dport_path)
-		return NULL;
-
-	parent = cxl_port_get_parent(port);
-	name = devpath_to_devname(port->parent_dport_path);
-	cxl_dport_foreach(parent, dport)
-		if (strcmp(cxl_dport_get_devname(dport), name) == 0) {
-			port->parent_dport = dport;
-			return dport;
-		}
-
-	return NULL;
 }
 
 CXL_EXPORT bool cxl_port_hosts_memdev(struct cxl_port *port,

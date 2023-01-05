@@ -63,8 +63,6 @@ struct cxl_port {
 	size_t buf_len;
 	char *dev_path;
 	char *uport;
-	char *parent_dport_path;
-	struct cxl_dport *parent_dport;
 	int ports_init;
 	int endpoints_init;
 	int decoders_init;
