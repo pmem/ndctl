@@ -75,6 +75,15 @@ configured.
 }
 ----
 
+Note that for the -m/--memdev=, -p/--port=, and -e/--endpoint= filters a
+host device name can be substituted for the CXL object identifier. For
+-m/--memdev= this is an endpoint PCI device name of the form
+"DDDD:bb:dd.f" (D: Domain b: Bus d: Device f: Function) (see
+/sys/bus/pci/devices), for -p/--port= this is an upstream switch port
+PCI device name of the form "DDDD:bb:dd.f", or a PCI bus name of the
+form "pciDDDD:bb", and for -e/--endpoint= the host device is CXL memory
+device object name of the form "memX".
+
 The --human option in addition to reformatting some fields to more human
 friendly strings also unwraps the array to reduce the number of lines of
 output.
@@ -119,7 +128,9 @@ OPTIONS
 -------
 -m::
 --memdev=::
-	Specify CXL memory device name(s), or device id(s), to filter the listing. For example:
+	Specify CXL memory device name(s) ("mem0"), device id(s) ("0"),
+	and/or host device name(s) ("0000:35:00.0") to filter the listing. For
+	example:
 ----
 # cxl list -M --memdev="0 mem3 5"
 [
@@ -281,10 +292,11 @@ OPTIONS
 
 -p::
 --port=::
-	Specify CXL Port device name(s), device id(s), and or port type
-	names to filter the listing. The supported port type names are "root"
-	and "switch". Note that a bus object is also a port, so the
-	following two syntaxes are equivalent:
+	Specify CXL Port device name(s) ("port2"), device id(s) ("2"), host
+	device name(s) ("pci0000:34"), and / or port type name(s) to filter the
+	listing. The supported port type names are "root" and "switch". Note
+	that a bus object is also a port, so the following two syntaxes are
+	equivalent:
 ----
 # cxl list -B
 # cxl list -P -p root -S
