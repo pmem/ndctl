@@ -2750,6 +2750,8 @@ static void *add_region(void *parent, int id, const char *region_base)
 		goto out;
 	}
 
+	/* pread() doesn't add NUL termination */
+	buf[1] = 0;
 	perm = strtol(buf, NULL, 0);
 	if (perm == 0) {
 		close(region->flush_fd);
