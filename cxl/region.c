@@ -146,8 +146,10 @@ static const char *to_csv(int *count, const char **strings)
 		return NULL;
 	for (i = 0; i < *count; i++) {
 		list = strdup(strings[i]);
-		if (!list)
+		if (!list) {
+			free(csv);
 			return NULL;
+		}
 
 		for (arg = strtok_r(list, which_sep(list), &save); arg;
 		     arg = strtok_r(NULL, which_sep(list), &save)) {
