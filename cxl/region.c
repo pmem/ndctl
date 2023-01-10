@@ -156,7 +156,7 @@ static const char *to_csv(int *count, const char **strings)
 			cursor += snprintf(csv + cursor, len - cursor, "%s%s",
 					   arg, i + 1 < new_count ? "," : "");
 			if (cursor >= len) {
-				csv[len] = 0;
+				csv[len - 1] = 0;
 				break;
 			}
 		}
