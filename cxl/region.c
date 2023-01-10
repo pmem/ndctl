@@ -103,7 +103,7 @@ static const struct option destroy_options[] = {
 
 /*
  * Convert an array of strings that can be a mixture of single items, a
- * command separted list, or a space separated list, into a flattened
+ * command separated list, or a space separated list, into a flattened
  * comma-separated string. That single string can then be used as a
  * filter argument to cxl_filter_walk(), or an ordering constraint for
  * json_object_array_sort()
