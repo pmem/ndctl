@@ -4,7 +4,7 @@
 
 . $(dirname $0)/common
 
-rc=1
+rc=77
 
 set -ex
 
@@ -15,6 +15,7 @@ check_prereq "jq"
 modprobe -r cxl_test
 modprobe cxl_test interleave_arithmetic=1
 udevadm settle
+rc=1
 
 # THEORY OF OPERATION: Create x1,2,3,4 regions to exercise the XOR math
 # option of the CXL driver. As with other cxl_test tests, changes to the
