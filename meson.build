@@ -291,17 +291,17 @@ config_h = configure_file(
 )
 add_project_arguments('-include', 'config.h', language : 'c')
 
-LIBNDCTL_CURRENT=26
-LIBNDCTL_REVISION=1
-LIBNDCTL_AGE=20
+LIBNDCTL_CURRENT=27
+LIBNDCTL_REVISION=0
+LIBNDCTL_AGE=21
 
 LIBDAXCTL_CURRENT=6
 LIBDAXCTL_REVISION=1
 LIBDAXCTL_AGE=5
 
-LIBCXL_CURRENT=3
+LIBCXL_CURRENT=4
 LIBCXL_REVISION=0
-LIBCXL_AGE=2
+LIBCXL_AGE=3
 
 root_inc = include_directories(['.', 'ndctl', ])
 
