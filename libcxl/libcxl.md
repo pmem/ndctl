@@ -64,7 +64,7 @@ capabilities with the Linux CXL core.
     int cxl_memdev_get_minor(struct cxl_memdev *memdev);
     unsigned long long cxl_memdev_get_pmem_size(struct cxl_memdev *memdev);
     unsigned long long cxl_memdev_get_ram_size(struct cxl_memdev *memdev);
-    const char *cxl_memdev_get_firmware_verison(struct cxl_memdev *memdev);
+    const char *cxl_memdev_get_firmware_version(struct cxl_memdev *memdev);
     size_t cxl_memdev_get_label_size(struct cxl_memdev *memdev);
     int cxl_memdev_nvdimm_bridge_active(struct cxl_memdev *memdev);
     int cxl_memdev_get_numa_node(struct cxl_memdev *memdev);
@@ -107,7 +107,7 @@ may appear in the topology that were not previously enumerable.
 
 cxl_memdev_disable_invalidate() will force disable the memdev regardless
 of whether the memory provided by the device is in active use by the
-operating system. Callers take responisbility for assuring that it is
+operating system. Callers take responsibility for assuring that it is
 safe to disable the memory device. Otherwise, this call can be as
 destructive as ripping a DIMM out of a running system. Like all other
 libcxl calls that mutate the system state or divulge security sensitive
@@ -120,6 +120,7 @@ information this call requires root / CAP_SYS_ADMIN.
     struct cxl_cmd *cxl_cmd_new_raw(struct cxl_memdev *memdev, int opcode);
     struct cxl_cmd *cxl_cmd_new_identify(struct cxl_memdev *memdev);
     struct cxl_cmd *cxl_cmd_new_get_health_info(struct cxl_memdev *memdev);
+    struct cxl_cmd *cxl_cmd_new_get_alert_config(struct cxl_memdev *memdev);
     struct cxl_cmd *cxl_cmd_new_read_label(struct cxl_memdev *memdev,
                         unsigned int offset, unsigned int length);
     struct cxl_cmd *cxl_cmd_new_write_label(struct cxl_memdev *memdev, void *buf,
@@ -320,7 +321,7 @@ CXL / PCIe host bridge.
     int cxl_dport_get_id(struct cxl_dport *dport);
     bool cxl_dport_maps_memdev(struct cxl_dport *dport, struct cxl_memdev *memdev);
 
-The id of a dport is the hardware idenfifier used by an upstream port to
+The id of a dport is the hardware identifier used by an upstream port to
 reference a downstream port. The physical node of a dport is only
 available for platform firmware defined downstream ports and alias the
 companion object, like a PCI host bridge, in the PCI device hierarchy.

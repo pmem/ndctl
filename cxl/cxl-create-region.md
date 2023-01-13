@@ -30,7 +30,7 @@ appropriate error will be emitted on stderr.
 
 # EXAMPLE
 
-    #cxl create - region - m - d decoder0 .1 - w 2 - g 1024 mem0 mem1
+    #cxl create-region -m -d decoder0.1 -w 2 -g 1024 mem0 mem1
     {
       "region":"region0",
       "resource":"0xc90000000",
@@ -54,8 +54,7 @@ appropriate error will be emitted on stderr.
 
 \<target(s)>  
 The CXL targets that should be used to form the region. The number of
-*target* arguments must match the *--ways* option (if provided). The
-targets are memdev names such as *mem0*, *mem1* etc.
+*target* arguments must match the *--ways* option (if provided).
 
 <!-- -->
 
@@ -64,8 +63,11 @@ Restrict the operation to the specified bus.
 
 `-m; --memdevs`  
 Indicate that the non-option arguments for *target(s)* refer to memdev
-names. Currently this is the only option supported, and must be
-specified.
+device names. If this option is omitted and no targets are specified
+then create-region uses the equivalent of *cxl list -M -d $decoder*
+internally as the target list. Note that depending on the topology, for
+example with switches, the automatic target list ordering may not be
+valid and manual specification of the target list is required.
 
 `-s; --size=`  
 Specify the total size for the new region. This is optional, and by

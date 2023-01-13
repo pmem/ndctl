@@ -83,10 +83,18 @@ configured.
     {
       "memdev":"mem0",
       "pmem_size":"256.00 MiB (268.44 MB)",
-      "ram_size":0,
       "serial":"0",
       "host":"0000:35:00.0"
     }
+
+Note that for the -m/--memdev=, -p/--port=, and -e/--endpoint= filters a
+host device name can be substituted for the CXL object identifier. For
+-m/--memdev= this is an endpoint PCI device name of the form
+"DDDD:bb:dd.f" (D: Domain b: Bus d: Device f: Function) (see
+/sys/bus/pci/devices), for -p/--port= this is an upstream switch port
+PCI device name of the form "DDDD:bb:dd.f", or a PCI bus name of the
+form "pciDDDD:bb", and for -e/--endpoint= the host device is CXL memory
+device object name of the form "memX".
 
 The --human option in addition to reformatting some fields to more human
 friendly strings also unwraps the array to reduce the number of lines of
@@ -99,7 +107,6 @@ output.
       {
         "memdev":"mem0",
         "pmem_size":268435456,
-        "ram_size":0,
         "serial":0,
         "host":"0000:35:00.0"
       }
@@ -112,7 +119,6 @@ output.
           {
             "memdev":"mem0",
             "pmem_size":"256.00 MiB (268.44 MB)",
-            "ram_size":0,
             "serial":"0"
           }
         ]
@@ -130,8 +136,8 @@ output.
 # OPTIONS
 
 `-m; --memdev=`  
-Specify CXL memory device name(s), or device id(s), to filter the
-listing. For example:
+Specify CXL memory device name(s) ("mem0"), device id(s) ("0"), and/or
+host device name(s) ("0000:35:00.0") to filter the listing. For example:
 
 <!-- -->
 
@@ -140,7 +146,6 @@ listing. For example:
       {
         "memdev":"mem0",
         "pmem_size":268435456,
-        "ram_size":0,
         "serial":0
       },
       {
@@ -213,7 +218,6 @@ Include partition information in the memdev listing. Example listing:
     [
       {
         "memdev":"mem0",
-        "pmem_size":0,
         "ram_size":273535729664,
         "partition_info":{
           "total_size":273535729664,
@@ -225,6 +229,40 @@ Include partition information in the memdev listing. Example listing:
           "next_volatile_size":0,
           "next_persistent_size":0,
         }
+      }
+    ]
+
+`-A; --alert-config`  
+Include alert configuration in the memdev listing. Example listing:
+
+<!-- -->
+
+    # cxl list -m mem0 -A
+    [
+      {
+        "memdev":"mem0",
+        "pmem_size":0,
+        "ram_size":273535729664,
+        "alert_config":{
+          "life_used_prog_warn_threshold_valid":false,
+          "dev_over_temperature_prog_warn_threshold_valid":false,
+          "dev_under_temperature_prog_warn_threshold_valid":false,
+          "corrected_volatile_mem_err_prog_warn_threshold_valid":true,
+          "corrected_pmem_err_prog_warn_threshold_valid":false,
+          "life_used_prog_warn_threshold_writable":false,
+          "dev_over_temperature_prog_warn_threshold_writable":false,
+          "dev_under_temperature_prog_warn_threshold_writable":false,
+          "corrected_volatile_mem_err_prog_warn_threshold_writable":true,
+          "corrected_pmem_err_prog_warn_threshold_writable":false,
+          "life_used_crit_alert_threshold":0,
+          "life_used_prog_warn_threshold":0,
+          "dev_over_temperature_crit_alert_threshold":0,
+          "dev_under_temperature_crit_alert_threshold":0,
+          "dev_over_temperature_prog_warn_threshold":0,
+          "dev_under_temperature_prog_warn_threshold":0,
+          "corrected_volatile_mem_err_prog_warn_threshold":0,
+          "corrected_pmem_err_prog_warn_threshold":0
+        },
       }
     ]
 
@@ -258,10 +296,11 @@ Include port objects (CXL / PCIe root ports + Upstream Switch Ports) in
 the listing.
 
 `-p; --port=`  
-Specify CXL Port device name(s), device id(s), and or port type names to
-filter the listing. The supported port type names are "root" and
-"switch". Note that a bus object is also a port, so the following two
-syntaxes are equivalent:
+Specify CXL Port device name(s) ("port2"), device id(s) ("2"), host
+device name(s) ("pci0000:34"), and / or port type name(s) to filter the
+listing. The supported port type names are "root" and "switch". Note
+that a bus object is also a port, so the following two syntaxes are
+equivalent:
 
 <!-- -->
 

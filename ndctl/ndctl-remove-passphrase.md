@@ -35,6 +35,10 @@ supplying a --bus option at all.
 `-v; --verbose`  
 Emit debug messages.
 
+`-m; --master-passphrase`  
+Indicates that we are managing the master passphrase instead of the user
+passphrase.
+
 # THEORY OF OPERATION
 
 The Intel Device Specific Methods (DSM) specification v1.7 and v1.8
