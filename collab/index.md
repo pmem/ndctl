@@ -9,8 +9,83 @@ layout: page
 * Do not disclose CXL consortium confidential information
 * Do discuss any Linux questions about **released** CXL specifications:
   * [https://www.computeexpresslink.org/spec-landing](https://www.computeexpresslink.org/spec-landing)
-* Do use IRC as a supplement for this sync meeting
+* Do use IRC as a supplement for this sync meeting for quick questions
   * `#cxl` on `irc.oftc.net`
+* Do follow-up on linux-cxl@vger.kernel.org for longer questions / debug
+
+## January 2023
+
+# Agenda 01/24
+* Opens:
+  * DAX-page request API rework
+  * FM Project? LSF/MM topic
+  * Type-3 volatile
+  * QEMU Update
+* v6.2 Merge Window
+* v6.2-rc Fixes
+* v6.3 Status
+* v6.3+ Future Work
+
+# v6.2 Merge Window
+* Cache invalidation for region physical invalidation scenarios
+* DOE kernel/user access collision detection
+* RCH preparation patches
+* RCH Support (including DVSEC Range Register enumeration)
+* Security commands (including background commands)
+* RAS Capability Tracing on VH AER events
+* XOR Interleave Math support
+* cxl_pmem_wq removal
+* EFI CPER record parsing for CXL error records
+
+# v6.2-rc Fixes
+Merged in cxl/fixes:
+* RAS UE addr mis-assignment
+
+Pending merge:
+* Fix nvdimm unregistration
+
+# v6.3 Status
+Merged in cxl/next:
+* Move tracepoints to cxl_core
+* Export CXL _OSC error control result
+
+Pending merge:
+* CXL Events to Linux Trace Events (including interrupts)
+* Poison inject and clear
+* Forward and reverse address translation (DPA <==> HPA)
+* Poison retrieval
+* HDM decoder emulation
+
+Awaiting next (or first) posting:
+* RAS Capability Tracing on RCH AER events
+* Volatile Region Discovery
+* Volatile Region Provisioning
+* CDAT + QTG _DSM integration
+* Set timestamp
+* memory_failure() for CXL events
+* DOE rework
+
+# v6.3+ Future Work
+ * Default "Soft Reserved" (EFI_MEMORY_SP) handling policy (cxl-cli + daxctl)
+ * Dynamic Capacity Device support
+  * Sparse DAX Region infrastructure
+  * DCD event plumbing
+* Standalone CXL IDE
+  * PCIE SPDM pre-requisite
+* Maintenance Feature Support (DRAM PPR)
+* CXL perf monitoring
+
+# FM Future
+* MLD Mailbox support for DCD event injection
+* Switch mailbox CCI
+  * Multi-head device mailbox tunneling
+
+# QEMU
+* Start new threads for debug issues not on patches
+* Greg's volatile region setup testing
+* Passthrough decoder checks
+* SPDM still pending
+
 
 ## November 2022
 
