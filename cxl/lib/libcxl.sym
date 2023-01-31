@@ -246,4 +246,5 @@ global:
 LIBCXL_5 {
 global:
 	cxl_region_get_mode;
+	cxl_decoder_create_ram_region;
 } LIBCXL_4;

@@ -380,7 +380,18 @@ static void collect_minsize(struct cxl_ctx *ctx, struct parsed_params *p)
 		struct json_object *jobj =
 			json_object_array_get_idx(p->memdevs, i);
 		struct cxl_memdev *memdev = json_object_get_userdata(jobj);
-		u64 size = cxl_memdev_get_pmem_size(memdev);
+		u64 size = 0;
+
+		switch(p->mode) {
+		case CXL_DECODER_MODE_RAM:
+			size = cxl_memdev_get_ram_size(memdev);
+			break;
+		case CXL_DECODER_MODE_PMEM:
+			size = cxl_memdev_get_pmem_size(memdev);
+			break;
+		default:
+			/* Shouldn't ever get here */ ;
+		}
 
 		if (!p->ep_min_size)
 			p->ep_min_size = size;
@@ -589,8 +600,15 @@ static int create_region(struct cxl_ctx *ctx, int *count,
 				param.root_decoder);
 			return -ENXIO;
 		}
+	} else if (p->mode == CXL_DECODER_MODE_RAM) {
+		region = cxl_decoder_create_ram_region(p->root_decoder);
+		if (!region) {
+			log_err(&rl, "failed to create region under %s\n",
+				param.root_decoder);
+			return -ENXIO;
+		}
 	} else {
-		log_err(&rl, "region type '%s' not supported yet\n",
+		log_err(&rl, "region type '%s' is not supported\n",
 			param.type);
 		return -EOPNOTSUPP;
 	}
@@ -602,10 +620,12 @@ static int create_region(struct cxl_ctx *ctx, int *count,
 		goto out;
 	granularity = rc;
 
-	uuid_generate(uuid);
 	try(cxl_region, set_interleave_granularity, region, granularity);
 	try(cxl_region, set_interleave_ways, region, p->ways);
-	try(cxl_region, set_uuid, region, uuid);
+	if (p->mode == CXL_DECODER_MODE_PMEM) {
+		uuid_generate(uuid);
+		try(cxl_region, set_uuid, region, uuid);
+	}
 	try(cxl_region, set_size, region, size);
 
 	for (i = 0; i < p->ways; i++) {
