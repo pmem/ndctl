@@ -561,6 +561,12 @@ static void *add_cxl_region(void *parent, int id, const char *cxlregion_base)
 	else
 		region->decode_state = strtoul(buf, NULL, 0);
 
+	sprintf(path, "%s/mode", cxlregion_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		region->mode = CXL_DECODER_MODE_NONE;
+	else
+		region->mode = cxl_decoder_mode_from_ident(buf);
+
 	sprintf(path, "%s/modalias", cxlregion_base);
 	if (sysfs_read_attr(ctx, path, buf) == 0)
 		region->module = util_modalias_to_module(ctx, buf);
@@ -684,6 +690,11 @@ CXL_EXPORT unsigned long long cxl_region_get_size(struct cxl_region *region)
 CXL_EXPORT unsigned long long cxl_region_get_resource(struct cxl_region *region)
 {
 	return region->start;
+}
+
+CXL_EXPORT enum cxl_decoder_mode cxl_region_get_mode(struct cxl_region *region)
+{
+	return region->mode;
 }
 
 CXL_EXPORT unsigned int
