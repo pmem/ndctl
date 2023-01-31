@@ -22,6 +22,7 @@ static struct region_params {
 	const char *bus;
 	const char *size;
 	const char *type;
+	const char *uuid;
 	const char *root_decoder;
 	const char *region;
 	int ways;
@@ -40,6 +41,7 @@ struct parsed_params {
 	u64 ep_min_size;
 	int ways;
 	int granularity;
+	uuid_t uuid;
 	struct json_object *memdevs;
 	int num_memdevs;
 	int argc;
@@ -74,6 +76,8 @@ OPT_INTEGER('g', "granularity", &param.granularity,  \
 	    "granularity of the interleave set"), \
 OPT_STRING('t', "type", &param.type, \
 	   "region type", "region type - 'pmem' or 'ram'"), \
+OPT_STRING('U', "uuid", &param.uuid, \
+	   "region uuid", "uuid for the new region (default: autogenerate)"), \
 OPT_BOOLEAN('m', "memdevs", &param.memdevs, \
 	    "non-option arguments are memdevs"), \
 OPT_BOOLEAN('u', "human", &param.human, "use human friendly number formats")
@@ -293,6 +297,11 @@ static int parse_create_options(struct cxl_ctx *ctx, int count,
 
 	if (param.type) {
 		p->mode = cxl_decoder_mode_from_ident(param.type);
+		if (p->mode == CXL_DECODER_MODE_RAM && param.uuid) {
+			log_err(&rl,
+				"can't set UUID for ram / volatile regions");
+			return -EINVAL;
+		}
 		if (p->mode == CXL_DECODER_MODE_NONE) {
 			log_err(&rl, "unsupported type: %s\n", param.type);
 			return -EINVAL;
@@ -337,6 +346,13 @@ static int parse_create_options(struct cxl_ctx *ctx, int count,
 			log_err(&rl,
 				"size (%lu) is not an integral multiple of interleave-ways (%u)\n",
 				p->size, p->ways);
+			return -EINVAL;
+		}
+	}
+
+	if (param.uuid) {
+		if (uuid_parse(param.uuid, p->uuid)) {
+			error("failed to parse uuid: '%s'\n", param.uuid);
 			return -EINVAL;
 		}
 	}
@@ -562,7 +578,6 @@ static int create_region(struct cxl_ctx *ctx, int *count,
 	int i, rc, granularity;
 	u64 size, max_extent;
 	const char *devname;
-	uuid_t uuid;
 
 	rc = create_region_validate_config(ctx, p);
 	if (rc)
@@ -623,8 +638,9 @@ static int create_region(struct cxl_ctx *ctx, int *count,
 	try(cxl_region, set_interleave_granularity, region, granularity);
 	try(cxl_region, set_interleave_ways, region, p->ways);
 	if (p->mode == CXL_DECODER_MODE_PMEM) {
-		uuid_generate(uuid);
-		try(cxl_region, set_uuid, region, uuid);
+		if (!param.uuid)
+			uuid_generate(p->uuid);
+		try(cxl_region, set_uuid, region, p->uuid);
 	}
 	try(cxl_region, set_size, region, size);
 
