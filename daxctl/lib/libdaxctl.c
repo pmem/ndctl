@@ -1477,7 +1477,7 @@ static int memblock_in_dev(struct daxctl_memory *mem, const char *memblock)
 		err(ctx, "%s: Unable to determine resource\n", devname);
 		return -EACCES;
 	}
-	dev_end = dev_start + daxctl_dev_get_size(dev);
+	dev_end = dev_start + daxctl_dev_get_size(dev) - 1;
 
 	memblock_size = daxctl_memory_get_block_size(mem);
 	if (!memblock_size) {
