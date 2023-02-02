@@ -444,6 +444,22 @@ static int validate_decoder(struct cxl_decoder *decoder,
 	return 0;
 }
 
+static void set_type_from_decoder(struct cxl_ctx *ctx, struct parsed_params *p)
+{
+	/* if param.type was explicitly specified, nothing to do here */
+	if (param.type)
+		return;
+
+	/*
+	 * default to pmem if both types are set, otherwise the single
+	 * capability dominates.
+	 */
+	if (cxl_decoder_is_volatile_capable(p->root_decoder))
+		p->mode = CXL_DECODER_MODE_RAM;
+	if (cxl_decoder_is_pmem_capable(p->root_decoder))
+		p->mode = CXL_DECODER_MODE_PMEM;
+}
+
 static int create_region_validate_config(struct cxl_ctx *ctx,
 					 struct parsed_params *p)
 {
@@ -476,6 +492,8 @@ found:
 			param.root_decoder);
 		return -ENXIO;
 	}
+
+	set_type_from_decoder(ctx, p);
 
 	rc = validate_decoder(p->root_decoder, p);
 	if (rc)
