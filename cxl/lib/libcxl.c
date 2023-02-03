@@ -3091,9 +3091,6 @@ static int cxl_cmd_alloc_send(struct cxl_cmd *cmd, u32 cmd_id)
 	struct cxl_command_info *cinfo = &query->commands[cmd->query_idx];
 	size_t size;
 
-	if (!query)
-		return -EINVAL;
-
 	size = sizeof(struct cxl_send_command);
 	cmd->send_cmd = calloc(1, size);
 	if (!cmd->send_cmd)
