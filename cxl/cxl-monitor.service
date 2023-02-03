@@ -1,0 +1,9 @@
+[Unit]
+Description=CXL Monitor Daemon
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/cxl monitor
+
+[Install]
+WantedBy=multi-user.target

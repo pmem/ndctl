@@ -7,7 +7,13 @@ cxl_src = [
   'memdev.c',
   'json.c',
   'filter.c',
+  'event_trace.c',
+  'monitor.c',
 ]
+
+if get_option('systemd').enabled()
+  install_data('cxl-monitor.service', install_dir : systemdunitdir)
+endif
 
 cxl_tool = executable('cxl',
   cxl_src,
@@ -19,6 +25,8 @@ cxl_tool = executable('cxl',
     kmod,
     json,
     versiondep,
+    traceevent,
+    tracefs,
   ],
   install : true,
   install_dir : rootbindir,

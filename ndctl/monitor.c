@@ -33,7 +33,6 @@ static struct monitor {
 	const char *log;
 	const char *configs;
 	const char *dimm_event;
-	FILE *log_file;
 	bool daemon;
 	bool human;
 	bool verbose;
@@ -60,38 +59,6 @@ do { \
 	dbg(&monitor, "ndctl-%s:%s:%d: " fmt, \
 			VERSION, __func__, __LINE__, ##__VA_ARGS__); \
 } while (0)
-
-static void log_syslog(struct log_ctx *ctx, int priority, const char *file,
-		int line, const char *fn, const char *format, va_list args)
-{
-	vsyslog(priority, format, args);
-}
-
-static void log_standard(struct log_ctx *ctx, int priority, const char *file,
-		int line, const char *fn, const char *format, va_list args)
-{
-	if (priority == 6)
-		vfprintf(stdout, format, args);
-	else
-		vfprintf(stderr, format, args);
-}
-
-static void log_file(struct log_ctx *ctx, int priority, const char *file,
-		int line, const char *fn, const char *format, va_list args)
-{
-	FILE *f = monitor.log_file;
-
-	if (priority != LOG_NOTICE) {
-		struct timespec ts;
-
-		clock_gettime(CLOCK_REALTIME, &ts);
-		fprintf(f, "[%10ld.%09ld] [%d] ", ts.tv_sec, ts.tv_nsec, getpid());
-		vfprintf(f, format, args);
-	} else
-		vfprintf(f, format, args);
-
-	fflush(f);
-}
 
 static struct json_object *dimm_event_to_json(struct monitor_dimm *mdimm)
 {
@@ -648,8 +615,8 @@ int cmd_monitor(int argc, const char **argv, struct ndctl_ctx *ctx)
 		else if (strncmp(monitor.log, "./standard", 10) == 0)
 			monitor.ctx.log_fn = log_standard;
 		else {
-			monitor.log_file = fopen(monitor.log, "a+");
-			if (!monitor.log_file) {
+			monitor.ctx.log_file = fopen(monitor.log, "a+");
+			if (!monitor.ctx.log_file) {
 				error("open %s failed\n", monitor.log);
 				rc = -errno;
 				goto out;
@@ -694,8 +661,8 @@ int cmd_monitor(int argc, const char **argv, struct ndctl_ctx *ctx)
 
 	rc = monitor_event(ctx, &mfa);
 out:
-	if (monitor.log_file)
-		fclose(monitor.log_file);
+	if (monitor.ctx.log_file)
+		fclose(monitor.ctx.log_file);
 	if (path)
 		free(path);
 	return rc;
