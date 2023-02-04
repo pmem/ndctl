@@ -28,6 +28,7 @@ struct cxl_filter_params {
 	bool health;
 	bool partition;
 	bool alert_config;
+	bool dax;
 	int verbose;
 	struct log_ctx ctx;
 };
@@ -80,6 +81,8 @@ static inline unsigned long cxl_filter_to_flags(struct cxl_filter_params *param)
 		flags |= UTIL_JSON_PARTITION;
 	if (param->alert_config)
 		flags |= UTIL_JSON_ALERT_CONFIG;
+	if (param->dax)
+		flags |= UTIL_JSON_DAX | UTIL_JSON_DAX_DEVS;
 	return flags;
 }
 

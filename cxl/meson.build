@@ -7,6 +7,8 @@ cxl_src = [
   'memdev.c',
   'json.c',
   'filter.c',
+  '../daxctl/json.c',
+  '../daxctl/filter.c',
 ]
 
 cxl_tool = executable('cxl',
@@ -14,6 +16,7 @@ cxl_tool = executable('cxl',
   include_directories : root_inc,
   dependencies : [
     cxl_dep,
+    daxctl_dep,
     util_dep,
     uuid,
     kmod,

@@ -150,6 +150,7 @@ struct cxl_region {
 	unsigned int interleave_granularity;
 	enum cxl_decode_state decode_state;
 	enum cxl_decoder_mode mode;
+	struct daxctl_region *dax_region;
 	struct kmod_module *module;
 	struct list_head mappings;
 };
