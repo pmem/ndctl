@@ -126,6 +126,7 @@ int cmd_list(int argc, const char **argv, struct cxl_ctx *ctx)
 		param.endpoints = true;
 		param.decoders = true;
 		param.targets = true;
+		param.regions = true;
 		/*fallthrough*/
 	case 0:
 		break;
