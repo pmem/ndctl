@@ -568,6 +568,7 @@ int cxl_region_clear_target(struct cxl_region *region, int position);
 int cxl_region_clear_all_targets(struct cxl_region *region);
 int cxl_region_decode_commit(struct cxl_region *region);
 int cxl_region_decode_reset(struct cxl_region *region);
+struct daxctl_region *cxl_region_get_daxctl_region(struct cxl_region *region);
 ----
 
 A region's resource attribute is the Host Physical Address at which the region's
@@ -586,6 +587,12 @@ endpoint decoder under each participating memdev.
 The 'decode_commit' and 'decode_reset' attributes reserve and free DPA space
 on a given memdev by allocating an endpoint decoder, and programming it based
 on the region's interleave geometry.
+
+Once a region is active it is attached to either the NVDIMM subsystem
+where its properties can be interrogated by ndctl, or the DAX subsystem
+where its properties can be interrogated by daxctl. The helper
+cxl_region_get_daxctl_region() returns an 'struct daxctl_region *' that
+can be used with other libdaxctl APIs.
 
 include::../../copyright.txt[]
 

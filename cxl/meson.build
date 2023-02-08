@@ -7,6 +7,8 @@ cxl_src = [
   'memdev.c',
   'json.c',
   'filter.c',
+  '../daxctl/json.c',
+  '../daxctl/filter.c',
 ]
 
 if get_option('systemd').enabled()
@@ -15,6 +17,7 @@ endif
 
 deps = [
   cxl_dep,
+  daxctl_dep,
   util_dep,
   uuid,
   kmod,

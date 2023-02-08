@@ -279,6 +279,7 @@ unsigned int cxl_region_get_interleave_ways(struct cxl_region *region);
 unsigned int cxl_region_get_interleave_granularity(struct cxl_region *region);
 struct cxl_decoder *cxl_region_get_target_decoder(struct cxl_region *region,
 						  int position);
+struct daxctl_region *cxl_region_get_daxctl_region(struct cxl_region *region);
 int cxl_region_set_size(struct cxl_region *region, unsigned long long size);
 int cxl_region_set_uuid(struct cxl_region *region, uuid_t uu);
 int cxl_region_set_interleave_ways(struct cxl_region *region,

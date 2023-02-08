@@ -26,6 +26,7 @@
 #include <util/bitmap.h>
 #include <cxl/cxl_mem.h>
 #include <cxl/libcxl.h>
+#include <daxctl/libdaxctl.h>
 #include "private.h"
 
 /**
@@ -49,6 +50,7 @@ struct cxl_ctx {
 	struct list_head memdevs;
 	struct list_head buses;
 	struct kmod_ctx *kmod_ctx;
+	struct daxctl_ctx *daxctl_ctx;
 	void *private_data;
 };
 
@@ -231,6 +233,7 @@ CXL_EXPORT void *cxl_get_private_data(struct cxl_ctx *ctx)
  */
 CXL_EXPORT int cxl_new(struct cxl_ctx **ctx)
 {
+	struct daxctl_ctx *daxctl_ctx;
 	struct udev_queue *udev_queue;
 	struct kmod_ctx *kmod_ctx;
 	struct udev *udev;
@@ -240,6 +243,10 @@ CXL_EXPORT int cxl_new(struct cxl_ctx **ctx)
 	c = calloc(1, sizeof(struct cxl_ctx));
 	if (!c)
 		return -ENOMEM;
+
+	rc = daxctl_new(&daxctl_ctx);
+	if (rc)
+		goto err_daxctl;
 
 	kmod_ctx = kmod_new(NULL, NULL);
 	if (check_kmod(kmod_ctx) != 0) {
@@ -267,6 +274,7 @@ CXL_EXPORT int cxl_new(struct cxl_ctx **ctx)
 	list_head_init(&c->memdevs);
 	list_head_init(&c->buses);
 	c->kmod_ctx = kmod_ctx;
+	c->daxctl_ctx = daxctl_ctx;
 	c->udev = udev;
 	c->udev_queue = udev_queue;
 	c->timeout = 5000;
@@ -278,6 +286,8 @@ err_udev_queue:
 err_udev:
 	kmod_unref(kmod_ctx);
 err_kmod:
+	daxctl_unref(daxctl_ctx);
+err_daxctl:
 	free(c);
 	return rc;
 }
@@ -321,6 +331,7 @@ CXL_EXPORT void cxl_unref(struct cxl_ctx *ctx)
 	udev_queue_unref(ctx->udev_queue);
 	udev_unref(ctx->udev);
 	kmod_unref(ctx->kmod_ctx);
+	daxctl_unref(ctx->daxctl_ctx);
 	info(ctx, "context %p released\n", ctx);
 	free(ctx);
 }
@@ -744,6 +755,34 @@ cxl_region_get_target_decoder(struct cxl_region *region, int position)
 		return NULL;
 	}
 	return decoder;
+}
+
+CXL_EXPORT struct daxctl_region *
+cxl_region_get_daxctl_region(struct cxl_region *region)
+{
+	const char *devname = cxl_region_get_devname(region);
+	struct cxl_ctx *ctx = cxl_region_get_ctx(region);
+	char *path = region->dev_buf;
+	int len = region->buf_len;
+	uuid_t uuid = { 0 };
+	struct stat st;
+
+	if (region->dax_region)
+		return region->dax_region;
+
+	if (snprintf(region->dev_buf, len, "%s/dax_region%d", region->dev_path,
+		     region->id) >= len) {
+		err(ctx, "%s: buffer too small!\n", devname);
+		return NULL;
+	}
+
+	if (stat(path, &st) < 0)
+		return NULL;
+
+	region->dax_region =
+		daxctl_new_region(ctx->daxctl_ctx, region->id, uuid, path);
+
+	return region->dax_region;
 }
 
 CXL_EXPORT int cxl_region_set_size(struct cxl_region *region,
