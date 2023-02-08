@@ -827,6 +827,7 @@ void util_cxl_mappings_append_json(struct json_object *jregion,
 struct json_object *util_cxl_region_to_json(struct cxl_region *region,
 					     unsigned long flags)
 {
+	enum cxl_decoder_mode mode = cxl_region_get_mode(region);
 	const char *devname = cxl_region_get_devname(region);
 	struct json_object *jregion, *jobj;
 	u64 val;
@@ -851,6 +852,12 @@ struct json_object *util_cxl_region_to_json(struct cxl_region *region,
 		jobj = util_json_object_size(val, flags);
 		if (jobj)
 			json_object_object_add(jregion, "size", jobj);
+	}
+
+	if (mode != CXL_DECODER_MODE_NONE) {
+		jobj = json_object_new_string(cxl_decoder_mode_name(mode));
+		if (jobj)
+			json_object_object_add(jregion, "type", jobj);
 	}
 
 	val = cxl_region_get_interleave_ways(region);
