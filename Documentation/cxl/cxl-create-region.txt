@@ -75,7 +75,8 @@ include::bus-option.txt[]
 
 -t::
 --type=::
-	Specify the region type - 'pmem' or 'ram'. Defaults to 'pmem'.
+	Specify the region type - 'pmem' or 'ram'. Default to root decoder
+	capability, and if that is ambiguous, default to 'pmem'.
 
 -U::
 --uuid=::
