@@ -1552,6 +1552,8 @@ static int daxctl_memory_op(struct daxctl_memory *mem, enum memory_op op)
 	errno = 0;
 	while ((de = readdir(node_dir)) != NULL) {
 		if (strncmp(de->d_name, "memory", 6) == 0) {
+			if (strncmp(de->d_name, "memory_", 7) == 0)
+				continue;
 			rc = memblock_in_dev(mem, de->d_name);
 			if (rc < 0)
 				goto out_dir;
