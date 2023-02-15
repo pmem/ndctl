@@ -114,26 +114,12 @@ static unsigned int msft_cmd_smart_get_flags(struct ndctl_cmd *cmd)
 
 	/* below health data can be retrieved via MSFT _DSM function 11 */
 	return ND_SMART_HEALTH_VALID | ND_SMART_TEMP_VALID |
-	    ND_SMART_USED_VALID;
-}
-
-static unsigned int num_set_bit_health(__u16 num)
-{
-	int i;
-	__u16 n = num & 0x7FFF;
-	unsigned int count = 0;
-
-	for (i = 0; i < 15; i++)
-		if (!!(n & (1 << i)))
-			count++;
-
-	return count;
+	    ND_SMART_USED_VALID | ND_SMART_ALARM_VALID;
 }
 
 static unsigned int msft_cmd_smart_get_health(struct ndctl_cmd *cmd)
 {
-	unsigned int health;
-	unsigned int num;
+	unsigned int health = 0;
 	int rc;
 
 	rc = msft_smart_valid(cmd);
@@ -142,16 +128,13 @@ static unsigned int msft_cmd_smart_get_health(struct ndctl_cmd *cmd)
 		return UINT_MAX;
 	}
 
-	num = num_set_bit_health(CMD_MSFT_SMART(cmd)->health);
-	if (num == 0)
-		health = 0;
-	else if (num < 2)
-		health = ND_SMART_NON_CRITICAL_HEALTH;
-	else if (num < 3)
-		health = ND_SMART_CRITICAL_HEALTH;
-	else
-		health = ND_SMART_FATAL_HEALTH;
-
+	if (CMD_MSFT_SMART(cmd)->nvm_lifetime == 0)
+		health |= ND_SMART_FATAL_HEALTH;
+	if (CMD_MSFT_SMART(cmd)->health != 0 ||
+	    CMD_MSFT_SMART(cmd)->err_thresh_stat != 0)
+		health |= ND_SMART_CRITICAL_HEALTH;
+	if (CMD_MSFT_SMART(cmd)->warn_thresh_stat != 0)
+		health |= ND_SMART_NON_CRITICAL_HEALTH;
 	return health;
 }
 
@@ -166,6 +149,27 @@ static unsigned int msft_cmd_smart_get_media_temperature(struct ndctl_cmd *cmd)
 	}
 
 	return CMD_MSFT_SMART(cmd)->temp * 16;
+}
+
+static unsigned int msft_cmd_smart_get_alarm_flags(struct ndctl_cmd *cmd)
+{
+	__u8 stat;
+	unsigned int flags = 0;
+	int rc;
+
+	rc = msft_smart_valid(cmd);
+	if (rc < 0) {
+		errno = -rc;
+		return UINT_MAX;
+	}
+
+	stat = CMD_MSFT_SMART(cmd)->err_thresh_stat |
+	    CMD_MSFT_SMART(cmd)->warn_thresh_stat;
+	if (stat & 3) /* NVM_LIFETIME/ES_LIFETIME */
+		flags |= ND_SMART_SPARE_TRIP;
+	if (stat & 4) /* ES_TEMP */
+		flags |= ND_SMART_CTEMP_TRIP;
+	return flags;
 }
 
 static unsigned int msft_cmd_smart_get_life_used(struct ndctl_cmd *cmd)
@@ -209,6 +213,7 @@ struct ndctl_dimm_ops * const msft_dimm_ops = &(struct ndctl_dimm_ops) {
 	.smart_get_flags = msft_cmd_smart_get_flags,
 	.smart_get_health = msft_cmd_smart_get_health,
 	.smart_get_media_temperature = msft_cmd_smart_get_media_temperature,
+	.smart_get_alarm_flags = msft_cmd_smart_get_alarm_flags,
 	.smart_get_life_used = msft_cmd_smart_get_life_used,
 	.xlat_firmware_status = msft_cmd_xlat_firmware_status,
 };
