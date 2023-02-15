@@ -80,9 +80,8 @@ static unsigned int msft_cmd_smart_get_flags(struct ndctl_cmd *cmd)
 	}
 
 	/* below health data can be retrieved via MSFT _DSM function 11 */
-	return NDN_MSFT_SMART_HEALTH_VALID |
-		NDN_MSFT_SMART_TEMP_VALID |
-		NDN_MSFT_SMART_USED_VALID;
+	return ND_SMART_HEALTH_VALID | ND_SMART_TEMP_VALID |
+	    ND_SMART_USED_VALID;
 }
 
 static unsigned int num_set_bit_health(__u16 num)

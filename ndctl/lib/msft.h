@@ -12,11 +12,6 @@ enum {
 	NDN_MSFT_CMD_SMART = 11,
 };
 
-/* NDN_MSFT_CMD_SMART */
-#define NDN_MSFT_SMART_HEALTH_VALID	ND_SMART_HEALTH_VALID
-#define NDN_MSFT_SMART_TEMP_VALID	ND_SMART_TEMP_VALID
-#define NDN_MSFT_SMART_USED_VALID	ND_SMART_USED_VALID
-
 /*
  * This is actually function 11 data,
  * This is the closest I can find to match smart
