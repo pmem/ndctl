@@ -30,6 +30,15 @@ static const char *msft_cmd_desc(int fn)
 	return desc;
 }
 
+static bool msft_cmd_is_supported(struct ndctl_dimm *dimm, int cmd)
+{
+	/* Handle this separately to support monitor mode */
+	if (cmd == ND_CMD_SMART)
+		return true;
+
+	return !!(dimm->cmd_mask & (1ULL << cmd));
+}
+
 static u32 msft_get_firmware_status(struct ndctl_cmd *cmd)
 {
 	return cmd->msft->u.smart.status;
@@ -195,6 +204,7 @@ static int msft_cmd_xlat_firmware_status(struct ndctl_cmd *cmd)
 
 struct ndctl_dimm_ops * const msft_dimm_ops = &(struct ndctl_dimm_ops) {
 	.cmd_desc = msft_cmd_desc,
+	.cmd_is_supported = msft_cmd_is_supported,
 	.new_smart = msft_dimm_cmd_new_smart,
 	.smart_get_flags = msft_cmd_smart_get_flags,
 	.smart_get_health = msft_cmd_smart_get_health,
