@@ -130,7 +130,8 @@ static int monitor_event(struct cxl_ctx *ctx)
 	}
 
 parse_err:
-	rc = cxl_event_tracing_disable(inst);
+	if (cxl_event_tracing_disable(inst) < 0)
+		err(&monitor, "failed to disable tracing\n");
 event_en_err:
 epoll_ctl_err:
 	close(fd);
