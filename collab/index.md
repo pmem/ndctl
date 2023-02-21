@@ -13,6 +13,41 @@ layout: page
   * `#cxl` on `irc.oftc.net`
 * Do follow-up on linux-cxl@vger.kernel.org for longer questions / debug
 
+## February 2023
+
+* Opens:
+  * CXL DVSEC emulation fixes
+  * QEMU Update
+* v6.3 Merge Window
+* v6.4 Queue
+
+# v6.3 Merge Window
+* Move tracepoints to cxl_core
+* Export CXL _OSC error control result
+* CXL Events to Linux Trace Events (including interrupts)
+* HDM decoder emulation
+* Default "Soft Reserved" (EFI_MEMORY_SP) handling policy (kernel)
+* Volatile Region Discovery
+* Volatile Region Provisioning
+* Set timestamp
+
+# v6.4 Queue
+* Poison inject and clear
+* Forward and reverse address translation (DPA <==> HPA)
+* Poison retrieval
+* memory_failure() for CXL events
+* Dynamic Capacity Device support
+  * Sparse DAX Region infrastructure
+  * DCD event plumbing
+* CDAT + QTG _DSM integration
+* DOE rework
+* Standalone CXL IDE
+  * PCIE SPDM pre-requisite
+* RAS Capability Tracing on RCH AER events
+* Maintenance Feature Support (DRAM PPR)
+* CXL perf monitoring
+* Switch CCI
+
 ## January 2023
 
 # Agenda 01/24
