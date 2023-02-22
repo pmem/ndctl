@@ -48,6 +48,24 @@ layout: page
 * CXL perf monitoring
 * Switch CCI
 
+# Notes:
+* QEMU:
+  * Several patch kits in flight: https://gitlab.com/jic23/qemu/-/commits/cxl-2023-02-21/
+
+* AER Discussion:
+  * What about CXL Reset for recovery?
+    * May be more relevant for future Type-2 devices than Type-3
+    * Add another PCI error recovery reset type?
+    * Map FLR => CXL Reset?
+    * PCI core supports per-device reset methods
+
+* DCD
+  * Look at MLD support before Switch CCI support
+
+* CXL perf monitoring
+  * https://lore.kernel.org/r/20221018121318.22385-1-Jonathan.Cameron@huawei.com
+
+
 ## January 2023
 
 # Agenda 01/24
