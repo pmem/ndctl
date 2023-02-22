@@ -142,7 +142,8 @@ static int cxl_event_to_json(struct tep_event *event, struct tep_record *record,
 				jobj = num_to_json(data, f->elementsize, f->flags);
 				if (!jobj) {
 					json_object_put(jarray);
-					return -ENOMEM;
+					rc = -ENOMEM;
+					goto err_jevent;
 				}
 				json_object_array_add(jarray, jobj);
 				data += f->elementsize;
