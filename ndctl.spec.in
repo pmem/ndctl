@@ -31,6 +31,8 @@ BuildRequires:	keyutils-libs-devel
 BuildRequires:	systemd-rpm-macros
 BuildRequires:	iniparser-devel
 BuildRequires:	meson
+BuildRequires:	libtraceevent-devel
+BuildRequires:	libtracefs-devel
 
 %description
 Utility library for managing the "libnvdimm" subsystem.  The "libnvdimm"
