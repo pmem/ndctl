@@ -65,6 +65,12 @@ layout: page
 * CXL perf monitoring
   * https://lore.kernel.org/r/20221018121318.22385-1-Jonathan.Cameron@huawei.com
 
+* FW Update
+  * depends on background command support
+  * revisit for v6.4
+
+* Scan Media
+  * revisit for v6.4
 
 ## January 2023
 
