@@ -2,6 +2,7 @@ option('version-tag', type : 'string',
        description : 'override the git version string')
 option('docs', type : 'feature', value : 'enabled')
 option('asciidoctor', type : 'feature', value : 'enabled')
+option('libtracefs', type : 'feature', value : 'enabled')
 option('systemd', type : 'feature', value : 'enabled')
 option('keyutils', type : 'feature', value : 'enabled',
   description : 'enable nvdimm device passphrase management')

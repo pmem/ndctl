@@ -143,8 +143,10 @@ kmod = dependency('libkmod')
 libudev = dependency('libudev')
 uuid = dependency('uuid')
 json = dependency('json-c')
-traceevent = dependency('libtraceevent')
-tracefs = dependency('libtracefs')
+if get_option('libtracefs').enabled()
+  traceevent = dependency('libtraceevent')
+  tracefs = dependency('libtracefs')
+endif
 
 if get_option('docs').enabled()
   if get_option('asciidoctor').enabled()
@@ -234,6 +236,7 @@ conf.set('ENABLE_TEST', get_option('test').enabled())
 conf.set('ENABLE_DESTRUCTIVE', get_option('destructive').enabled())
 conf.set('ENABLE_LOGGING', get_option('logging').enabled())
 conf.set('ENABLE_DEBUG', get_option('dbg').enabled())
+conf.set('ENABLE_LIBTRACEFS', get_option('libtracefs').enabled())
 
 typeof_code = '''
   void func() {

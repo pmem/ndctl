@@ -19,6 +19,9 @@
 /* ndctl test support */
 #mesondefine ENABLE_TEST
 
+/* cxl monitor support */
+#mesondefine ENABLE_LIBTRACEFS
+
 /* Define to 1 if big-endian-arch */
 #mesondefine HAVE_BIG_ENDIAN
 
