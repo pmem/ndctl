@@ -22,6 +22,7 @@ static struct region_params {
 	const char *bus;
 	const char *size;
 	const char *type;
+	const char *uuid;
 	const char *root_decoder;
 	const char *region;
 	int ways;
@@ -40,6 +41,7 @@ struct parsed_params {
 	u64 ep_min_size;
 	int ways;
 	int granularity;
+	uuid_t uuid;
 	struct json_object *memdevs;
 	int num_memdevs;
 	int argc;
@@ -74,6 +76,8 @@ OPT_INTEGER('g', "granularity", &param.granularity,  \
 	    "granularity of the interleave set"), \
 OPT_STRING('t', "type", &param.type, \
 	   "region type", "region type - 'pmem' or 'ram'"), \
+OPT_STRING('U', "uuid", &param.uuid, \
+	   "region uuid", "uuid for the new region (default: autogenerate)"), \
 OPT_BOOLEAN('m', "memdevs", &param.memdevs, \
 	    "non-option arguments are memdevs"), \
 OPT_BOOLEAN('u', "human", &param.human, "use human friendly number formats")
@@ -293,6 +297,11 @@ static int parse_create_options(struct cxl_ctx *ctx, int count,
 
 	if (param.type) {
 		p->mode = cxl_decoder_mode_from_ident(param.type);
+		if (p->mode == CXL_DECODER_MODE_RAM && param.uuid) {
+			log_err(&rl,
+				"can't set UUID for ram / volatile regions");
+			return -EINVAL;
+		}
 		if (p->mode == CXL_DECODER_MODE_NONE) {
 			log_err(&rl, "unsupported type: %s\n", param.type);
 			return -EINVAL;
@@ -341,6 +350,13 @@ static int parse_create_options(struct cxl_ctx *ctx, int count,
 		}
 	}
 
+	if (param.uuid) {
+		if (uuid_parse(param.uuid, p->uuid)) {
+			error("failed to parse uuid: '%s'\n", param.uuid);
+			return -EINVAL;
+		}
+	}
+
 	return 0;
 }
 
@@ -380,7 +396,18 @@ static void collect_minsize(struct cxl_ctx *ctx, struct parsed_params *p)
 		struct json_object *jobj =
 			json_object_array_get_idx(p->memdevs, i);
 		struct cxl_memdev *memdev = json_object_get_userdata(jobj);
-		u64 size = cxl_memdev_get_pmem_size(memdev);
+		u64 size = 0;
+
+		switch(p->mode) {
+		case CXL_DECODER_MODE_RAM:
+			size = cxl_memdev_get_ram_size(memdev);
+			break;
+		case CXL_DECODER_MODE_PMEM:
+			size = cxl_memdev_get_pmem_size(memdev);
+			break;
+		default:
+			/* Shouldn't ever get here */ ;
+		}
 
 		if (!p->ep_min_size)
 			p->ep_min_size = size;
@@ -417,6 +444,22 @@ static int validate_decoder(struct cxl_decoder *decoder,
 	return 0;
 }
 
+static void set_type_from_decoder(struct cxl_ctx *ctx, struct parsed_params *p)
+{
+	/* if param.type was explicitly specified, nothing to do here */
+	if (param.type)
+		return;
+
+	/*
+	 * default to pmem if both types are set, otherwise the single
+	 * capability dominates.
+	 */
+	if (cxl_decoder_is_volatile_capable(p->root_decoder))
+		p->mode = CXL_DECODER_MODE_RAM;
+	if (cxl_decoder_is_pmem_capable(p->root_decoder))
+		p->mode = CXL_DECODER_MODE_PMEM;
+}
+
 static int create_region_validate_config(struct cxl_ctx *ctx,
 					 struct parsed_params *p)
 {
@@ -449,6 +492,8 @@ found:
 			param.root_decoder);
 		return -ENXIO;
 	}
+
+	set_type_from_decoder(ctx, p);
 
 	rc = validate_decoder(p->root_decoder, p);
 	if (rc)
@@ -551,7 +596,6 @@ static int create_region(struct cxl_ctx *ctx, int *count,
 	int i, rc, granularity;
 	u64 size, max_extent;
 	const char *devname;
-	uuid_t uuid;
 
 	rc = create_region_validate_config(ctx, p);
 	if (rc)
@@ -589,8 +633,15 @@ static int create_region(struct cxl_ctx *ctx, int *count,
 				param.root_decoder);
 			return -ENXIO;
 		}
+	} else if (p->mode == CXL_DECODER_MODE_RAM) {
+		region = cxl_decoder_create_ram_region(p->root_decoder);
+		if (!region) {
+			log_err(&rl, "failed to create region under %s\n",
+				param.root_decoder);
+			return -ENXIO;
+		}
 	} else {
-		log_err(&rl, "region type '%s' not supported yet\n",
+		log_err(&rl, "region type '%s' is not supported\n",
 			param.type);
 		return -EOPNOTSUPP;
 	}
@@ -602,10 +653,13 @@ static int create_region(struct cxl_ctx *ctx, int *count,
 		goto out;
 	granularity = rc;
 
-	uuid_generate(uuid);
 	try(cxl_region, set_interleave_granularity, region, granularity);
 	try(cxl_region, set_interleave_ways, region, p->ways);
-	try(cxl_region, set_uuid, region, uuid);
+	if (p->mode == CXL_DECODER_MODE_PMEM) {
+		if (!param.uuid)
+			uuid_generate(p->uuid);
+		try(cxl_region, set_uuid, region, p->uuid);
+	}
 	try(cxl_region, set_size, region, size);
 
 	for (i = 0; i < p->ways; i++) {
@@ -789,7 +843,7 @@ static int region_action(int argc, const char **argv, struct cxl_ctx *ctx,
 		return rc;
 
 	if (action == ACTION_CREATE)
-		rc = create_region(ctx, count, p);
+		return create_region(ctx, count, p);
 
 	cxl_bus_foreach(ctx, bus) {
 		struct cxl_decoder *decoder;

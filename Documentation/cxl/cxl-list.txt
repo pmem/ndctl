@@ -380,6 +380,37 @@ OPTIONS
 --regions::
 	Include region objects in the listing.
 
+-X::
+--dax::
+	Append DAX information to region listings
+----
+# cxl list -RXu
+{
+  "region":"region4",
+  "resource":"0xf010000000",
+  "size":"512.00 MiB (536.87 MB)",
+  "interleave_ways":2,
+  "interleave_granularity":4096,
+  "decode_state":"commit",
+  "daxregion":{
+    "id":4,
+    "size":"512.00 MiB (536.87 MB)",
+    "align":2097152,
+    "devices":[
+      {
+        "chardev":"dax4.0",
+        "size":"512.00 MiB (536.87 MB)",
+        "target_node":0,
+        "align":2097152,
+        "mode":"system-ram",
+        "online_memblocks":0,
+        "total_memblocks":4
+      }
+    ]
+  }
+}
+----
+
 -r::
 --region::
 	Specify CXL region device name(s), or device id(s), to filter the listing.

@@ -45,6 +45,7 @@ static const struct option options[] = {
 	OPT_STRING('r', "region", &param.region_filter, "region name",
 		   "filter by CXL region name(s)"),
 	OPT_BOOLEAN('R', "regions", &param.regions, "include CXL regions"),
+	OPT_BOOLEAN('X', "dax", &param.dax, "include CXL DAX region enumeration"),
 	OPT_BOOLEAN('i', "idle", &param.idle, "include disabled devices"),
 	OPT_BOOLEAN('u', "human", &param.human,
 		    "use human friendly number formats"),
@@ -116,6 +117,7 @@ int cmd_list(int argc, const char **argv, struct cxl_ctx *ctx)
 		param.health = true;
 		param.partition = true;
 		param.alert_config = true;
+		param.dax = true;
 		/* fallthrough */
 	case 2:
 		param.idle = true;
@@ -126,6 +128,7 @@ int cmd_list(int argc, const char **argv, struct cxl_ctx *ctx)
 		param.endpoints = true;
 		param.decoders = true;
 		param.targets = true;
+		param.regions = true;
 		/*fallthrough*/
 	case 0:
 		break;
