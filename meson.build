@@ -1,5 +1,5 @@
 project('ndctl', 'c',
-  version : '76',
+  version : '76.1',
   license : [
     'GPL-2.0',
     'LGPL-2.1',
