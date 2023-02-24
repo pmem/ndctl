@@ -2,14 +2,14 @@
 // Copyright (C) 2022, Intel Corp. All rights reserved.
 #include <stdio.h>
 #include <errno.h>
+#include <event-parse.h>
 #include <json-c/json.h>
 #include <util/json.h>
 #include <util/util.h>
 #include <util/strbuf.h>
 #include <ccan/list/list.h>
 #include <uuid/uuid.h>
-#include <traceevent/event-parse.h>
-#include <tracefs/tracefs.h>
+#include <tracefs.h>
 #include "event_trace.h"
 
 #define _GNU_SOURCE
@@ -25,7 +25,7 @@ static struct json_object *num_to_json(void *num, int elem_size, unsigned long f
 		if (sign)
 			return json_object_new_int64(*(int64_t *)num);
 		else
-			return json_object_new_uint64(*(uint64_t *)num);
+			return util_json_new_u64(*(uint64_t *)num);
 	}
 
 	/* All others fit in a signed 64 bit */
@@ -98,7 +98,7 @@ static int cxl_event_to_json(struct tep_event *event, struct tep_record *record,
 	}
 	json_object_object_add(jevent, "event", jobj);
 
-	jobj = json_object_new_uint64(record->ts);
+	jobj = util_json_new_u64(record->ts);
 	if (!jobj) {
 		rc = -ENOMEM;
 		goto err_jevent;
