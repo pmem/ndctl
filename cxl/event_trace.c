@@ -2,14 +2,14 @@
 // Copyright (C) 2022, Intel Corp. All rights reserved.
 #include <stdio.h>
 #include <errno.h>
+#include <event-parse.h>
 #include <json-c/json.h>
 #include <util/json.h>
 #include <util/util.h>
 #include <util/strbuf.h>
 #include <ccan/list/list.h>
 #include <uuid/uuid.h>
-#include <traceevent/event-parse.h>
-#include <tracefs/tracefs.h>
+#include <tracefs.h>
 #include "event_trace.h"
 
 #define _GNU_SOURCE

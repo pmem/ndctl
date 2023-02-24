@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <errno.h>
+#include <event-parse.h>
 #include <json-c/json.h>
 #include <libgen.h>
 #include <time.h>
@@ -16,8 +17,7 @@
 #include <util/strbuf.h>
 #include <sys/epoll.h>
 #include <sys/stat.h>
-#include <traceevent/event-parse.h>
-#include <tracefs/tracefs.h>
+#include <tracefs.h>
 #include <cxl/libcxl.h>
 
 /* reuse the core log helpers for the monitor logger */
