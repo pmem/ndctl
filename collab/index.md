@@ -13,6 +13,45 @@ layout: page
   * `#cxl` on `irc.oftc.net`
 * Do follow-up on linux-cxl@vger.kernel.org for longer questions / debug
 
+## March 2023
+* Opens:
+  * [cxl/hdm: Fix hdm decoder init by adding COMMIT field check](http://lore.kernel.org/r/20230228224014.1402545-1-fan.ni@samsung.com)
+  * HDM-D/DB Kernel-internal region creation
+* QEMU Update
+* v6.4 Queue
+
+# v6.4 Queue
+* [DOE rework](https://lore.kernel.org/all/cover.1678543498.git.lukas@wunner.de/)
+* [Poison retrieval](http://lore.kernel.org/r/cover.1679284567.git.alison.schofield@intel.com)
+  * Forward and reverse address translation (DPA <==> HPA)
+* [Poison inject and clear](http://lore.kernel.org/r/cover.1678471465.git.alison.schofield@intel.com)
+* Scan Media
+  * background dependency
+* [Background command support](https://lore.kernel.org/all/20230224194652.1990604-1-dave@stgolabs.net/)
+* Dynamic Capacity Device support
+  * Sparse DAX Region infrastructure
+  * DCD event plumbing
+* Firmware Update
+* CDAT + QTG _DSM integration
+* [CXL perf monitoring](http://lore.kernel.org/r/20230303175022.10806-1-Jonathan.Cameron@huawei.com)
+* [RAS Capability Tracing on RCH AER events](http://lore.kernel.org/r/20221021185615.605233-1-terry.bowman@amd.com)
+* Standalone CXL IDE
+  * PCIE SPDM pre-requisite
+* [Switch CCI](http://lore.kernel.org/r/20221025104243.20836-1-Jonathan.Cameron@huawei.com)
+* memory_failure() for CXL events
+* Maintenance Feature Support (DRAM PPR) (BMC only?)
+
+# Notes
+* Question about kernel code modularity for accelerator drivers
+  * Expectation is that it is a bug if CXL core code cannnot be reused for devices outside of the class-device definition
+* DCD Sharing may be the first user of HDM-DB functionality in the kernel, QEMU model for this in scoping
+* Multi-head (not yet MLD) device support in the works for QEMU
+* QEMU gaining a fix for clearing the HDM decoder COMMITTED bit when deactivating decoders
+* Poison
+* Poison inject can be done unconditionally, rely on "injected" indication to delineate real vs simulated hardware problems
+  * open question: should the driver taint the kernel on inject? No, ACPI EINJ does not
+  * Poison list: emit trace event on inject event? Maybe already covered by another event record
+
 ## February 2023
 
 * Opens:
