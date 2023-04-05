@@ -225,7 +225,7 @@ if [ "$uid" -ne 0 ]; then
 fi
 
 modprobe "$KMOD_TEST"
-cxl list
+$CXL list
 setup
 check_prereq "keyctl"
 rc=1
