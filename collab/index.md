@@ -12,15 +12,52 @@ layout: page
 * Do use IRC as a supplement for this sync meeting for quick questions
   * `#cxl` on `irc.oftc.net`
 * Do follow-up on linux-cxl@vger.kernel.org for longer questions / debug
+* https://pmem.io/ndctl/collab/
 
-## March 2023
+# April 2023
+* Opens:
+* QEMU Update
+* v6.3 Fixes
+* v6.4 Queue
+* v6.5 Queue
+
+## v6.3 Fixes
+* [Decoder Enumeration Fixes](http://lore.kernel.org/r/168149842935.792294.13212627946146993066.stgit@dwillia2-xfh.jf.intel.com)(queued)
+
+## v6.4 Queue
+* [DOE rework](https://lore.kernel.org/all/cover.1678543498.git.lukas@wunner.de/)(queued)
+* [Poison retrieval](http://lore.kernel.org/r/cover.1679284567.git.alison.schofield@intel.com)(pending review)
+  * Forward and reverse address translation (DPA <==> HPA)
+* [Poison inject and clear](http://lore.kernel.org/r/cover.1678471465.git.alison.schofield@intel.com)(awaiting next rev)
+* [CXL perf monitoring](http://lore.kernel.org/r/20230303175022.10806-1-Jonathan.Cameron@huawei.com)(awaiting perf acks)
+* [Background command support](https://lore.kernel.org/all/20230224194652.1990604-1-dave@stgolabs.net/)(awaiting next rev)
+
+
+## v6.5 Queue
+* [CDAT + QTG _DSM integration](http://lore.kernel.org/r/168088732996.1441063.10107817505475386072.stgit@djiang5-mobl3)(review pending)
+* [Dynamic Capacity Device support](https://git.kernel.org/pub/scm/linux/kernel/git/cxl/cxl.git/log/?h=for-6.5/dcd-preview)(awaiting next rev)
+  * Sparse DAX Region infrastructure
+  * DCD event plumbing
+* Firmware Update (awaiting first rev)
+* [RAS Capability Tracing on RCH AER events](http://lore.kernel.org/r/20221021185615.605233-1-terry.bowman@amd.com)(awaiting next rev)
+* Standalone CXL IDE
+  * PCIE SPDM pre-requisite
+  * [KEYP table enabling](https://cdrdv2-public.intel.com/732838/732838_Root%20Complex%20IDE%20Programming%20Guide_Rev1p0.pdf)
+* [Switch CCI](http://lore.kernel.org/r/20221025104243.20836-1-Jonathan.Cameron@huawei.com)
+* memory_failure() for CXL events
+* [Type-2 Region Creation](https://git.kernel.org/pub/scm/linux/kernel/git/cxl/cxl.git/log/?h=for-6.4/cxl-type-2)(awaiting first rev)
+* Scan Media
+  * background dependency
+
+
+# March 2023
 * Opens:
   * [cxl/hdm: Fix hdm decoder init by adding COMMIT field check](http://lore.kernel.org/r/20230228224014.1402545-1-fan.ni@samsung.com)
   * HDM-D/DB Kernel-internal region creation
 * QEMU Update
 * v6.4 Queue
 
-# v6.4 Queue
+## v6.4 Queue
 * [DOE rework](https://lore.kernel.org/all/cover.1678543498.git.lukas@wunner.de/)
 * [Poison retrieval](http://lore.kernel.org/r/cover.1679284567.git.alison.schofield@intel.com)
   * Forward and reverse address translation (DPA <==> HPA)
@@ -41,7 +78,7 @@ layout: page
 * memory_failure() for CXL events
 * Maintenance Feature Support (DRAM PPR) (BMC only?)
 
-# Notes
+## Notes
 * Question about kernel code modularity for accelerator drivers
   * Expectation is that it is a bug if CXL core code cannnot be reused for devices outside of the class-device definition
 * DCD Sharing may be the first user of HDM-DB functionality in the kernel, QEMU model for this in scoping
@@ -52,7 +89,7 @@ layout: page
   * open question: should the driver taint the kernel on inject? No, ACPI EINJ does not
   * Poison list: emit trace event on inject event? Maybe already covered by another event record
 
-## February 2023
+# February 2023
 
 * Opens:
   * CXL DVSEC emulation fixes
@@ -60,7 +97,7 @@ layout: page
 * v6.3 Merge Window
 * v6.4 Queue
 
-# v6.3 Merge Window
+## v6.3 Merge Window
 * Move tracepoints to cxl_core
 * Export CXL _OSC error control result
 * CXL Events to Linux Trace Events (including interrupts)
@@ -70,7 +107,7 @@ layout: page
 * Volatile Region Provisioning
 * Set timestamp
 
-# v6.4 Queue
+## v6.4 Queue
 * Poison inject and clear
 * Forward and reverse address translation (DPA <==> HPA)
 * Poison retrieval
@@ -87,7 +124,7 @@ layout: page
 * CXL perf monitoring
 * Switch CCI
 
-# Notes:
+## Notes:
 * QEMU:
   * Several patch kits in flight: https://gitlab.com/jic23/qemu/-/commits/cxl-2023-02-21/
 
