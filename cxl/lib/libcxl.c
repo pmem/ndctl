@@ -1457,8 +1457,9 @@ CXL_EXPORT int cxl_memdev_enable(struct cxl_memdev *memdev)
 	return 0;
 }
 
-static struct cxl_endpoint *cxl_port_find_endpoint(struct cxl_port *parent_port,
-						   struct cxl_memdev *memdev)
+static struct cxl_endpoint *
+cxl_port_recurse_endpoint(struct cxl_port *parent_port,
+			  struct cxl_memdev *memdev)
 {
 	struct cxl_endpoint *endpoint;
 	struct cxl_port *port;
@@ -1468,12 +1469,24 @@ static struct cxl_endpoint *cxl_port_find_endpoint(struct cxl_port *parent_port,
 			if (strcmp(cxl_endpoint_get_host(endpoint),
 				   cxl_memdev_get_devname(memdev)) == 0)
 				return endpoint;
-		endpoint = cxl_port_find_endpoint(port, memdev);
+		endpoint = cxl_port_recurse_endpoint(port, memdev);
 		if (endpoint)
 			return endpoint;
 	}
 
 	return NULL;
+}
+
+static struct cxl_endpoint *cxl_port_find_endpoint(struct cxl_port *parent_port,
+						   struct cxl_memdev *memdev)
+{
+	struct cxl_endpoint *endpoint;
+
+	cxl_endpoint_foreach(parent_port, endpoint)
+		if (strcmp(cxl_endpoint_get_host(endpoint),
+			   cxl_memdev_get_devname(memdev)) == 0)
+			return endpoint;
+	return cxl_port_recurse_endpoint(parent_port, memdev);
 }
 
 CXL_EXPORT struct cxl_endpoint *
