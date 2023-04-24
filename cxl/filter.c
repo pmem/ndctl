@@ -661,6 +661,12 @@ util_cxl_decoder_filter_by_region(struct cxl_decoder *decoder,
 	if (!__ident)
 		return decoder;
 
+	/* root decoders filter by children */
+	cxl_region_foreach(decoder, region)
+		if (util_cxl_region_filter(region, __ident))
+			return decoder;
+
+	/* switch and endpoint decoders have a 1:1 association with a region */
 	region = cxl_decoder_get_region(decoder);
 	if (!region)
 		return NULL;
