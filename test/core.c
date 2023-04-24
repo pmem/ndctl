@@ -209,7 +209,7 @@ retry:
 			break;
 		}
 
-		if (!strstr(path, "/extra/")) {
+		if (!strstr(path, "/extra/") && !strstr(path, "/updates/")) {
 			log_err(&log_ctx, "%s.ko: appears to be production version: %s\n",
 					name, path);
 			break;
