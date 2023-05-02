@@ -1869,15 +1869,19 @@ static int write_pfn_sb(int fd, unsigned long long size, const char *sig,
 	npfns = PHYS_PFN(size - SZ_8K);
 	pfn_align = parse_size64(param.align);
 	align = max(pfn_align, SUBSECTION_SIZE);
-	if (param.uuid)
-		uuid_parse(param.uuid, uuid);
-	else
+	if (param.uuid) {
+		if (uuid_parse(param.uuid, uuid))
+			return -EINVAL;
+	} else {
 		uuid_generate(uuid);
+	}
 
-	if (param.parent_uuid)
-		uuid_parse(param.parent_uuid, parent_uuid);
-	else
+	if (param.parent_uuid) {
+		if (uuid_parse(param.parent_uuid, parent_uuid))
+			return -EINVAL;
+	} else {
 		memset(parent_uuid, 0, sizeof(uuid_t));
+	}
 
 	if (strcmp(param.map, "dev") == 0)
 		mode = PFN_MODE_PMEM;
