@@ -228,16 +228,16 @@ to be even more verbose on the informational and miscellaneous output,
 and can be used to override omitted flags for showing specific
 information.  
 
--   **-v** In addition to the enabled namespaces default output, show
-    the numa_node, raw_uuid, and bad block media errors.  
+- **-v** In addition to the enabled namespaces default output, show the
+  numa_node, raw_uuid, and bad block media errors.  
 
--   **-vv** Everything *-v* provides, plus automatically enable --dimms,
-    --buses, and --regions.  
+- **-vv** Everything *-v* provides, plus automatically enable --dimms,
+  --buses, and --regions.  
 
--   **-vvv** Everything *-vv* provides, plus --health, --capabilities,
-    --idle, and --firmware. :: The verbosity can also be scoped by the
-    object type. For example to just list regions with capabilities and
-    media error info.
+- **-vvv** Everything *-vv* provides, plus --health, --capabilities,
+  --idle, and --firmware. :: The verbosity can also be scoped by the
+  object type. For example to just list regions with capabilities and
+  media error info.
 
 <!-- -->
 
@@ -319,8 +319,8 @@ NDCTL_LIST_LINT variable is an opt-in to apply fixes, and not regress
 previously shipped behavior by default. This environment variable
 applies the following fixups:
 
--   Fix "ndctl list -Rv" to only show region objects and not include
-    namespace objects. ::
+- Fix "ndctl list -Rv" to only show region objects and not include
+  namespace objects. ::
 
 # COPYRIGHT
 
@@ -331,4 +331,4 @@ extent permitted by law.
 
 # SEE ALSO
 
-[ndctl-create-namespace](ndctl-create-namespace)
+`ndctl-create-namespace(1)`

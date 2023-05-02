@@ -22,7 +22,7 @@ The starting point for all library interfaces is a *cxl_ctx* object,
 returned by [cxl_new](cxl_new). CXL *Type 3* memory devices and
 other CXL device objects are descendants of the cxl_ctx object, and can
 be iterated via an object an iterator API of the form
-cxl\_\<object>\_foreach(\<parent object>, \<object iterator>).
+cxl\_\<object\>\_foreach(\<parent object\>, \<object iterator\>).
 
 # MEMDEVS
 
@@ -140,24 +140,24 @@ A *cxl_cmd* is a reference counted object which is used to perform
 object is tied to a *cxl_memdev*. Associated library interfaces have the
 prefix *cxl_cmd\_*. Within this sub-class of interfaces, there are:
 
--   *cxl_cmd_new\_\*()* interfaces that allocate a new cxl_cmd object
-    for a given command type targeted at a given memdev. As part of the
-    command instantiation process the library validates that the command
-    is supported by the memory device, otherwise it returns NULL to
-    indicate *no support*. The libcxl command id is translated by the
-    kernel into a CXL standard opcode. See the potential command ids in
-    /usr/include/linux/cxl_mem.h.
+- *cxl_cmd_new\_\*()* interfaces that allocate a new cxl_cmd object for
+  a given command type targeted at a given memdev. As part of the
+  command instantiation process the library validates that the command
+  is supported by the memory device, otherwise it returns NULL to
+  indicate *no support*. The libcxl command id is translated by the
+  kernel into a CXL standard opcode. See the potential command ids in
+  /usr/include/linux/cxl_mem.h.
 
--   *cxl_cmd\_\<name>\_set\_\<field>* interfaces that set specific
-    fields in a cxl_cmd
+- *cxl_cmd\_\<name\>\_set\_\<field\>* interfaces that set specific
+  fields in a cxl_cmd
 
--   *cxl_cmd_submit* which submits the command via ioctl()
+- *cxl_cmd_submit* which submits the command via ioctl()
 
--   *cxl_cmd\_\<name>\_get\_\<field>* interfaces that get specific
-    fields out of the command response
+- *cxl_cmd\_\<name\>\_get\_\<field\>* interfaces that get specific
+  fields out of the command response
 
--   *cxl_cmd_get\_\** interfaces to get general command related
-    information.
+- *cxl_cmd_get\_\** interfaces to get general command related
+  information.
 
 cxl_cmd_new_raw() supports so called *RAW* commands where the command id
 is *RAW* and it carries an unmodified CXL memory device command payload
@@ -288,7 +288,7 @@ first.
     bool cxl_port_hosts_memdev(struct cxl_port *port, struct cxl_memdev *memdev);
     int cxl_port_get_nr_dports(struct cxl_port *port);
 
-The port type is communicated via cxl_port_is\_\<type>(). An *enabled*
+The port type is communicated via cxl_port_is\_\<type\>(). An *enabled*
 port is one that has succeeded in discovering the CXL component
 registers in the host device and has enumerated its downstream ports. In
 order for a memdev to be enabled for CXL memory operation all CXL ports
@@ -424,7 +424,7 @@ value of the base of the decoder’s decode range. A zero-sized decoder
 indicates a disabled decoder.
 
 Root level decoders only support limited set of memory types in their
-address range. The cxl_decoder_is\_\<memtype>\_capable() helpers
+address range. The cxl_decoder_is\_\<memtype\>\_capable() helpers
 identify what is supported. Switch level decoders, in contrast are
 capable of routing any memory type, i.e. they just forward along the
 memory type support from their parent port. Endpoint decoders follow the
@@ -543,6 +543,7 @@ tuple of *memdev*, *endpoint decoder*, and the *position*.
     const char *cxl_region_get_devname(struct cxl_region *region);
     void cxl_region_get_uuid(struct cxl_region *region, uuid_t uu);
     unsigned long long cxl_region_get_size(struct cxl_region *region);
+    enum cxl_decoder_mode cxl_region_get_mode(struct cxl_region *region);
     unsigned long long cxl_region_get_resource(struct cxl_region *region);
     unsigned int cxl_region_get_interleave_ways(struct cxl_region *region);
     unsigned int cxl_region_get_interleave_granularity(struct cxl_region *region);
@@ -560,6 +561,7 @@ tuple of *memdev*, *endpoint decoder*, and the *position*.
     int cxl_region_clear_all_targets(struct cxl_region *region);
     int cxl_region_decode_commit(struct cxl_region *region);
     int cxl_region_decode_reset(struct cxl_region *region);
+    struct daxctl_region *cxl_region_get_daxctl_region(struct cxl_region *region);
 
 A region’s resource attribute is the Host Physical Address at which the
 region’s address space starts. The region’s address space is a subset of
@@ -577,6 +579,12 @@ of an endpoint decoder under each participating memdev.
 The *decode_commit* and *decode_reset* attributes reserve and free DPA
 space on a given memdev by allocating an endpoint decoder, and
 programming it based on the region’s interleave geometry.
+
+Once a region is active it is attached to either the NVDIMM subsystem
+where its properties can be interrogated by ndctl, or the DAX subsystem
+where its properties can be interrogated by daxctl. The helper
+cxl_region_get_daxctl_region() returns an *struct daxctl_region \** that
+can be used with other libdaxctl APIs.
 
 # COPYRIGHT
 

@@ -28,7 +28,7 @@ consumed when the DIMM is next enabled.
 
 # OPTIONS
 
-\<dimm>  
+\<dimm\>  
 A *nmemX* device name, or a dimm id number. Restrict the operation to
 the specified dimm(s). The keyword *all* can be specified to indicate
 the lack of any restriction, however this is the same as not supplying a
@@ -49,4 +49,4 @@ extent permitted by law.
 
 # SEE ALSO
 
-[ndctl-enable-dimm](ndctl-enable-dimm)
+`ndctl-enable-dimm(1)`

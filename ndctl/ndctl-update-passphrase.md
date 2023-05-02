@@ -19,15 +19,15 @@ for command to succeed:
 
 2.  setup-passphrase has successfully been executed on the NVDIMM.
 
-    -   Alternatively, the NVDIMM is unlocked.
+    - Alternatively, the NVDIMM is unlocked.
 
 The updated key blobs will be created in the {ndctl_keysdir} directory
 with a file name format of
-"nvdimm\_\<dimm-unique-id>\_\<hostname>.blob".
+"nvdimm\_\<dimm-unique-id\>\_\<hostname\>.blob".
 
 # OPTIONS
 
-\<dimm>  
+\<dimm\>  
 A *nmemX* device name, or a dimm id number. Restrict the operation to
 the specified dimm(s). The keyword *all* can be specified to indicate
 the lack of any restriction, however this is the same as not supplying a
@@ -210,4 +210,4 @@ extent permitted by law.
 
 # SEE ALSO:
 
-[ndctl-setup-passphrase](ndctl-setup-passphrase) , [ndctl-remove-passphrase](ndctl-remove-passphrase)
+`ndctl-setup-passphrase(1)` , `ndctl-remove-passphrase(1)`

@@ -14,7 +14,7 @@ namespace
 # DESCRIPTION
 
 As described in the theory of operation section of
-[ndctl-create-namespace](ndctl-create-namespace) , the raw capacity of a namespace may
+`ndctl-create-namespace(1)` , the raw capacity of a namespace may
 encapsulate a personality, or mode of operation. Specifically, the mode
 may be set to one of "sector", "fsdax", and "devdax". Each of those
 modes is defined by an info-block format that uniquely identifies the
@@ -50,7 +50,7 @@ accessed.
 
 # OPTIONS
 
-\<namespace(s)>  
+\<namespace(s)\>  
 One or more *namespaceX.Y* device names. The keyword *all* can be
 specified to operate on every namespace in the system, optionally
 filtered by bus id (see --bus= option), or region id (see --region=
@@ -87,5 +87,5 @@ extent permitted by law.
 
 # SEE ALSO
 
-[ndctl-create-namespace](ndctl-create-namespace) , [UEFI NVDIMM Label
+`ndctl-create-namespace(1)` , [UEFI NVDIMM Label
 Protocol](http://www.uefi.org/sites/default/files/resources/UEFI_Spec_2_7.pdf)

@@ -19,7 +19,7 @@ to uncorrectable memory error handling events, and it otherwise allows
 memory errors to be enumerated.
 
 The kernel provides a sysfs file (*scrub*) that when written with the
-string "1\\n" initiates an ARS operation. The *ndctl start-scrub*
+string "1\n" initiates an ARS operation. The *ndctl start-scrub*
 operation starts an ARS, across all specified buses, and the kernel in
 turn proceeds to scrub every persistent memory address region on the
 specified buses.
@@ -63,6 +63,6 @@ extent permitted by law.
 
 # SEE ALSO
 
-[ndctl-wait-scrub](ndctl-wait-scrub) , [ACPI 6.2 Specification Section 9.20.7.2 Address
+`ndctl-wait-scrub(1)` , [ACPI 6.2 Specification Section 9.20.7.2 Address
 Range Scrubbing (ARS)
 Overview](http://www.uefi.org/sites/default/files/resources/ACPI%206_2_A_Sept29.pdf)

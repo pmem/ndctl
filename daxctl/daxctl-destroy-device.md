@@ -12,7 +12,7 @@ daxctl-destroy-device - Destroy a devdax device
 
 # EXAMPLES
 
--   Destroys dax0.1
+- Destroys dax0.1
 
 <!-- -->
 
@@ -21,7 +21,7 @@ daxctl-destroy-device - Destroy a devdax device
     # daxctl destroy-device dax0.1
     destroyed 1 device
 
--   Destroys all devices in region id 0
+- Destroys all devices in region id 0
 
 <!-- -->
 

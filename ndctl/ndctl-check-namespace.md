@@ -77,5 +77,6 @@ extent permitted by law.
 
 # SEE ALSO
 
-[ndctl-disable-namespace](ndctl-disable-namespace) , [ndctl-enable-namespace](ndctl-enable-namespace) , [UEFI NVDIMM Label
+`ndctl-disable-namespace(1)` , `ndctl-enable-namespace(1)` , [UEFI
+NVDIMM Label
 Protocol](http://www.uefi.org/sites/default/files/resources/UEFI_Spec_2_7.pdf)

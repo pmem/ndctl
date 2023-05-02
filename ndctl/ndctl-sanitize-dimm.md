@@ -32,7 +32,7 @@ NVDIMM participates in.
 
 # OPTIONS
 
-\<dimm>  
+\<dimm\>  
 A *nmemX* device name, or a dimm id number. Restrict the operation to
 the specified dimm(s). The keyword *all* can be specified to indicate
 the lack of any restriction, however this is the same as not supplying a
@@ -224,5 +224,5 @@ extent permitted by law.
 
 # SEE ALSO
 
-[ndctl-wait-overwrite](ndctl-wait-overwrite) ,
+`ndctl-wait-overwrite(1)` ,
 <https://trustedcomputinggroup.org/wp-content/uploads/TCG_SWG_SIIS_Version_1_07_Revision_1_00.pdf>

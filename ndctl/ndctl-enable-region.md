@@ -20,7 +20,7 @@ instantiating PMEM namespaces for each coherent set of labels.
 
 # OPTIONS
 
-\<region>  
+\<region\>  
 A *regionX* device name, or a region id number. Restrict the operation
 to the specified region(s). The keyword *all* can be specified to
 indicate the lack of any restriction, however this is the same as not
@@ -41,4 +41,4 @@ extent permitted by law.
 
 # SEE ALSO
 
-[ndctl-disable-region](ndctl-disable-region)
+`ndctl-disable-region(1)`

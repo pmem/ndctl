@@ -37,11 +37,13 @@ extent permitted by law.
 
 # SEE ALSO
 
-[ndctl-create-namespace](ndctl-create-namespace) , [ndctl-destroy-namespace](ndctl-destroy-namespace) ,
-[ndctl-check-namespace](ndctl-check-namespace) , [ndctl-enable-region](ndctl-enable-region) , [ndctl-disable-region](ndctl-disable-region) ,
-[ndctl-enable-dimm](ndctl-enable-dimm) , [ndctl-disable-dimm](ndctl-disable-dimm) , [ndctl-enable-namespace](ndctl-enable-namespace) ,
-[ndctl-disable-namespace](ndctl-disable-namespace) , [ndctl-zero-labels](ndctl-zero-labels) , [ndctl-read-labels](ndctl-read-labels) ,
-[ndctl-inject-error](ndctl-inject-error) , [ndctl-list](ndctl-list) , [LIBNVDIMM
+`ndctl-create-namespace(1)` , `ndctl-destroy-namespace(1)` ,
+`ndctl-check-namespace(1)` , `ndctl-enable-region(1)` ,
+`ndctl-disable-region(1)` , `ndctl-enable-dimm(1)` ,
+`ndctl-disable-dimm(1)` , `ndctl-enable-namespace(1)` ,
+`ndctl-disable-namespace(1)` , `ndctl-zero-labels(1)` ,
+`ndctl-read-labels(1)` , `ndctl-inject-error(1)` , `ndctl-list(1)` ,
+[LIBNVDIMM
 Overview](https://www.kernel.org/doc/Documentation/nvdimm/nvdimm.txt),
 [NVDIMM Driver Writer’s
 Guide](http://pmem.io/documents/NVDIMM_Driver_Writers_Guide.pdf)

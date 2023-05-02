@@ -132,5 +132,5 @@ extent permitted by law.
 
 # SEE ALSO
 
-[ndctl-update-firmware](ndctl-update-firmware) , [Intel Optane PMem DSM
+`ndctl-update-firmware(1)` , [Intel Optane PMem DSM
 Interface](https://pmem.io/documents/IntelOptanePMem_DSM_Interface-V2.0.pdf)

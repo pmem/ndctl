@@ -19,7 +19,7 @@ its default state by deleting all labels.
 
 # OPTIONS
 
-\<memory device(s)>  
+\<memory device(s)\>  
 A *nmemX* device name, or a dimm id number. Restrict the operation to
 the specified dimm(s). The keyword *all* can be specified to indicate
 the lack of any restriction, however this is the same as not supplying a

@@ -133,4 +133,4 @@ extent permitted by law.
 
 # SEE ALSO
 
-[ndctl-start-scrub](ndctl-start-scrub) , [ndctl-list](ndctl-list)
+`ndctl-start-scrub(1)` , `ndctl-list(1)`

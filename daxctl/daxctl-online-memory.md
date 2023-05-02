@@ -13,7 +13,7 @@ system-ram mode
 
 # EXAMPLES
 
--   Reconfigure dax0.0 to system-ram mode, don’t online the memory
+- Reconfigure dax0.0 to system-ram mode, don’t online the memory
 
 <!-- -->
 
@@ -25,7 +25,7 @@ system-ram mode
       "mode":"system-ram"
     }
 
--   Online the memory separately
+- Online the memory separately
 
 <!-- -->
 
@@ -33,7 +33,7 @@ system-ram mode
     dax0.0: 62 new sections onlined
     onlined memory for 1 device
 
--   Onlining memory when some sections were already online
+- Onlining memory when some sections were already online
 
 <!-- -->
 

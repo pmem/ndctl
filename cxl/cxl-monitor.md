@@ -36,14 +36,14 @@ Run a monitor daemon as a system service
 `-l; --log=`  
 Send log messages to the specified destination.
 
--   "\<file>": Send log messages to specified \<file>. When fopen() is
-    not able to open \<file>, log messages will be forwarded to syslog.
+- "\<file\>": Send log messages to specified \<file\>. When fopen() is
+  not able to open \<file\>, log messages will be forwarded to syslog.
 
--   "standard": Send messages to standard output.
+- "standard": Send messages to standard output.
 
 The default log destination is */var/log/cxl-monitor.log* if "--daemon"
 is specified, otherwise *standard*. Note that standard and relative path
-for \<file> will not work if "--daemon" is specified.
+for \<file\> will not work if "--daemon" is specified.
 
 `--daemon`  
 Run a monitor as a daemon.

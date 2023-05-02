@@ -353,8 +353,8 @@ buses, ports, and endpoints) in the listing.
 `-d; --decoder`  
 Specify CXL decoder device name(s), device id(s), or decoder type names
 to filter the emitted decoder(s). The format for a decoder name is
-"decoder\<port_id>.\<instance_id>". The possible decoder type names are
-"root", "switch", or "endpoint", similar to the port filter syntax.
+"decoder\<port_id\>.\<instance_id\>". The possible decoder type names
+are "root", "switch", or "endpoint", similar to the port filter syntax.
 
 `-T; --targets`  
 Extend decoder listings with downstream port target information, port
@@ -380,6 +380,37 @@ with mapping information.
 `-R; --regions`  
 Include region objects in the listing.
 
+`-X; --dax`  
+Append DAX information to region listings
+
+<!-- -->
+
+    # cxl list -RXu
+    {
+      "region":"region4",
+      "resource":"0xf010000000",
+      "size":"512.00 MiB (536.87 MB)",
+      "interleave_ways":2,
+      "interleave_granularity":4096,
+      "decode_state":"commit",
+      "daxregion":{
+        "id":4,
+        "size":"512.00 MiB (536.87 MB)",
+        "align":2097152,
+        "devices":[
+          {
+            "chardev":"dax4.0",
+            "size":"512.00 MiB (536.87 MB)",
+            "target_node":0,
+            "align":2097152,
+            "mode":"system-ram",
+            "online_memblocks":0,
+            "total_memblocks":4
+          }
+        ]
+      }
+    }
+
 `-r; --region`  
 Specify CXL region device name(s), or device id(s), to filter the
 listing.
@@ -391,14 +422,14 @@ and can be used to override omitted flags for showing specific
 information. Note that cxl list --verbose --verbose is equivalent to cxl
 list -vv.
 
--   **-v** Enable --memdevs, --regions, --buses, --ports, --decoders,
-    and --targets.
+- **-v** Enable --memdevs, --regions, --buses, --ports, --decoders, and
+  --targets.
 
--   **-vv** Everything **-v** provides, plus include disabled devices
-    with --idle.
+- **-vv** Everything **-v** provides, plus include disabled devices with
+  --idle.
 
--   **-vvv** Everything **-vv** provides, plus enable --health and
-    --partition.
+- **-vvv** Everything **-vv** provides, plus enable --health and
+  --partition.
 
 `--debug`  
 If the cxl tool was built with debug enabled, turn on debug messages.

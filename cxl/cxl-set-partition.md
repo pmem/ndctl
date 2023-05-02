@@ -22,7 +22,7 @@ Use this command to partition a device into volatile and persistent
 capacity. The change in partitioning becomes the “next” configuration,
 to become active on the next device reset.
 
-Use "cxl list -m \<memdev> -I" to examine the partitioning capabilities
+Use "cxl list -m \<memdev\> -I" to examine the partitioning capabilities
 of a device. A partition_alignment_size value of zero means there is no
 available capacity and therefore the partitions cannot be changed.
 
@@ -31,13 +31,13 @@ result in the loss of data stored.
 
 # OPTIONS
 
-\<memory device(s)>  
+\<memory device(s)\>  
 A *memX* device name, or a memdev id number. Restrict the operation to
 the specified memdev(s). The keyword *all* can be specified to indicate
 the lack of any restriction.
 
 `-S; --serial`  
-Rather an a memdev id number, interpret the \<memdev> argument(s) as a
+Rather an a memdev id number, interpret the \<memdev\> argument(s) as a
 list of serial numbers.
 
 `-t; --type=`  
@@ -45,17 +45,17 @@ Type of partition, *pmem* or *ram* (volatile), to modify. Default:
 *pmem*
 
 `-s; --size=`  
-Size of the \<type> partition in bytes. Size must align to the devices
-alignment requirement. Use *cxl list -m \<memdev> -I* to find
+Size of the \<type\> partition in bytes. Size must align to the devices
+alignment requirement. Use *cxl list -m \<memdev\> -I* to find
 *partition_alignment_size*, or, use the --align option. Default: All
-available capacity is assigned to \<type>.
+available capacity is assigned to \<type\>.
 
 `-a; --align`  
 Select this option to allow the automatic alignment of --size to meet
 device alignment requirements. When using this option, specify the
 minimum --size of the --type partition needed. When this option is
 omitted, the command fails if --size is not properly aligned. Use *cxl
-list -m \<memdev> -I* to examine the partition_alignment_size.
+list -m \<memdev\> -I* to examine the partition_alignment_size.
 
 `-v`  
 Turn on verbose debug messages in the library (if libcxl was built with

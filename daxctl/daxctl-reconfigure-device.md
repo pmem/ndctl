@@ -110,7 +110,7 @@ userspace memory allocator like
 
 # EXAMPLES
 
--   Reconfigure dax0.0 to system-ram mode, don’t online the memory
+- Reconfigure dax0.0 to system-ram mode, don’t online the memory
 
 <!-- -->
 
@@ -124,7 +124,7 @@ userspace memory allocator like
       }
     ]
 
--   Reconfigure dax0.0 to devdax mode, attempt to offline the memory
+- Reconfigure dax0.0 to devdax mode, attempt to offline the memory
 
 <!-- -->
 
@@ -136,7 +136,7 @@ userspace memory allocator like
       "mode":"devdax"
     }
 
--   Reconfigure all dax devices on region0 to system-ram mode
+- Reconfigure all dax devices on region0 to system-ram mode
 
 <!-- -->
 
@@ -156,9 +156,9 @@ userspace memory allocator like
       }
     ]
 
--   Run a process called *some-service* using numactl to restrict its
-    cpu nodes to *0* and *1*, and memory allocations to node 2
-    (determined using daxctl_dev_get_target_node() or *daxctl list*)
+- Run a process called *some-service* using numactl to restrict its cpu
+  nodes to *0* and *1*, and memory allocations to node 2 (determined
+  using daxctl_dev_get_target_node() or *daxctl list*)
 
 <!-- -->
 
@@ -174,7 +174,7 @@ userspace memory allocator like
 
     # numactl --cpunodebind=0-1 --membind=2 -- some-service --opt1 --opt2
 
--   Change the size of a dax device
+- Change the size of a dax device
 
 <!-- -->
 
@@ -212,11 +212,11 @@ unaligned mapping attempts.
 `-m; --mode=`  
 Specify the mode to which the dax device(s) should be reconfigured.
 
--   "system-ram": hotplug the device into system memory.
+- "system-ram": hotplug the device into system memory.
 
--   "devdax": switch to the normal "device dax" mode. This requires the
-    kernel to support hot-unplugging *kmem* based memory. If this is not
-    available, a reboot is the only way to switch back to *devdax* mode.
+- "devdax": switch to the normal "device dax" mode. This requires the
+  kernel to support hot-unplugging *kmem* based memory. If this is not
+  available, a reboot is the only way to switch back to *devdax* mode.
 
 `-N; --no-online`  
 By default, memory sections provided by system-ram devices will be
@@ -241,18 +241,17 @@ the *--movable* behavior (which is default), kernel allocations will not
 consider this memory, and it will be reserved for application use.
 
 `-f; --force`  
--   When converting from "system-ram" mode to "devdax", it is expected
-    that all the memory sections are first made offline. By default,
-    daxctl won’t touch online memory. However with this option, attempt
-    to offline the memory on the NUMA node associated with the dax
-    device before converting it back to "devdax" mode.
+- When converting from "system-ram" mode to "devdax", it is expected
+  that all the memory sections are first made offline. By default,
+  daxctl won’t touch online memory. However with this option, attempt to
+  offline the memory on the NUMA node associated with the dax device
+  before converting it back to "devdax" mode.
 
--   Additionally, if a kernel policy to auto-online blocks is detected,
-    reconfiguration to system-ram fails. With this option, the failure
-    can be overridden to allow reconfiguration regardless of kernel
-    policy. Doing this may result in a successful reconfiguration, but
-    it may not be possible to subsequently offline the memory without a
-    reboot.
+- Additionally, if a kernel policy to auto-online blocks is detected,
+  reconfiguration to system-ram fails. With this option, the failure can
+  be overridden to allow reconfiguration regardless of kernel policy.
+  Doing this may result in a successful reconfiguration, but it may not
+  be possible to subsequently offline the memory without a reboot.
 
 <!-- -->
 

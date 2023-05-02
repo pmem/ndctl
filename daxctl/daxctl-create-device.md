@@ -12,7 +12,7 @@ daxctl-create-device - Create a devdax device
 
 # EXAMPLES
 
--   Creates dax0.1 with 4G of size
+- Creates dax0.1 with 4G of size
 
 <!-- -->
 
@@ -26,7 +26,7 @@ daxctl-create-device - Create a devdax device
       }
     ]
 
--   Creates devices with fully available size on all regions
+- Creates devices with fully available size on all regions
 
 <!-- -->
 
@@ -46,7 +46,7 @@ daxctl-create-device - Create a devdax device
       }
     ]
 
--   Creates dax0.1 with fully available size on region id 0
+- Creates dax0.1 with fully available size on region id 0
 
 <!-- -->
 

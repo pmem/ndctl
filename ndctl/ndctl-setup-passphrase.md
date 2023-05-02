@@ -28,7 +28,7 @@ or if a passphrase blob already exists in {ndctl_keysdir}.
 
 # OPTIONS
 
-\<dimm>  
+\<dimm\>  
 A *nmemX* device name, or a dimm id number. Restrict the operation to
 the specified dimm(s). The keyword *all* can be specified to indicate
 the lack of any restriction, however this is the same as not supplying a
@@ -211,4 +211,4 @@ extent permitted by law.
 
 # SEE ALSO:
 
-[ndctl-update-passphrase](ndctl-update-passphrase) , [ndctl-remove-passphrase](ndctl-remove-passphrase)
+`ndctl-update-passphrase(1)` , `ndctl-remove-passphrase(1)`

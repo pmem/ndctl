@@ -65,6 +65,6 @@ extent permitted by law.
 
 # SEE ALSO
 
-[ndctl-start-scrub](ndctl-start-scrub) , [ACPI 6.2 Specification Section 9.20.7.2 Address
-Range Scrubbing (ARS)
+`ndctl-start-scrub(1)` , [ACPI 6.2 Specification Section 9.20.7.2
+Address Range Scrubbing (ARS)
 Overview](http://www.uefi.org/sites/default/files/resources/ACPI%206_2_A_Sept29.pdf)

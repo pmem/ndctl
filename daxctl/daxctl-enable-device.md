@@ -12,14 +12,14 @@ daxctl-enable-device - Enable a devdax device
 
 # EXAMPLES
 
--   Enables dax0.1
+- Enables dax0.1
 
 <!-- -->
 
     # daxctl enable-device dax0.1
     enabled 1 device
 
--   Enables all devices in region id 0
+- Enables all devices in region id 0
 
 <!-- -->
 

@@ -12,13 +12,13 @@ daxctl-disable-device - Disables a devdax device
 
 # EXAMPLES
 
--   Disables dax0.1
+- Disables dax0.1
 
 <!-- -->
 
     # daxctl disable-device dax0.1
 
--   Disables all devices in region id 0
+- Disables all devices in region id 0
 
 <!-- -->
 

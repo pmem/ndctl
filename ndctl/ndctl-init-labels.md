@@ -72,7 +72,7 @@ Create a namespace in that region:
 
 # OPTIONS
 
-\<memory device(s)>  
+\<memory device(s)\>  
 A *nmemX* device name, or a dimm id number. Restrict the operation to
 the specified dimm(s). The keyword *all* can be specified to indicate
 the lack of any restriction, however this is the same as not supplying a
@@ -113,5 +113,5 @@ extent permitted by law.
 
 # SEE ALSO
 
-[ndctl-create-namespace](ndctl-create-namespace) , [UEFI NVDIMM Label
+`ndctl-create-namespace(1)` , [UEFI NVDIMM Label
 Protocol](http://www.uefi.org/sites/default/files/resources/UEFI_Spec_2_7.pdf)

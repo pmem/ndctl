@@ -24,9 +24,9 @@ implies an internal [cxl_ref](cxl_ref).
 Returns 0 on success, and a negative errno on failure. Possible error
 codes are:
 
--   -ENOMEM
+- -ENOMEM
 
--   -ENXIO
+- -ENXIO
 
 # EXAMPLE
 

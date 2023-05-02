@@ -13,7 +13,7 @@ system-ram mode
 
 # EXAMPLES
 
--   Reconfigure dax0.0 to system-ram mode
+- Reconfigure dax0.0 to system-ram mode
 
 <!-- -->
 
@@ -25,7 +25,7 @@ system-ram mode
       "mode":"system-ram"
     }
 
--   Offline the memory
+- Offline the memory
 
 <!-- -->
 

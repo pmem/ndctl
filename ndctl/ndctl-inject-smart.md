@@ -41,10 +41,10 @@ to indicate the lack of any restriction, however this is the same as not
 supplying a --bus option at all.
 
 `-m; --media-temperature=`  
-Inject \<value> for the media temperature smart attribute.
+Inject \<value\> for the media temperature smart attribute.
 
 `-M; --media-temperature-threshold=`  
-Set \<value> for the smart media temperature threshold.
+Set \<value\> for the smart media temperature threshold.
 
 `--media-temperature-alarm=`  
 Enable or disable the smart media temperature alarm. Options are *on* or
@@ -54,10 +54,10 @@ Enable or disable the smart media temperature alarm. Options are *on* or
 Uninject any media temperature previously injected.
 
 `-c; --ctrl-temperature=`  
-Inject \<value> for the controller temperature smart attribute.
+Inject \<value\> for the controller temperature smart attribute.
 
 `-C; --ctrl-temperature-threshold=`  
-Set \<value> for the smart controller temperature threshold.
+Set \<value\> for the smart controller temperature threshold.
 
 `--ctrl-temperature-alarm=`  
 Enable or disable the smart controller temperature alarm. Options are
@@ -67,10 +67,10 @@ Enable or disable the smart controller temperature alarm. Options are
 Uninject any controller temperature previously injected.
 
 `-s; --spares=`  
-Inject \<value> for the spares smart attribute.
+Inject \<value\> for the spares smart attribute.
 
 `-S; --spares-threshold=`  
-Set \<value> for the smart spares threshold.
+Set \<value\> for the smart spares threshold.
 
 `--spares-alarm=`  
 Enable or disable the smart spares alarm. Options are *on* or *off*.
@@ -113,4 +113,4 @@ extent permitted by law.
 
 # SEE ALSO
 
-[ndctl-list](ndctl-list) ,
+`ndctl-list(1)` ,
