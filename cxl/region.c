@@ -676,7 +676,7 @@ static int create_region(struct cxl_ctx *ctx, int *count,
 		}
 		if (cxl_decoder_get_mode(ep_decoder) != p->mode) {
 			/*
-			 * The memdev_target_find_decoder() helper returns a free
+			 * The cxl_memdev_find_decoder() helper returns a free
 			 * decoder whose size has been checked for 0.
 			 * Thus it is safe to change the mode here if needed.
 			 */
