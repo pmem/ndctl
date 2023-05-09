@@ -853,7 +853,7 @@ NDCTL_EXPORT int ndctl_dimm_wait_overwrite(struct ndctl_dimm *dimm)
 		dbg(ctx, "%s: overwrite complete\n",
 				ndctl_dimm_get_devname(dimm));
 	else if (rc == 0)
-		dbg(ctx, "%s: ovewrite skipped\n",
+		dbg(ctx, "%s: overwrite skipped\n",
 				ndctl_dimm_get_devname(dimm));
 	else
 		dbg(ctx, "%s: overwrite error waiting for complete\n",

@@ -47,7 +47,7 @@ include::xable-bus-options.txt[]
 	label data. Namespaces get reverted to raw mode.
 
 -o::
---ovewrite::
+--overwrite::
 	Wipe the entire DIMM, including label data. This can take significant
 	time, and the command is non-blocking. With this option, the overwrite
 	request is merely submitted to the NVDIMM, and the completion is
