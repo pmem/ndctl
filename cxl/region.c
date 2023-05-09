@@ -607,7 +607,8 @@ static int create_region(struct cxl_ctx *ctx, int *count,
 	} else if (p->ep_min_size) {
 		size = p->ep_min_size * p->ways;
 	} else {
-		log_err(&rl, "%s: unable to determine region size\n", __func__);
+		log_err(&rl, "unable to determine region size\n");
+
 		return -ENXIO;
 	}
 	max_extent = cxl_decoder_get_max_available_extent(p->root_decoder);
