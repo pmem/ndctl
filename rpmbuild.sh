@@ -10,7 +10,7 @@ if ./git-version | grep -q dirty; then
 	exit 1
 fi
 if [ ! -f $spec ]; then
-	meson compile -C build rhel/ndctl.spec
+	meson compile -C build rhel/ndctl.spec || exit
 	spec=$(dirname $0)/build/rhel/ndctl.spec
 fi
 ./make-git-snapshot.sh
