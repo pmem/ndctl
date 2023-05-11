@@ -607,7 +607,8 @@ static int create_region(struct cxl_ctx *ctx, int *count,
 	} else if (p->ep_min_size) {
 		size = p->ep_min_size * p->ways;
 	} else {
-		log_err(&rl, "%s: unable to determine region size\n", __func__);
+		log_err(&rl, "unable to determine region size\n");
+
 		return -ENXIO;
 	}
 	max_extent = cxl_decoder_get_max_available_extent(p->root_decoder);
@@ -675,7 +676,7 @@ static int create_region(struct cxl_ctx *ctx, int *count,
 		}
 		if (cxl_decoder_get_mode(ep_decoder) != p->mode) {
 			/*
-			 * The memdev_target_find_decoder() helper returns a free
+			 * The cxl_memdev_find_decoder() helper returns a free
 			 * decoder whose size has been checked for 0.
 			 * Thus it is safe to change the mode here if needed.
 			 */
