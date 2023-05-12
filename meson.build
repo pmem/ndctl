@@ -145,7 +145,7 @@ uuid = dependency('uuid')
 json = dependency('json-c')
 if get_option('libtracefs').enabled()
   traceevent = dependency('libtraceevent')
-  tracefs = dependency('libtracefs')
+  tracefs = dependency('libtracefs', version : '>=1.2.0')
 endif
 
 if get_option('docs').enabled()
