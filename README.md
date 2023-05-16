@@ -70,6 +70,9 @@ loaded.  To build and install nfit_test.ko:
    CONFIG_NVDIMM_DAX=y
    CONFIG_DEV_DAX_PMEM=m
    CONFIG_ENCRYPTED_KEYS=y
+   CONFIG_NVDIMM_SECURITY_TEST=y
+   CONFIG_STRICT_DEVMEM=y
+   CONFIG_IO_STRICT_DEVMEM=y
    ```
 
 1. Build and install the unit test enabled libnvdimm modules in the
