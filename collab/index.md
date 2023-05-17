@@ -14,6 +14,58 @@ layout: page
 * Do follow-up on linux-cxl@vger.kernel.org for longer questions / debug
 * https://pmem.io/ndctl/collab/
 
+# May 2023
+* Opens:
+  * rasdaemon patches need review
+* LSF/MM takeaways
+* QEMU Update
+* v6.4 pull summary
+* v6.5 Queue
+
+## LSF/MM takeaways
+* CXL 3.0 specification update review well received
+* Discussed nodes vs zones and mempolicy vs mmap flags, nodes+mempolicy continues as the path forward
+* Fabric manager: several efforts in flight (one in rust one in golang, OCP and OFA efforts as well)
+* Live migration: CXL as a transport for migration, opportunity for migrate in place
+
+## QEMU Update
+* Several patchkits ready and awaiting final merge:
+  * volatile memory
+  * poison handling
+  * events
+* DCD support starting to surface
+  * Initial test results of the pre-RFC implementation look good
+  * QMP based interface
+
+## v6.4 pull summary
+* [DOE rework](https://lore.kernel.org/all/cover.1678543498.git.lukas@wunner.de/)(queued)
+* [Poison retrieval](http://lore.kernel.org/r/cover.1679284567.git.alison.schofield@intel.com)(pending review)
+  * Forward and reverse address translation (DPA <==> HPA)
+* [Poison inject and clear](http://lore.kernel.org/r/cover.1678471465.git.alison.schofield@intel.com)(awaiting next rev)
+
+## v6.5 queue
+* [Background command support](http://lore.kernel.org/r/20230421092321.12741-1-dave@stgolabs.net/)(pending review)
+* [QoS Class support](http://lore.kernel.org/r/168382784460.3510737.9571643715488757272.stgit@djiang5-mobl3)(pending review)
+* [CDAT + QTG _DSM integration](http://lore.kernel.org/r/168088732996.1441063.10107817505475386072.stgit@djiang5-mobl3)(pending review)
+* [CXL perf monitoring](http://lore.kernel.org/r/20230303175022.10806-1-Jonathan.Cameron@huawei.com)(awaiting perf acks)
+* [Dynamic Capacity Device support](https://git.kernel.org/pub/scm/linux/kernel/git/cxl/cxl.git/log/?h=for-6.5/dcd-preview)(awaiting next rev)
+  * Sparse DAX Region infrastructure
+  * DCD event plumbing
+* [Firmware udpate](http://lore.kernel.org/r/20230421-vv-fw_update-v1-0-22468747d72f@intel.com))(pending review)
+  * v2 posted with review feedback incorporated
+  * man page added to the cxl-cli patchkit
+* [RAS Capability Tracing on RCH AER events](http://lore.kernel.org/r/20221021185615.605233-1-terry.bowman@amd.com)(awaiting next rev)
+* Standalone CXL IDE
+  * PCIE SPDM pre-requisite
+  * [KEYP table enabling](https://cdrdv2-public.intel.com/732838/732838_Root%20Complex%20IDE%20Programming%20Guide_Rev1p0.pdf)
+* [Switch CCI](http://lore.kernel.org/r/20221025104243.20836-1-Jonathan.Cameron@huawei.com)
+* memory_failure() for CXL events
+* [Type-2 Region Creation](https://git.kernel.org/pub/scm/linux/kernel/git/cxl/cxl.git/log/?h=for-6.4/cxl-type-2)(awaiting first rev)
+* Scan Media
+  * background dependency
+
+
+
 # April 2023
 * Opens:
 * QEMU Update
@@ -30,7 +82,7 @@ layout: page
   * Forward and reverse address translation (DPA <==> HPA)
 * [Poison inject and clear](http://lore.kernel.org/r/cover.1678471465.git.alison.schofield@intel.com)(awaiting next rev)
 * [CXL perf monitoring](http://lore.kernel.org/r/20230303175022.10806-1-Jonathan.Cameron@huawei.com)(awaiting perf acks)
-* [Background command support](https://lore.kernel.org/all/20230224194652.1990604-1-dave@stgolabs.net/)(awaiting next rev)
+
 
 
 ## v6.5 Queue
