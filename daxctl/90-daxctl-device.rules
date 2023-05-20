@@ -1,3 +1,3 @@
-ACTION=="add", SUBSYSTEM=="dax", TAG+="systemd",\
-  PROGRAM="/usr/bin/systemd-escape -p --template=daxdev-reconfigure@.service $env{DEVNAME}",\
+ACTION=="add", SUBSYSTEM=="dax", TAG+="systemd", \
+  PROGRAM="/usr/bin/systemd-escape -p --template=daxdev-reconfigure@.service $env{DEVNAME}", \
   ENV{SYSTEMD_WANTS}="%c"
