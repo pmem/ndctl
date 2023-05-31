@@ -300,11 +300,11 @@ static int parse_create_options(struct cxl_ctx *ctx, int count,
 		if (p->mode == CXL_DECODER_MODE_RAM && param.uuid) {
 			log_err(&rl,
 				"can't set UUID for ram / volatile regions");
-			return -EINVAL;
+			goto err;
 		}
 		if (p->mode == CXL_DECODER_MODE_NONE) {
 			log_err(&rl, "unsupported type: %s\n", param.type);
-			return -EINVAL;
+			goto err;
 		}
 	} else {
 		p->mode = CXL_DECODER_MODE_PMEM;
@@ -314,21 +314,21 @@ static int parse_create_options(struct cxl_ctx *ctx, int count,
 		p->size = parse_size64(param.size);
 		if (p->size == ULLONG_MAX) {
 			log_err(&rl, "Invalid size: %s\n", param.size);
-			return -EINVAL;
+			goto err;
 		}
 	}
 
 	if (param.ways <= 0) {
 		log_err(&rl, "Invalid interleave ways: %d\n", param.ways);
-		return -EINVAL;
+		goto err;
 	} else if (param.ways < INT_MAX) {
 		p->ways = param.ways;
 		if (!validate_ways(p, count))
-			return -EINVAL;
+			goto err;
 	} else if (count) {
 		p->ways = count;
 		if (!validate_ways(p, count))
-			return -EINVAL;
+			goto err;
 	} else
 		p->ways = p->num_memdevs;
 
@@ -336,7 +336,7 @@ static int parse_create_options(struct cxl_ctx *ctx, int count,
 		if (param.granularity <= 0) {
 			log_err(&rl, "Invalid interleave granularity: %d\n",
 				param.granularity);
-			return -EINVAL;
+			goto err;
 		}
 		p->granularity = param.granularity;
 	}
@@ -346,18 +346,22 @@ static int parse_create_options(struct cxl_ctx *ctx, int count,
 			log_err(&rl,
 				"size (%lu) is not an integral multiple of interleave-ways (%u)\n",
 				p->size, p->ways);
-			return -EINVAL;
+			goto err;
 		}
 	}
 
 	if (param.uuid) {
 		if (uuid_parse(param.uuid, p->uuid)) {
 			error("failed to parse uuid: '%s'\n", param.uuid);
-			return -EINVAL;
+			goto err;
 		}
 	}
 
 	return 0;
+
+err:
+	json_object_put(p->memdevs);
+	return -EINVAL;
 }
 
 static int parse_region_options(int argc, const char **argv,
