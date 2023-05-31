@@ -85,6 +85,32 @@ loaded.  To build and install nfit_test.ko:
    sudo make modules_install
    ```
 
+1. CXL test
+
+   The unit tests will also run CXL tests by default. In order to make these
+   work, we need to install the cxl_test.ko as well.
+
+   Obtain the CXL kernel source(optional).  For example,
+   `git clone -b pending git://git.kernel.org/pub/scm/linux/kernel/git/cxl/cxl.git`
+
+   Enable CXL-related kernel configuration options.
+   ```
+   CONFIG_CXL_BUS=m
+   CONFIG_CXL_PCI=m
+   CONFIG_CXL_ACPI=m
+   CONFIG_CXL_PMEM=m
+   CONFIG_CXL_MEM=m
+   CONFIG_CXL_PORT=m
+   CONFIG_CXL_REGION=y
+   CONFIG_CXL_REGION_INVALIDATION_TEST=y
+   CONFIG_DEV_DAX_CXL=m
+   ```
+1. Install cxl_test and related mock modules.
+   ```
+   make M=tools/testing/cxl
+   sudo make M=tools/testing/cxl modules_install
+   sudo make modules_install
+   ```
 1. Now run `meson test -C build` in the ndctl source directory, or `ndctl test`,
    if ndctl was built with `-Dtest=enabled` as a configuration option to meson.
 
