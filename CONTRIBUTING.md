@@ -5,15 +5,21 @@ Thank you for taking the time to contribute to ndctl.
 The following is a set of guidelines that we adhere to, and request that
 contributors follow.
 
+1. **NOTE**: Since cxl-cli and libcxl are part of the ndctl project, any
+   changes or questions relevant to CXL should also CC the CXL mailing
+   list **```linux-cxl@vger.kernel.org```**.
+
 1. The libnvdimm (kernel subsystem) and ndctl developers primarily use
    the [nvdimm](https://subspace.kernel.org/lists.linux.dev.html)
    mailing list for everything. It is recommended to send patches to
-   **```nvdimm@lists.linux.dev```**
-   An archive is available on [lore](https://lore.kernel.org/nvdimm/)
+   **```nvdimm@lists.linux.dev```** and CC **```linux-cxl@vger.kernel.org```** if needed.
+   The archives are available on [nvdimm](https://lore.kernel.org/nvdimm/) and
+   [cxl](https://lore.kernel.org/linux-cxl/)
 
 1. Github [issues](https://github.com/pmem/ndctl/issues) are an acceptable
    way to report a problem, but if you just have a question,
-   [email](mailto:nvdimm@lists.linux.dev) the above list.
+   [email](mailto:nvdimm@lists.linux.dev) the above list and CC
+   `linux-cxl@linux-cxl@vger.kernel.org` if needed.
 
 1. We follow the Linux Kernel [Coding Style Guide][cs] as applicable.
 
