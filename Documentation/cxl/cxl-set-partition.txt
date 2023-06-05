@@ -35,6 +35,8 @@ OPTIONS
 <memory device(s)>::
 include::memdev-option.txt[]
 
+include::bus-option.txt[]
+
 -t::
 --type=::
 	Type of partition, 'pmem' or 'ram' (volatile), to modify.

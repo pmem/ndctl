@@ -24,6 +24,8 @@ OPTIONS
 <memory device(s)>::
 include::memdev-option.txt[]
 
+include::bus-option.txt[]
+
 -d::
 --decoder::
 	Specify the decoder to free. The CXL specification

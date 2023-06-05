@@ -18,6 +18,8 @@ OPTIONS
 <memory device(s)>::
 include::memdev-option.txt[]
 
+include::bus-option.txt[]
+
 -f::
 --force::
 	DANGEROUS: Override the safety measure that blocks attempts to disable

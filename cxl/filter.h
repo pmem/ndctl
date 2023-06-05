@@ -36,6 +36,8 @@ struct cxl_filter_params {
 struct cxl_memdev *util_cxl_memdev_filter(struct cxl_memdev *memdev,
 					  const char *__ident,
 					  const char *serials);
+struct cxl_memdev *util_cxl_memdev_filter_by_bus(struct cxl_memdev *memdev,
+						 const char *__ident);
 struct cxl_port *util_cxl_port_filter_by_memdev(struct cxl_port *port,
 						const char *ident,
 						const char *serial);

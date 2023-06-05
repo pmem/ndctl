@@ -44,6 +44,8 @@ enum cxl_setpart_type {
 };
 
 #define BASE_OPTIONS() \
+OPT_STRING('b', "bus", &param.bus, "bus name", \
+	   "Limit operation to the specified bus"), \
 OPT_BOOLEAN('v',"verbose", &param.verbose, "turn on debug"), \
 OPT_BOOLEAN('S', "serial", &param.serial, "use serial numbers to id memdevs")
 
@@ -752,6 +754,8 @@ static int memdev_action(int argc, const char **argv, struct cxl_ctx *ctx,
 
 			if (!util_cxl_memdev_filter(memdev, memdev_filter,
 						    serial_filter))
+				continue;
+			if (!util_cxl_memdev_filter_by_bus(memdev, param.bus))
 				continue;
 			found = true;
 
