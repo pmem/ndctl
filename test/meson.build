@@ -155,6 +155,7 @@ cxl_sysfs = find_program('cxl-region-sysfs.sh')
 cxl_labels = find_program('cxl-labels.sh')
 cxl_create_region = find_program('cxl-create-region.sh')
 cxl_xor_region = find_program('cxl-xor-region.sh')
+cxl_update_firmware = find_program('cxl-update-firmware.sh')
 
 tests = [
   [ 'libndctl',               libndctl,		  'ndctl' ],
@@ -198,6 +199,7 @@ if get_option('destructive').enabled()
 
   tests += [
     [ 'firmware-update.sh',     firmware_update,	  'ndctl' ],
+    [ 'cxl-update-firmware.sh', cxl_update_firmware,      'cxl'   ],
     [ 'pmem-ns',           pmem_ns,	   'ndctl' ],
     [ 'sub-section.sh',    sub_section,	   'dax'   ],
     [ 'dax-dev',           dax_dev,	   'dax'   ],
