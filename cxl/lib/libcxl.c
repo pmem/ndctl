@@ -3968,6 +3968,96 @@ CXL_EXPORT struct cxl_cmd *cxl_cmd_new_set_partition(struct cxl_memdev *memdev,
 	return cmd;
 }
 
+CXL_EXPORT struct cxl_cmd *cxl_cmd_new_get_fw_info(struct cxl_memdev *memdev)
+{
+	return cxl_cmd_new_generic(memdev, CXL_MEM_COMMAND_ID_GET_FW_INFO);
+}
+
+static struct cxl_cmd_get_fw_info *cmd_to_get_fw_info(struct cxl_cmd *cmd)
+{
+	if (cxl_cmd_validate_status(cmd, CXL_MEM_COMMAND_ID_GET_FW_INFO))
+		return NULL;
+
+	return cmd->output_payload;
+}
+
+CXL_EXPORT unsigned int cxl_cmd_fw_info_get_num_slots(struct cxl_cmd *cmd)
+{
+	struct cxl_cmd_get_fw_info *c = cmd_to_get_fw_info(cmd);
+
+	if (!c)
+		return 0;
+
+	return c->num_slots;
+}
+
+CXL_EXPORT unsigned int cxl_cmd_fw_info_get_active_slot(struct cxl_cmd *cmd)
+{
+	struct cxl_cmd_get_fw_info *c = cmd_to_get_fw_info(cmd);
+
+	if (!c)
+		return 0;
+
+	return c->slot_info & CXL_FW_INFO_CUR_SLOT_MASK;
+}
+
+CXL_EXPORT unsigned int cxl_cmd_fw_info_get_staged_slot(struct cxl_cmd *cmd)
+{
+	struct cxl_cmd_get_fw_info *c = cmd_to_get_fw_info(cmd);
+
+	if (!c)
+		return 0;
+
+	return (c->slot_info & CXL_FW_INFO_NEXT_SLOT_MASK) >>
+	       CXL_FW_INFO_NEXT_SLOT_SHIFT;
+}
+
+CXL_EXPORT bool cxl_cmd_fw_info_get_online_activate_capable(struct cxl_cmd *cmd)
+{
+	struct cxl_cmd_get_fw_info *c = cmd_to_get_fw_info(cmd);
+
+	if (!c)
+		return false;
+
+	return !!(c->activation_cap & CXL_FW_INFO_HAS_LIVE_ACTIVATE);
+}
+
+CXL_EXPORT int cxl_cmd_fw_info_get_fw_ver(struct cxl_cmd *cmd, int slot,
+					  char *buf, unsigned int len)
+{
+	struct cxl_cmd_get_fw_info *c = cmd_to_get_fw_info(cmd);
+	char *fw_ver;
+
+	if (!c)
+		return -ENXIO;
+	if (!len)
+		return -EINVAL;
+
+	switch(slot) {
+	case 1:
+		fw_ver = c->slot_1_revision;
+		break;
+	case 2:
+		fw_ver = c->slot_2_revision;
+		break;
+	case 3:
+		fw_ver = c->slot_3_revision;
+		break;
+	case 4:
+		fw_ver = c->slot_4_revision;
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	if (fw_ver[0] == 0)
+		return -ENOENT;
+
+	memcpy(buf, fw_ver, min(len, (unsigned int)CXL_FW_VERSION_STR_LEN));
+
+	return 0;
+}
+
 CXL_EXPORT int cxl_cmd_submit(struct cxl_cmd *cmd)
 {
 	struct cxl_memdev *memdev = cmd->memdev;

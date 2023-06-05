@@ -12,6 +12,84 @@
 #include "json.h"
 #include "../daxctl/json.h"
 
+#define CXL_FW_VERSION_STR_LEN	16
+#define CXL_FW_MAX_SLOTS	4
+
+static struct json_object *util_cxl_memdev_fw_to_json(
+		struct cxl_memdev *memdev, unsigned long flags)
+{
+	struct json_object *jobj;
+	struct json_object *jfw;
+	u32 field, num_slots;
+	struct cxl_cmd *cmd;
+	int rc, i;
+
+	jfw = json_object_new_object();
+	if (!jfw)
+		return NULL;
+	if (!memdev)
+		goto err_jobj;
+
+	cmd = cxl_cmd_new_get_fw_info(memdev);
+	if (!cmd)
+		goto err_jobj;
+
+	rc = cxl_cmd_submit(cmd);
+	if (rc < 0)
+		goto err_cmd;
+	rc = cxl_cmd_get_mbox_status(cmd);
+	if (rc != 0)
+		goto err_cmd;
+
+	/* fw_info fields */
+	num_slots = cxl_cmd_fw_info_get_num_slots(cmd);
+	jobj = json_object_new_int(num_slots);
+	if (jobj)
+		json_object_object_add(jfw, "num_slots", jobj);
+
+	field = cxl_cmd_fw_info_get_active_slot(cmd);
+	jobj = json_object_new_int(field);
+	if (jobj)
+		json_object_object_add(jfw, "active_slot", jobj);
+
+	field = cxl_cmd_fw_info_get_staged_slot(cmd);
+	if (field > 0 && field <= num_slots) {
+		jobj = json_object_new_int(field);
+		if (jobj)
+			json_object_object_add(jfw, "staged_slot", jobj);
+	}
+
+	rc = cxl_cmd_fw_info_get_online_activate_capable(cmd);
+	jobj = json_object_new_boolean(rc);
+	if (jobj)
+		json_object_object_add(jfw, "online_activate_capable", jobj);
+
+	for (i = 1; i <= CXL_FW_MAX_SLOTS; i++) {
+		char fw_ver[CXL_FW_VERSION_STR_LEN + 1];
+		char jkey[16];
+
+		rc = cxl_cmd_fw_info_get_fw_ver(cmd, i, fw_ver,
+						CXL_FW_VERSION_STR_LEN);
+		if (rc)
+			continue;
+		fw_ver[CXL_FW_VERSION_STR_LEN] = 0;
+		snprintf(jkey, 16, "slot_%d_version", i);
+		jobj = json_object_new_string(fw_ver);
+		if (jobj)
+			json_object_object_add(jfw, jkey, jobj);
+	}
+
+	cxl_cmd_unref(cmd);
+	return jfw;
+
+err_cmd:
+	cxl_cmd_unref(cmd);
+err_jobj:
+	json_object_put(jfw);
+	return NULL;
+
+}
+
 static struct json_object *util_cxl_memdev_health_to_json(
 		struct cxl_memdev *memdev, unsigned long flags)
 {
@@ -550,6 +628,12 @@ struct json_object *util_cxl_memdev_to_json(struct cxl_memdev *memdev,
 		jobj = util_cxl_memdev_partition_to_json(memdev, flags);
 		if (jobj)
 			json_object_object_add(jdev, "partition_info", jobj);
+	}
+
+	if (flags & UTIL_JSON_FIRMWARE) {
+		jobj = util_cxl_memdev_fw_to_json(memdev, flags);
+		if (jobj)
+			json_object_object_add(jdev, "firmware", jobj);
 	}
 
 	json_object_set_userdata(jdev, memdev, NULL);

@@ -250,3 +250,13 @@ global:
 	cxl_region_get_daxctl_region;
 	cxl_port_get_parent_dport;
 } LIBCXL_4;
+
+LIBCXL_6 {
+global:
+	cxl_cmd_new_get_fw_info;
+	cxl_cmd_fw_info_get_num_slots;
+	cxl_cmd_fw_info_get_active_slot;
+	cxl_cmd_fw_info_get_staged_slot;
+	cxl_cmd_fw_info_get_online_activate_capable;
+	cxl_cmd_fw_info_get_fw_ver;
+} LIBCXL_5;

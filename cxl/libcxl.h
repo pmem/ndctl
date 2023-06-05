@@ -68,6 +68,13 @@ int cxl_memdev_read_label(struct cxl_memdev *memdev, void *buf, size_t length,
 		size_t offset);
 int cxl_memdev_write_label(struct cxl_memdev *memdev, void *buf, size_t length,
 		size_t offset);
+struct cxl_cmd *cxl_cmd_new_get_fw_info(struct cxl_memdev *memdev);
+unsigned int cxl_cmd_fw_info_get_num_slots(struct cxl_cmd *cmd);
+unsigned int cxl_cmd_fw_info_get_active_slot(struct cxl_cmd *cmd);
+unsigned int cxl_cmd_fw_info_get_staged_slot(struct cxl_cmd *cmd);
+bool cxl_cmd_fw_info_get_online_activate_capable(struct cxl_cmd *cmd);
+int cxl_cmd_fw_info_get_fw_ver(struct cxl_cmd *cmd, int slot, char *buf,
+			       unsigned int len);
 
 #define cxl_memdev_foreach(ctx, memdev) \
         for (memdev = cxl_memdev_get_first(ctx); \

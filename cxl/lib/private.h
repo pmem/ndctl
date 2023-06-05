@@ -9,6 +9,7 @@
 #include <ccan/endian/endian.h>
 #include <ccan/short_types/short_types.h>
 #include <util/size.h>
+#include <util/bitmap.h>
 
 #define CXL_EXPORT __attribute__ ((visibility("default")))
 
@@ -234,6 +235,26 @@ struct cxl_cmd_get_health_info {
 	le32 volatile_errors;
 	le32 pmem_errors;
 } __attribute__((packed));
+
+/* CXL 3.0 8.2.9.3.1 Get Firmware Info */
+struct cxl_cmd_get_fw_info {
+	u8 num_slots;
+	u8 slot_info;
+	u8 activation_cap;
+	u8 reserved[13];
+	char slot_1_revision[0x10];
+	char slot_2_revision[0x10];
+	char slot_3_revision[0x10];
+	char slot_4_revision[0x10];
+} __attribute__((packed));
+
+#define CXL_FW_INFO_CUR_SLOT_MASK	GENMASK(2, 0)
+#define CXL_FW_INFO_NEXT_SLOT_MASK	GENMASK(5, 3)
+#define CXL_FW_INFO_NEXT_SLOT_SHIFT	(3)
+#define CXL_FW_INFO_HAS_LIVE_ACTIVATE	BIT(0)
+
+#define CXL_FW_VERSION_STR_LEN		16
+#define CXL_FW_MAX_SLOTS		4
 
 /* CXL 3.0 8.2.9.8.3.2 Get Alert Configuration */
 struct cxl_cmd_get_alert_config {
