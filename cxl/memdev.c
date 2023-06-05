@@ -23,14 +23,18 @@ struct action_context {
 };
 
 static struct parameters {
+	const char *bus;
 	const char *outfile;
 	const char *infile;
+	const char *fw_file;
 	unsigned len;
 	unsigned offset;
 	bool verbose;
 	bool serial;
 	bool force;
 	bool align;
+	bool cancel;
+	bool wait;
 	const char *type;
 	const char *size;
 	const char *decoder_filter;
@@ -87,6 +91,14 @@ OPT_STRING('t', "type", &param.type, "type",                   \
 OPT_BOOLEAN('f', "force", &param.force,                        \
 	    "Attempt 'expected to fail' operations")
 
+#define FW_OPTIONS()                                                 \
+OPT_STRING('F', "firmware-file", &param.fw_file, "firmware-file",     \
+	   "firmware image file to use for the update"),             \
+OPT_BOOLEAN('c', "cancel", &param.cancel,                            \
+	    "attempt to abort an in-progress firmware update"),      \
+OPT_BOOLEAN('w', "wait", &param.wait,                                \
+	    "wait for firmware update to complete before returning")
+
 static const struct option read_options[] = {
 	BASE_OPTIONS(),
 	LABEL_OPTIONS(),
@@ -134,6 +146,12 @@ static const struct option reserve_dpa_options[] = {
 static const struct option free_dpa_options[] = {
 	BASE_OPTIONS(),
 	DPA_OPTIONS(),
+	OPT_END(),
+};
+
+static const struct option update_fw_options[] = {
+	BASE_OPTIONS(),
+	FW_OPTIONS(),
 	OPT_END(),
 };
 
@@ -655,6 +673,39 @@ out_err:
 	return rc;
 }
 
+static int action_update_fw(struct cxl_memdev *memdev,
+			    struct action_context *actx)
+{
+	const char *devname = cxl_memdev_get_devname(memdev);
+	struct json_object *jmemdev;
+	unsigned long flags;
+	int rc;
+
+	if (param.cancel)
+		return cxl_memdev_cancel_fw_update(memdev);
+
+	if (param.fw_file) {
+		rc = cxl_memdev_update_fw(memdev, param.fw_file);
+		if (rc)
+			log_err(&ml, "%s error: %s\n", devname, strerror(-rc));
+	}
+
+	if (param.wait) {
+		while (cxl_memdev_fw_update_in_progress(memdev) ||
+		       cxl_memdev_fw_update_get_remaining(memdev) > 0)
+			sleep(1);
+	}
+
+	flags = UTIL_JSON_FIRMWARE;
+	if (actx->f_out == stdout && isatty(1))
+		flags |= UTIL_JSON_HUMAN;
+	jmemdev = util_cxl_memdev_to_json(memdev, flags);
+	if (actx->jdevs && jmemdev)
+		json_object_array_add(actx->jdevs, jmemdev);
+
+	return rc;
+}
+
 static int memdev_action(int argc, const char **argv, struct cxl_ctx *ctx,
 			 int (*action)(struct cxl_memdev *memdev,
 				       struct action_context *actx),
@@ -698,7 +749,7 @@ static int memdev_action(int argc, const char **argv, struct cxl_ctx *ctx,
 	}
 
 	if (action == action_setpartition || action == action_reserve_dpa ||
-	    action == action_free_dpa)
+	    action == action_free_dpa || action == action_update_fw)
 		actx.jdevs = json_object_new_array();
 
 	if (err == argc) {
@@ -893,6 +944,26 @@ int cmd_free_dpa(int argc, const char **argv, struct cxl_ctx *ctx)
 		argc, argv, ctx, action_free_dpa, free_dpa_options,
 		"cxl free-dpa <mem0> [<mem1>..<memn>] [<options>]");
 	log_info(&ml, "reservation release completed on %d mem device%s\n",
+		 count >= 0 ? count : 0, count > 1 ? "s" : "");
+
+	return count >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_update_fw(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int count = memdev_action(
+		argc, argv, ctx, action_update_fw, update_fw_options,
+		"cxl update-firmware <mem0> [<mem1>..<memn>] [<options>]");
+	const char *op_string;
+
+	if (param.cancel)
+		op_string = "cancelled";
+	else if (param.wait)
+		op_string = "completed";
+	else
+		op_string = "started";
+
+	log_info(&ml, "firmware update %s on %d mem device%s\n", op_string,
 		 count >= 0 ? count : 0, count > 1 ? "s" : "");
 
 	return count >= 0 ? 0 : EXIT_FAILURE;

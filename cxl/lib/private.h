@@ -29,6 +29,11 @@ struct cxl_fw_loader {
 	char *status;
 };
 
+enum cxl_fwl_loading {
+	CXL_FWL_LOADING_END = 0,
+	CXL_FWL_LOADING_START,
+};
+
 struct cxl_endpoint;
 struct cxl_memdev {
 	int id, major, minor;

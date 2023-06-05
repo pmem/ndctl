@@ -261,4 +261,6 @@ global:
 	cxl_cmd_fw_info_get_fw_ver;
 	cxl_memdev_fw_update_in_progress;
 	cxl_memdev_fw_update_get_remaining;
+	cxl_memdev_update_fw;
+	cxl_memdev_cancel_fw_update;
 } LIBCXL_5;

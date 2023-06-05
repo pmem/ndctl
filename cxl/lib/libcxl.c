@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <dirent.h>
 #include <unistd.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
@@ -1467,6 +1468,119 @@ CXL_EXPORT size_t cxl_memdev_fw_update_get_remaining(struct cxl_memdev *memdev)
 	}
 
 	return strtoull(buf, NULL, 0);
+}
+
+static int cxl_memdev_fwl_set_loading(struct cxl_memdev *memdev,
+				      enum cxl_fwl_loading loadval)
+{
+	const char *devname = cxl_memdev_get_devname(memdev);
+	struct cxl_ctx *ctx = cxl_memdev_get_ctx(memdev);
+	struct cxl_fw_loader *fwl = memdev->fwl;
+	char buf[SYSFS_ATTR_SIZE];
+	int rc;
+
+	sprintf(buf, "%d\n", loadval);
+	rc = sysfs_write_attr(ctx, fwl->loading, buf);
+	if (rc < 0) {
+		err(ctx, "%s: failed to trigger fw loading to %d (%s)\n",
+		    devname, loadval, strerror(-rc));
+		return rc;
+	}
+
+	return 0;
+}
+
+static int cxl_memdev_fwl_copy_data(struct cxl_memdev *memdev, void *fw_buf,
+				    size_t size)
+{
+	struct cxl_ctx *ctx = cxl_memdev_get_ctx(memdev);
+	struct cxl_fw_loader *fwl = memdev->fwl;
+	FILE *fwl_data;
+	size_t rw_len;
+	int rc = 0;
+
+	fwl_data = fopen(fwl->data, "w");
+	if (!fwl_data) {
+		err(ctx, "failed to open: %s: (%s)\n", fwl->data,
+		    strerror(errno));
+		return -errno;
+	}
+
+	rw_len = fwrite(fw_buf, 1, size, fwl_data);
+	if (rw_len != size) {
+		rc = -ENXIO;
+		goto out_close;
+	}
+	fflush(fwl_data);
+
+out_close:
+	fclose(fwl_data);
+	return rc;
+}
+
+CXL_EXPORT int cxl_memdev_update_fw(struct cxl_memdev *memdev,
+				    const char *fw_path)
+{
+	struct cxl_ctx *ctx = cxl_memdev_get_ctx(memdev);
+	struct stat s;
+	int f_in, rc;
+	void *fw_buf;
+
+	f_in = open(fw_path, O_RDONLY);
+	if (f_in < 0) {
+		err(ctx, "failed to open: %s: (%s)\n", fw_path,
+		    strerror(errno));
+		return -errno;
+	}
+
+	rc = fstat(f_in, &s);
+	if (rc < 0) {
+		err(ctx, "failed to stat: %s: (%s)\n", fw_path,
+		    strerror(errno));
+		rc = -errno;
+		goto out_close;
+	}
+
+	fw_buf = mmap(NULL, s.st_size, PROT_READ, MAP_PRIVATE, f_in, 0);
+	if (fw_buf == MAP_FAILED) {
+		err(ctx, "failed to map: %s: (%s)\n", fw_path,
+		    strerror(errno));
+		rc = -errno;
+		goto out_close;
+	}
+
+	rc = cxl_memdev_fwl_set_loading(memdev, CXL_FWL_LOADING_START);
+	if (rc)
+		goto out_unmap;
+
+	rc = cxl_memdev_fwl_copy_data(memdev, fw_buf, s.st_size);
+	if (rc)
+		goto out_unmap;
+
+	rc = cxl_memdev_fwl_set_loading(memdev, CXL_FWL_LOADING_END);
+
+out_unmap:
+	munmap(fw_buf, s.st_size);
+out_close:
+	close(f_in);
+	return rc;
+}
+
+CXL_EXPORT int cxl_memdev_cancel_fw_update(struct cxl_memdev *memdev)
+{
+	struct cxl_ctx *ctx = cxl_memdev_get_ctx(memdev);
+	struct cxl_fw_loader *fwl = memdev->fwl;
+	int rc;
+
+	if (!cxl_memdev_fw_update_in_progress(memdev) &&
+	    cxl_memdev_fw_update_get_remaining(memdev) == 0)
+		return -ENXIO;
+
+	rc = sysfs_write_attr(ctx, fwl->cancel, "1\n");
+	if (rc < 0)
+		return rc;
+
+	return 0;
 }
 
 static void bus_invalidate(struct cxl_bus *bus)
