@@ -22,6 +22,7 @@ static struct json_object *util_cxl_memdev_fw_to_json(
 	struct json_object *jfw;
 	u32 field, num_slots;
 	struct cxl_cmd *cmd;
+	size_t remaining;
 	int rc, i;
 
 	jfw = json_object_new_object();
@@ -77,6 +78,18 @@ static struct json_object *util_cxl_memdev_fw_to_json(
 		jobj = json_object_new_string(fw_ver);
 		if (jobj)
 			json_object_object_add(jfw, jkey, jobj);
+	}
+
+	rc = cxl_memdev_fw_update_in_progress(memdev);
+	jobj = json_object_new_boolean(rc);
+	if (jobj)
+		json_object_object_add(jfw, "fw_update_in_progress", jobj);
+
+	if (rc == true) {
+		remaining = cxl_memdev_fw_update_get_remaining(memdev);
+		jobj = util_json_object_size(remaining, flags);
+		if (jobj)
+			json_object_object_add(jfw, "remaining_size", jobj);
 	}
 
 	cxl_cmd_unref(cmd);

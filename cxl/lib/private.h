@@ -20,6 +20,15 @@ struct cxl_pmem {
 	char *dev_path;
 };
 
+struct cxl_fw_loader {
+	char *dev_path;
+	char *loading;
+	char *data;
+	char *remaining;
+	char *cancel;
+	char *status;
+};
+
 struct cxl_endpoint;
 struct cxl_memdev {
 	int id, major, minor;
@@ -39,6 +48,7 @@ struct cxl_memdev {
 	struct cxl_pmem *pmem;
 	unsigned long long serial;
 	struct cxl_endpoint *endpoint;
+	struct cxl_fw_loader *fwl;
 };
 
 struct cxl_dport {
