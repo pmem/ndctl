@@ -14,6 +14,51 @@ layout: page
 * Do follow-up on linux-cxl@vger.kernel.org for longer questions / debug
 * https://pmem.io/ndctl/collab/
 
+# June 2023
+* Opens:
+  * OpenBMC collaboration
+  * Labels / Persistent Naming (6.3 issue?)
+  * Add a CXL-CLI Item to the Agenda
+* QEMU Update
+* v6.4 Fixes
+* v6.5 Merge Queue
+* Post v6.5 material
+
+## QEMU Update
+* QEMU DCD Support?
+* MLD Support
+* CCI layering work for OpenBMC collab
+* I2C ACPI aspeed controller (upstream questionable)
+
+## v6.4 Fixes
+* [DAX Use After Free](https://lore.kernel.org/linux-cxl/168577282846.1672036.13848242151310480001.stgit@dwillia2-xfh.jf.intel.com/)
+* [SRAT vs CFMWS Fixup](https://lore.kernel.org/linux-cxl/cover.1684448934.git.alison.schofield@intel.com/)(pending next rev and x86 review)
+* [Cache Management Discussion](http://lore.kernel.org/r/648220cdade2_1433ac2949b@dwillia2-xfh.jf.intel.com.notmuch)
+
+## v6.5 Merge Queue
+* [RCH Error Handling](https://lore.kernel.org/linux-cxl/20230607221651.2454764-1-terry.bowman@amd.com/)(awaiting v6 posting)
+  * Follow-up: RDPAS vs Root Port Scanning?
+* [Background command support](http://lore.kernel.org/r/20230421092321.12741-1-dave@stgolabs.net/)(baseline pushed, awaiting consumer)
+  * [Sanitization](http://lore.kernel.org/r/20230612181038.14421-1-dave@stgolabs.net)(pending review)
+  * [Firmware udpate](http://lore.kernel.org/r/20230602-vv-fw_update-v3-0-869f82069c95@intel.com)(awaiting final review)
+* [CXL perf monitoring](http://lore.kernel.org/r/20230303175022.10806-1-Jonathan.Cameron@huawei.com)(awaiting push to cxl-next)
+
+## Post v6.5
+* [QoS Class support](http://lore.kernel.org/r/168382784460.3510737.9571643715488757272.stgit@djiang5-mobl3)(pre-reqs heading for v6.5)
+  * [CDAT + QTG _DSM integration](http://lore.kernel.org/r/168088732996.1441063.10107817505475386072.stgit@djiang5-mobl3)(pending review)
+* Standalone CXL IDE
+  * [PCIE SPDM pre-requisite](https://github.com/l1k/linux/commits/doe)
+  * [KEYP table enabling](https://cdrdv2-public.intel.com/732838/732838_Root%20Complex%20IDE%20Programming%20Guide_Rev1p0.pdf)
+* [Switch CCI](http://lore.kernel.org/r/20221025104243.20836-1-Jonathan.Cameron@huawei.com)
+* memory_failure() for CXL events
+* [Type-2 Region Creation](http://lore.kernel.org/r/168592149709.1948938.8663425987110396027.stgit@dwillia2-xfh.jf.intel.com) (awaiting review)
+* Scan Media
+  * background dependency
+* [Dynamic Capacity Device support](https://git.kernel.org/pub/scm/linux/kernel/git/cxl/cxl.git/log/?h=for-6.5/dcd-preview)(awaiting next rev)
+  * Sparse DAX Region infrastructure
+  * DCD event plumbing
+
+
 # May 2023
 * Opens:
   * rasdaemon patches need review
