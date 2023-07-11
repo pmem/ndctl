@@ -14,6 +14,15 @@ layout: page
 * Do follow-up on linux-cxl@vger.kernel.org for longer questions / debug
 * https://pmem.io/ndctl/collab/
 
+# July 2023
+
+## ndctl / cxl-cli update
+* v78 - minor fixups only - will go out this week
+* v79
+  * Firmware update (no outstanding comments)
+  * Poison injection (awaiting new rev)
+  * Others?
+
 # June 2023
 * Opens:
   * OpenBMC collaboration
