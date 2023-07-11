@@ -188,7 +188,7 @@ int cmd_monitor(int argc, const char **argv, struct cxl_ctx *ctx)
 	else
 		monitor.ctx.log_priority = LOG_INFO;
 
-	if (strncmp(log, "./standard", 10) == 0)
+	if (strcmp(log, "./standard") == 0)
 		monitor.ctx.log_fn = log_standard;
 	else {
 		monitor.ctx.log_file = fopen(log, "a+");
