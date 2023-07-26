@@ -20,6 +20,8 @@ OPTIONS
 -------
 include::labels-options.txt[]
 
+include::bus-option.txt[]
+
 -o::
 --output::
 	output file

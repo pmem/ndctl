@@ -243,6 +243,25 @@ static struct cxl_port *util_cxl_port_filter_by_bus(struct cxl_port *port,
 	return NULL;
 }
 
+struct cxl_memdev *util_cxl_memdev_filter_by_bus(struct cxl_memdev *memdev,
+						 const char *__ident)
+{
+	struct cxl_ctx *ctx = cxl_memdev_get_ctx(memdev);
+	struct cxl_bus *bus;
+
+	if (!__ident)
+		return memdev;
+
+	cxl_bus_foreach(ctx, bus) {
+		if (!util_cxl_bus_filter(bus, __ident))
+			continue;
+		if (bus == cxl_memdev_get_bus(memdev))
+			return memdev;
+	}
+
+	return NULL;
+}
+
 static struct cxl_decoder *
 util_cxl_decoder_filter_by_bus(struct cxl_decoder *decoder, const char *__ident)
 {

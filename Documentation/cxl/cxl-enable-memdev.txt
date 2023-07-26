@@ -23,6 +23,8 @@ OPTIONS
 <memory device(s)>::
 include::memdev-option.txt[]
 
+include::bus-option.txt[]
+
 -v::
 	Turn on verbose debug messages in the library (if libcxl was built with
 	logging and debug enabled).

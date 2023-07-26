@@ -33,6 +33,31 @@ void *cxl_get_userdata(struct cxl_ctx *ctx);
 void cxl_set_private_data(struct cxl_ctx *ctx, void *data);
 void *cxl_get_private_data(struct cxl_ctx *ctx);
 
+enum cxl_fwl_status {
+	CXL_FWL_STATUS_UNKNOWN,
+	CXL_FWL_STATUS_IDLE,
+	CXL_FWL_STATUS_RECEIVING,
+	CXL_FWL_STATUS_PREPARING,
+	CXL_FWL_STATUS_TRANSFERRING,
+	CXL_FWL_STATUS_PROGRAMMING,
+};
+
+static inline enum cxl_fwl_status cxl_fwl_status_from_ident(char *status)
+{
+	if (strcmp(status, "idle") == 0)
+		return CXL_FWL_STATUS_IDLE;
+	if (strcmp(status, "receiving") == 0)
+		return CXL_FWL_STATUS_RECEIVING;
+	if (strcmp(status, "preparing") == 0)
+		return CXL_FWL_STATUS_PREPARING;
+	if (strcmp(status, "transferring") == 0)
+		return CXL_FWL_STATUS_TRANSFERRING;
+	if (strcmp(status, "programming") == 0)
+		return CXL_FWL_STATUS_PROGRAMMING;
+
+	return CXL_FWL_STATUS_UNKNOWN;
+}
+
 struct cxl_memdev;
 struct cxl_memdev *cxl_memdev_get_first(struct cxl_ctx *ctx);
 struct cxl_memdev *cxl_memdev_get_next(struct cxl_memdev *memdev);
@@ -48,6 +73,10 @@ struct cxl_ctx *cxl_memdev_get_ctx(struct cxl_memdev *memdev);
 unsigned long long cxl_memdev_get_pmem_size(struct cxl_memdev *memdev);
 unsigned long long cxl_memdev_get_ram_size(struct cxl_memdev *memdev);
 const char *cxl_memdev_get_firmware_verison(struct cxl_memdev *memdev);
+bool cxl_memdev_fw_update_in_progress(struct cxl_memdev *memdev);
+size_t cxl_memdev_fw_update_get_remaining(struct cxl_memdev *memdev);
+int cxl_memdev_update_fw(struct cxl_memdev *memdev, const char *fw_path);
+int cxl_memdev_cancel_fw_update(struct cxl_memdev *memdev);
 
 /* ABI spelling mistakes are forever */
 static inline const char *cxl_memdev_get_firmware_version(
@@ -68,6 +97,13 @@ int cxl_memdev_read_label(struct cxl_memdev *memdev, void *buf, size_t length,
 		size_t offset);
 int cxl_memdev_write_label(struct cxl_memdev *memdev, void *buf, size_t length,
 		size_t offset);
+struct cxl_cmd *cxl_cmd_new_get_fw_info(struct cxl_memdev *memdev);
+unsigned int cxl_cmd_fw_info_get_num_slots(struct cxl_cmd *cmd);
+unsigned int cxl_cmd_fw_info_get_active_slot(struct cxl_cmd *cmd);
+unsigned int cxl_cmd_fw_info_get_staged_slot(struct cxl_cmd *cmd);
+bool cxl_cmd_fw_info_get_online_activate_capable(struct cxl_cmd *cmd);
+int cxl_cmd_fw_info_get_fw_ver(struct cxl_cmd *cmd, int slot, char *buf,
+			       unsigned int len);
 
 #define cxl_memdev_foreach(ctx, memdev) \
         for (memdev = cxl_memdev_get_first(ctx); \

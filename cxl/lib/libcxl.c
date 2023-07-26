@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <dirent.h>
 #include <unistd.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
@@ -63,12 +64,25 @@ static void free_pmem(struct cxl_pmem *pmem)
 	}
 }
 
+static void free_fwl(struct cxl_fw_loader *fwl)
+{
+	if (fwl) {
+		free(fwl->loading);
+		free(fwl->data);
+		free(fwl->remaining);
+		free(fwl->cancel);
+		free(fwl->status);
+		free(fwl);
+	}
+}
+
 static void free_memdev(struct cxl_memdev *memdev, struct list_head *head)
 {
 	if (head)
 		list_del_from(head, &memdev->list);
 	kmod_module_unref(memdev->module);
 	free_pmem(memdev->pmem);
+	free_fwl(memdev->fwl);
 	free(memdev->firmware_version);
 	free(memdev->dev_buf);
 	free(memdev->dev_path);
@@ -1175,6 +1189,40 @@ static void *add_cxl_pmem(void *parent, int id, const char *br_base)
 	return NULL;
 }
 
+static int add_cxl_memdev_fwl(struct cxl_memdev *memdev,
+			      const char *cxlmem_base)
+{
+	const char *devname = cxl_memdev_get_devname(memdev);
+	struct cxl_fw_loader *fwl;
+
+	fwl = calloc(1, sizeof(*fwl));
+	if (!fwl)
+		return -ENOMEM;
+
+	if (asprintf(&fwl->loading, "%s/firmware/%s/loading", cxlmem_base,
+		     devname) < 0)
+		goto err_read;
+	if (asprintf(&fwl->data, "%s/firmware/%s/data", cxlmem_base, devname) <
+	    0)
+		goto err_read;
+	if (asprintf(&fwl->remaining, "%s/firmware/%s/remaining_size",
+		     cxlmem_base, devname) < 0)
+		goto err_read;
+	if (asprintf(&fwl->cancel, "%s/firmware/%s/cancel", cxlmem_base,
+		     devname) < 0)
+		goto err_read;
+	if (asprintf(&fwl->status, "%s/firmware/%s/status", cxlmem_base,
+		     devname) < 0)
+		goto err_read;
+
+	memdev->fwl = fwl;
+	return 0;
+
+ err_read:
+	free_fwl(fwl);
+	return -ENOMEM;
+}
+
 static void *add_cxl_memdev(void *parent, int id, const char *cxlmem_base)
 {
 	const char *devname = devpath_to_devname(cxlmem_base);
@@ -1263,6 +1311,9 @@ static void *add_cxl_memdev(void *parent, int id, const char *cxlmem_base)
 	memdev->buf_len = strlen(cxlmem_base) + 50;
 
 	device_parse(ctx, cxlmem_base, "pmem", memdev, add_cxl_pmem);
+
+	if (add_cxl_memdev_fwl(memdev, cxlmem_base))
+		goto err_read;
 
 	cxl_memdev_foreach(ctx, memdev_dup)
 		if (memdev_dup->id == memdev->id) {
@@ -1372,6 +1423,164 @@ CXL_EXPORT unsigned long long cxl_memdev_get_ram_size(struct cxl_memdev *memdev)
 CXL_EXPORT const char *cxl_memdev_get_firmware_verison(struct cxl_memdev *memdev)
 {
 	return memdev->firmware_version;
+}
+
+static enum cxl_fwl_status cxl_fwl_get_status(struct cxl_memdev *memdev)
+{
+	const char *devname = cxl_memdev_get_devname(memdev);
+	struct cxl_ctx *ctx = cxl_memdev_get_ctx(memdev);
+	struct cxl_fw_loader *fwl = memdev->fwl;
+	char buf[SYSFS_ATTR_SIZE];
+	int rc;
+
+	rc = sysfs_read_attr(ctx, fwl->status, buf);
+	if (rc < 0) {
+		err(ctx, "%s: failed to get fw loader status (%s)\n", devname,
+		    strerror(-rc));
+		return CXL_FWL_STATUS_UNKNOWN;
+	}
+
+	return cxl_fwl_status_from_ident(buf);
+}
+
+CXL_EXPORT bool cxl_memdev_fw_update_in_progress(struct cxl_memdev *memdev)
+{
+	int status = cxl_fwl_get_status(memdev);
+
+	if (status == CXL_FWL_STATUS_IDLE)
+		return false;
+	return true;
+}
+
+CXL_EXPORT size_t cxl_memdev_fw_update_get_remaining(struct cxl_memdev *memdev)
+{
+	const char *devname = cxl_memdev_get_devname(memdev);
+	struct cxl_ctx *ctx = cxl_memdev_get_ctx(memdev);
+	struct cxl_fw_loader *fwl = memdev->fwl;
+	char buf[SYSFS_ATTR_SIZE];
+	int rc;
+
+	rc = sysfs_read_attr(ctx, fwl->remaining, buf);
+	if (rc < 0) {
+		err(ctx, "%s: failed to get fw loader remaining size (%s)\n",
+		    devname, strerror(-rc));
+		return 0;
+	}
+
+	return strtoull(buf, NULL, 0);
+}
+
+static int cxl_memdev_fwl_set_loading(struct cxl_memdev *memdev,
+				      enum cxl_fwl_loading loadval)
+{
+	const char *devname = cxl_memdev_get_devname(memdev);
+	struct cxl_ctx *ctx = cxl_memdev_get_ctx(memdev);
+	struct cxl_fw_loader *fwl = memdev->fwl;
+	char buf[SYSFS_ATTR_SIZE];
+	int rc;
+
+	sprintf(buf, "%d\n", loadval);
+	rc = sysfs_write_attr(ctx, fwl->loading, buf);
+	if (rc < 0) {
+		err(ctx, "%s: failed to trigger fw loading to %d (%s)\n",
+		    devname, loadval, strerror(-rc));
+		return rc;
+	}
+
+	return 0;
+}
+
+static int cxl_memdev_fwl_copy_data(struct cxl_memdev *memdev, void *fw_buf,
+				    size_t size)
+{
+	struct cxl_ctx *ctx = cxl_memdev_get_ctx(memdev);
+	struct cxl_fw_loader *fwl = memdev->fwl;
+	FILE *fwl_data;
+	size_t rw_len;
+	int rc = 0;
+
+	fwl_data = fopen(fwl->data, "w");
+	if (!fwl_data) {
+		err(ctx, "failed to open: %s: (%s)\n", fwl->data,
+		    strerror(errno));
+		return -errno;
+	}
+
+	rw_len = fwrite(fw_buf, 1, size, fwl_data);
+	if (rw_len != size) {
+		rc = -ENXIO;
+		goto out_close;
+	}
+	fflush(fwl_data);
+
+out_close:
+	fclose(fwl_data);
+	return rc;
+}
+
+CXL_EXPORT int cxl_memdev_update_fw(struct cxl_memdev *memdev,
+				    const char *fw_path)
+{
+	struct cxl_ctx *ctx = cxl_memdev_get_ctx(memdev);
+	struct stat s;
+	int f_in, rc;
+	void *fw_buf;
+
+	f_in = open(fw_path, O_RDONLY);
+	if (f_in < 0) {
+		err(ctx, "failed to open: %s: (%s)\n", fw_path,
+		    strerror(errno));
+		return -errno;
+	}
+
+	rc = fstat(f_in, &s);
+	if (rc < 0) {
+		err(ctx, "failed to stat: %s: (%s)\n", fw_path,
+		    strerror(errno));
+		rc = -errno;
+		goto out_close;
+	}
+
+	fw_buf = mmap(NULL, s.st_size, PROT_READ, MAP_PRIVATE, f_in, 0);
+	if (fw_buf == MAP_FAILED) {
+		err(ctx, "failed to map: %s: (%s)\n", fw_path,
+		    strerror(errno));
+		rc = -errno;
+		goto out_close;
+	}
+
+	rc = cxl_memdev_fwl_set_loading(memdev, CXL_FWL_LOADING_START);
+	if (rc)
+		goto out_unmap;
+
+	rc = cxl_memdev_fwl_copy_data(memdev, fw_buf, s.st_size);
+	if (rc)
+		goto out_unmap;
+
+	rc = cxl_memdev_fwl_set_loading(memdev, CXL_FWL_LOADING_END);
+
+out_unmap:
+	munmap(fw_buf, s.st_size);
+out_close:
+	close(f_in);
+	return rc;
+}
+
+CXL_EXPORT int cxl_memdev_cancel_fw_update(struct cxl_memdev *memdev)
+{
+	struct cxl_ctx *ctx = cxl_memdev_get_ctx(memdev);
+	struct cxl_fw_loader *fwl = memdev->fwl;
+	int rc;
+
+	if (!cxl_memdev_fw_update_in_progress(memdev) &&
+	    cxl_memdev_fw_update_get_remaining(memdev) == 0)
+		return -ENXIO;
+
+	rc = sysfs_write_attr(ctx, fwl->cancel, "1\n");
+	if (rc < 0)
+		return rc;
+
+	return 0;
 }
 
 static void bus_invalidate(struct cxl_bus *bus)
@@ -3966,6 +4175,96 @@ CXL_EXPORT struct cxl_cmd *cxl_cmd_new_set_partition(struct cxl_memdev *memdev,
 	setpart->volatile_size = cpu_to_le64(volatile_size)
 					/ CXL_CAPACITY_MULTIPLIER;
 	return cmd;
+}
+
+CXL_EXPORT struct cxl_cmd *cxl_cmd_new_get_fw_info(struct cxl_memdev *memdev)
+{
+	return cxl_cmd_new_generic(memdev, CXL_MEM_COMMAND_ID_GET_FW_INFO);
+}
+
+static struct cxl_cmd_get_fw_info *cmd_to_get_fw_info(struct cxl_cmd *cmd)
+{
+	if (cxl_cmd_validate_status(cmd, CXL_MEM_COMMAND_ID_GET_FW_INFO))
+		return NULL;
+
+	return cmd->output_payload;
+}
+
+CXL_EXPORT unsigned int cxl_cmd_fw_info_get_num_slots(struct cxl_cmd *cmd)
+{
+	struct cxl_cmd_get_fw_info *c = cmd_to_get_fw_info(cmd);
+
+	if (!c)
+		return 0;
+
+	return c->num_slots;
+}
+
+CXL_EXPORT unsigned int cxl_cmd_fw_info_get_active_slot(struct cxl_cmd *cmd)
+{
+	struct cxl_cmd_get_fw_info *c = cmd_to_get_fw_info(cmd);
+
+	if (!c)
+		return 0;
+
+	return c->slot_info & CXL_FW_INFO_CUR_SLOT_MASK;
+}
+
+CXL_EXPORT unsigned int cxl_cmd_fw_info_get_staged_slot(struct cxl_cmd *cmd)
+{
+	struct cxl_cmd_get_fw_info *c = cmd_to_get_fw_info(cmd);
+
+	if (!c)
+		return 0;
+
+	return (c->slot_info & CXL_FW_INFO_NEXT_SLOT_MASK) >>
+	       CXL_FW_INFO_NEXT_SLOT_SHIFT;
+}
+
+CXL_EXPORT bool cxl_cmd_fw_info_get_online_activate_capable(struct cxl_cmd *cmd)
+{
+	struct cxl_cmd_get_fw_info *c = cmd_to_get_fw_info(cmd);
+
+	if (!c)
+		return false;
+
+	return !!(c->activation_cap & CXL_FW_INFO_HAS_LIVE_ACTIVATE);
+}
+
+CXL_EXPORT int cxl_cmd_fw_info_get_fw_ver(struct cxl_cmd *cmd, int slot,
+					  char *buf, unsigned int len)
+{
+	struct cxl_cmd_get_fw_info *c = cmd_to_get_fw_info(cmd);
+	char *fw_ver;
+
+	if (!c)
+		return -ENXIO;
+	if (!len)
+		return -EINVAL;
+
+	switch(slot) {
+	case 1:
+		fw_ver = c->slot_1_revision;
+		break;
+	case 2:
+		fw_ver = c->slot_2_revision;
+		break;
+	case 3:
+		fw_ver = c->slot_3_revision;
+		break;
+	case 4:
+		fw_ver = c->slot_4_revision;
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	if (fw_ver[0] == 0)
+		return -ENOENT;
+
+	memcpy(buf, fw_ver, min(len, (unsigned int)CXL_FW_VERSION_STR_LEN));
+
+	return 0;
 }
 
 CXL_EXPORT int cxl_cmd_submit(struct cxl_cmd *cmd)

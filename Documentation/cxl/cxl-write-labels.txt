@@ -21,6 +21,9 @@ not allow write access to the device's label data area.
 OPTIONS
 -------
 include::labels-options.txt[]
+
+include::bus-option.txt[]
+
 -i::
 --input::
 	input file
