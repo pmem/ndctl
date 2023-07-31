@@ -156,6 +156,7 @@ cxl_labels = find_program('cxl-labels.sh')
 cxl_create_region = find_program('cxl-create-region.sh')
 cxl_xor_region = find_program('cxl-xor-region.sh')
 cxl_update_firmware = find_program('cxl-update-firmware.sh')
+cxl_events = find_program('cxl-events.sh')
 
 tests = [
   [ 'libndctl',               libndctl,		  'ndctl' ],
@@ -184,6 +185,7 @@ tests = [
   [ 'cxl-labels.sh',          cxl_labels,	  'cxl'   ],
   [ 'cxl-create-region.sh',   cxl_create_region,  'cxl'   ],
   [ 'cxl-xor-region.sh',      cxl_xor_region,     'cxl'   ],
+  [ 'cxl-events.sh',          cxl_events,         'cxl'   ],
 ]
 
 if get_option('destructive').enabled()
