@@ -679,7 +679,7 @@ static int action_update_fw(struct cxl_memdev *memdev,
 	const char *devname = cxl_memdev_get_devname(memdev);
 	struct json_object *jmemdev;
 	unsigned long flags;
-	int rc;
+	int rc = 0;
 
 	if (param.cancel)
 		return cxl_memdev_cancel_fw_update(memdev);
