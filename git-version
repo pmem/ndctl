@@ -19,7 +19,7 @@ dirty() {
 	fi
 }
 
-DEF_VER=77
+DEF_VER=78
 
 LF='
 '
