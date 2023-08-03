@@ -3,7 +3,7 @@ title: cxl
 layout: home
 ---
 [View the Project on GitHub](https://github.com/pmem/ndctl)  
-**Generated from [ndctl-77](https://github.com/pmem/ndctl/releases/tag/v77) [[tree]](https://github.com/pmem/ndctl/tree/v77)**  
+**Generated from [ndctl-78](https://github.com/pmem/ndctl/releases/tag/v78) [[tree]](https://github.com/pmem/ndctl/tree/v78)**  
 
 ---
 
@@ -23,5 +23,6 @@ layout: home
 * [cxl-read-labels](cxl-read-labels)
 * [cxl-reserve-dpa](cxl-reserve-dpa)
 * [cxl-set-partition](cxl-set-partition)
+* [cxl-update-firmware](cxl-update-firmware)
 * [cxl-write-labels](cxl-write-labels)
 * [cxl-zero-labels](cxl-zero-labels)

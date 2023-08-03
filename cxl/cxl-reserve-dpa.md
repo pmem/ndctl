@@ -28,6 +28,11 @@ the lack of any restriction.
 Rather an a memdev id number, interpret the \<memdev\> argument(s) as a
 list of serial numbers.
 
+<!-- -->
+
+`-b; --bus=`  
+Restrict the operation to the specified bus.
+
 `-d; --decoder`  
 Specify the decoder to attempt the allocation. The CXL specification
 mandates that allocations must be ordered by DPA and decoder instance.

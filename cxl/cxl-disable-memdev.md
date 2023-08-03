@@ -21,6 +21,11 @@ the lack of any restriction.
 Rather an a memdev id number, interpret the \<memdev\> argument(s) as a
 list of serial numbers.
 
+<!-- -->
+
+`-b; --bus=`  
+Restrict the operation to the specified bus.
+
 `-f; --force`  
 DANGEROUS: Override the safety measure that blocks attempts to disable a
 device if the tool determines the memdev is in active usage. Recall that

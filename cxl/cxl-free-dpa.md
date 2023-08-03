@@ -28,6 +28,11 @@ the lack of any restriction.
 Rather an a memdev id number, interpret the \<memdev\> argument(s) as a
 list of serial numbers.
 
+<!-- -->
+
+`-b; --bus=`  
+Restrict the operation to the specified bus.
+
 `-d; --decoder`  
 Specify the decoder to free. The CXL specification mandates that DPA
 must be released in the reverse order it was allocated. See

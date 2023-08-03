@@ -43,6 +43,11 @@ Begin the operation at the given offset into the label area.
 Turn on verbose debug messages in the library (if libcxl was built with
 logging and debug enabled).
 
+<!-- -->
+
+`-b; --bus=`  
+Restrict the operation to the specified bus.
+
 `-i; --input`  
 input file
 

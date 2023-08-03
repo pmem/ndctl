@@ -53,7 +53,7 @@ will override (but not overwrite) anything that is in the file.
 
 The Intel Device Specific Methods (DSM) specification v1.7 and v1.8
 \[1\] introduced the following security management operations: enable
-passhprase, update passphrase, unlock DIMM, disable security, freeze
+passphrase, update passphrase, unlock DIMM, disable security, freeze
 security, secure (crypto) erase, overwrite, master passphrase enable,
 master passphrase update, and master passphrase secure erase.
 
@@ -178,12 +178,11 @@ This is invoked using `--overwrite` option for ndctl *sanitize-dimm*.
 The overwrite operation wipes the entire NVDIMM. The operation can take
 a significant amount of time. NOTE: When the command returns
 successfully, it just means overwrite has been successfully started, and
-not that the overwrite is complete. Subsequently, 'ndctl
-wait-overwrite’can be used to wait for the NVDIMMs that are performing
-overwrite. Upon successful completion of an overwrite, the WBINVD
-instruction is issued by the kernel. If both --crypto-erase and
---overwrite options are supplied, then crypto-erase is performed before
-overwrite.
+not that the overwrite is complete. Subsequently, *ndctl wait-overwrite*
+can be used to wait for the NVDIMMs that are performing overwrite. Upon
+successful completion of an overwrite, the WBINVD instruction is issued
+by the kernel. If both --crypto-erase and --overwrite options are
+supplied, then crypto-erase is performed before overwrite.
 
 ## SECURITY FREEZE
 

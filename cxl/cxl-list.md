@@ -16,10 +16,10 @@ instances along with some of their major attributes.
 Options can be specified to limit the output to specific objects. When a
 single object type is specified the return json object is an array of
 just those objects, when multiple objects types are specified the
-returned the returned object may be an array of arrays with the inner
-array named for the given object type. The top-level arrays are ellided
-when the objects can nest under a higher object-type in the hierararchy.
-The potential top-level array names and their nesting properties are:
+returned object may be an array of arrays with the inner array named for
+the given object type. The top-level arrays are elided when the objects
+can nest under a higher object-type in the hierarchy. The potential
+top-level array names and their nesting properties are:
 
 "anon memdevs"  
 (disabled memory devices) do not nest
@@ -47,8 +47,8 @@ nest under ports, or buses (if ports are not emitted)
 nest under endpoints, or ports (if endpoints are not emitted) or buses
 (if endpoints and ports are not emitted)
 
-Filters can by specifed as either a single identidier, a space separated
-quoted string, or a comma separated list. When multiple filter
+Filters can be specified as either a single identifier, a space
+separated quoted string, or a comma separated list. When multiple filter
 identifiers are specified within a filter string, like "-m
 mem0,mem1,mem2", they are combined as an *OR* filter. When multiple
 filter string types are specified, like "-m mem0,mem1,mem2 -p port10",
@@ -269,7 +269,7 @@ Include alert configuration in the memdev listing. Example listing:
 `-B; --buses`  
 Include *bus* / CXL root object(s) in the listing. Typically, on ACPI
 systems the bus object is a singleton associated with the ACPI0017
-device, but there are test scenerios where there may be multiple CXL
+device, but there are test scenarios where there may be multiple CXL
 memory hierarchies.
 
 <!-- -->

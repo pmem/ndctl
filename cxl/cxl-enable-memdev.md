@@ -27,6 +27,11 @@ the lack of any restriction.
 Rather an a memdev id number, interpret the \<memdev\> argument(s) as a
 list of serial numbers.
 
+<!-- -->
+
+`-b; --bus=`  
+Restrict the operation to the specified bus.
+
 `-v`  
 Turn on verbose debug messages in the library (if libcxl was built with
 logging and debug enabled).
