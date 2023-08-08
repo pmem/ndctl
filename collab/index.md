@@ -25,7 +25,8 @@ layout: page
 ## QEMU Update
 
 ## cxl-cli update
-
+* [Hotplug helper, and expanding cxl-cli beyond C](http://lore.kernel.org/r/20230807213635.3633907-1-terry.bowman@amd.com)
+  
 ## v6.5 Fixes Queue
 * Region autodiscovery fixes
   * [x1 granularity calculation fix](https://patchwork.kernel.org/project/cxl/list/?series=773298): minor fixups requested
