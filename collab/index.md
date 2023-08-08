@@ -14,6 +14,40 @@ layout: page
 * Do follow-up on linux-cxl@vger.kernel.org for longer questions / debug
 * https://pmem.io/ndctl/collab/
 
+# Augusts 2023
+* Opens:
+  * [Linux Plumbers CXL Microconference CFP](http://lore.kernel.org/r/a4c2gx2tnm4ckax7qkx2trnvmqjssfytc45sb2zikuayd2marc@rpsjp4icgsvn)
+  * QEMU Update
+  * cxl-cli update: [v78 release](http://lore.kernel.org/r/8a83f1832c95e327a4695b607729102216a3e2f0.camel@intel.com)
+  * v6.5 Fixes Queue
+  * v6.6 Queue
+
+## QEMU Update
+
+## cxl-cli update
+
+## v6.5 Fixes Queue
+* Region autodiscovery fixes
+  * [x1 granularity calculation fix](https://patchwork.kernel.org/project/cxl/list/?series=773298): minor fixups requested
+  * [switch decoder allocation](https://patchwork.kernel.org/project/cxl/list/?series=773274): minor fixups requested
+* Hotplug fixes
+  * [Cleanup softreserve on takeover](https://patchwork.kernel.org/project/cxl/list/?series=773250): awaiting review
+  * [Reuse SRAT proximity domain](https://patchwork.kernel.org/project/cxl/list/?series=764146): pinged x86
+* [CXL _OSC AER Fixup](https://patchwork.kernel.org/project/cxl/list/?series=772827): minor fixups requested
+
+## v6.6 Queue
+* Queue closes August 18th
+* [RCH Error handling](https://patchwork.kernel.org/project/cxl/list/?series=761698): fixes requested
+* QTG enabling
+  * [ACPI HMAT Generic Port support](https://patchwork.kernel.org/project/cxl/list/?series=759643): awaiting merge
+  * [Surface QTG ID info](https://patchwork.kernel.org/project/cxl/list/?series=758023): awaiting merge
+  * [CDAT Parsing](https://patchwork.kernel.org/project/cxl/list/?series=757264): awaiting merge
+* Finish Type2 enabling
+  * [Fix security init collision](https://patchwork.kernel.org/project/cxl/list/?series=770745): different approach requested
+  * [Rebase remaining Type2 HDM API](http://lore.kernel.org/r/168592149709.1948938.8663425987110396027.stgit@dwillia2-xfh.jf.intel.com)
+* [DCD](https://patchwork.kernel.org/project/cxl/list/?series=757239): awaiting next rev
+* [Switch CCI](https://patchwork.kernel.org/project/cxl/list/?series=773085): awaiting review
+
 # July 2023
 
 ## ndctl / cxl-cli update
@@ -22,6 +56,8 @@ layout: page
   * Firmware update (no outstanding comments)
   * Poison injection (awaiting new rev)
   * Others?
+
+  ...further notes not captured.
 
 # June 2023
 * Opens:
