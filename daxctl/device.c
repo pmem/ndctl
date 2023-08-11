@@ -55,12 +55,6 @@ static unsigned long flags;
 static struct mapping *maps = NULL;
 static long long nmaps = -1;
 
-enum memory_zone {
-	MEM_ZONE_MOVABLE,
-	MEM_ZONE_NORMAL,
-};
-static enum memory_zone mem_zone = MEM_ZONE_MOVABLE;
-
 enum device_action {
 	ACTION_RECONFIG,
 	ACTION_ONLINE,
@@ -469,8 +463,6 @@ static const char *parse_device_options(int argc, const char **argv,
 				align = __parse_size64(param.align, &units);
 		} else if (strcmp(param.mode, "system-ram") == 0) {
 			reconfig_mode = DAXCTL_DEV_MODE_RAM;
-			if (param.no_movable)
-				mem_zone = MEM_ZONE_NORMAL;
 		} else if (strcmp(param.mode, "devdax") == 0) {
 			reconfig_mode = DAXCTL_DEV_MODE_DEVDAX;
 			if (param.no_online) {
@@ -494,9 +486,6 @@ static const char *parse_device_options(int argc, const char **argv,
 			align = __parse_size64(param.align, &units);
 		/* fall through */
 	case ACTION_ONLINE:
-		if (param.no_movable)
-			mem_zone = MEM_ZONE_NORMAL;
-		/* fall through */
 	case ACTION_DESTROY:
 	case ACTION_OFFLINE:
 	case ACTION_DISABLE:
