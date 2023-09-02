@@ -1,0 +1,284 @@
+diff --git a/configure.ac b/configure.ac
+index 6989e93..aba6db6 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -18,7 +18,6 @@ AM_INIT_AUTOMAKE([check-news foreign 1.11 silent-rules tar-pax no-dist-gzip dist
+ AM_SILENT_RULES([yes])
+ LT_INIT([disable-static pic-only])
+ 
+-AS_IF([test "x$enable_static" = "xyes"], [AC_MSG_ERROR([--enable-static is not supported by kmod])])
+ AS_IF([test "x$enable_largefile" = "xno"], [AC_MSG_ERROR([--disable-largefile is not supported by kmod])])
+ 
+ #####################################################################
+diff --git a/libkmod/libkmod-index.c b/libkmod/libkmod-index.c
+index 6a34c8d..2f8a9a8 100644
+--- a/libkmod/libkmod-index.c
++++ b/libkmod/libkmod-index.c
+@@ -247,7 +247,7 @@ static struct index_node_f *index_read(FILE *in, uint32_t offset)
+ 
+ 	if (offset & INDEX_NODE_PREFIX) {
+ 		struct strbuf buf;
+-		strbuf_init(&buf);
++		kmod_strbuf_init(&buf);
+ 		buf_freadchars(&buf, in);
+ 		prefix = strbuf_steal(&buf);
+ 	} else
+@@ -281,7 +281,7 @@ static struct index_node_f *index_read(FILE *in, uint32_t offset)
+ 
+ 		value_count = read_long(in);
+ 
+-		strbuf_init(&buf);
++		kmod_strbuf_init(&buf);
+ 		while (value_count--) {
+ 			priority = read_long(in);
+ 			buf_freadchars(&buf, in);
+@@ -289,7 +289,7 @@ static struct index_node_f *index_read(FILE *in, uint32_t offset)
+ 			add_value(&node->values, value, buf.used, priority);
+ 			strbuf_clear(&buf);
+ 		}
+-		strbuf_release(&buf);
++		kmod_strbuf_release(&buf);
+ 	}
+ 
+ 	node->prefix = prefix;
+@@ -401,10 +401,10 @@ void index_dump(struct index_file *in, int fd, const char *prefix)
+ 	if (root == NULL)
+ 		return;
+ 
+-	strbuf_init(&buf);
++	kmod_strbuf_init(&buf);
+ 	strbuf_pushchars(&buf, prefix);
+ 	index_dump_node(root, &buf, fd);
+-	strbuf_release(&buf);
++	kmod_strbuf_release(&buf);
+ }
+ 
+ static char *index_search__node(struct index_node_f *node, const char *key, int i)
+@@ -593,9 +593,9 @@ struct index_value *index_searchwild(struct index_file *in, const char *key)
+ 	struct strbuf buf;
+ 	struct index_value *out = NULL;
+ 
+-	strbuf_init(&buf);
++	kmod_strbuf_init(&buf);
+ 	index_searchwild__node(root, &buf, key, 0, &out);
+-	strbuf_release(&buf);
++	kmod_strbuf_release(&buf);
+ 	return out;
+ }
+ 
+@@ -882,10 +882,10 @@ void index_mm_dump(struct index_mm *idx, int fd, const char *prefix)
+ 	if (root == NULL)
+ 		return;
+ 
+-	strbuf_init(&buf);
++	kmod_strbuf_init(&buf);
+ 	strbuf_pushchars(&buf, prefix);
+ 	index_mm_dump_node(root, &buf, fd);
+-	strbuf_release(&buf);
++	kmod_strbuf_release(&buf);
+ }
+ 
+ static char *index_mm_search_node(struct index_mm_node *node, const char *key,
+@@ -1075,8 +1075,8 @@ struct index_value *index_mm_searchwild(struct index_mm *idx, const char *key)
+ 	struct strbuf buf;
+ 	struct index_value *out = NULL;
+ 
+-	strbuf_init(&buf);
++	kmod_strbuf_init(&buf);
+ 	index_mm_searchwild_node(root, &buf, key, 0, &out);
+-	strbuf_release(&buf);
++	kmod_strbuf_release(&buf);
+ 	return out;
+ }
+diff --git a/libkmod/libkmod-module.c b/libkmod/libkmod-module.c
+index 12d8ed1..5110332 100644
+--- a/libkmod/libkmod-module.c
++++ b/libkmod/libkmod-module.c
+@@ -398,7 +398,7 @@ KMOD_EXPORT int kmod_module_new_from_path(struct kmod_ctx *ctx,
+ 	if (ctx == NULL || path == NULL || mod == NULL)
+ 		return -ENOENT;
+ 
+-	abspath = path_make_absolute_cwd(path);
++	abspath = kmod_path_make_absolute_cwd(path);
+ 	if (abspath == NULL) {
+ 		DBG(ctx, "no absolute path for %s\n", path);
+ 		return -ENOMEM;
+@@ -1076,7 +1076,7 @@ static int module_do_install_commands(struct kmod_module *mod,
+ 	cmdlen = strlen(command);
+ 	varlen = sizeof("$CMDLINE_OPTS") - 1;
+ 
+-	cmd = memdup(command, cmdlen + 1);
++	cmd = kmod_memdup(command, cmdlen + 1);
+ 	if (cmd == NULL)
+ 		return -ENOMEM;
+ 
+diff --git a/libkmod/libkmod.c b/libkmod/libkmod.c
+index 7c2b889..ce29ae1 100644
+--- a/libkmod/libkmod.c
++++ b/libkmod/libkmod.c
+@@ -216,7 +216,7 @@ static char *get_kernel_release(const char *dirname)
+ 	char *p;
+ 
+ 	if (dirname != NULL)
+-		return path_make_absolute_cwd(dirname);
++		return kmod_path_make_absolute_cwd(dirname);
+ 
+ 	if (uname(&u) < 0)
+ 		return NULL;
+diff --git a/shared/strbuf.c b/shared/strbuf.c
+index a69d914..be8390a 100644
+--- a/shared/strbuf.c
++++ b/shared/strbuf.c
+@@ -49,14 +49,14 @@ static bool buf_grow(struct strbuf *buf, size_t newsize)
+ 	return true;
+ }
+ 
+-void strbuf_init(struct strbuf *buf)
++void kmod_strbuf_init(struct strbuf *buf)
+ {
+ 	buf->bytes = NULL;
+ 	buf->size = 0;
+ 	buf->used = 0;
+ }
+ 
+-void strbuf_release(struct strbuf *buf)
++void kmod_strbuf_release(struct strbuf *buf)
+ {
+ 	free(buf->bytes);
+ }
+diff --git a/shared/strbuf.h b/shared/strbuf.h
+index 0f7ceb1..2d8c553 100644
+--- a/shared/strbuf.h
++++ b/shared/strbuf.h
+@@ -11,8 +11,8 @@ struct strbuf {
+ 	unsigned used;
+ };
+ 
+-void strbuf_init(struct strbuf *buf);
+-void strbuf_release(struct strbuf *buf);
++void kmod_strbuf_init(struct strbuf *buf);
++void kmod_strbuf_release(struct strbuf *buf);
+ void strbuf_clear(struct strbuf *buf);
+ 
+ /* Destroy buffer and return a copy as a C string */
+diff --git a/shared/util.c b/shared/util.c
+index 4b547ff..2c34cb9 100644
+--- a/shared/util.c
++++ b/shared/util.c
+@@ -55,7 +55,7 @@ static const struct kmod_ext {
+ /* string handling functions and memory allocations                         */
+ /* ************************************************************************ */
+ 
+-void *memdup(const void *p, size_t n)
++void *kmod_memdup(const void *p, size_t n)
+ {
+ 	void *r = malloc(n);
+ 
+@@ -361,7 +361,7 @@ bool path_is_absolute(const char *p)
+ 	return p[0] == '/';
+ }
+ 
+-char *path_make_absolute_cwd(const char *p)
++char *kmod_path_make_absolute_cwd(const char *p)
+ {
+ 	_cleanup_free_ char *cwd = NULL;
+ 	size_t plen, cwdlen;
+@@ -399,7 +399,7 @@ static inline int is_dir(const char *path)
+ 	return -errno;
+ }
+ 
+-int mkdir_p(const char *path, int len, mode_t mode)
++int kmod_mkdir_p(const char *path, int len, mode_t mode)
+ {
+ 	char *start, *end;
+ 
+@@ -457,7 +457,7 @@ int mkdir_parents(const char *path, mode_t mode)
+ 	if (end == NULL)
+ 		return 0;
+ 
+-	return mkdir_p(path, end - path, mode);
++	return kmod_mkdir_p(path, end - path, mode);
+ }
+ 
+ unsigned long long ts_usec(const struct timespec *ts)
+diff --git a/shared/util.h b/shared/util.h
+index 7030653..c37db68 100644
+--- a/shared/util.h
++++ b/shared/util.h
+@@ -16,7 +16,7 @@
+ #define streq(a, b) (strcmp((a), (b)) == 0)
+ #define strstartswith(a, b) (strncmp(a, b, strlen(b)) == 0)
+ char *strchr_replace(char *s, char c, char r);
+-void *memdup(const void *p, size_t n) __attribute__((nonnull(1)));
++void *kmod_memdup(const void *p, size_t n) __attribute__((nonnull(1)));
+ 
+ /* module-related functions                                                 */
+ /* ************************************************************************ */
+@@ -39,8 +39,8 @@ char *freadline_wrapped(FILE *fp, unsigned int *linenum) __attribute__((nonnull(
+ /* path handling functions                                                  */
+ /* ************************************************************************ */
+ bool path_is_absolute(const char *p) _must_check_ __attribute__((nonnull(1)));
+-char *path_make_absolute_cwd(const char *p) _must_check_ __attribute__((nonnull(1)));
+-int mkdir_p(const char *path, int len, mode_t mode);
++char *kmod_path_make_absolute_cwd(const char *p) _must_check_ __attribute__((nonnull(1)));
++int kmod_mkdir_p(const char *path, int len, mode_t mode);
+ int mkdir_parents(const char *path, mode_t mode);
+ unsigned long long stat_mstamp(const struct stat *st);
+ 
+diff --git a/testsuite/init_module.c b/testsuite/init_module.c
+index 503e703..3d18e30 100644
+--- a/testsuite/init_module.c
++++ b/testsuite/init_module.c
+@@ -157,7 +157,7 @@ static int create_sysfs_files(const char *modname)
+ 	strcpy(buf + len, modname);
+ 	len += strlen(modname);
+ 
+-	assert(mkdir_p(buf, len, 0755) >= 0);
++	assert(kmod_mkdir_p(buf, len, 0755) >= 0);
+ 
+ 	strcpy(buf + len, "/initstate");
+ 	return write_one_line_file(buf, "live\n", strlen("live\n"));
+diff --git a/testsuite/test-strbuf.c b/testsuite/test-strbuf.c
+index c98c91d..04c1e8b 100644
+--- a/testsuite/test-strbuf.c
++++ b/testsuite/test-strbuf.c
+@@ -36,7 +36,7 @@ static int test_strbuf_pushchar(const struct test *t)
+ 	char *result1, *result2;
+ 	const char *c;
+ 
+-	strbuf_init(&buf);
++	kmod_strbuf_init(&buf);
+ 
+ 	for (c = TEXT; *c != '\0'; c++)
+ 		strbuf_pushchar(&buf, *c);
+@@ -64,7 +64,7 @@ static int test_strbuf_pushchars(const struct test *t)
+ 	const char *c;
+ 	int lastwordlen = 0;
+ 
+-	strbuf_init(&buf);
++	kmod_strbuf_init(&buf);
+ 	str = strdup(TEXT);
+ 	for (c = strtok_r(str, " ", &saveptr); c != NULL;
+ 	     c = strtok_r(NULL, " ", &saveptr)) {
+diff --git a/tools/depmod.c b/tools/depmod.c
+index 364b7d4..324483f 100644
+--- a/tools/depmod.c
++++ b/tools/depmod.c
+@@ -1072,7 +1072,7 @@ static int depmod_module_add(struct depmod *depmod, struct kmod_module *kmod)
+ 	if (mod->relpath != NULL) {
+ 		size_t uncrelpathlen = lastslash - mod->relpath + modnamesz
+ 				       + strlen(KMOD_EXTENSION_UNCOMPRESSED);
+-		mod->uncrelpath = memdup(mod->relpath, uncrelpathlen + 1);
++		mod->uncrelpath = kmod_memdup(mod->relpath, uncrelpathlen + 1);
+ 		mod->uncrelpath[uncrelpathlen] = '\0';
+ 		err = hash_add_unique(depmod->modules_by_uncrelpath,
+ 				      mod->uncrelpath, mod);
+@@ -2925,7 +2925,7 @@ static int do_depmod(int argc, char *argv[])
+ 		case 'b':
+ 			if (root)
+ 				free(root);
+-			root = path_make_absolute_cwd(optarg);
++			root = kmod_path_make_absolute_cwd(optarg);
+ 			break;
+ 		case 'C': {
+ 			size_t bytes = sizeof(char *) * (n_config_paths + 2);

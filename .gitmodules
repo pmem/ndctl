@@ -1,0 +1,6 @@
+[submodule "kmod"]
+	path = kmod
+	url = https://github.com/kmod-project/kmod.git
+[submodule "systemd"]
+	path = systemd
+	url = https://github.com/systemd/systemd.git

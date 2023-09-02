@@ -1,0 +1,55 @@
+name: Create Release
+
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          echo ${{github.ref}}
+          echo ${{github.ref_name}}
+          sudo apt-get update
+          sudo apt-get install meson libjson-c-dev libkeyutils-dev libiniparser-dev libcap-dev gperf
+
+      - name: Build libkmod
+        run: |
+          cd kmod
+          git apply ../patches/kmod.patch
+          ./autogen.sh
+          ./configure --disable-shared --disable-tools --disable-manpages --disable-test-modules
+          sudo make -j install CFLAGS=-O2 CPPFLAGS=-static
+
+      - name: Build libudev
+        run: |
+          cd systemd
+          meson setup --buildtype plain --default-library static -Dstatic-libudev=true build
+          ninja -C build libudev.a
+          meson compile -C build libudev.pc
+          sudo cp src/libudev/libudev.h /usr/include/
+          sudo cp build/libudev.a /usr/lib/x86_64-linux-gnu/
+          sudo cp build/src/libudev/libudev.pc /usr/lib/x86_64-linux-gnu/pkgconfig
+
+      - name: Build ndctl
+        run: |
+          LDFLAGS="-static -lcap" meson setup --buildtype plain --default-library static \
+            -Ddocs=disabled -Dlibtracefs=disabled -Dsystemd=disabled -Dtest=disabled build
+          ninja -C build
+
+      - name: Test
+        run: |
+          file build/cxl/cxl
+          tar -cvzf ndctl-${{github.ref_name}}.tar.gz --transform 's/.*\///' build/ndctl/ndctl build/cxl/cxl build/daxctl/daxctl
+          tar tvzf ndctl-${{github.ref_name}}.tar.gz
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: ndctl-${{github.ref_name}}.tar.gz

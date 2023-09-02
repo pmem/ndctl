@@ -139,13 +139,13 @@ versiondep = declare_dependency(
   sources: version_h
 )
 
-kmod = dependency('libkmod')
-libudev = dependency('libudev')
-uuid = dependency('uuid')
-json = dependency('json-c')
+kmod = dependency('libkmod', static : true)
+libudev = dependency('libudev', static : true)
+uuid = dependency('uuid', static : true)
+json = dependency('json-c', static : true)
 if get_option('libtracefs').enabled()
-  traceevent = dependency('libtraceevent')
-  tracefs = dependency('libtracefs', version : '>=1.2.0')
+  traceevent = dependency('libtraceevent', static : true)
+  tracefs = dependency('libtracefs', version : '>=1.2.0', static : true)
 endif
 
 if get_option('docs').enabled()
@@ -158,9 +158,9 @@ if get_option('docs').enabled()
 endif
 
 if get_option('systemd').enabled()
-  systemd = dependency('systemd', required : true)
+  systemd = dependency('systemd', required : true, static : true)
   systemdunitdir = systemd.get_pkgconfig_variable('systemdsystemunitdir')
-  udev = dependency('udev', required : true)
+  udev = dependency('udev', required : true, static : true)
   udevdir = udev.get_pkgconfig_variable('udevdir')
   udevrulesdir = udevdir / 'rules.d'
 endif
@@ -168,7 +168,7 @@ endif
 cc = meson.get_compiler('c')
 
 # keyutils lacks pkgconfig
-keyutils = cc.find_library('keyutils', required : get_option('keyutils'))
+keyutils = cc.find_library('keyutils', required : get_option('keyutils'), static : true)
 
 # iniparser lacks pkgconfig and its header files are either at '/usr/include' or '/usr/include/iniparser'
 # Use the path provided by user via meson configure -Diniparserdir=<somepath>
@@ -176,16 +176,16 @@ keyutils = cc.find_library('keyutils', required : get_option('keyutils'))
 # and if that not found then as a last resort try looking at '/usr/include/iniparser'
 iniparser_headers = ['iniparser.h', 'dictionary.h']
 
-message('Looking for iniparser include headers', iniparser_headers)
+# message('Looking for iniparser include headers', iniparser_headers)
 
 iniparserdir = include_directories(includedir / get_option('iniparserdir'), is_system:true)
 iniparser = cc.find_library('iniparser', required : (get_option('iniparserdir') != '') ,
-	  has_headers :iniparser_headers ,header_include_directories : iniparserdir)
+	  has_headers :iniparser_headers ,header_include_directories : iniparserdir, static : true)
 
 if not iniparser.found()
    iniparserdir = include_directories(includedir / 'iniparser', is_system:true)
    iniparser = cc.find_library('iniparser', required : true, has_headers : iniparser_headers,
-	     header_include_directories : iniparserdir)
+	     header_include_directories : iniparserdir, static : true)
 endif
 iniparser = declare_dependency(include_directories: iniparserdir, dependencies:iniparser)
 
