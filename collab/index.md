@@ -14,13 +14,89 @@ layout: page
 * Do follow-up on linux-cxl@vger.kernel.org for longer questions / debug
 * https://pmem.io/ndctl/collab/
 
+# September 2023
+* Opens:
+* v6.6 Fixes
+* v6.7 Queue
+
+## v6.6 Fixes
+* CXL RAS Enabling 
+* [Region Granularity Setup](https://patchwork.kernel.org/project/cxl/patch/20230822180928.117596-1-alison.schofield@intel.com/)
+* [Region Decoder Discover](https://patchwork.kernel.org/project/cxl/patch/20230822014303.110509-1-alison.schofield@intel.com/)
+
+## v6.7 Queue
+* RCH EH
+
 # August 2023
 * Opens:
   * [Linux Plumbers CXL Microconference CFP](http://lore.kernel.org/r/a4c2gx2tnm4ckax7qkx2trnvmqjssfytc45sb2zikuayd2marc@rpsjp4icgsvn)
-  * QEMU Update
-  * cxl-cli update: [v78 release](http://lore.kernel.org/r/8a83f1832c95e327a4695b607729102216a3e2f0.camel@intel.com)
-  * v6.5 Fixes Queue
-  * v6.6 Queue
+      * uConf proposals close at end of the August
+
+## QEMU Update
+    * Not a huge amount going in this merge, doc, fixes Multiple HDM decoders should be going in this merge.
+    * Lot of stuff is backed up by the mailbox rework
+    * Jonathans gitlab has [DCD preview queued up](https://gitlab.com/jic23/qemu).
+      * Ira did some testing and fixes were merged in latest version
+      * Jonathan might have broken it with rebasing. So just a reminder that this is work in progress.
+    * MCTP support over I2c...  Support is coming from NVME-MI this work is similar to FM-API
+
+## cxl-cli update:
+* [v78 release](http://lore.kernel.org/r/8a83f1832c95e327a4695b607729102216a3e2f0.camel@intel.com)
+* [Hotplug helper proposal](http://lore.kernel.org/r/20230807213635.3633907-1-terry.bowman@amd.com)
+
+## v6.5 Fixes Queue
+* [rc4 updates](https://git.kernel.org/pub/scm/linux/kernel/git/cxl/cxl.git/tag/?h=cxl-fixes-6.5-rc4)
+* [rc5 updates](https://git.kernel.org/pub/scm/linux/kernel/git/cxl/cxl.git/tag/?h=cxl-fixes-6.5-rc5)
+
+## v6.6 Queue
+* RCH Error handling
+  * Terry working on it right now. Was waiting on response from Dan which should be there yesterday.
+  * Will pick that work back up
+
+* Type2
+  * Davidlohr to submit the fix for type2 init collision. (Merged)
+  * Dan rebasing patches.  There is conflict here with the Switch CCI work.  See below.
+
+* DCD 
+  * Ira is reworking the patch set quite a bit.
+  * Fan’s QEMU DCD work is being used
+  * Cxl-test being added for better regression testing
+  * Cxl-test event processing was changed
+  * New DAX device work needed to handle sparse extents within the dax region
+  * Interleaving is in the back of his head and Navneet has been looking into this. However, interleaving is not slated for this initial work
+  * Jonathan - concerned that interleaving should not to be precluded
+  * Leave in comments about where interleaving would fit in.
+  * Interleaving is the next major feature…
+  * QEMU - DCD merge would be at least 6.7 aligned.
+
+* Switch CCI (Jonathan)
+  * Opens around what we do for user space – almost every command is destructive
+  * Maybe just CXL raw commands are required?
+  * Patch set has been a pain to rebase on type 2 from Dan
+  * Would really like review / feedback
+  * Davidlohr would like to merge the ‘moving around code’ sooner
+  * Would help with the type 2 conflicts
+  * It is hard to generalize the code without this second user
+  * Not critical for 6.6
+  * would like to see an early merge slated for 6.7
+  * In the end – Security questions are major gating factor
+
+* Memory tiring in general
+  * CDAT vs HMAT
+  * ‘Distance’ calculations vary
+  *  Patch set: ‘Mem tiring calculating abstract distance from ACPI’ (v6.7 material)
+
+## FM general topics
+  * We said we would talk about FM things in this meeting…
+  * Is there something at plumbers?  Yes there is.
+  * Plumbers BoF for FM stuff?
+	
+## Question from discord:
+* John: "numa ratio policy patch?"
+  * Jonathan will try and dig in to see where the patches are
+  * We are talking at a VMA level.
+
+
 
 ## QEMU Update
 
