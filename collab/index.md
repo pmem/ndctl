@@ -16,8 +16,37 @@ layout: page
 
 # September 2023
 * Opens:
+  * John: CXL memory online by default memhp_default_state=offline not working?
+* QEMU
+* cxl-cli
 * v6.6 Fixes
 * v6.7 Queue
+
+## QEMU
+* Merge window induced slowness
+* Round-up of fixlets sent up
+* Multiple HDM Decoder support for endpoints posted
+* Serial number update
+* Maintainer feedback administrivia cleanups
+* Sort out revision numbers for spec version comments
+  * advocate with your rep about caching old copies at spec-landing
+* MCTP I2C from NVME
+  * Single Aspeed i2c controller driver has support
+  * POC quality / out-of-tree support until server class driver arrives
+* DCD Update
+  * waiting for kernel-side code resolution
+  * Get Extent List for unaccepted memory, track pending state in the implementation
+  * cxl-test may need updates too
+* MHD Update
+  * Joint effort with SK Hynix, custom command set
+  * Proto-DCD
+  * Single logical device
+  * Software Development Vehicle
+* CPMU, ARM, Compliance, Type-2
+* SPDM Interest
+  * WDC looking at library-izing it, still looking to support and external agent
+* FM API (MCTP Mailboxes + Switch CCI + MHD Mailbox)
+
 
 ## v6.6 Fixes
 * CXL RAS Enabling 
@@ -25,7 +54,10 @@ layout: page
 * [Region Decoder Discover](https://patchwork.kernel.org/project/cxl/patch/20230822014303.110509-1-alison.schofield@intel.com/)
 
 ## v6.7 Queue
-* RCH EH
+* RCH EH (under)
+* Kernel SPDM
+  * WDC showing up to help
+  * Invite to CXL sync? Invited to "devsec"
 
 # August 2023
 * Opens:
@@ -33,7 +65,7 @@ layout: page
       * uConf proposals close at end of the August
 
 ## QEMU Update
-    * Not a huge amount going in this merge, doc, fixes Multiple HDM decoders should be going in this merge.
+  * Not a huge amount going in this merge, doc, fixes Multiple HDM decoders should be going in this merge.
     * Lot of stuff is backed up by the mailbox rework
     * Jonathans gitlab has [DCD preview queued up](https://gitlab.com/jic23/qemu).
       * Ira did some testing and fixes were merged in latest version
