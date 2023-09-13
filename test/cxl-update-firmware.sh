@@ -118,14 +118,15 @@ validate_staged_slot()
 check_sha()
 {
 	mem="$1"
+	host=$($CXL list -m $mem | jq -r '.[].host')
 	file="$2"
-	csum_path="/sys/bus/platform/devices/cxl_mem.${mem#mem}/fw_buf_checksum"
+	csum_path="/sys/bus/platform/devices/${host}/fw_buf_checksum"
 
 	mem_csum="$(cat "$csum_path")"
 	file_csum="$(sha256sum "$file" | awk '{print $1}')"
 
 	if [[ $mem_csum != $file_csum ]]; then
-		echo "checksum failure for mem$mem"
+		echo "checksum failure for mem=$mem"
 		err "$LINENO"
 	fi
 }
