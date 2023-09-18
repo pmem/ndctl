@@ -264,3 +264,15 @@ global:
 	cxl_memdev_update_fw;
 	cxl_memdev_cancel_fw_update;
 } LIBCXL_5;
+
+LIBCXL_7 {
+global:
+	cxl_cmd_alert_config_set_life_used_prog_warn_threshold;
+	cxl_cmd_alert_config_set_dev_over_temperature_prog_warn_threshold;
+	cxl_cmd_alert_config_set_dev_under_temperature_prog_warn_threshold;
+	cxl_cmd_alert_config_set_corrected_volatile_mem_err_prog_warn_threshold;
+	cxl_cmd_alert_config_set_corrected_pmem_err_prog_warn_threshold;
+	cxl_cmd_alert_config_set_valid_alert_actions;
+	cxl_cmd_alert_config_set_enable_alert_actions;
+	cxl_cmd_new_set_alert_config;
+} LIBCXL_6;
