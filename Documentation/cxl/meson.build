@@ -47,6 +47,7 @@ cxl_manpages = [
   'cxl-destroy-region.txt',
   'cxl-monitor.txt',
   'cxl-update-firmware.txt',
+  'cxl-set-alert-config.txt',
 ]
 
 foreach man : cxl_manpages
