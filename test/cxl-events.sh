@@ -10,6 +10,8 @@ num_fatal_expected=2
 num_failure_expected=16
 num_info_expected=3
 
+rc=77
+
 set -ex
 
 trap 'err $LINENO' ERR
@@ -18,6 +20,7 @@ check_prereq "jq"
 
 modprobe -r cxl_test
 modprobe cxl_test
+rc=1
 
 dev_path="/sys/bus/platform/devices"
 
