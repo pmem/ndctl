@@ -29,7 +29,7 @@ layout: page
 
 ## QEMU
 * Cleanup sets upstream
-* mst has QTG queued up
+* mst has QTG in the backlog
   * backlog of PCI bits
   * switch serial number on upstream port
   * multi-HDM decoders
