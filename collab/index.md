@@ -43,7 +43,7 @@ layout: page
 ## cxl-cli
 * [Poison List Retrieval](https://patchwork.kernel.org/project/cxl/cover/cover.1696196382.git.alison.schofield@intel.com/)
 * [Towards CXL continuous integration](https://github.com/facebookincubator/kernel-patches-daemon)
-* Vishal: set alert config patches queued up
+* Vishal: [set alert config patches](https://lore.kernel.org/linux-cxl/20230918045514.6709-1-jehoon.park@samsung.com/) queued up
 
 ## v6.6 fixes
 * [v6.6-rc3 update](https://lore.kernel.org/linux-cxl/650f60a224347_124e92943@dwillia2-mobl3.amr.corp.intel.com.notmuch/)
