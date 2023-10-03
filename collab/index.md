@@ -14,6 +14,37 @@ layout: page
 * Do follow-up on linux-cxl@vger.kernel.org for longer questions / debug
 * https://pmem.io/ndctl/collab/
 
+# October 2023
+* Opens:
+* QEMU
+* cxl-cli
+* v6.6 Fixes
+* v6.7 Queue
+
+## QEMU
+
+## cxl-cli
+* [Poison List Retrieval](https://patchwork.kernel.org/project/cxl/cover/cover.1696196382.git.alison.schofield@intel.com/)
+* [Towards CXL continuous integration](https://github.com/facebookincubator/kernel-patches-daemon)
+
+## v6.6 fixes
+* [v6.6-rc3 update](https://lore.kernel.org/linux-cxl/650f60a224347_124e92943@dwillia2-mobl3.amr.corp.intel.com.notmuch/)
+* [Fix shutdown order](https://patchwork.kernel.org/project/cxl/cover/169602896768.904193.11292185494339980455.stgit@dwillia2-xfh.jf.intel.com/)
+* [Soft Reserved Conflict / Lifetime](https://patchwork.kernel.org/project/cxl/cover/cover.1692638817.git.alison.schofield@intel.com/)
+* Auto-assembly Rework
+
+## v6.7+
+* [RCH EH](https://patchwork.kernel.org/project/cxl/cover/20230927154339.1600738-1-rrichter@amd.com/)
+* [QTG](https://patchwork.kernel.org/project/cxl/cover/168695160531.3031571.4875512229068707023.stgit@djiang5-mobl3/)
+* [QTG to HMEM](https://patchwork.kernel.org/project/cxl/list/?series=759643)
+* [Switch CCI](https://patchwork.kernel.org/project/cxl/cover/20230804115414.14391-1-Jonathan.Cameron@huawei.com/)
+* [SPDM / Auth](https://patchwork.kernel.org/project/cxl/cover/cover.1695921656.git.lukas@wunner.de/)
+* [memmap on memory](https://patchwork.kernel.org/project/cxl/cover/20230928-vv-kmem_memmap-v4-0-6ff73fec519a@intel.com/)
+* mempolicy proposals:
+  * [multi-tier](https://patchwork.kernel.org/project/cxl/cover/20230927095002.10245-1-ravis.opensrc@micron.com/)
+  * [mempolicy2](https://patchwork.kernel.org/project/cxl/cover/20231003002156.740595-1-gregory.price@memverge.com/)
+  * [mempolicyNM](https://patchwork.kernel.org/project/linux-mm/patch/20220607171949.85796-1-hannes@cmpxchg.org/)
+
 # September 2023
 * Opens:
   * John: CXL memory online by default memhp_default_state=offline not working?
