@@ -16,34 +16,64 @@ layout: page
 
 # October 2023
 * Opens:
+  * Jim: QEMU dport conflicting connections, (1) HB (1) 1 RP (2?) Switches (4) Endpoints (Who detects impossible configs?)
+  * Gregory: port to region confusion (make create-region smarter)
+  * Vincent: multi-function upstream ports? Yes, for PCIE, does CXL mandate function0?
+  * Steve: RCH link width / speed enumeration (emit via CXL objects?) Jonathan RCIEP examples of emitting attributes, virtual switch?
+  * Jonathan: Dynamic NUMA node creation
+    * 0-size NUMA node entries in SRAT already shipping
 * QEMU
 * cxl-cli
 * v6.6 Fixes
 * v6.7 Queue
 
 ## QEMU
+* Cleanup sets upstream
+* mst has QTG queued up
+  * backlog of PCI bits
+  * switch serial number on upstream port
+  * multi-HDM decoders
+  * mailbox rework for Switch CCI + MCTP over I2C (difficult to add aspeed to x86 machine model)
+* DCD: working through reported issues wrt kernel patches
+* Fabric management ambiguities
+  * MCTP representation of MLDs? Single-MLDs when plugged in as an SLD.
+  * FMAPI binding when sending to a switch, not Type-3, except for the general commands like identify
+  * I.e. use type-3 binding except opcodes 0x4000+ when talking to a switch
 
 ## cxl-cli
 * [Poison List Retrieval](https://patchwork.kernel.org/project/cxl/cover/cover.1696196382.git.alison.schofield@intel.com/)
 * [Towards CXL continuous integration](https://github.com/facebookincubator/kernel-patches-daemon)
+* Vishal: set alert config patches queued up
 
 ## v6.6 fixes
 * [v6.6-rc3 update](https://lore.kernel.org/linux-cxl/650f60a224347_124e92943@dwillia2-mobl3.amr.corp.intel.com.notmuch/)
 * [Fix shutdown order](https://patchwork.kernel.org/project/cxl/cover/169602896768.904193.11292185494339980455.stgit@dwillia2-xfh.jf.intel.com/)
+  * awaiting testing
+  * need to rework mbox irq to be threaded or an atomic flag
 * [Soft Reserved Conflict / Lifetime](https://patchwork.kernel.org/project/cxl/cover/cover.1692638817.git.alison.schofield@intel.com/)
 * Auto-assembly Rework
+  * Jim: Granularity fix top down is confusing switch settings
+* Davidlohr: Type-2 crash interaction with security shutdown order?
 
 ## v6.7+
 * [RCH EH](https://patchwork.kernel.org/project/cxl/cover/20230927154339.1600738-1-rrichter@amd.com/)
 * [QTG](https://patchwork.kernel.org/project/cxl/cover/168695160531.3031571.4875512229068707023.stgit@djiang5-mobl3/)
 * [QTG to HMEM](https://patchwork.kernel.org/project/cxl/list/?series=759643)
 * [Switch CCI](https://patchwork.kernel.org/project/cxl/cover/20230804115414.14391-1-Jonathan.Cameron@huawei.com/)
+  * Davidlohr: background status publishing to userspace? Bind VPB, Sanitize via Tunnel?
+  * Jonathan: Punt until someone with BMC background can help drive
+  * Jonathan: Possibly some NVME MCTP work to draft behind
+  * Jonathan: start with safe commands to get framework started
+  * Gregory: multi-headed SLD testing validating the approach of an independent mailbox core (QEMU)
 * [SPDM / Auth](https://patchwork.kernel.org/project/cxl/cover/cover.1695921656.git.lukas@wunner.de/)
+  * SPDM BoF Planned for Plumbers in November
 * [memmap on memory](https://patchwork.kernel.org/project/cxl/cover/20230928-vv-kmem_memmap-v4-0-6ff73fec519a@intel.com/)
 * mempolicy proposals:
   * [multi-tier](https://patchwork.kernel.org/project/cxl/cover/20230927095002.10245-1-ravis.opensrc@micron.com/)
   * [mempolicy2](https://patchwork.kernel.org/project/cxl/cover/20231003002156.740595-1-gregory.price@memverge.com/)
   * [mempolicyNM](https://patchwork.kernel.org/project/linux-mm/patch/20220607171949.85796-1-hannes@cmpxchg.org/)
+  * Informal Plumbers BoF
+
 
 # September 2023
 * Opens:
