@@ -70,6 +70,7 @@ static struct cmd_struct commands[] = {
 	{ "free-dpa", .c_fn = cmd_free_dpa },
 	{ "update-firmware", .c_fn = cmd_update_fw },
 	{ "set-alert-config", .c_fn = cmd_set_alert_config },
+	{ "wait-sanitize", .c_fn = cmd_wait_sanitize },
 	{ "disable-port", .c_fn = cmd_disable_port },
 	{ "enable-port", .c_fn = cmd_enable_port },
 	{ "set-partition", .c_fn = cmd_set_partition },

@@ -275,4 +275,5 @@ global:
 	cxl_cmd_alert_config_set_valid_alert_actions;
 	cxl_cmd_alert_config_set_enable_alert_actions;
 	cxl_cmd_new_set_alert_config;
+	cxl_memdev_wait_sanitize;
 } LIBCXL_6;

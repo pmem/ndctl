@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: LGPL-2.1
 // Copyright (C) 2020-2021, Intel Corporation. All rights reserved.
+#include <poll.h>
 #include <stdio.h>
 #include <errno.h>
 #include <limits.h>
@@ -1369,6 +1370,68 @@ CXL_EXPORT struct cxl_memdev *cxl_memdev_get_next(struct cxl_memdev *memdev)
 CXL_EXPORT int cxl_memdev_get_id(struct cxl_memdev *memdev)
 {
 	return memdev->id;
+}
+
+CXL_EXPORT int cxl_memdev_wait_sanitize(struct cxl_memdev *memdev,
+					int timeout_ms)
+{
+	struct cxl_ctx *ctx = cxl_memdev_get_ctx(memdev);
+	const char *devname = cxl_memdev_get_devname(memdev);
+	char *path = memdev->dev_buf;
+	int len = memdev->buf_len;
+	struct pollfd fds = { 0 };
+	int fd = 0, rc;
+	char buf[9];
+
+	if (snprintf(path, len, "%s/security/state", memdev->dev_path) >= len) {
+		err(ctx, "%s: buffer too small!\n", devname);
+		return -ERANGE;
+	}
+
+	fd = open(path, O_RDONLY|O_CLOEXEC);
+	if (fd < 0) {
+		/* device does not support security operations */
+		if (errno == ENOENT)
+			return 0;
+		rc = -errno;
+		err(ctx, "%s: %s\n", path, strerror(errno));
+		return rc;
+	}
+	memset(&fds, 0, sizeof(fds));
+	fds.fd = fd;
+
+	rc = pread(fd, buf, sizeof(buf), 0);
+	if (rc < 0) {
+		rc = -EOPNOTSUPP;
+		goto out;
+	}
+
+	/* skipping if not currently sanitizing */
+	if (strncmp(buf, "sanitize", 8) != 0) {
+		rc = 0;
+		goto out;
+	}
+
+	rc = poll(&fds, 1, timeout_ms);
+	if (rc == 0) {
+		dbg(ctx, "%s: sanitize timeout\n", devname);
+		rc = -ETIMEDOUT;
+	} else if (rc < 0) {
+		err(ctx, "%s: sanitize poll error: %s\n", devname, strerror(errno));
+		rc = -errno;
+	} else {
+		dbg(ctx, "%s: sanitize wake\n", devname);
+
+		rc = pread(fd, buf, sizeof(buf), 0);
+		if (rc < 0 || strncmp(buf, "sanitize", 8) == 0) {
+			err(ctx, "%s: sanitize wake error\n", devname);
+			rc = -ENXIO;
+		} else
+			rc = 0;
+	}
+out:
+	close(fd);
+	return rc;
 }
 
 CXL_EXPORT unsigned long long cxl_memdev_get_serial(struct cxl_memdev *memdev)

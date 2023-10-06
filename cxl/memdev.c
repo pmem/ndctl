@@ -48,7 +48,10 @@ static struct parameters {
 	const char *dev_under_temperature_alert;
 	const char *corrected_volatile_mem_err_alert;
 	const char *corrected_pmem_err_alert;
-} param;
+	int timeout;
+} param = {
+	.timeout = -1,
+};
 
 static struct log_ctx ml;
 
@@ -157,6 +160,10 @@ OPT_STRING('\0', "pmem-err-alert",                                            \
 	   &param.corrected_pmem_err_alert, "'on' or 'off'",                  \
 	   "enable or disable corrected pmem error warning alert")
 
+#define WAIT_SANITIZE_OPTIONS()                \
+OPT_INTEGER('t', "timeout", &param.timeout,    \
+	    "time in milliseconds to wait for overwrite completion (default: infinite)")
+
 static const struct option read_options[] = {
 	BASE_OPTIONS(),
 	LABEL_OPTIONS(),
@@ -216,6 +223,12 @@ static const struct option update_fw_options[] = {
 static const struct option set_alert_options[] = {
 	BASE_OPTIONS(),
 	SET_ALERT_OPTIONS(),
+	OPT_END(),
+};
+
+static const struct option wait_sanitize_options[] = {
+	BASE_OPTIONS(),
+	WAIT_SANITIZE_OPTIONS(),
 	OPT_END(),
 };
 
@@ -737,6 +750,12 @@ out_err:
 	return rc;
 }
 
+static int action_wait_sanitize(struct cxl_memdev *memdev,
+				struct action_context *actx)
+{
+	return cxl_memdev_wait_sanitize(memdev, param.timeout);
+}
+
 static int action_update_fw(struct cxl_memdev *memdev,
 			    struct action_context *actx)
 {
@@ -1183,6 +1202,19 @@ int cmd_set_alert_config(int argc, const char **argv, struct cxl_ctx *ctx)
 		"cxl set-alert-config <mem0> [<mem1>..<memN>] [<options>]");
 	log_info(&ml, "set alert configuration for %d mem%s\n",
 		 count >= 0 ? count : 0, count > 1 ? "s" : "");
+
+	return count >= 0 ? 0 : EXIT_FAILURE;
+}
+
+int cmd_wait_sanitize(int argc, const char **argv, struct cxl_ctx *ctx)
+{
+	int count = memdev_action(
+		argc, argv, ctx, action_wait_sanitize, wait_sanitize_options,
+		"cxl wait-sanitize <mem0> [<mem1>..<memn>] [<options>]");
+
+	log_info(&ml, "wait sanitize %s on %d mem device%s\n",
+		 count >= 0 ? "completed" : "failed", count >= 0 ? count : 0,
+		 count > 1 ? "s" : "");
 
 	return count >= 0 ? 0 : EXIT_FAILURE;
 }
