@@ -2002,6 +2002,9 @@ cxl_decoder_calc_max_available_extent(struct cxl_decoder *decoder)
 		return ULLONG_MAX;
 	}
 
+	if (decoder->start == ULLONG_MAX)
+		return ULLONG_MAX;
+
 	/*
 	 * Preload prev_end with an imaginary region that ends just before
 	 * the decoder's start, so that the extent calculation for the
