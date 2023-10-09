@@ -1616,7 +1616,7 @@ static int daxctl_memory_online_with_zone(struct daxctl_memory *mem,
 	 */
 	mem->zone = 0;
 	rc = daxctl_memory_op(mem, MEM_GET_ZONE);
-	if (rc)
+	if (rc < 0)
 		return rc;
 	if (mem->zone != zone) {
 		err(ctx,
