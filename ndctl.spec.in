@@ -2,7 +2,7 @@ Name:		ndctl
 Version:	VERSION
 Release:	1%{?dist}
 Summary:	Manage "libnvdimm" subsystem devices (Non-volatile Memory)
-License:	GPLv2
+License:	GPL-2.0-only and LGPL-2.1-only and CC0-1.0 and MIT
 Url:		https://github.com/pmem/ndctl
 Source0:	https://github.com/pmem/%{name}/archive/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
 
@@ -48,7 +48,7 @@ Firmware Interface Table).
 
 %package -n DNAME
 Summary:	Development files for libndctl
-License:	LGPLv2
+License:	LGPL-2.1-only
 Requires:	LNAME%{?_isa} = %{version}-%{release}
 
 %description -n DNAME
@@ -57,7 +57,7 @@ developing applications that use %{name}.
 
 %package -n daxctl
 Summary:	Manage Device-DAX instances
-License:	GPLv2
+License:	GPL-2.0-only
 Requires:	DAX_LNAME%{?_isa} = %{version}-%{release}
 
 %description -n daxctl
@@ -68,7 +68,7 @@ filesystem.
 
 %package -n cxl-cli
 Summary:	Manage CXL devices
-License:	GPLv2
+License:	GPL-2.0-only
 Requires:	CXL_LNAME%{?_isa} = %{version}-%{release}
 
 %description -n cxl-cli
@@ -77,7 +77,7 @@ the Linux kernel CXL devices.
 
 %package -n CXL_DNAME
 Summary:	Development files for libcxl
-License:	LGPLv2
+License:	LGPL-2.1-only
 Requires:	CXL_LNAME%{?_isa} = %{version}-%{release}
 
 %description -n CXL_DNAME
@@ -86,7 +86,7 @@ that use libcxl, a library for enumerating and communicating with CXL devices.
 
 %package -n DAX_DNAME
 Summary:	Development files for libdaxctl
-License:	LGPLv2
+License:	LGPL-2.1-only
 Requires:	DAX_LNAME%{?_isa} = %{version}-%{release}
 
 %description -n DAX_DNAME
@@ -98,7 +98,7 @@ mappings of performance / feature-differentiated memory.
 
 %package -n LNAME
 Summary:	Management library for "libnvdimm" subsystem devices (Non-volatile Memory)
-License:	LGPLv2
+License:	LGPL-2.1-only and CC0-1.0 and MIT
 Requires:	DAX_LNAME%{?_isa} = %{version}-%{release}
 
 
@@ -107,7 +107,7 @@ Libraries for %{name}.
 
 %package -n DAX_LNAME
 Summary:	Management library for "Device DAX" devices
-License:	LGPLv2
+License:	LGPL-2.1-only and CC0-1.0 and MIT
 
 %description -n DAX_LNAME
 Device DAX is a facility for establishing DAX mappings of performance /
@@ -116,7 +116,7 @@ control API for these devices.
 
 %package -n CXL_LNAME
 Summary:	Management library for CXL devices
-License:	LGPLv2
+License:	LGPL-2.1-only and CC0-1.0 and MIT
 
 %description -n CXL_LNAME
 libcxl is a library for enumerating and communicating with CXL devices.
