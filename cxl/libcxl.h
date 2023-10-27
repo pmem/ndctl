@@ -461,6 +461,22 @@ enum cxl_setpartition_mode {
 int cxl_cmd_partition_set_mode(struct cxl_cmd *cmd,
 		enum cxl_setpartition_mode mode);
 
+int cxl_cmd_alert_config_set_life_used_prog_warn_threshold(struct cxl_cmd *cmd,
+							   int threshold);
+int cxl_cmd_alert_config_set_dev_over_temperature_prog_warn_threshold(
+	struct cxl_cmd *cmd, int threshold);
+int cxl_cmd_alert_config_set_dev_under_temperature_prog_warn_threshold(
+	struct cxl_cmd *cmd, int threshold);
+int cxl_cmd_alert_config_set_corrected_volatile_mem_err_prog_warn_threshold(
+	struct cxl_cmd *cmd, int threshold);
+int cxl_cmd_alert_config_set_corrected_pmem_err_prog_warn_threshold(
+	struct cxl_cmd *cmd, int threshold);
+int cxl_cmd_alert_config_set_valid_alert_actions(struct cxl_cmd *cmd,
+						 int action);
+int cxl_cmd_alert_config_set_enable_alert_actions(struct cxl_cmd *cmd,
+						  int enable);
+struct cxl_cmd *cxl_cmd_new_set_alert_config(struct cxl_memdev *memdev);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
