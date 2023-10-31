@@ -14,6 +14,10 @@ SYNOPSIS
 
 include::region-description.txt[]
 
+If there are memory blocks that are still online, the operation will attempt to
+offline the relevant blocks. If the offlining fails, the operation fails when not
+using the -f (force) parameter.
+
 EXAMPLE
 -------
 ----
@@ -24,6 +28,12 @@ disabled 2 regions
 OPTIONS
 -------
 include::bus-option.txt[]
+
+-f::
+--force::
+	Attempt to disable-region even though memory cannot be offlined successfully.
+	Will emit warning that operation will permanently leak physical address space
+	and cannot be recovered until a reboot.
 
 include::decoder-option.txt[]
 
