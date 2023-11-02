@@ -44,7 +44,7 @@
  *
  * PDSM Header:
  * This is papr-scm specific header that precedes the payload. This is defined
- * as nd_cmd_pdsm_pkg.  Following fields aare available in this header:
+ * as nd_cmd_pdsm_pkg.  Following fields are available in this header:
  *
  * 'cmd_status'		: (Out) Errors if any encountered while servicing PDSM.
  * 'reserved'		: Not used, reserved for future and should be set to 0.
@@ -83,11 +83,11 @@
  * Various flags indicate the health status of the dimm.
  *
  * extension_flags	: Any extension fields present in the struct.
- * dimm_unarmed		: Dimm not armed. So contents wont persist.
+ * dimm_unarmed		: Dimm not armed. So contents won't persist.
  * dimm_bad_shutdown	: Previous shutdown did not persist contents.
- * dimm_bad_restore	: Contents from previous shutdown werent restored.
+ * dimm_bad_restore	: Contents from previous shutdown weren't restored.
  * dimm_scrubbed	: Contents of the dimm have been scrubbed.
- * dimm_locked		: Contents of the dimm cant be modified until CEC reboot
+ * dimm_locked		: Contents of the dimm can't be modified until CEC reboot
  * dimm_encrypted	: Contents of dimm are encrypted.
  * dimm_health		: Dimm health indicator. One of PAPR_PDSM_DIMM_XXXX
  * dimm_fuel_gauge	: Life remaining of DIMM as a percentage from 0-100

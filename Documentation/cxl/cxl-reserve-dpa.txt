@@ -38,7 +38,7 @@ include::bus-option.txt[]
 -t::
 --type::
 	Select the partition for the allocation. CXL devices implement a
-	partition that divdes 'ram' and 'pmem' capacity, where 'pmem' capacity
+	partition that divides 'ram' and 'pmem' capacity, where 'pmem' capacity
 	consumes the higher DPA capacity above the partition boundary. The type
 	defaults to 'pmem'. Note that given CXL DPA allocation constraints, once
 	any 'pmem' allocation is established then all remaining 'ram' capacity

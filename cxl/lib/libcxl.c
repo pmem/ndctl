@@ -1590,7 +1590,7 @@ static void bus_invalidate(struct cxl_bus *bus)
 	struct cxl_memdev *memdev;
 
 	/*
-	 * Something happend to cause the state of all ports to be
+	 * Something happened to cause the state of all ports to be
 	 * indeterminate, delete them all and start over.
 	 */
 	cxl_memdev_foreach(ctx, memdev)
