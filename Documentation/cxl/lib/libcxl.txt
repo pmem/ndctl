@@ -264,7 +264,7 @@ use generic port APIs on root objects.
 Ports are hierarchical. All but the a root object have another CXL port
 as a parent object retrievable via cxl_port_get_parent().
 
-The root port of a hiearchy can be retrieved via any port instance in
+The root port of a hierarchy can be retrieved via any port instance in
 that hierarchy via cxl_port_get_bus().
 
 The host of a port is the corresponding device name of the PCIe Root
