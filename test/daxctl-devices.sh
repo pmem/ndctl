@@ -44,7 +44,10 @@ setup_dev()
 	test -n "$testdev"
 
 	"$NDCTL" destroy-namespace -f -b "$testbus" "$testdev"
-	testdev=$("$NDCTL" create-namespace -b "$testbus" -m devdax -fe "$testdev" -s 256M | \
+	# x86_64 memory hotplug can require up to a 2GiB-aligned chunk
+	# of memory.  Create a 4GiB namespace, so that we will still have
+	# enough room left after aligning the start and end.
+	testdev=$("$NDCTL" create-namespace -b "$testbus" -m devdax -fe "$testdev" -s 4G | \
 		jq -er '.dev')
 	test -n "$testdev"
 }
