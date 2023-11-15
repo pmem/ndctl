@@ -18,6 +18,8 @@ again. This involves detecting the state of the HDM (Host Managed Device
 Memory) Decoders and validating that CXL.mem is enabled for each port in
 the device's hierarchy.
 
+include::xable-no-op.txt[]
+
 OPTIONS
 -------
 -e::

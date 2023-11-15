@@ -21,6 +21,8 @@ EXAMPLE
 enabled 2 regions
 ----
 
+include::xable-no-op.txt[]
+
 OPTIONS
 -------
 include::bus-option.txt[]

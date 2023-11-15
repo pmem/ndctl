@@ -12,6 +12,7 @@ SYNOPSIS
 [verse]
 'cxl disable-memdev' <mem0> [<mem1>..<memN>] [<options>]
 
+include::xable-no-op.txt[]
 
 OPTIONS
 -------

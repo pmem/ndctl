@@ -25,6 +25,7 @@ filedeps = [
   'debug-option.txt',
   'region-description.txt',
   'decoder-option.txt',
+  'xable-no-op.txt',
 ]
 
 cxl_manpages = [
