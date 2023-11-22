@@ -68,10 +68,10 @@ setup_x2()
 
 setup_x4()
 {
-        # find x4 decoder
+        # find an x2 decoder
         decoder=$($CXL list -b cxl_test -D -d root | jq -r ".[] |
           select(.pmem_capable == true) |
-          select(.nr_targets == 4) |
+          select(.nr_targets == 2) |
           .decoder")
 
         # Find a memdev for each host-bridge interleave position
@@ -79,14 +79,10 @@ setup_x4()
             .targets | .[] | select(.position == 0) | .target")
         port_dev1=$($CXL list -T -d $decoder | jq -r ".[] |
             .targets | .[] | select(.position == 1) | .target")
-        port_dev2=$($CXL list -T -d $decoder | jq -r ".[] |
-            .targets | .[] | select(.position == 2) | .target")
-        port_dev3=$($CXL list -T -d $decoder | jq -r ".[] |
-            .targets | .[] | select(.position == 3) | .target")
         mem0=$($CXL list -M -p $port_dev0 | jq -r ".[0].memdev")
-        mem1=$($CXL list -M -p $port_dev1 | jq -r ".[1].memdev")
-        mem2=$($CXL list -M -p $port_dev2 | jq -r ".[2].memdev")
-        mem3=$($CXL list -M -p $port_dev3 | jq -r ".[3].memdev")
+        mem1=$($CXL list -M -p $port_dev1 | jq -r ".[0].memdev")
+        mem2=$($CXL list -M -p $port_dev0 | jq -r ".[1].memdev")
+        mem3=$($CXL list -M -p $port_dev1 | jq -r ".[1].memdev")
         memdevs="$mem0 $mem1 $mem2 $mem3"
 }
 
