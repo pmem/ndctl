@@ -21,6 +21,14 @@ rc=1
 # tools/testing/cxl/test/cxl.c. If that model ever changes then the
 # paired update must be made to this test.
 
+# validate the autodiscovered region
+region=$("$CXL" list -R | jq -r ".[] | .region")
+if [[ ! $region ]]; then
+	echo "failed to find autodiscovered region"
+	err "$LINENO"
+fi
+
+
 # collect cxl_test root device id
 json=$($CXL list -b cxl_test)
 count=$(jq "length" <<< $json)
