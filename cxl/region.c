@@ -728,6 +728,55 @@ out:
 	return rc;
 }
 
+static int disable_region(struct cxl_region *region)
+{
+	const char *devname = cxl_region_get_devname(region);
+	struct daxctl_region *dax_region;
+	struct daxctl_memory *mem;
+	struct daxctl_dev *dev;
+	int failed = 0, rc;
+
+	dax_region = cxl_region_get_daxctl_region(region);
+	if (!dax_region)
+		goto out;
+
+	daxctl_dev_foreach(dax_region, dev) {
+		mem = daxctl_dev_get_memory(dev);
+		if (!mem)
+			return -ENXIO;
+
+		/*
+		 * If memory is still online and user wants to force it, attempt
+		 * to offline it.
+		 */
+		if (daxctl_memory_is_online(mem)) {
+			rc = daxctl_memory_offline(mem);
+			if (rc < 0) {
+				log_err(&rl, "%s: unable to offline %s: %s\n",
+					devname,
+					daxctl_dev_get_devname(dev),
+					strerror(abs(rc)));
+				if (!param.force)
+					return rc;
+
+				failed++;
+			}
+		}
+	}
+
+	if (failed) {
+		log_err(&rl, "%s: Forcing region disable without successful offline.\n",
+			devname);
+		log_err(&rl, "%s: Physical address space has now been permanently leaked.\n",
+			devname);
+		log_err(&rl, "%s: Leaked address cannot be recovered until a reboot.\n",
+			devname);
+	}
+
+out:
+	return cxl_region_disable(region);
+}
+
 static int destroy_region(struct cxl_region *region)
 {
 	const char *devname = cxl_region_get_devname(region);
@@ -737,7 +786,7 @@ static int destroy_region(struct cxl_region *region)
 	/* First, unbind/disable the region if needed */
 	if (cxl_region_is_enabled(region)) {
 		if (param.force) {
-			rc = cxl_region_disable(region);
+			rc = disable_region(region);
 			if (rc) {
 				log_err(&rl, "%s: error disabling region: %s\n",
 					devname, strerror(-rc));
@@ -790,55 +839,6 @@ static int destroy_region(struct cxl_region *region)
 
 	/* Finally, delete the region */
 	return cxl_region_delete(region);
-}
-
-static int disable_region(struct cxl_region *region)
-{
-	const char *devname = cxl_region_get_devname(region);
-	struct daxctl_region *dax_region;
-	struct daxctl_memory *mem;
-	struct daxctl_dev *dev;
-	int failed = 0, rc;
-
-	dax_region = cxl_region_get_daxctl_region(region);
-	if (!dax_region)
-		goto out;
-
-	daxctl_dev_foreach(dax_region, dev) {
-		mem = daxctl_dev_get_memory(dev);
-		if (!mem)
-			return -ENXIO;
-
-		/*
-		 * If memory is still online and user wants to force it, attempt
-		 * to offline it.
-		 */
-		if (daxctl_memory_is_online(mem)) {
-			rc = daxctl_memory_offline(mem);
-			if (rc < 0) {
-				log_err(&rl, "%s: unable to offline %s: %s\n",
-					devname,
-					daxctl_dev_get_devname(dev),
-					strerror(abs(rc)));
-				if (!param.force)
-					return rc;
-
-				failed++;
-			}
-		}
-	}
-
-	if (failed) {
-		log_err(&rl, "%s: Forcing region disable without successful offline.\n",
-			devname);
-		log_err(&rl, "%s: Physical address space has now been permanently leaked.\n",
-			devname);
-		log_err(&rl, "%s: Leaked address cannot be recovered until a reboot.\n",
-			devname);
-	}
-
-out:
-	return cxl_region_disable(region);
 }
 
 static int do_region_xable(struct cxl_region *region, enum region_actions action)
