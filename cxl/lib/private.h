@@ -87,6 +87,7 @@ struct cxl_port {
 	int dports_init;
 	int nr_dports;
 	int depth;
+	int decoders_committed;
 	struct cxl_ctx *ctx;
 	struct cxl_bus *bus;
 	enum cxl_port_type type;

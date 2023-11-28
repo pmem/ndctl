@@ -1896,6 +1896,10 @@ static int cxl_port_init(struct cxl_port *port, struct cxl_port *parent_port,
 	if (sysfs_read_attr(ctx, path, buf) == 0)
 		port->module = util_modalias_to_module(ctx, buf);
 
+	sprintf(path, "%s/decoders_committed", cxlport_base);
+	if (sysfs_read_attr(ctx, path, buf) == 0)
+		port->decoders_committed = strtoul(buf, NULL, 0);
+
 	free(path);
 	return 0;
 err:
@@ -3135,6 +3139,11 @@ cxl_port_get_dport_by_memdev(struct cxl_port *port, struct cxl_memdev *memdev)
 		if (cxl_dport_maps_memdev(dport, memdev))
 			return dport;
 	return NULL;
+}
+
+CXL_EXPORT int cxl_port_decoders_committed(struct cxl_port *port)
+{
+	return port->decoders_committed;
 }
 
 static void *add_cxl_bus(void *parent, int id, const char *cxlbus_base)
