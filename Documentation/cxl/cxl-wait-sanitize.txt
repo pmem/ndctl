@@ -1,0 +1,44 @@
+// SPDX-License-Identifier: GPL-2.0
+
+cxl-wait-sanitize(1)
+======================
+
+NAME
+----
+cxl-wait-sanitize - wait for a sanitize operation to complete
+
+SYNOPSIS
+--------
+[verse]
+'cxl wait-sanitize <mem0> [<mem1>..<memN>] [<options>]'
+
+DESCRIPTION
+-----------
+
+A sanitize operation can take several seconds to complete. Block and wait for
+the sanitize operation to complete.
+
+EXAMPLE
+-------
+----
+# cxl wait-sanitize mem0
+sanitize completed on 1 mem device
+----
+
+OPTIONS
+-------
+
+include::bus-option.txt[]
+
+-t::
+--timeout::
+	Milliseconds to wait before timing out and returning. Defaults
+	to infinite.
+
+include::verbose-option.txt[]
+
+include::../copyright.txt[]
+
+SEE ALSO
+--------
+linkcxl:cxl-list[1],

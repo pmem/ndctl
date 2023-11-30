@@ -49,6 +49,7 @@ cxl_manpages = [
   'cxl-monitor.txt',
   'cxl-update-firmware.txt',
   'cxl-set-alert-config.txt',
+  'cxl-wait-sanitize.txt',
 ]
 
 foreach man : cxl_manpages
