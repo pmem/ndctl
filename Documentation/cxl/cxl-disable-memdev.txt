@@ -27,7 +27,9 @@ include::bus-option.txt[]
 	a device if the tool determines the memdev is in active usage. Recall
 	that CXL memory ranges might have been established by platform
 	firmware and disabling an active device is akin to force removing
-	memory from a running system.
+	memory from a running system. Going down this path does not offline
+	active memory if they are currently online. User is recommended to
+	offline and disable the appropriate regions before disabling the memdevs.
 
 -v::
 	Turn on verbose debug messages in the library (if libcxl was built with
