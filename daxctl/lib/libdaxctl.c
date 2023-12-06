@@ -385,7 +385,7 @@ static bool device_model_is_dax_bus(struct daxctl_dev *dev)
 	return false;
 }
 
-static int dev_is_system_ram_capable(struct daxctl_dev *dev)
+DAXCTL_EXPORT int daxctl_dev_is_system_ram_capable(struct daxctl_dev *dev)
 {
 	const char *devname = daxctl_dev_get_devname(dev);
 	struct daxctl_ctx *ctx = daxctl_dev_get_ctx(dev);
@@ -432,7 +432,7 @@ static struct daxctl_memory *daxctl_dev_alloc_mem(struct daxctl_dev *dev)
 	char buf[SYSFS_ATTR_SIZE];
 	int node_num;
 
-	if (!dev_is_system_ram_capable(dev))
+	if (!daxctl_dev_is_system_ram_capable(dev))
 		return NULL;
 
 	mem = calloc(1, sizeof(*mem));

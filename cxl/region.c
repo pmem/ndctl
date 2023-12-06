@@ -741,6 +741,9 @@ static int disable_region(struct cxl_region *region)
 		goto out;
 
 	daxctl_dev_foreach(dax_region, dev) {
+		if (!daxctl_dev_is_system_ram_capable(dev))
+			continue;
+
 		mem = daxctl_dev_get_memory(dev);
 		if (!mem)
 			return -ENXIO;

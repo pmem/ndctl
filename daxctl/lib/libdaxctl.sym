@@ -99,3 +99,8 @@ global:
 	daxctl_set_config_path;
 	daxctl_get_config_path;
 } LIBDAXCTL_8;
+
+LIBDAXCTL_10 {
+global:
+	daxctl_dev_is_system_ram_capable;
+} LIBDAXCTL_9;
