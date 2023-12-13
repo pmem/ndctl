@@ -108,8 +108,8 @@ do
 
 	sz=$(cat /sys/bus/cxl/devices/$i/size)
 	res=$(cat /sys/bus/cxl/devices/$i/start)
-	[ $sz -ne $region_size ] && err "$LINENO: decoder: $i sz: $sz region_size: $region_size"
-	[ $res -ne $region_base ] && err "$LINENO: decoder: $i base: $res region_base: $region_base"
+	[[ $sz -ne $region_size ]] && err "$LINENO: decoder: $i sz: $sz region_size: $region_size"
+	[[ $res -ne $region_base ]] && err "$LINENO: decoder: $i base: $res region_base: $region_base"
 done
 
 # validate all switch decoders have the correct settings
@@ -138,9 +138,9 @@ do
 
 	res=$(echo $decoder | jq -r ".resource")
 	sz=$(echo $decoder | jq -r ".size")
-	[ $sz -ne $region_size ] && err \
+	[[ $sz -ne $region_size ]] && err \
 	"$LINENO: decoder: $i sz: $sz region_size: $region_size"
-	[ $res -ne $region_base ] && err \
+	[[ $res -ne $region_base ]] && err \
 	"$LINENO: decoder: $i base: $res region_base: $region_base"
 done
 
