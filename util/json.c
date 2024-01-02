@@ -75,7 +75,7 @@ static int display_size(struct json_object *jobj, struct printbuf *pbuf,
 static int display_hex(struct json_object *jobj, struct printbuf *pbuf,
 		int level, int flags)
 {
-	unsigned long long val = json_object_get_int64(jobj);
+	unsigned long long val = util_json_get_u64(jobj);
 	static char buf[32];
 
 	snprintf(buf, sizeof(buf), "\"%#llx\"", val);
