@@ -14,6 +14,37 @@ layout: page
 * Do follow-up on linux-cxl@vger.kernel.org for longer questions / debug
 * https://pmem.io/ndctl/collab/
 
+# "Halloween" 2023
+* Opens:
+* QEMU
+* cxl-cli
+* 
+
+## QEMU
+* Multiple HDM decoder support landed
+* Compilation issues slowed down a topic
+* Mailbox CCI rework sent out
+  * Difficult to test MCTP infrastructure
+* Fan in process of next DCD posting
+* FMAPI support on top of DCD ("add" support, test interfaces included "real" tooling wanted)
+* QEMU support for changing QOS class information?
+  * weighted interleave investigation
+  * generic target support needed
+
+## cxl-cli
+* sanitize command unit test for (for v80 depends on v6.7)
+* poison listing support (for v79 kernel support in v6.5)
+* automatic region position determination for create-region (--strict option for recovery of old behavior)
+
+## v6.7
+
+## v6.8
+* DCD next revision pending
+* Spec pipecleaning in progress
+* [Node Weights and Weighted Interleave - Gregory Price](https://lore.kernel.org/linux-mm/20231031003810.4532-1-gregory.price@memverge.com/)
+* John: Tier preference vs local preference?
+  * Gregory: bandwidth vs latency tiering conflicts
+
 # October 2023
 * Opens:
   * Jim: QEMU dport conflicting connections, (1) HB (1) 1 RP (2?) Switches (4) Endpoints (Who detects impossible configs?)
@@ -72,6 +103,7 @@ layout: page
   * [multi-tier](https://patchwork.kernel.org/project/cxl/cover/20230927095002.10245-1-ravis.opensrc@micron.com/)
   * [mempolicy2](https://patchwork.kernel.org/project/cxl/cover/20231003002156.740595-1-gregory.price@memverge.com/)
   * [mempolicyNM](https://patchwork.kernel.org/project/linux-mm/patch/20220607171949.85796-1-hannes@cmpxchg.org/)
+  * [weighted interleave]
   * Informal Plumbers BoF
 
 
