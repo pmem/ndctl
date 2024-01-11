@@ -29,14 +29,14 @@ find_testdev()
 	fi
 
 	# find a victim region provided by dax_hmem
-	testpath=$("$DAXCTL" list -r 0 | jq -er '.[0].path | .//""')
-	if [[ ! "$testpath" == *"hmem"* ]]; then
+	region_id="$("$DAXCTL" list -R | jq -r '.[] | select(.path | contains("hmem")) | .id')"
+	if [[ ! "$region_id" ]]; then
 		printf "Unable to find a victim region\n"
 		exit "$rc"
 	fi
 
 	# find a victim device
-	testdev=$("$DAXCTL" list -D -r 0 | jq -er '.[0].chardev | .//""')
+	testdev=$("$DAXCTL" list -D -r "$region_id" | jq -er '.[0].chardev | .//""')
 	if [[ ! $testdev  ]]; then
 		printf "Unable to find a victim device\n"
 		exit "$rc"
@@ -56,9 +56,10 @@ setup_dev()
 		exit "$rc"
 	fi
 
+	"$DAXCTL" reconfigure-device -m devdax -f "$testdev"
 	"$DAXCTL" disable-device "$testdev"
 	"$DAXCTL" reconfigure-device -s 0 "$testdev"
-	available=$("$DAXCTL" list -r 0 | jq -er '.[0].available_size | .//""')
+	available=$("$DAXCTL" list -r "$region_id" | jq -er '.[0].available_size | .//""')
 }
 
 reset_dev()
@@ -74,8 +75,8 @@ reset_dax()
 {
 	test -n "$testdev"
 
-	"$DAXCTL" disable-device -r 0 all
-	"$DAXCTL" destroy-device -r 0 all
+	"$DAXCTL" disable-device -r "$region_id" all
+	"$DAXCTL" destroy-device -r "$region_id" all
 	"$DAXCTL" reconfigure-device -s "$available" "$testdev"
 }
 
@@ -90,7 +91,7 @@ test_pass()
 	local rc=1
 
 	# Available size
-	_available_size=$("$DAXCTL" list -r 0 | jq -er '.[0].available_size | .//""')
+	_available_size=$("$DAXCTL" list -r "$region_id" | jq -er '.[0].available_size | .//""')
 	if [[ ! $_available_size == "$available" ]]; then
 		echo "Unexpected available size $_available_size != $available"
 		exit "$rc"
@@ -101,7 +102,7 @@ fail_if_available()
 {
 	local rc=1
 
-	_size=$("$DAXCTL" list -r 0 | jq -er '.[0].available_size | .//""')
+	_size=$("$DAXCTL" list -r "$region_id" | jq -er '.[0].available_size | .//""')
 	if [[ $_size ]]; then
 		echo "Unexpected available size $_size"
 		exit "$rc"
@@ -170,30 +171,31 @@ daxctl_test_multi()
 		"$DAXCTL" reconfigure-device -s $size "$testdev"
 	fi
 
-	daxdev_1=$("$DAXCTL" create-device -r 0 -s $size | jq -er '.[].chardev')
+	daxdev_1=$("$DAXCTL" create-device -r "$region_id" -s $size | jq -er '.[].chardev')
 	test -n "$daxdev_1"
 
-	daxdev_2=$("$DAXCTL" create-device -r 0 -s $size | jq -er '.[].chardev')
+	daxdev_2=$("$DAXCTL" create-device -r "$region_id" -s $size | jq -er '.[].chardev')
 	test -n "$daxdev_2"
 
 	if [[ ! $2 ]]; then
-		daxdev_3=$("$DAXCTL" create-device -r 0 -s $size | jq -er '.[].chardev')
+		daxdev_3=$("$DAXCTL" create-device -r "$region_id" -s $size | jq -er '.[].chardev')
 		test -n "$daxdev_3"
 	fi
 
 	# Hole
-	"$DAXCTL" disable-device  "$1" && "$DAXCTL" destroy-device "$1"
+	"$DAXCTL" disable-device  "$1"
+	"$DAXCTL" destroy-device "$1"
 
 	# Pick space in the created hole and at the end
 	new_size=$((size * 2))
-	daxdev_4=$("$DAXCTL" create-device -r 0 -s "$new_size" | jq -er '.[].chardev')
+	daxdev_4=$("$DAXCTL" create-device -r "$region_id" -s "$new_size" | jq -er '.[].chardev')
 	test -n "$daxdev_4"
 	test "$(daxctl_get_nr_mappings "$daxdev_4")" -eq 2
 
 	fail_if_available
 
-	"$DAXCTL" disable-device -r 0 all
-	"$DAXCTL" destroy-device -r 0 all
+	"$DAXCTL" disable-device -r "$region_id" all
+	"$DAXCTL" destroy-device -r "$region_id" all
 }
 
 daxctl_test_multi_reconfig()
@@ -210,7 +212,7 @@ daxctl_test_multi_reconfig()
 	"$DAXCTL" reconfigure-device -s $size "$testdev"
 	"$DAXCTL" disable-device "$testdev"
 
-	daxdev_1=$("$DAXCTL" create-device -r 0 -s $size | jq -er '.[].chardev')
+	daxdev_1=$("$DAXCTL" create-device -r "$region_id" -s $size | jq -er '.[].chardev')
 	"$DAXCTL" disable-device "$daxdev_1"
 
 	start=$((size + size))
@@ -249,16 +251,16 @@ daxctl_test_adjust()
 	start=$((size + size))
 	for i in $(seq 1 1 $ncfgs)
 	do
-		daxdev=$("$DAXCTL" create-device -r 0 -s "$size" | jq -er '.[].chardev')
+		daxdev=$("$DAXCTL" create-device -r "$region_id" -s "$size" | jq -er '.[].chardev')
 		test "$(daxctl_get_nr_mappings "$daxdev")" -eq 1
 	done
 
-	daxdev=$(daxctl_get_dev "dax0.1")
+	daxdev=$(daxctl_get_dev "dax$region_id.1")
 	"$DAXCTL" disable-device "$daxdev" && "$DAXCTL" destroy-device "$daxdev"
-	daxdev=$(daxctl_get_dev "dax0.4")
+	daxdev=$(daxctl_get_dev "dax$region_id.4")
 	"$DAXCTL" disable-device "$daxdev" && "$DAXCTL" destroy-device "$daxdev"
 
-	daxdev=$(daxctl_get_dev "dax0.2")
+	daxdev=$(daxctl_get_dev "dax$region_id.2")
 	"$DAXCTL" disable-device "$daxdev"
 	"$DAXCTL" reconfigure-device -s $((size * 2)) "$daxdev"
 	# Allocates space at the beginning: expect two mappings as
@@ -266,7 +268,7 @@ daxctl_test_adjust()
 	# preserve the relative page_offset of existing allocations
 	test "$(daxctl_get_nr_mappings "$daxdev")" -eq 2
 
-	daxdev=$(daxctl_get_dev "dax0.3")
+	daxdev=$(daxctl_get_dev "dax$region_id.3")
 	"$DAXCTL" disable-device "$daxdev"
 	"$DAXCTL" reconfigure-device -s $((size * 2)) "$daxdev"
 	# Adjusts space at the end, expect one mapping because we are
@@ -275,9 +277,9 @@ daxctl_test_adjust()
 
 	fail_if_available
 
-	daxdev=$(daxctl_get_dev "dax0.3")
+	daxdev=$(daxctl_get_dev "dax$region_id.3")
 	"$DAXCTL" disable-device "$daxdev" && "$DAXCTL" destroy-device "$daxdev"
-	daxdev=$(daxctl_get_dev "dax0.2")
+	daxdev=$(daxctl_get_dev "dax$region_id.2")
 	"$DAXCTL" disable-device "$daxdev" && "$DAXCTL" destroy-device "$daxdev"
 }
 
@@ -295,7 +297,7 @@ daxctl_test1()
 {
 	local daxdev
 
-	daxdev=$("$DAXCTL" create-device -r 0 | jq -er '.[].chardev')
+	daxdev=$("$DAXCTL" create-device -r "$region_id" | jq -er '.[].chardev')
 
 	test -n "$daxdev"
 	test "$(daxctl_get_nr_mappings "$daxdev")" -eq 1
@@ -312,17 +314,17 @@ daxctl_test1()
 # having the region device reconfigured with some of the memory.
 daxctl_test2()
 {
-	daxctl_test_multi "dax0.1" 1
+	daxctl_test_multi "$region_id.1" 1
 	clear_dev
 	test_pass
 }
 
 # Test 3: space at the beginning and at the end
 # Successfully pick space in the beginning and space at the end, by
-# having the region device emptied (so region beginning starts with dax0.1).
+# having the region device emptied (so region beginning starts with daxX.1).
 daxctl_test3()
 {
-	daxctl_test_multi "dax0.1"
+	daxctl_test_multi "$region_id.1"
 	clear_dev
 	test_pass
 }
@@ -366,7 +368,7 @@ daxctl_test6()
 		size=$align
 	fi
 
-	daxdev=$("$DAXCTL" create-device -r 0 -s $size -a $align | jq -er '.[].chardev')
+	daxdev=$("$DAXCTL" create-device -r "$region_id" -s $size -a $align | jq -er '.[].chardev')
 
 	test -n "$daxdev"
 
