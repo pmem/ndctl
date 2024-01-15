@@ -12,11 +12,19 @@ struct jlist_node {
 	struct list_node list;
 };
 
+struct cxl_poison_ctx {
+	struct json_object *jpoison;
+	struct cxl_region *region;
+	struct cxl_memdev *memdev;
+};
+
 struct event_ctx {
 	const char *system;
 	struct list_head jlist_head;
 	const char *event_name; /* optional */
 	int event_pid; /* optional */
+	struct cxl_poison_ctx *poison_ctx; /* optional */
+	unsigned long json_flags;
 	int (*parse_event)(struct tep_event *event, struct tep_record *record,
 			   struct event_ctx *ctx);
 };
