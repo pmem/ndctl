@@ -5,6 +5,7 @@
 
 #include <json-c/json.h>
 #include <ccan/list/list.h>
+#include <ccan/short_types/short_types.h>
 
 struct jlist_node {
 	struct json_object *jobj;
@@ -24,5 +25,10 @@ int trace_event_parse(struct tracefs_instance *inst, struct event_ctx *ectx);
 int trace_event_enable(struct tracefs_instance *inst, const char *system,
 		       const char *event);
 int trace_event_disable(struct tracefs_instance *inst);
-
+u8 trace_get_field_u8(struct tep_event *event, struct tep_record *record,
+		      const char *name);
+u32 trace_get_field_u32(struct tep_event *event, struct tep_record *record,
+			const char *name);
+u64 trace_get_field_u64(struct tep_event *event, struct tep_record *record,
+			const char *name);
 #endif

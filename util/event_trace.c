@@ -15,6 +15,43 @@
 #define _GNU_SOURCE
 #include <string.h>
 
+u64 trace_get_field_u64(struct tep_event *event, struct tep_record *record,
+			const char *name)
+{
+	unsigned long long val;
+
+	if (tep_get_field_val(NULL, event, name, record, &val, 0))
+		return ULLONG_MAX;
+
+	return val;
+}
+
+u32 trace_get_field_u32(struct tep_event *event, struct tep_record *record,
+			const char *name)
+{
+	char *val;
+	int len;
+
+	val = tep_get_field_raw(NULL, event, name, record, &len, 0);
+	if (!val)
+		return UINT_MAX;
+
+	return *(u32 *)val;
+}
+
+u8 trace_get_field_u8(struct tep_event *event, struct tep_record *record,
+		      const char *name)
+{
+	char *val;
+	int len;
+
+	val = tep_get_field_raw(NULL, event, name, record, &len, 0);
+	if (!val)
+		return UCHAR_MAX;
+
+	return *(u8 *)val;
+}
+
 static struct json_object *num_to_json(void *num, int elem_size, unsigned long flags)
 {
 	bool sign = flags & TEP_FIELD_IS_SIGNED;
