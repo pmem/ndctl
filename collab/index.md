@@ -14,11 +14,65 @@ layout: page
 * Do follow-up on linux-cxl@vger.kernel.org for longer questions / debug
 * https://pmem.io/ndctl/collab/
 
+# November/December 2023
+* Opens
+* Plumbers Takeaways
+* QEMU
+* cxl-cli
+* v6.7 Fixes
+* v6.8 Queue
+
+## Opens
+* Interleave ratios: MVP
+  * mempolicy based to start
+  * cgroups deferred for a later fight
+
+## Plumbers Takeaways
+  * Greg's interleave document
+    * 5 types: BIOS, OS, mempolicy (homogenous or heterogeneous)
+    * LWN Article for reach? Follow in the style of Mel's NUMA article
+  * UKunit: Userspace unit testing of kernel code
+    * limitation on what can be mocked with Kunit
+    * https://github.com/jimharris/ukunit
+  * Davidlohr to post notes
+  * Port device RAS support
+    * Move PCIe port bus driver logic into PCIe driver/core to start as library
+    * AER handler callback to the endpoint driver
+    * Break the pcie portbus driver dependency
+  * Hotplug range register problem resolution
+
+## QEMU
+  * mst picked up more than expected includng CCI support into 8.2-rc1
+  * ira's cdat fixes posted
+  * scrub control: both QEMU and kernel patches posted
+    * Integrate with ACPI scrub control as a subsystem shared with CXL
+  * Alistair's SPDM work progression
+
+## cxl-cli
+  * concern for first-time users
+    * dnf install cxl-cli
+    * cxl list -RX
+* v79 release imminent
+  * corresponding to v6.7 updates
+* (hotplug range register support?)[https://lore.kernel.org/linux-cxl/ZCRhhUDcmypVKu0X@memverge.com/]
+  * disable device mem_enable modify range register + re-enable
+  * how to handle zero based DVSEC range register
+
+## v6.7-fixes
+* locking fixups
+
+## v6.8
+* Interleave syscall
+  * John: don't force people to go through BIOS for interleave
+  * Michal: looking for mempolicy2() support
+  * Greg: also working on thrid-party mempolicy syscall via pidfd (minus mbind/homenode)
+    * once syscalls are in interleave weights can be layered on top without ABI changes
+    * numactl changes would be nice to have 
+
 # "Halloween" 2023
 * Opens:
 * QEMU
 * cxl-cli
-* 
 
 ## QEMU
 * Multiple HDM decoder support landed
