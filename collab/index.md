@@ -9,10 +9,56 @@ layout: page
 * Do not disclose CXL consortium confidential information
 * Do discuss any Linux questions about **released** CXL specifications:
   * [https://www.computeexpresslink.org/spec-landing](https://www.computeexpresslink.org/spec-landing)
-* Do use IRC as a supplement for this sync meeting for quick questions
-  * `#cxl` on `irc.oftc.net`
+* Do use Discord as a supplement for this sync meeting for quick questions
 * Do follow-up on linux-cxl@vger.kernel.org for longer questions / debug
 * https://pmem.io/ndctl/collab/
+
+# February 2024
+* Opens
+  * (LSF/MM CFP)[https://lore.kernel.org/bpf/4343d07b-b1b2-d43b-c201-a48e89145e5c@iogearbox.net/]: deadline March 1st
+* QEMU
+* cxl-cli
+* v6.8 Fixes
+* v6.9 Queue
+* Future
+
+## QEMU
+
+## cxl-cli
+* (List Media Errors (Poison))[http://lore.kernel.org/r/cover.1705534719.git.alison.schofield@intel.com]: pending review
+* Porcelain patches welcome
+
+## v6.8 Fixes
+* (CXL QOS Sysfs fixes / simplification)[https://patchwork.kernel.org/project/cxl/list/?series=823300]: pending next posting
+* (Fix "HPA out of order" region assembly fix)[https://patchwork.kernel.org/project/cxl/list/?series=821883]: ready to queue
+* (Fix "no NUMA configuration found")[https://lore.kernel.org/r/99dcb3ae87e04995e9f293f6158dc8fa0749a487.1705085543.git.alison.schofield@intel.com]: queued for v6.8-rc4
+* (Crash on repeated AER signaling)[https://lore.kernel.org/r/20240129131856.2458980-1-ming4.li@intel.com]: queued for v6.8-rc4
+* (cxl_test build fix)[https://lore.kernel.org/r/170543983780.460832.10920261849128601697.stgit@dwillia2-xfh.jf.intel.com]: merged v6.8-rc2
+* (Stop requiring MSI/MSIx)[https://lore.kernel.org/r/20240117-dont-fail-irq-v2-1-f33f26b0e365@intel.com]: merged v6.8-rc2
+* (Fix x16 Region HPA allocation)[http://lore.kernel.org/r/20240124091527.8469-1-caoqq@fujitsu.com]: merged v6.8-rc2
+* (Fix sleeping lock in CPER handling)[http://lore.kernel.org/r/20240202-cxl-cper-smatch-v1-1-7a4103c7f5a0@intel.com]: pending next posting
+* (Fix duplicate messages in CPER handling)[http://lore.kernel.org/r/20240131-cxl-cper-fixups-v1-0-335c85b1d77b@intel.com]
+
+## v6.9 Queue
+* (CXL QOS to NUMA)[http://lore.kernel.org/r/170568485801.1008395.12244787918793980621.stgit@djiang5-mobl3]: pending review
+* (Weighted Interleave)[https://lore.kernel.org/all/20240202170238.90004-5-gregory.price@memverge.com/]: queued in mm-unstable
+* (DAX support on modern ARM)[http://lore.kernel.org/r/20240202210019.88022-1-mathieu.desnoyers@efficios.com]: pending final review
+* (CXL CPER Protocol Errors to Trace Events)[http://lore.kernel.org/r/20240109034755.100555-1-Smita.KoralahalliChannabasappa@amd.com]: pending review
+* (CXL EINJ)[https://lore.kernel.org/all/20240115172007.309547-1-Benjamin.Cheatham@amd.com/]: pending resolution of ACPICA dependency
+* (CXL Userspace Unit Tests)[http://lore.kernel.org/r/170171841563.162223.2230646078958595847.stgit@ubuntu]: pending next posting
+* (CDAT Cleanups)[https://lore.kernel.org/all/20240108114833.241710-1-rrichter@amd.com/]: queued
+* (CXL test save/restore)[http://lore.kernel.org/r/65a980249f50f_3b8e294a3@dwillia2-xfh.jf.intel.com.notmuch]: pending non-RFC posting
+* (Use sysfs_emit() throughout)[https://lore.kernel.org/r/20240112062709.2490947-1-ruansy.fnst@fujitsu.com]: queued
+* (cond_guard() and related cleansups)[http://lore.kernel.org/r/20240205142613.23914-1-fabio.maria.de.francesco@linux.intel.com]: pending next posting
+
+## Future
+* (CXL Scrub Feature)[http://lore.kernel.org/r/20240111131741.1356-1-shiju.jose@huawei.com]: more review needed
+* CXL Switch Port Error Handling: pending initial posting
+* CXL Root Port (RCEC Notified) Error Handling: pending initial posting
+* DCD: pending next revision
+* DPA to HPA translation for events
+* Type-2 Preview: still awaiting a consumer
+* CCI Refactor for Switch CCI, RAS API, Type-2: pending next posting
 
 # November/December 2023
 * Opens
