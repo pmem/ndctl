@@ -24,9 +24,57 @@ layout: page
 
 ## QEMU
 
+* Status
+  * 2 patch sets to pick up; bunch of fixes
+  * Not clear spec versions so update those to 3.1
+
+* Fan's next DCD version; close
+  * Some minor issues
+  * Would like to land 9.0 cycle (Aprox end of March)
+  * Some things depend on these so want to land them first
+
+* MHD won't make March
+
+* TCG/KVM mess
+  * Bug report on list; Not as minor as thought
+  * Slow path does not cover everything unfortunately
+  * May be some other issues
+  * Random crashes (might be page tables or ??)
+  * Alternative is to implement performance path
+   * Treat as normal RAM
+   * Can't do interleave with lots of memory regions (ways?)
+* For now... Don't use emulated CXL memory
+* Fan said it would work for some cases?
+  * Kernel code is now putting things in the right numa nodes
+  * Kernel may have been using swap
+* Should x86 use memblock?
+  * Jonathan does not think it will help
+* Re-read cdat?
+* EFI soft reserved causes x86 to keep the info around
+  * 'numa keep meminfo' or something like that
+
+* AMD CPER pushed out
+  * Jonathan would like a HEST table from x86 if someone could provide that
+
+
+
 ## cxl-cli
 * [List Media Errors (Poison)](http://lore.kernel.org/r/cover.1705534719.git.alison.schofield@intel.com): pending review
+* QoS class changes; pending
 * Porcelain patches welcome
+  * How can we make things easier?
+  * Automate cxl create region for largest regions it can figure out
+
+
+## Should Linux be the BMC?
+* Open BMC has a lot of drivers
+* need guard rails
+* Might be useful and to share code
+* BMC only use cases are questionable
+  * How do we ID which is which?
+  * Kconfig CXL_BMC_SUPPORT?
+  * Similart to raw command support
+
 
 ## v6.8 Fixes
 * [CXL QOS Sysfs fixes / simplification](https://patchwork.kernel.org/project/cxl/list/?series=823300): pending next posting
@@ -37,7 +85,16 @@ layout: page
 * [Stop requiring MSI/MSIx](https://lore.kernel.org/r/20240117-dont-fail-irq-v2-1-f33f26b0e365@intel.com): merged v6.8-rc2
 * [Fix x16 Region HPA allocation](http://lore.kernel.org/r/20240124091527.8469-1-caoqq@fujitsu.com): merged v6.8-rc2
 * [Fix sleeping lock in CPER handling](http://lore.kernel.org/r/20240202-cxl-cper-smatch-v1-1-7a4103c7f5a0@intel.com): pending next posting
-* [Fix duplicate messages in CPER handling](http://lore.kernel.org/r/20240131-cxl-cper-fixups-v1-0-335c85b1d77b@intel.com)
+* [Fix duplicate messages in CPER handling](http://lore.kernel.org/r/20240131-cxl-cper-fixups-v1-0-335c85b1d77b@intel.com): Going through EFI tree
+
+
+## AER fatal panic - wide range of handleing
+* Policy change to discuss with comunity
+  * Instead of hoping we should panic?
+   * But if DAX just kill the process (invalidate mappings)
+   * But how much running around should we do?
+   * Hope was that force remove of driver would do a pr_warn() [let panic on warn crash]
+  * Need more real world feedback
 
 ## v6.9 Queue
 * [CXL QOS to NUMA](http://lore.kernel.org/r/170568485801.1008395.12244787918793980621.stgit@djiang5-mobl3): pending review
