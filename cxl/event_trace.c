@@ -109,7 +109,13 @@ static int cxl_event_to_json(struct tep_event *event, struct tep_record *record,
 		struct tep_format_field *f = fields[i];
 		int len;
 
-		if (f->flags & TEP_FIELD_IS_STRING) {
+		/*
+		 * libtraceevent differentiates arrays and strings like this:
+		 * array:  TEP_FIELD_IS_[ARRAY | STRING]
+		 * string: TEP_FIELD_IS_[ARRAY | STRING | DYNAMIC]
+		 */
+		if ((f->flags & TEP_FIELD_IS_STRING) &&
+		    ((f->flags & TEP_FIELD_IS_DYNAMIC))) {
 			char *str;
 
 			str = tep_get_field_raw(NULL, event, f->name, record, &len, 0);
