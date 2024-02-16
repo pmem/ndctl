@@ -23,6 +23,26 @@ modprobe cxl_test
 rc=1
 
 dev_path="/sys/bus/platform/devices"
+trace_path="/sys/kernel/tracing"
+
+test_region_info()
+{
+	# Trigger a memdev in the cxl_test autodiscovered region
+	region=$($CXL list  -R | jq -r ".[] | .region")
+	memdev=$($CXL list -r "$region" --targets |
+		jq -r '.[].mappings' |
+		jq -r '.[0].memdev')
+	host=$($CXL list -m "$memdev" | jq -r '.[].host')
+
+	echo 1 > "$dev_path"/"$host"/event_trigger
+
+	if ! grep "cxl_general_media.*$region" "$trace_path"/trace; then
+		err "$LINENO"
+	fi
+	if ! grep "cxl_dram.*$region" "$trace_path"/trace; then
+		err "$LINENO"
+	fi
+}
 
 test_cxl_events()
 {
@@ -73,6 +93,10 @@ fi
 if [ "$num_info" -ne $num_info_expected ]; then
 	err "$LINENO"
 fi
+
+echo 1 > /sys/kernel/tracing/tracing_on
+test_region_info
+echo 0 > /sys/kernel/tracing/tracing_on
 
 check_dmesg "$LINENO"
 
