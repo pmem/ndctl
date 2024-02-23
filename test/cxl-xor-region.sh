@@ -23,7 +23,8 @@ rc=1
 
 create_and_destroy_region()
 {
-	region=$($CXL create-region -d $decoder -m $memdevs | jq -r ".region")
+	region=$($CXL create-region -d "$decoder" -m "$memdevs" |
+		jq -r ".region")
 
 	if [[ ! $region ]]; then
 		echo "create-region failed for $decoder"
@@ -42,9 +43,9 @@ setup_x1()
 		.decoder")
 
 	# Find a memdev for this host-bridge
-	port_dev0=$($CXL list -T -d $decoder | jq -r ".[] |
+	port_dev0=$($CXL list -T -d "$decoder" | jq -r ".[] |
 		.targets | .[] | select(.position == 0) | .target")
-	mem0=$($CXL list -M -p $port_dev0 | jq -r ".[0].memdev")
+	mem0=$($CXL list -M -p "$port_dev0" | jq -r ".[0].memdev")
 	memdevs="$mem0"
 }
 
@@ -57,12 +58,12 @@ setup_x2()
 		.decoder")
 
 	# Find a memdev for each host-bridge interleave position
-	port_dev0=$($CXL list -T -d $decoder | jq -r ".[] |
+	port_dev0=$($CXL list -T -d "$decoder" | jq -r ".[] |
 		.targets | .[] | select(.position == 0) | .target")
-	port_dev1=$($CXL list -T -d $decoder | jq -r ".[] |
+	port_dev1=$($CXL list -T -d "$decoder" | jq -r ".[] |
 		.targets | .[] | select(.position == 1) | .target")
-	mem0=$($CXL list -M -p $port_dev0 | jq -r ".[0].memdev")
-	mem1=$($CXL list -M -p $port_dev1 | jq -r ".[0].memdev")
+	mem0=$($CXL list -M -p "$port_dev0" | jq -r ".[0].memdev")
+	mem1=$($CXL list -M -p "$port_dev1" | jq -r ".[0].memdev")
 	memdevs="$mem0 $mem1"
 }
 
@@ -75,14 +76,14 @@ setup_x4()
 		.decoder")
 
 	# Find a memdev for each host-bridge interleave position
-	port_dev0=$($CXL list -T -d $decoder | jq -r ".[] |
+	port_dev0=$($CXL list -T -d "$decoder" | jq -r ".[] |
 		.targets | .[] | select(.position == 0) | .target")
-	port_dev1=$($CXL list -T -d $decoder | jq -r ".[] |
+	port_dev1=$($CXL list -T -d "$decoder" | jq -r ".[] |
 		.targets | .[] | select(.position == 1) | .target")
-	mem0=$($CXL list -M -p $port_dev0 | jq -r ".[0].memdev")
-	mem1=$($CXL list -M -p $port_dev1 | jq -r ".[0].memdev")
-	mem2=$($CXL list -M -p $port_dev0 | jq -r ".[1].memdev")
-	mem3=$($CXL list -M -p $port_dev1 | jq -r ".[1].memdev")
+	mem0=$($CXL list -M -p "$port_dev0" | jq -r ".[0].memdev")
+	mem1=$($CXL list -M -p "$port_dev1" | jq -r ".[0].memdev")
+	mem2=$($CXL list -M -p "$port_dev0" | jq -r ".[1].memdev")
+	mem3=$($CXL list -M -p "$port_dev1" | jq -r ".[1].memdev")
 	memdevs="$mem0 $mem1 $mem2 $mem3"
 }
 
