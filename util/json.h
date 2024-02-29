@@ -34,10 +34,22 @@ static inline struct json_object *util_json_new_u64(unsigned long long val)
 {
 	return json_object_new_uint64(val);
 }
+
+static inline unsigned long long util_json_get_u64(struct json_object *jobj)
+{
+	return json_object_get_uint64(jobj);
+}
+
 #else /* fallback to signed */
 static inline struct json_object *util_json_new_u64(unsigned long long val)
 {
 	return json_object_new_int64(val);
 }
+
+static inline unsigned long long util_json_get_u64(struct json_object *jobj)
+{
+	return json_object_get_int64(jobj);
+}
+
 #endif /* HAVE_JSON_U64 */
 #endif /* __UTIL_JSON_H__ */
