@@ -279,4 +279,5 @@ global:
 	cxl_root_decoder_get_qos_class;
 	cxl_memdev_get_pmem_qos_class;
 	cxl_memdev_get_ram_qos_class;
+	cxl_region_qos_class_mismatch;
 } LIBCXL_6;

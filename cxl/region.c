@@ -32,6 +32,7 @@ static struct region_params {
 	bool force;
 	bool human;
 	bool debug;
+	bool enforce_qos;
 } param = {
 	.ways = INT_MAX,
 	.granularity = INT_MAX,
@@ -49,6 +50,7 @@ struct parsed_params {
 	const char **argv;
 	struct cxl_decoder *root_decoder;
 	enum cxl_decoder_mode mode;
+	bool enforce_qos;
 };
 
 enum region_actions {
@@ -81,7 +83,8 @@ OPT_STRING('U', "uuid", &param.uuid, \
 	   "region uuid", "uuid for the new region (default: autogenerate)"), \
 OPT_BOOLEAN('m', "memdevs", &param.memdevs, \
 	    "non-option arguments are memdevs"), \
-OPT_BOOLEAN('u', "human", &param.human, "use human friendly number formats")
+OPT_BOOLEAN('u', "human", &param.human, "use human friendly number formats"), \
+OPT_BOOLEAN('Q', "enforce-qos", &param.enforce_qos, "enforce qos_class match")
 
 static const struct option create_options[] = {
 	BASE_OPTIONS(),
@@ -360,6 +363,8 @@ static int parse_create_options(struct cxl_ctx *ctx, int count,
 		}
 	}
 
+	p->enforce_qos = param.enforce_qos;
+
 	return 0;
 
 err:
@@ -423,10 +428,52 @@ static void collect_minsize(struct cxl_ctx *ctx, struct parsed_params *p)
 	}
 }
 
+static int create_region_validate_qos_class(struct parsed_params *p)
+{
+	int root_qos_class;
+	int qos_class;
+	int i;
+
+	if (!p->enforce_qos)
+		return 0;
+
+	root_qos_class = cxl_root_decoder_get_qos_class(p->root_decoder);
+	if (root_qos_class == CXL_QOS_CLASS_NONE)
+		return 0;
+
+	for (i = 0; i < p->ways; i++) {
+		struct json_object *jobj =
+			json_object_array_get_idx(p->memdevs, i);
+		struct cxl_memdev *memdev = json_object_get_userdata(jobj);
+
+		if (p->mode == CXL_DECODER_MODE_RAM)
+			qos_class = cxl_memdev_get_ram_qos_class(memdev);
+		else
+			qos_class = cxl_memdev_get_pmem_qos_class(memdev);
+
+		/* No qos_class entries. Possibly no kernel support */
+		if (qos_class == CXL_QOS_CLASS_NONE)
+			break;
+
+		if (qos_class != root_qos_class) {
+			if (p->enforce_qos) {
+				log_err(&rl, "%s qos_class mismatch %s\n",
+					cxl_decoder_get_devname(p->root_decoder),
+					cxl_memdev_get_devname(memdev));
+
+				return -ENXIO;
+			}
+		}
+	}
+
+	return 0;
+}
+
 static int validate_decoder(struct cxl_decoder *decoder,
 			    struct parsed_params *p)
 {
 	const char *devname = cxl_decoder_get_devname(decoder);
+	int rc;
 
 	switch(p->mode) {
 	case CXL_DECODER_MODE_RAM:
@@ -445,6 +492,10 @@ static int validate_decoder(struct cxl_decoder *decoder,
 		log_err(&rl, "unknown type: %s\n", param.type);
 		return -EINVAL;
 	}
+
+	rc = create_region_validate_qos_class(p);
+	if (rc)
+		return rc;
 
 	/* TODO check if the interleave config is possible under this decoder */
 

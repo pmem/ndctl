@@ -1027,6 +1027,12 @@ struct json_object *util_cxl_region_to_json(struct cxl_region *region,
 		}
 	}
 
+	if (cxl_region_qos_class_mismatch(region)) {
+		jobj = json_object_new_boolean(true);
+		if (jobj)
+			json_object_object_add(jregion, "qos_class_mismatch", jobj);
+	}
+
 	json_object_set_userdata(jregion, region, NULL);
 
 
