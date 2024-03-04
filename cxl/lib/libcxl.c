@@ -2182,6 +2182,12 @@ static void *add_cxl_decoder(void *parent, int id, const char *cxldecoder_base)
 	else
 		decoder->interleave_ways = strtoul(buf, NULL, 0);
 
+	sprintf(path, "%s/qos_class", cxldecoder_base);
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		decoder->qos_class = CXL_QOS_CLASS_NONE;
+	else
+		decoder->qos_class = atoi(buf);
+
 	switch (port->type) {
 	case CXL_PORT_ENDPOINT:
 		sprintf(path, "%s/dpa_resource", cxldecoder_base);
@@ -2374,6 +2380,14 @@ CXL_EXPORT unsigned long long cxl_decoder_get_resource(struct cxl_decoder *decod
 CXL_EXPORT unsigned long long cxl_decoder_get_size(struct cxl_decoder *decoder)
 {
 	return decoder->size;
+}
+
+CXL_EXPORT int cxl_root_decoder_get_qos_class(struct cxl_decoder *decoder)
+{
+	if (!cxl_port_is_root(decoder->port))
+		return -EINVAL;
+
+	return decoder->qos_class;
 }
 
 CXL_EXPORT unsigned long long

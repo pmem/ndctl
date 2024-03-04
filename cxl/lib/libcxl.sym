@@ -276,4 +276,5 @@ global:
 	cxl_cmd_alert_config_set_enable_alert_actions;
 	cxl_cmd_new_set_alert_config;
 	cxl_memdev_wait_sanitize;
+	cxl_root_decoder_get_qos_class;
 } LIBCXL_6;
