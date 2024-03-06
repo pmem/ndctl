@@ -150,3 +150,6 @@ check_dmesg()
 	grep -q "Call Trace" <<< $log && err $1
 	true
 }
+
+# CXL COMMON
+CXL_TEST_QOS_CLASS=42

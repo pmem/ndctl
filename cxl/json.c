@@ -578,6 +578,7 @@ struct json_object *util_cxl_memdev_to_json(struct cxl_memdev *memdev,
 	struct json_object *jdev, *jobj;
 	unsigned long long serial, size;
 	int numa_node;
+	int qos_class;
 
 	jdev = json_object_new_object();
 	if (!jdev)
@@ -592,6 +593,13 @@ struct json_object *util_cxl_memdev_to_json(struct cxl_memdev *memdev,
 		jobj = util_json_object_size(size, flags);
 		if (jobj)
 			json_object_object_add(jdev, "pmem_size", jobj);
+
+		qos_class = cxl_memdev_get_pmem_qos_class(memdev);
+		if (qos_class != CXL_QOS_CLASS_NONE) {
+			jobj = json_object_new_int(qos_class);
+			if (jobj)
+				json_object_object_add(jdev, "pmem_qos_class", jobj);
+		}
 	}
 
 	size = cxl_memdev_get_ram_size(memdev);
@@ -599,6 +607,13 @@ struct json_object *util_cxl_memdev_to_json(struct cxl_memdev *memdev,
 		jobj = util_json_object_size(size, flags);
 		if (jobj)
 			json_object_object_add(jdev, "ram_size", jobj);
+
+		qos_class = cxl_memdev_get_ram_qos_class(memdev);
+		if (qos_class != CXL_QOS_CLASS_NONE) {
+			jobj = json_object_new_int(qos_class);
+			if (jobj)
+				json_object_object_add(jdev, "ram_qos_class", jobj);
+		}
 	}
 
 	if (flags & UTIL_JSON_HEALTH) {
@@ -857,6 +872,16 @@ struct json_object *util_cxl_decoder_to_json(struct cxl_decoder *decoder,
 					       jobj);
 	}
 
+	if (cxl_port_is_root(port)) {
+		int qos_class = cxl_root_decoder_get_qos_class(decoder);
+
+		if (qos_class != CXL_QOS_CLASS_NONE) {
+			jobj = json_object_new_int(qos_class);
+			if (jobj)
+				json_object_object_add(jdecoder, "qos_class", jobj);
+		}
+	}
+
 	json_object_set_userdata(jdecoder, decoder, NULL);
 	return jdecoder;
 }
@@ -1000,6 +1025,12 @@ struct json_object *util_cxl_region_to_json(struct cxl_region *region,
 				json_object_object_add(jregion, "daxregion",
 						       jobj);
 		}
+	}
+
+	if (cxl_region_qos_class_mismatch(region)) {
+		jobj = json_object_new_boolean(true);
+		if (jobj)
+			json_object_object_add(jregion, "qos_class_mismatch", jobj);
 	}
 
 	json_object_set_userdata(jregion, region, NULL);
