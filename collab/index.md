@@ -13,6 +13,103 @@ layout: page
 * Do follow-up on linux-cxl@vger.kernel.org for longer questions / debug
 * https://pmem.io/ndctl/collab/
 
+# March 2024
+* Opens
+  * FAMFS update
+* QEMU
+* cxl-cli
+* v6.8 Fixes
+* v6.9 Queue
+* Future
+
+## QEMU
+* 8 week merge cycle still open
+* Pre-reqs pending
+  * SPDM from Alistair
+  * MCTP
+  * Bounce buffer fix for DMA to CXL memory
+  * Generic port pending generic initiators from NVIDIA
+* DCD Emulation Update
+  * Feedback incorporated
+  * Superset extend/release as well partial extend/release supported
+  * Tests passing
+  * Formalizing introspection may make sense in the future
+  * Might be too late for cycle ending in a week or so
+  * Greg: Multi-head interactions with DCD emulation? Can it be added incrementally?
+    * Investigate a shared base device for single/muti-head implementations to share
+    * Greg to RFC what he has
+* Generic Port
+* Background command support queued behind DCD for convenience
+* MCTP over I2C still in process
+* ARM support still pending device-tree interactions, help welcome
+* Firmware first error handling, not impossible to upstream but not a priority
+* CPMU
+* FM-API help to flesh out the command support welcome
+* Non-interleaved high performance CXL memory emulation (how to represent the performance)
+* QEMU only emits x1 lowest bandwidth link speed
+
+## FAMFS
+* Review, thanks Jonathan
+* DEVICE-DAX IOMAP review needed
+* PMEM support may be dropped in favor of just DAX
+* Christian Brauner has advice on how to open dev-dax
+* Fault counters to be removed
+* FAMFS held up to performance benchmarking
+* Superblock identified capacity
+* Initial use case: provide access to a large shared pool with readonly clients
+
+## cxl-cli
+* [List Media Errors (Poison)](http://lore.kernel.org/r/cover.1705534719.git.alison.schofield@intel.com): pending review
+* QoS class changes; pending
+* v79
+
+## v6.8 Fixes
+* 3, 6, 12 XOR interleave math fix: pending feedback
+* [SSBLIS Fix](http://lore.kernel.org/r/20240301210948.1298075-1-dave.jiang@intel.com): ready to queue
+* [CXL QOS Sysfs fixes / simplification](https://patchwork.kernel.org/project/cxl/list/?series=823300): merged
+* [Fix "HPA out of order" region assembly fix](https://patchwork.kernel.org/project/cxl/list/?series=821883): merged
+* [Fix "no NUMA configuration found"](https://lore.kernel.org/r/99dcb3ae87e04995e9f293f6158dc8fa0749a487.1705085543.git.alison.schofield@intel.com): merged
+* [Crash on repeated AER signaling](https://lore.kernel.org/r/20240129131856.2458980-1-ming4.li@intel.com): merged
+* [cxl_test build fix](https://lore.kernel.org/r/170543983780.460832.10920261849128601697.stgit@dwillia2-xfh.jf.intel.com): merged
+* [Stop requiring MSI/MSIx](https://lore.kernel.org/r/20240117-dont-fail-irq-v2-1-f33f26b0e365@intel.com): merged
+* [Fix x16 Region HPA allocation](http://lore.kernel.org/r/20240124091527.8469-1-caoqq@fujitsu.com): merged
+* [Fix duplicate messages in CPER handling](http://lore.kernel.org/r/20240131-cxl-cper-fixups-v1-0-335c85b1d77b@intel.com): merged
+
+## v6.9 Queue
+* [CXL QOS to NUMA](http://lore.kernel.org/r/170568485801.1008395.12244787918793980621.stgit@djiang5-mobl3): pending merge
+* [Weighted Interleave](https://lore.kernel.org/all/20240202170238.90004-5-gregory.price@memverge.com/): queued in mm-unstable
+* [DAX support on modern ARM](http://lore.kernel.org/r/20240202210019.88022-1-mathieu.desnoyers@efficios.com): pending merge
+* [CXL CPER Protocol Errors to Trace Events](http://lore.kernel.org/r/20240109034755.100555-1-Smita.KoralahalliChannabasappa@amd.com): pending review
+* [CXL EINJ](https://lore.kernel.org/all/20240115172007.309547-1-Benjamin.Cheatham@amd.com/): pending merge check ACPICA
+* [CXL Userspace Unit Tests](http://lore.kernel.org/r/170171841563.162223.2230646078958595847.stgit@ubuntu): pending review
+* [CDAT Cleanups](https://lore.kernel.org/all/20240108114833.241710-1-rrichter@amd.com/): queued
+* [CXL test save/restore](http://lore.kernel.org/r/65a980249f50f_3b8e294a3@dwillia2-xfh.jf.intel.com.notmuch): pending non-RFC posting
+* [Use sysfs_emit(): throughout](https://lore.kernel.org/r/20240112062709.2490947-1-ruansy.fnst@fujitsu.com): queued
+* [cond_guard(): and related cleanups](http://lore.kernel.org/r/20240205142613.23914-1-fabio.maria.de.francesco@linux.intel.com): pending next posting
+  * scoped_cond_guard() usages pending for v6.9
+
+## Future
+* [Component State Dump](https://lore.kernel.org/linux-mm/20240222172350.512-2-sthanneeru.opensrc@micron.com/T/) interaction with event clearing 
+  * how much data is in a CSD, how much blob can trace event support
+* [CXL Scrub Feature](http://lore.kernel.org/r/20240111131741.1356-1-shiju.jose@huawei.com): more review needed
+  * DRAM Scrub necessary over time
+  * Tradeoffs of reliability vs scrub cost
+  * want hotplug support
+  * Address Range Scrub, on demand scrub
+  * new patchset in process
+  * sync with RAS API folks on reusability
+  * OpenCompute model of out of band control might be in conflict with embedded use cases
+  * RAS API does not supply stop-scrub on inband interface
+* CXL Switch Port Error Handling: pending initial posting
+* CXL Root Port (RCEC Notified): Error Handling: pending initial posting
+* DCD: pending next revision
+* DPA to HPA translation for events
+* Type-2 Preview: still awaiting a consumer
+* CCI Refactor for Switch CCI, RAS API, Type-2: pending next posting
+* MMPT in Jonathan's queue
+
+
+
 # February 2024
 * Opens
   * [LSF/MM CFP](https://lore.kernel.org/bpf/4343d07b-b1b2-d43b-c201-a48e89145e5c@iogearbox.net/): deadline March 1st
