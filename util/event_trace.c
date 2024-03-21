@@ -59,8 +59,8 @@ static struct json_object *num_to_json(void *num, int elem_size, unsigned long f
 	return json_object_new_int64(val);
 }
 
-static int cxl_event_to_json(struct tep_event *event, struct tep_record *record,
-			     struct list_head *jlist_head)
+static int event_to_json(struct tep_event *event, struct tep_record *record,
+			 struct list_head *jlist_head)
 {
 	struct json_object *jevent, *jobj, *jarray;
 	struct tep_format_field **fields;
@@ -200,8 +200,8 @@ err_jnode:
 	return rc;
 }
 
-static int cxl_event_parse(struct tep_event *event, struct tep_record *record,
-			   int cpu, void *ctx)
+static int event_parse(struct tep_event *event, struct tep_record *record,
+		       int cpu, void *ctx)
 {
 	struct event_ctx *event_ctx = (struct event_ctx *)ctx;
 
@@ -218,10 +218,10 @@ static int cxl_event_parse(struct tep_event *event, struct tep_record *record,
 		return event_ctx->parse_event(event, record,
 					      &event_ctx->jlist_head);
 
-	return cxl_event_to_json(event, record, &event_ctx->jlist_head);
+	return event_to_json(event, record, &event_ctx->jlist_head);
 }
 
-int cxl_parse_events(struct tracefs_instance *inst, struct event_ctx *ectx)
+int trace_event_parse(struct tracefs_instance *inst, struct event_ctx *ectx)
 {
 	struct tep_handle *tep;
 	int rc;
@@ -230,14 +230,13 @@ int cxl_parse_events(struct tracefs_instance *inst, struct event_ctx *ectx)
 	if (!tep)
 		return -ENOMEM;
 
-	rc = tracefs_iterate_raw_events(tep, inst, NULL, 0, cxl_event_parse,
-					ectx);
+	rc = tracefs_iterate_raw_events(tep, inst, NULL, 0, event_parse, ectx);
 	tep_free(tep);
 	return rc;
 }
 
-int cxl_event_tracing_enable(struct tracefs_instance *inst, const char *system,
-		const char *event)
+int trace_event_enable(struct tracefs_instance *inst, const char *system,
+		       const char *event)
 {
 	int rc;
 
@@ -252,7 +251,7 @@ int cxl_event_tracing_enable(struct tracefs_instance *inst, const char *system,
 	return 0;
 }
 
-int cxl_event_tracing_disable(struct tracefs_instance *inst)
+int trace_event_disable(struct tracefs_instance *inst)
 {
 	return tracefs_trace_off(inst);
 }

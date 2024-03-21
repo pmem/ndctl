@@ -28,8 +28,7 @@
 #define ENABLE_DEBUG
 #endif
 #include <util/log.h>
-
-#include "event_trace.h"
+#include <util/event_trace.h>
 
 static const char *cxl_system = "cxl";
 const char *default_log = "/var/log/cxl-monitor.log";
@@ -87,9 +86,9 @@ static int monitor_event(struct cxl_ctx *ctx)
 		goto epoll_ctl_err;
 	}
 
-	rc = cxl_event_tracing_enable(inst, cxl_system, NULL);
+	rc = trace_event_enable(inst, cxl_system, NULL);
 	if (rc < 0) {
-		err(&monitor, "cxl_trace_event_enable() failed: %d\n", rc);
+		err(&monitor, "trace_event_enable() failed: %d\n", rc);
 		goto event_en_err;
 	}
 
@@ -112,7 +111,7 @@ static int monitor_event(struct cxl_ctx *ctx)
 		}
 
 		list_head_init(&ectx.jlist_head);
-		rc = cxl_parse_events(inst, &ectx);
+		rc = trace_event_parse(inst, &ectx);
 		if (rc < 0)
 			goto parse_err;
 
@@ -129,7 +128,7 @@ static int monitor_event(struct cxl_ctx *ctx)
 	}
 
 parse_err:
-	if (cxl_event_tracing_disable(inst) < 0)
+	if (trace_event_disable(inst) < 0)
 		err(&monitor, "failed to disable tracing\n");
 event_en_err:
 epoll_ctl_err:

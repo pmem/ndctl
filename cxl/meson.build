@@ -27,7 +27,7 @@ deps = [
 
 if get_option('libtracefs').enabled()
   cxl_src += [
-    'event_trace.c',
+    '../util/event_trace.c',
     'monitor.c',
   ]
   deps += [
