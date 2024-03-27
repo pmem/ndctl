@@ -17,7 +17,7 @@ struct event_ctx {
 	const char *event_name; /* optional */
 	int event_pid; /* optional */
 	int (*parse_event)(struct tep_event *event, struct tep_record *record,
-			   struct list_head *jlist_head); /* optional */
+			   struct event_ctx *ctx);
 };
 
 int trace_event_parse(struct tracefs_instance *inst, struct event_ctx *ectx);
