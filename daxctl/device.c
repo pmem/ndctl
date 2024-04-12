@@ -675,6 +675,13 @@ static int dev_destroy(struct daxctl_dev *dev)
 		return rc;
 
 	rc = daxctl_region_destroy_dev(daxctl_dev_get_region(dev), dev);
+	/*
+	 * The kernel treats daxX.0 specially. It can't be deleted to ensure
+	 * there is always a /sys/bus/dax/ present. If this happens, an
+	 * EBUSY is returned. Expect it and don't treat it as an error.
+	 */
+	if (daxctl_dev_get_id(dev) == 0 && rc == -EBUSY)
+		return 0;
 	if (rc < 0)
 		return rc;
 
