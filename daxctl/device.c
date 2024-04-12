@@ -1012,7 +1012,7 @@ static int do_xaction_device(const char *device, enum device_action action,
 	struct json_object *jdevs = NULL;
 	struct daxctl_region *region;
 	struct daxctl_dev *dev;
-	int rc = -ENXIO;
+	int rc = -ENXIO, saved_rc = 0;
 
 	*processed = 0;
 
@@ -1059,6 +1059,8 @@ static int do_xaction_device(const char *device, enum device_action action,
 				rc = -EINVAL;
 				break;
 			}
+			if (rc)
+				saved_rc = rc;
 		}
 	}
 
@@ -1070,7 +1072,7 @@ static int do_xaction_device(const char *device, enum device_action action,
 	if (jdevs)
 		util_display_json_array(stdout, jdevs, flags);
 
-	return rc;
+	return saved_rc;
 }
 
 int cmd_create_device(int argc, const char **argv, struct daxctl_ctx *ctx)
