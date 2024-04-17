@@ -1151,6 +1151,10 @@ static struct json_object *__util_cxl_port_to_json(struct cxl_port *port,
 			json_object_object_add(jport, "state", jobj);
 	}
 
+	jobj = json_object_new_int(cxl_port_decoders_committed(port));
+	if (jobj)
+		json_object_object_add(jport, "decoders_committed", jobj);
+
 	json_object_set_userdata(jport, port, NULL);
 	return jport;
 }

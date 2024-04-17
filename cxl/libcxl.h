@@ -148,6 +148,7 @@ bool cxl_port_hosts_memdev(struct cxl_port *port, struct cxl_memdev *memdev);
 int cxl_port_get_nr_dports(struct cxl_port *port);
 int cxl_port_disable_invalidate(struct cxl_port *port);
 int cxl_port_enable(struct cxl_port *port);
+int cxl_port_decoders_committed(struct cxl_port *port);
 struct cxl_port *cxl_port_get_next_all(struct cxl_port *port,
 				       const struct cxl_port *top);
 
