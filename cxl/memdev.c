@@ -487,10 +487,13 @@ static int action_zero(struct cxl_memdev *memdev, struct action_context *actx)
 	size_t size;
 	int rc;
 
-	if (param.len)
+	if (param.len) {
 		size = param.len;
-	else
+	} else {
 		size = cxl_memdev_get_label_size(memdev);
+		if (size == SIZE_MAX)
+			return -EINVAL;
+	}
 
 	if (cxl_memdev_nvdimm_bridge_active(memdev)) {
 		log_err(&ml,
@@ -522,6 +525,9 @@ static int action_write(struct cxl_memdev *memdev, struct action_context *actx)
 
 	if (!size) {
 		size_t label_size = cxl_memdev_get_label_size(memdev);
+
+		if (label_size == SIZE_MAX)
+			return -EINVAL;
 
 		fseek(actx->f_in, 0L, SEEK_END);
 		size = ftell(actx->f_in);
@@ -561,11 +567,13 @@ static int action_read(struct cxl_memdev *memdev, struct action_context *actx)
 	char *buf;
 	int rc;
 
-	if (param.len)
+	if (param.len) {
 		size = param.len;
-	else
+	} else {
 		size = cxl_memdev_get_label_size(memdev);
-
+		if (size == SIZE_MAX)
+			return -EINVAL;
+	}
 	buf = calloc(1, size);
 	if (!buf)
 		return -ENOMEM;
