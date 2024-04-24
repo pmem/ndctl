@@ -22,7 +22,7 @@ check_destroy_ram()
 	decoder=$2
 
 	region="$("$CXL" create-region -d "$decoder" -m "$mem" | jq -r ".region")"
-	if [ "$region" == "null" ]; then
+	if [[ ! $region ]]; then
 		err "$LINENO"
 	fi
 	"$CXL" enable-region "$region"
@@ -38,7 +38,7 @@ check_destroy_devdax()
 	decoder=$2
 
 	region="$("$CXL" create-region -d "$decoder" -m "$mem" | jq -r ".region")"
-	if [ "$region" == "null" ]; then
+	if [[ ! $region ]]; then
 		err "$LINENO"
 	fi
 	"$CXL" enable-region "$region"
@@ -55,14 +55,14 @@ check_destroy_devdax()
 readarray -t mems < <("$CXL" list -b "$CXL_TEST_BUS" -M | jq -r '.[].memdev')
 for mem in "${mems[@]}"; do
         ramsize="$("$CXL" list -m "$mem" | jq -r '.[].ram_size')"
-        if [[ $ramsize == "null" ]]; then
+        if [[ $ramsize == "null" || ! $ramsize ]]; then
                 continue
         fi
         decoder="$("$CXL" list -b "$CXL_TEST_BUS" -D -d root -m "$mem" |
                   jq -r ".[] |
                   select(.volatile_capable == true) |
                   select(.nr_targets == 1) |
-                  select(.size >= ${ramsize}) |
+                  select(.max_available_extent >= ${ramsize}) |
                   .decoder")"
         if [[ $decoder ]]; then
 		check_destroy_ram "$mem" "$decoder"
