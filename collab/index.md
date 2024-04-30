@@ -31,7 +31,7 @@ cxl/hdm: Debug, use decoder name function
 - Queued.
 
 [0/4] efi/cxl-cper: Report CXL CPER events through tracing
-- Waiting for next rev
+- Waiting for Rafael review tag. Probably for 6.11
 
 [0/3] Display cxl1.1 device link status
 - Waiting for next rev and review
