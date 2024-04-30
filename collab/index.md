@@ -13,6 +13,73 @@ layout: page
 * Do follow-up on linux-cxl@vger.kernel.org for longer questions / debug
 * https://pmem.io/ndctl/collab/
 
+# April 2024 (2)
+* Opens
+* QEMU
+* cxl-cli
+* v6.9 Fixes
+
+[0/2] cxl: add interleave capability check
+- Waiting for next rev
+
+cxl: Fix cxl_endpoint_get_perf_coordinate() support for RCH
+- Pending for 6.9-rc7, Thanks Robert!
+
+* v6.10 Queue
+
+cxl/hdm: Debug, use decoder name function
+- Queued.
+
+[0/4] efi/cxl-cper: Report CXL CPER events through tracing
+- Waiting for next rev
+
+[0/3] Display cxl1.1 device link status
+- Waiting for next rev and review
+
+[0/2] Add log related mailbox commands
+- Pending queueing
+
+[00/26] DCD: Add support for Dynamic Capacity Devices (DCD)
+- Wait for next rev
+
+[0/4] Add DPA->HPA translation to dram & general_media
+- Wait for next rev
+
+cxl/test: Enhance event testing
+- Queued
+
+cxl/hdm: Add debug message for invalid interleave granularity
+- Queued
+
+[0/4] PCI: Add Secondary Bus Reset (SBR) support for CXL
+- Pending review from Dan and Bjorn
+
+cxl/acpi: Cleanup __cxl_parse_cfmws()
+- Pending next rev
+
+cxl/acpi.c: Add buggy BIOS hint for CXL ACPI lookup failure
+- Pending next rev
+
+cxl: Calculate region bandwidth of targets with shared upstream link
+- Need review
+
+MAINTAINERS: repair file entry in COMPUTE EXPRESS LINK
+- Pending next rev
+
+cxl/cxl-event: include missing <linux/types.h> and <linux/uuid.h>
+- Pending queueing
+
+[0/2] cxl: add poison creation event handler
+- Pending next rev
+
+cxl: Fix use of phys_to_target_node() for x86
+- Queued
+
+[0/4] Add DPA->HPA translation to dram & general_media
+- Pending next rev
+
+* Future
+
 # April 2024 (1)
 * Opens
   * CXL Maintainer Update
