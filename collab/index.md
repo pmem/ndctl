@@ -13,6 +13,27 @@ layout: page
 * Do follow-up on linux-cxl@vger.kernel.org for longer questions / debug
 * https://pmem.io/ndctl/collab/
 
+# April 2024 (1)
+* Opens
+  * CXL Maintainer Update
+* QEMU
+  * QEMU is in the quiet period for next 2-3 weeks
+  * TCG memory update, do not use virtio-storage that might put a DMA buffer in CXL memory
+  * Generic port in staging, cleaned up version to be posted soon
+  * DCD Update
+    * DVSEC Ranges? What to do if no static capacity: cxl_await_media_ready() (Linux currently needs active + valid at a minimum)
+    * Might need a spec clarification for pure DCD devices
+    * v6 pending review
+    * Release of pending extents => no force removal flow in QEMU for now
+* cxl-cli
+  * v79 awaiting final review on poison listing changes
+  * Alison to be maintainer / patch wrangler post v79 release
+  * libcxl-mi modeled on NVME-mi? MCTP investigation
+  * BMC Switch CCI + MCTP unification, but maybe not inband
+* v6.9 Fixes
+* v6.10 Queue
+* Future
+
 # March 2024
 * Opens
   * FAMFS update
