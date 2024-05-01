@@ -3,8 +3,9 @@ libcxl_version = '@0@.@1@.@2@'.format(
   LIBCXL_REVISION,
   LIBCXL_AGE)
 
-mapfile = files('libcxl.sym')
-vflag = '-Wl,--version-script,@0@/@1@'.format(project_source_root, mapfile[0])
+libcxl_dir_path = meson.current_source_dir()
+libcxl_sym = files('libcxl.sym')
+libcxl_sym_path = libcxl_dir_path / 'libcxl.sym'
 
 cxl = library('cxl',
   '../../util/sysfs.c',
@@ -21,8 +22,8 @@ cxl = library('cxl',
   version : libcxl_version,
   install : true,
   install_dir : rootlibdir,
-  link_args : vflag,
-  link_depends : mapfile,
+  link_args : '-Wl,--version-script=' + libcxl_sym_path,
+  link_depends : libcxl_sym,
 )
 cxl_dep = declare_dependency(link_with : cxl)
 

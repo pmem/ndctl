@@ -3,8 +3,9 @@ libndctl_version = '@0@.@1@.@2@'.format(
   LIBNDCTL_REVISION,
   LIBNDCTL_AGE)
 
-mapfile = files('libndctl.sym')
-vflag = '-Wl,--version-script,@0@/@1@'.format(project_source_root, mapfile[0])
+libndctl_dir_path = meson.current_source_dir()
+libndctl_sym = files('libndctl.sym')
+libndctl_sym_path = libndctl_dir_path / 'libndctl.sym'
 
 ndctl = library(
  'ndctl',
@@ -32,8 +33,8 @@ ndctl = library(
   version : libndctl_version,
   install : true,
   install_dir : rootlibdir,
-  link_args : vflag,
-  link_depends : mapfile,
+  link_args : '-Wl,--version-script=' + libndctl_sym_path,
+  link_depends : libndctl_sym,
 )
 ndctl_dep = declare_dependency(link_with : ndctl)
 

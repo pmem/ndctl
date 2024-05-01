@@ -4,8 +4,10 @@ libdaxctl_version = '@0@.@1@.@2@'.format(
   LIBDAXCTL_AGE,
 )
 
-mapfile = files('libdaxctl.sym')
-vflag = '-Wl,--version-script,@0@/@1@'.format(project_source_root, mapfile[0])
+libdaxctl_dir_path = meson.current_source_dir()
+libdaxctl_sym = files('libdaxctl.sym')
+libdaxctl_sym_path = libdaxctl_dir_path / 'libdaxctl.sym'
+
 
 libdaxctl_src = [
   '../../util/iomem.c',
@@ -25,8 +27,8 @@ daxctl = library(
   ],
   install : true,
   install_dir : rootlibdir,
-  link_args : vflag,
-  link_depends : mapfile,
+  link_args : '-Wl,--version-script=' + libdaxctl_sym_path,
+  link_depends : libdaxctl_sym,
 )
 
 daxctl_dep = declare_dependency(link_with : daxctl)
