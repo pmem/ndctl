@@ -15,70 +15,86 @@ layout: page
 
 # April 2024 (2)
 * Opens
+  * FAMFS RFC v2 posted
 * QEMU
 * cxl-cli
 * v6.9 Fixes
+* v6.10 queue
+* v6.10+
 
-[0/2] cxl: add interleave capability check
-- Waiting for next rev
+## QEMU
+* DCD Feedback for 9.1 dev cycle
+  * last mile feedback but looking positive for this cycle
+* Generic Port feedback also started
+* Reset handling Fixups
+  * For AER flow testing
+  * SBR masking emulation testing
+  * Useful for kexec testing
+  * CXL Reset digression
+* Interleave testing
+  * Commit error checking and interleave functionality
+  * precursor - DMA bounce for TCG, MCTP still pending (NVMe-MI dependency)
+* MHD Support for Orchestrator flow testing
+* SPDM is a precursor for QEMU tree backlog
 
-cxl: Fix cxl_endpoint_get_perf_coordinate() support for RCH
-- Pending for 6.9-rc7, Thanks Robert!
+## cxl-cli / user tools
+* Media error patch pending awaiting final review
+* Minor fixups
+* rasdaemon has CXL patches pending to log events to DB
+* OCP is working on expanding CPER record types for hyperscale RAS use cases
 
-* v6.10 Queue
+## v6.9
 
-cxl/hdm: Debug, use decoder name function
-- Queued.
+* [0/2] cxl: add interleave capability check
+  * Waiting for next rev, likely 6.10 material
+* cxl: Fix cxl_endpoint_get_perf_coordinate() support for RCH
+  * Pending for 6.9-rc7, Thanks Robert!
 
-[0/4] efi/cxl-cper: Report CXL CPER events through tracing
-- Waiting for Rafael review tag. Probably for 6.11
+## v6.10 Queue
 
-[0/3] Display cxl1.1 device link status
-- Waiting for next rev and review
+* cxl: Calculate region bandwidth of targets with shared upstream link
+  * Need review
+* [0/4] PCI: Add Secondary Bus Reset (SBR) support for CXL
+  * Pending review from Dan and Bjorn
+* cxl/hdm: Debug, use decoder name function
+  * Queued.
+* [0/4] efi/cxl-cper: Report CXL CPER events through tracing
+  * Waiting for Rafael review tag. Probably for 6.11
+  * Ping Tony to take a look
+* [0/3] Display cxl1.1 device link status
+  * Waiting for next rev and review
+* [0/2] Add log related mailbox commands
+  * Pending queueing
+* [0/4] Add DPA->HPA translation to dram & general_media
+  * Wait for next rev
+  * likely 6.10 material
+* cxl/test: Enhance event testing
+  * Queued
+* cxl/hdm: Add debug message for invalid interleave granularity
+  * Queued
+* cxl/acpi: Cleanup __cxl_parse_cfmws()
+  * Pending next rev
+* cxl/acpi.c: Add buggy BIOS hint for CXL ACPI lookup failure
+  * BIOS fix provided, no need to add this hint
+* MAINTAINERS: repair file entry in COMPUTE EXPRESS LINK
+  * Pending next rev
+* cxl/cxl-event: include missing <linux/types.h> and <linux/uuid.h>
+  * Queued
+* [0/2] cxl: add poison creation event handler
+  * Pending next rev
+* cxl: Fix use of phys_to_target_node() for x86
+  * Queued
 
-[0/2] Add log related mailbox commands
-- Pending queueing
-
-[00/26] DCD: Add support for Dynamic Capacity Devices (DCD)
-- Wait for next rev
-
-[0/4] Add DPA->HPA translation to dram & general_media
-- Wait for next rev
-
-cxl/test: Enhance event testing
-- Queued
-
-cxl/hdm: Add debug message for invalid interleave granularity
-- Queued
-
-[0/4] PCI: Add Secondary Bus Reset (SBR) support for CXL
-- Pending review from Dan and Bjorn
-
-cxl/acpi: Cleanup __cxl_parse_cfmws()
-- Pending next rev
-
-cxl/acpi.c: Add buggy BIOS hint for CXL ACPI lookup failure
-- Pending next rev
-
-cxl: Calculate region bandwidth of targets with shared upstream link
-- Need review
-
-MAINTAINERS: repair file entry in COMPUTE EXPRESS LINK
-- Pending next rev
-
-cxl/cxl-event: include missing <linux/types.h> and <linux/uuid.h>
-- Pending queueing
-
-[0/2] cxl: add poison creation event handler
-- Pending next rev
-
-cxl: Fix use of phys_to_target_node() for x86
-- Queued
-
-[0/4] Add DPA->HPA translation to dram & general_media
-- Pending next rev
-
-* Future
+## v6.10+
+* [00/26] DCD: Add support for Dynamic Capacity Devices (DCD)
+  * Wait for next rev
+* Scrub Subsystem review
+  * ACPI RAS2 user showed up on the list
+* CXL Error Isolation
+  * awaiting a user
+* XOR translation
+* Switch Port Error handling pending
+* CXL PMU support for switches
 
 # April 2024 (1)
 * Opens
