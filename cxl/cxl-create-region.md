@@ -103,6 +103,11 @@ The root decoder that the region should be created under. If not
 supplied, the first cross-host bridge (if available), decoder that
 supports the largest interleave will be chosen.
 
+`-Q; --enforce-qos`  
+Parameter to enforce qos_class mismatch failure. Region create operation
+will fail of the qos_class of the root decoder and one of the memdev
+that backs the region mismatches.
+
 <!-- -->
 
 `-u; --human`  

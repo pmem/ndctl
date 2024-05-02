@@ -3,7 +3,7 @@ title: daxctl
 layout: home
 ---
 [View the Project on GitHub](https://github.com/pmem/ndctl)  
-**Generated from [ndctl-78](https://github.com/pmem/ndctl/releases/tag/v78) [[tree]](https://github.com/pmem/ndctl/tree/v78)**  
+**Generated from [ndctl-79](https://github.com/pmem/ndctl/releases/tag/v79) [[tree]](https://github.com/pmem/ndctl/tree/v79)**  
 
 ---
 

@@ -68,6 +68,7 @@ capabilities with the Linux CXL core.
     size_t cxl_memdev_get_label_size(struct cxl_memdev *memdev);
     int cxl_memdev_nvdimm_bridge_active(struct cxl_memdev *memdev);
     int cxl_memdev_get_numa_node(struct cxl_memdev *memdev);
+    int cxl_memdev_wait_sanitize(struct cxl_memdev *memdev);
 
 A memdev is given a kernel device name of the form "mem%d" where an id
 (cxl_memdev_get_id()) is dynamically allocated as devices are
@@ -87,6 +88,10 @@ device.
 
 cxl_memdev_get_numa_node() returns the affinitized CPU node number if
 available or -1 otherwise.
+
+cxl_memdev_wait_sanitize() if a sanitize operation is in-flight when
+this is called the program will block until the sanitize operation
+completes or the wait times out.
 
 ## MEMDEV: Control
 
@@ -121,6 +126,7 @@ information this call requires root / CAP_SYS_ADMIN.
     struct cxl_cmd *cxl_cmd_new_identify(struct cxl_memdev *memdev);
     struct cxl_cmd *cxl_cmd_new_get_health_info(struct cxl_memdev *memdev);
     struct cxl_cmd *cxl_cmd_new_get_alert_config(struct cxl_memdev *memdev);
+    struct cxl_cmd *cxl_cmd_new_set_alert_config(struct cxl_memdev *memdev);
     struct cxl_cmd *cxl_cmd_new_read_label(struct cxl_memdev *memdev,
                         unsigned int offset, unsigned int length);
     struct cxl_cmd *cxl_cmd_new_write_label(struct cxl_memdev *memdev, void *buf,
@@ -287,6 +293,7 @@ first.
     int cxl_port_get_depth(struct cxl_port *port);
     bool cxl_port_hosts_memdev(struct cxl_port *port, struct cxl_memdev *memdev);
     int cxl_port_get_nr_dports(struct cxl_port *port);
+    int cxl_port_decoders_committed(struct cxl_port *port);
 
 The port type is communicated via cxl_port_is\_\<type\>(). An *enabled*
 port is one that has succeeded in discovering the CXL component

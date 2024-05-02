@@ -16,6 +16,13 @@ again. This involves detecting the state of the HDM (Host Managed Device
 Memory) Decoders and validating that CXL.mem is enabled for each port in
 the device’s hierarchy.
 
+Given any enable or disable command, if the operation is a no-op due to
+the current state of a target (i.e. already enabled or disabled), it is
+still considered successful when executed even if no actual operation is
+performed. The target can be a bus, decoder, memdev, or region. The
+operation will still succeed, and report the number of
+bus/decoder/memdev/region operated on, even if the operation is a no-op.
+
 # OPTIONS
 
 `-e; --endpoint`  
