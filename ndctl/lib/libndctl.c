@@ -1746,6 +1746,10 @@ static int populate_cxl_dimm_attributes(struct ndctl_dimm *dimm,
 		}
 	}
 
+	sprintf(path, "%s/%s/dirty_shutdown", dimm_base, bus_prefix);
+	if (sysfs_read_attr(ctx, path, buf) == 0)
+		dimm->dirty_shutdown = strtoll(buf, NULL, 0);
+
  err_read:
 
 	free(path);
