@@ -630,6 +630,64 @@ static int validate_available_capacity(struct ndctl_region *region,
 	return 0;
 }
 
+static int validate_available_percentage(struct ndctl_region *region,
+		struct parsed_parameters *p)
+{
+	unsigned long long available, max, pct;
+	unsigned long region_align;
+
+	pct = p->size;
+
+	if (p->size == 0) {
+		debug("%s: non-zero percentage of total region size required for namespace creation\n",
+			ndctl_region_get_devname(region));
+		return -EINVAL;
+	}
+
+	max = ndctl_region_get_size(region);
+
+	if (ndctl_region_get_nstype(region) == ND_DEVICE_NAMESPACE_IO)
+		available = ndctl_region_get_size(region);
+	else {
+		available = ndctl_region_get_max_available_extent(region);
+		if (available == ULLONG_MAX)
+			available = ndctl_region_get_available_size(region);
+	}
+
+	/* percentage is expressed in terms of the total region size */
+	p->size = (unsigned long long) (max * ((double) pct / 100));
+
+	region_align = ndctl_region_get_align(region);
+	if (p->size % region_align) {
+		/* only round up if rounded up size would use the available region capacity */
+		if (p->size + region_align - (p->size % region_align) == available) {
+			debug("%s: percentage %llu of total region size: %#llx results in unaligned size: %#llx (align setting %#lx) rounding up to size: %#llx\n",
+				ndctl_region_get_devname(region), pct, max,
+				p->size, region_align,
+				p->size + region_align - (p->size % region_align));
+			p->size += region_align - (p->size % region_align);
+		}
+		/* otherwise round down */
+		else {
+			debug("%s: percentage %llu of total region size: %#llx results in unaligned size: %#llx (align setting %#lx) rounding down to size: %#llx\n",
+				ndctl_region_get_devname(region), pct, max,
+				p->size, region_align,
+				p->size & (~(region_align - 1)));
+			p->size &= ~(region_align - 1);
+		}
+	}
+
+	if (!available || p->size > available) {
+		debug("%s: insufficient capacity size: %llx avail: %llx\n",
+			ndctl_region_get_devname(region), p->size, available);
+		return -EAGAIN;
+	}
+
+	debug("%s: percentage requested: %llu of total region size: %llx size requested: %llx avail: %llx\n",
+		ndctl_region_get_devname(region), pct, max, p->size, available);
+	return 0;
+}
+
 /*
  * validate_namespace_options - init parameters for setup_namespace
  * @region: parent of the namespace to create / reconfigure
@@ -670,6 +728,12 @@ static int validate_namespace_options(struct ndctl_region *region,
 		p->size = ndctl_namespace_get_size(ndns);
 	else
 		default_size = true;
+
+	if (units == SZ_PCT) {
+		rc = validate_available_percentage(region, p);
+		if (rc)
+			return rc;
+	}
 
 	/*
 	 * Validate available capacity in the create case, in the
