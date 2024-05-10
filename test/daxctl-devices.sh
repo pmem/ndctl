@@ -117,7 +117,7 @@ daxctl_test()
 	if ! "$NDCTL" disable-namespace "$testdev"; then
 		echo "disable-namespace failed as expected"
 	else
-		echo "disable-namespace succeded, expected failure"
+		echo "disable-namespace succeeded, expected failure"
 		echo "reboot required to recover from this state"
 		return 1
 	fi
@@ -130,7 +130,7 @@ daxctl_test()
 	if ! "$DAXCTL" reconfigure-device -N -m system-ram "$daxdev"; then
 		echo "reconfigure failed as expected"
 	else
-		echo "reconfigure succeded, expected failure"
+		echo "reconfigure succeeded, expected failure"
 		restore_online_policy
 		return 1
 	fi

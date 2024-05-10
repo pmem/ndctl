@@ -31,7 +31,7 @@ OPTIONS
 -m::
 --mode=::
 	- "raw": expose the namespace capacity directly with
-	  limitations. A raw pmem namepace namespace does not support
+	  limitations. A raw pmem namespace does not support
 	  sector atomicity (see "sector" mode below). A raw pmem
 	  namespace may have limited to no dax support depending the
 	  kernel. In other words operations like direct-I/O targeting a
@@ -95,7 +95,7 @@ OPTIONS
 	suffixes "k" or "K" for KiB, "m" or "M" for MiB, "g" or "G" for
 	GiB and "t" or "T" for TiB.
 
-	For pmem namepsaces the size must be a multiple of the
+	For pmem namespaces the size must be a multiple of the
 	interleave-width and the namespace alignment (see
 	below).
 

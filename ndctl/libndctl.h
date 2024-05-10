@@ -53,7 +53,7 @@ typedef unsigned char uuid_t[16];
  *
  * Notes:
  * 1/ The object ids are not guaranteed to be stable from boot to boot
- * 2/ While regions and busses are numbered in sequential/bus-discovery
+ * 2/ While regions and buses are numbered in sequential/bus-discovery
  *    order, the resulting block devices may appear to have random ids.
  *    Use static attributes of the devices/device-path to generate a
  *    persistent name.
@@ -258,7 +258,7 @@ int ndctl_cmd_ars_stat_get_flag_overflow(struct ndctl_cmd *ars_stat);
 
 /*
  * the ndctl.h definition of these are deprecated, libndctl.h is the
- * authoritative defintion.
+ * authoritative definition.
  */
 #define ND_SMART_HEALTH_VALID	(1 << 0)
 #define ND_SMART_SPARES_VALID	(1 << 1)

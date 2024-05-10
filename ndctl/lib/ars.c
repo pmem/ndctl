@@ -70,7 +70,7 @@ static bool __validate_ars_cap(struct ndctl_cmd *ars_cap)
 ({ \
 	bool __valid = __validate_ars_cap(ars_cap); \
 	if (!__valid) \
-		dbg(ctx, "expected sucessfully completed ars_cap command\n"); \
+		dbg(ctx, "expected successfully completed ars_cap command\n"); \
 	__valid; \
 })
 
@@ -224,7 +224,7 @@ static bool __validate_ars_stat(struct ndctl_cmd *ars_stat)
 ({ \
 	bool __valid = __validate_ars_stat(ars_stat); \
 	if (!__valid) \
-		dbg(ctx, "expected sucessfully completed ars_stat command\n"); \
+		dbg(ctx, "expected successfully completed ars_stat command\n"); \
 	__valid; \
 })
 

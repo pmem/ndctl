@@ -284,7 +284,7 @@ daxctl_test_adjust()
 }
 
 # Test 0:
-# Sucessfully zero out the region device and allocate the whole space again.
+# Successfully zero out the region device and allocate the whole space again.
 daxctl_test0()
 {
 	clear_dev
@@ -292,7 +292,7 @@ daxctl_test0()
 }
 
 # Test 1:
-# Sucessfully creates and destroys a device with the whole available space
+# Successfully creates and destroys a device with the whole available space
 daxctl_test1()
 {
 	local daxdev
