@@ -2,7 +2,7 @@ Name:		ndctl
 Version:	VERSION
 Release:	1%{?dist}
 Summary:	Manage "libnvdimm" subsystem devices (Non-volatile Memory)
-License:	GPL-2.0-only and LGPL-2.1-only and CC0-1.0 and MIT
+License:	GPL-2.0-only AND LGPL-2.1-only AND CC0-1.0 AND MIT
 Url:		https://github.com/pmem/ndctl
 Source0:	https://github.com/pmem/%{name}/archive/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
 
@@ -98,7 +98,7 @@ mappings of performance / feature-differentiated memory.
 
 %package -n LNAME
 Summary:	Management library for "libnvdimm" subsystem devices (Non-volatile Memory)
-License:	LGPL-2.1-only and CC0-1.0 and MIT
+License:	LGPL-2.1-only AND CC0-1.0 AND MIT
 Requires:	DAX_LNAME%{?_isa} = %{version}-%{release}
 
 
@@ -107,7 +107,7 @@ Libraries for %{name}.
 
 %package -n DAX_LNAME
 Summary:	Management library for "Device DAX" devices
-License:	LGPL-2.1-only and CC0-1.0 and MIT
+License:	LGPL-2.1-only AND CC0-1.0 AND MIT
 
 %description -n DAX_LNAME
 Device DAX is a facility for establishing DAX mappings of performance /
@@ -116,7 +116,7 @@ control API for these devices.
 
 %package -n CXL_LNAME
 Summary:	Management library for CXL devices
-License:	LGPL-2.1-only and CC0-1.0 and MIT
+License:	LGPL-2.1-only AND CC0-1.0 AND MIT
 
 %description -n CXL_LNAME
 libcxl is a library for enumerating and communicating with CXL devices.
