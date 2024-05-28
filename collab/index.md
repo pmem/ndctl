@@ -13,6 +13,45 @@ layout: page
 * Do follow-up on linux-cxl@vger.kernel.org for longer questions / debug
 * https://pmem.io/ndctl/collab/
 
+# May 2024
+* Opens
+* QEMU
+* cxl-cli
+* v6.10 fixes
+* v6.11 queue
+* v6.11+
+
+## QEMU
+
+## cxl-cli / user tools
+
+## 6.10
+
+cxl/region: Fix memregion leaks in devm_cxl_add_region()
+  * Ready for queue
+[/4] XOR Math Fixups: translation & position
+[/2] cxl/region: Fix potential invalid pointer dereference
+cxl: Add interleave capability check
+
+## 6.11 queue
+cxl/events: Use a common struct for DRAM and General Media events
+  * Ready for queue
+cxl/region: Convert cxl_pmem_region_alloc to scope-based resource management
+  * Ready for queue
+[/2] cxl: add poison creation event handler
+[/3] Display cxl1.1 device link status
+[/26] DCD: Add support for Dynamic Capacity Devices (DCD)
+  * Wait for next rev
+
+## 6.11+
+* Scrub Subsystem review
+  * ACPI RAS2 user showed up on the list
+* CXL Error Isolation
+  * awaiting a user
+* Switch Port Error handling pending
+* CXL PMU support for switches
+
+
 # April 2024 (2)
 * Opens
   * FAMFS RFC v2 posted
