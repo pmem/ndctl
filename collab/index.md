@@ -26,12 +26,12 @@ layout: page
 ## cxl-cli / user tools
 
 ## 6.10
-
 cxl/region: Fix memregion leaks in devm_cxl_add_region()
   * Ready for queue
 [/4] XOR Math Fixups: translation & position
 [/2] cxl/region: Fix potential invalid pointer dereference
 cxl: Add interleave capability check
+cxl/pci: Convert PCIBIOS_* return codes to errnos
 
 ## 6.11 queue
 cxl/events: Use a common struct for DRAM and General Media events
