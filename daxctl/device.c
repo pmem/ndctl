@@ -402,7 +402,10 @@ static const char *parse_device_options(int argc, const char **argv,
 			action_string);
 		rc = -EINVAL;
 	}
-	for (i = 1; i < argc; i++) {
+
+	/* ACTION_CREATE expects 0 parameters */
+	i = action == ACTION_CREATE ? 0 : 1;
+	for (; i < argc; i++) {
 		fprintf(stderr, "unknown extra parameter \"%s\"\n", argv[i]);
 		rc = -EINVAL;
 	}
