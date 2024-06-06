@@ -15,6 +15,24 @@ layout: page
 
 # May 2024
 * Opens
+  * LSF/MM takeaways
+    * famfs status
+      * FUSE maintainers are interested in supporting famfs
+      * Passthrough for inodes and faults working
+      * famfs needs some support on top, iomap support still needed
+      * memfd support?
+    * filesystem in Rust discussion
+    * weighted interleave (now fully upstream!) takeaways
+      * container developers are a bit more tolerant of details
+      * cluster owners want to know a bit more
+      * folks open to improvement to numactl
+      * Jonathan: get in touch with Brice about hwloc  updates?
+    * Peter Xu hugetlb fixups
+  * LPC: uConf accepted, get submissions in and register with CXL uConf as planned attendee
+    * Vienna Sept 16th
+    * CFP deadline early July
+  * CXL Maturity Map
+
 * QEMU
 * cxl-cli
 * v6.10 fixes
@@ -22,34 +40,44 @@ layout: page
 * v6.11+
 
 ## QEMU
+* Fan posted new version of QEMU-DCD support
+* Generic port support got review and prompted docs updates
+* MHD support making way for DCD support to clear first
 
 ## cxl-cli / user tools
+* v79 release since last meeting, and v80 open
 
 ## 6.10
-cxl/region: Fix memregion leaks in devm_cxl_add_region()
+* cxl/region: Fix memregion leaks in devm_cxl_add_region()
   * Ready for queue
-[/4] XOR Math Fixups: translation & position
-[/2] cxl/region: Fix potential invalid pointer dereference
-cxl: Add interleave capability check
-cxl/pci: Convert PCIBIOS_* return codes to errnos
+* [/4] XOR Math Fixups: translation & position
+* [/2] cxl/region: Fix potential invalid pointer dereference
+* cxl: Add interleave capability check
+* cxl/pci: Convert PCIBIOS_* return codes to errnos
 
 ## 6.11 queue
-cxl/events: Use a common struct for DRAM and General Media events
+* cxl/events: Use a common struct for DRAM and General Media events
   * Ready for queue
-cxl/region: Convert cxl_pmem_region_alloc to scope-based resource management
+* cxl/region: Convert cxl_pmem_region_alloc to scope-based resource management
   * Ready for queue
-[/2] cxl: add poison creation event handler
-[/3] Display cxl1.1 device link status
-[/26] DCD: Add support for Dynamic Capacity Devices (DCD)
+* [/2] cxl: add poison creation event handler
+* [/3] Display cxl1.1 device link status
+* [/26] DCD: Add support for Dynamic Capacity Devices (DCD)
   * Wait for next rev
 
 ## 6.11+
 * Scrub Subsystem review
   * ACPI RAS2 user showed up on the list
+  * Converging on "new EDAC" today only "mc" and "pci" devices, switch to properly parented devices
+  * class device to associated memory regions to scrub interfaces
+  * why does userpace want to control this and how
+  * would there be an auto-scrub control in userspace? e.g. Increase scrubbing on threshold crossed
+* Extended-linear memory-side-cache HMAT Proposal
 * CXL Error Isolation
   * awaiting a user
 * Switch Port Error handling pending
 * CXL PMU support for switches
+  * Refactored portdrv to aux-bus RFC to be posted soon
 
 
 # April 2024 (2)
