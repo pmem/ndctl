@@ -23,6 +23,10 @@ layout: page
 
 ## QEMU
 ## cxl-cli / user tools
+* cxl/test: add cxl_translate unit test
+  - New patch, needs review
+* cxl/test: Add test case for region info to cxl-events.sh
+  - Needs additional review
 
 ## 6.10 fixes
 * cxl/mem: Fix no cxl_nvd during pmem region auto-assembling
