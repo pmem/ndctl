@@ -57,7 +57,6 @@ layout: page
 
 % Waiting on next revision from author
 * cxl/acpi: Warn on unsupported platform config detection
-* cxl/pci: the ctrl register should be read when it is being used
 * cxl/region: Remove soft reserve resource at region construction
 
 # 6.11+
