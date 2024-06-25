@@ -25,12 +25,15 @@ layout: page
 ## cxl-cli / user tools
 
 ## 6.10 fixes
+* cxl/mem: Fix no cxl_nvd during pmem region auto-assembling
+  - locally queued
 * cxl/region: Avoid null pointer dereference in region lookup
   - Ready to be queued, review still welcome
-* XOR Math Fixups: translation & position
-  - Need review tags, top priority for fixes pull
 * Check interleave capability
   - ready to be queued
+
+* XOR Math Fixups: translation & position
+  - Need review tags, top priority for fixes pull
 
 ## 6.11 merge window
 * cxl: add missing MODULE_DESCRIPTION() macros
