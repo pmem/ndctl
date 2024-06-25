@@ -13,6 +13,64 @@ layout: page
 * Do follow-up on linux-cxl@vger.kernel.org for longer questions / debug
 * https://pmem.io/ndctl/collab/
 
+#June 2024
+* Opens
+* QEMU
+* cxl-cli
+* v6.10 fixes
+* v6.11 queue
+* v6.11+
+
+## QEMU
+## cxl-cli / user tools
+
+## 6.10 fixes
+* cxl/region: Avoid null pointer dereference in region lookup
+  - Ready to be queued, review still welcome
+* XOR Math Fixups: translation & position
+  - Need review tags, top priority for fixes pull
+
+## 6.11 merge window
+* cxl: add missing MODULE_DESCRIPTION() macros
+  - locally queued
+* cxl/region: Support to calculate memory tier abstract distance
+  - locally queued, review still welcome
+
+% Need additional reviewing and tags
+* cxl: add poison creation event handler
+* acpi/ghes, cper, cxl: Trace FW-First CXL Protocol Errors
+* Documentation: CXL Maturity Map
+* Export cxl1.1 device link status register value to pci device sysfs.
+  - Have tags from Jonathan. Dan can you take a look?
+* cxl: Region bandwidth calculation for targets with shared upstream link
+  - Have tags from Jonathan. Pending test tag from Jonathan. Some additional minor updates. Can use additional review.
+
+% Waiting on next revision from author
+* cxl/acpi: Warn on unsupported platform config detection
+* cxl/pci: the ctrl register should be read when it is being used
+* cxl/region: Remove soft reserve resource at region construction
+
+# 6.11+
+* DCD: Add support for Dynamic Capacity Devices (DCD)
+  * Ira
+* Add RAS support for CXL root ports, CXL downstream switch ports, and CXL upstream switch ports
+  - Terry
+* Scrub Subsystem review
+  * Shiju
+  - Any new updates since last meeting?
+* Extended-linear memory-side-cache HMAT Proposal
+  * Dan
+* CXL Error Isolation
+  * awaiting a user
+* CXL PMU support for switches
+  * Jonathan
+* cxl: avoid duplicating report from MCE & device
+  * Shiyang
+  - Going through reviews
+* FWCTL CXL support
+  * DaveJ working on RFC, get/set features support
+
+
 # May 2024
 * Opens
   * LSF/MM takeaways
