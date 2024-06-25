@@ -29,6 +29,8 @@ layout: page
   - Ready to be queued, review still welcome
 * XOR Math Fixups: translation & position
   - Need review tags, top priority for fixes pull
+* Check interleave capability
+  - ready to be queued
 
 ## 6.11 merge window
 * cxl: add missing MODULE_DESCRIPTION() macros
@@ -36,10 +38,11 @@ layout: page
 * cxl/region: Support to calculate memory tier abstract distance
   - locally queued, review still welcome
 
-% Need additional reviewing and tags
+## Need additional reviewing and tags
 * cxl: add poison creation event handler
 * acpi/ghes, cper, cxl: Trace FW-First CXL Protocol Errors
 * Documentation: CXL Maturity Map
+  - awaiting v2 posting
 * Export cxl1.1 device link status register value to pci device sysfs.
   - Have tags from Jonathan. Dan can you take a look?
 * cxl: Region bandwidth calculation for targets with shared upstream link
