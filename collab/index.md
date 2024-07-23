@@ -14,12 +14,56 @@ layout: page
 * https://pmem.io/ndctl/collab/
 
 #July 2024
+* Opens
+* QEMU
+* cxl-cli
+* v6.11 fixes
+* v6.12 queue
+* v6.12+
+
+## QEMU
 
 ## cxl-cli / user tools
 * [ndctl PATCH v13 0/8] Support poison list retrieval
   - Patches 1 & 3 need tags
 * ndctl v80 waits for poison list
 
+## 6.11 fixes
+* None, currently in 6.11 merge window. Will do PR tomorrow (Wednesday)
+
+## 6.12
+* cxl: add poison creation event handler
+  - Waiting on comments from Dan?
+* cxl: Region bandwidth calculation for targets with shared upstream link
+  - Waiting on further review from Dan.
+* cxl: add Type2 device support
+  - Going through reviews
+* Address translation for HDM decoding
+
+% Waiting on next revision from author
+* Export cxl1.1 device link status register value to pci device sysfs.
+* cxl/region: Remove soft reserve resource at region construction
+* acpi/ghes, cper, cxl: Trace FW-First CXL Protocol Errors
+
+# 6.12+
+* DCD: Add support for Dynamic Capacity Devices (DCD)
+  * Ira
+* Add RAS support for CXL root ports, CXL downstream switch ports, and CXL upstream switch ports
+  - Terry
+* Scrub Subsystem review
+  * Shiju
+  - Going through reviews?
+* Extended-linear memory-side-cache HMAT Proposal
+  * Dan
+* CXL Error Isolation
+  * awaiting a user
+* CXL PMU support for switches
+  * Jonathan
+* cxl: avoid duplicating report from MCE & device
+  * Shiyang
+  - Going through reviews
+* FWCTL CXL support
+  * RFC posted, Jason says looks ok, need CXL review on policies
 
 #June 2024
 * Opens
