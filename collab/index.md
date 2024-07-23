@@ -15,6 +15,12 @@ layout: page
 
 # July 2024
 * Opens
+  * invitation for tech topics for Plumbers uConf spillover
+  * device-passthrough followup
+    * vm capability to find memory by tag?
+    * passthrough DCD (existing CXL emulation) vs passthrough DAX region (new emulation)
+    * are there nested use cases for passing through pooled memory?
+    * pooled memory for VMs pre-DCD is not widespread, but chicken / egg problem to become a prom
 * QEMU
 * cxl-cli
 * v6.11 fixes
@@ -22,11 +28,21 @@ layout: page
 * v6.12+
 
 ## QEMU
+* DCD landed since last meeting (basic infrastructure for kernel enabling)
+* MST pull request for (sanitize, scan media, get feature (scrub/ecs), libspdm NVME target)
+  * generic port support will circle back
+  * PCI CMA not using libspdm found a libspdm bug as a result
+* MCTP support?
+  * only aspeed i2c controller support it and awkward to support on x86 (ACPI)
+  * PCI -> DT -> I2C?
+  * Request for a PCI VDM MCTP that is easier to emulate? Inventing one probably too much effort
+  * virtio-i2c not mctp capable
 
 ## cxl-cli / user tools
 * [ndctl PATCH v13 0/8] Support poison list retrieval
-  - Patches 1 & 3 need tags
+  - [Patches 1 & 3 need tags](https://patchwork.kernel.org/project/cxl/list/?series=868958)
 * ndctl v80 waits for poison list
+  * coincident with v6.11
 
 ## 6.11 fixes
 * None, currently in 6.11 merge window. Will do PR tomorrow (Wednesday)
@@ -39,31 +55,35 @@ layout: page
 * cxl: add Type2 device support
   - Going through reviews
 * Address translation for HDM decoding
-
-% Waiting on next revision from author
-* Export cxl1.1 device link status register value to pci device sysfs.
-* cxl/region: Remove soft reserve resource at region construction
-* acpi/ghes, cper, cxl: Trace FW-First CXL Protocol Errors
+* Waiting on next revision from author:
+  * Export cxl1.1 device link status register value to pci device sysfs.
+  * cxl/region: Remove soft reserve resource at region construction
+  * acpi/ghes, cper, cxl: Trace FW-First CXL Protocol Errors
 
 # 6.12+
 * DCD: Add support for Dynamic Capacity Devices (DCD)
-  * Ira
+  * Ira: Reordering patches, asking for new tags
+    * 'more bit' and multiple regions per partition included
 * Add RAS support for CXL root ports, CXL downstream switch ports, and CXL upstream switch ports
-  - Terry
+  * Terry: Incorporating RFC feedback to follow RCH downstream port flow
 * Scrub Subsystem review
-  * Shiju
-  - Going through reviews?
+  * Shiju / Jonathan: bringing it inline with EDAC requirements from Borislav
+    * ECS and PPR to be included
 * Extended-linear memory-side-cache HMAT Proposal
-  * Dan
+  * Dan: on track for approval
 * CXL Error Isolation
   * awaiting a user
 * CXL PMU support for switches
-  * Jonathan
+  * Jonathan: stalled behind pcieport rework
+    * Bind problem for switches relative to class code (pci conventional bridge code)
 * cxl: avoid duplicating report from MCE & device
-  * Shiyang
+  * Shiyang: are duplicated reports a problem in practice? Maybe when "repair" becomes more widespread
   - Going through reviews
 * FWCTL CXL support
   * RFC posted, Jason says looks ok, need CXL review on policies
+* Mailbox refactoring
+  * make cxl_dev_state public? wait to see use cases
+* Spreading CFMWS x86 policy to other archs: numa_memblk for more archs
 
 # June 2024
 * Opens
