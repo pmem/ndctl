@@ -13,7 +13,7 @@ layout: page
 * Do follow-up on linux-cxl@vger.kernel.org for longer questions / debug
 * https://pmem.io/ndctl/collab/
 
-#July 2024
+# July 2024
 * Opens
 * QEMU
 * cxl-cli
@@ -65,7 +65,7 @@ layout: page
 * FWCTL CXL support
   * RFC posted, Jason says looks ok, need CXL review on policies
 
-#June 2024
+# June 2024
 * Opens
 * QEMU
 * cxl-cli
@@ -74,11 +74,29 @@ layout: page
 * v6.11+
 
 ## QEMU
+* Big endian conflicts for generic port... fix triggered signficant review feedback
+* Waiting for some merge confusion to resolve before pushing more
+* Next up
+  - Misc fixes (no multiple memory backends)
+  - Scan media
+  - Sanitize fixes
+  - 3,6,12,16 way interleave support
+  - 'Get Feature' support
+  - Introduce comprehensive variability for generic port for test coverage (bottlenecks in multiple places)
+  - Investigate fine grained CDAT configurability
+* MCTP backed up on an NVME dev branch
+* DMA Bounce Buffering pending on separate tree
+* FW Update: v3 pending clarification feedback
+* FW First Error injection support, is now a generic capability
+  - ARM-only at the moment
+  - x86 review / help needed with emulating SCI mechanics to signal errors
+* DCD should land this cycle
+
 ## cxl-cli / user tools
 * cxl/test: add cxl_translate unit test
-  - New patch, needs review
+  - [New patch](http://lore.kernel.org/20240624210644.495563-1-alison.schofield@intel.com), needs review: 
 * cxl/test: Add test case for region info to cxl-events.sh
-  - Needs additional review
+  - [Needs additional review](http://lore.kernel.org/20240328043727.2186722-1-alison.schofield@intel.com)
 
 ## 6.10 fixes
 * cxl/mem: Fix no cxl_nvd during pmem region auto-assembling
@@ -87,9 +105,9 @@ layout: page
   - Ready to be queued, review still welcome
 * Check interleave capability
   - ready to be queued
-
 * XOR Math Fixups: translation & position
   - Need review tags, top priority for fixes pull
+  - Looking to merge for v6.10-rc6
 
 ## 6.11 merge window
 * cxl: add missing MODULE_DESCRIPTION() macros
@@ -104,21 +122,31 @@ layout: page
   - awaiting v2 posting
 * Export cxl1.1 device link status register value to pci device sysfs.
   - Have tags from Jonathan. Dan can you take a look?
+  - lspci already has support on the pending ABI
 * cxl: Region bandwidth calculation for targets with shared upstream link
   - Have tags from Jonathan. Pending test tag from Jonathan. Some additional minor updates. Can use additional review.
 
-% Waiting on next revision from author
+## Waiting on next revision from author
 * cxl/acpi: Warn on unsupported platform config detection
 * cxl/region: Remove soft reserve resource at region construction
 
 # 6.11+
 * DCD: Add support for Dynamic Capacity Devices (DCD)
-  * Ira
+  - Cleaning up lifetime of extent devices
+  - 'More' bit support in progress
+  - ndctl enhancements (extent listing suppport)
+  - Misc cleanups
 * Add RAS support for CXL root ports, CXL downstream switch ports, and CXL upstream switch ports
-  - Terry
+  - Option 2 consideration
 * Scrub Subsystem review
   * Shiju
   - Any new updates since last meeting?
+  - new version pending, all under EDAC, but modernized to be a 'struct bus_type'
+  - Need per-device *and* per-region scrubbing
+  - CXL regions and memdevs registered on the EDAC bus
+  - DDR ECC6 does have per-dimm controls, so *maybe* there is a DDR-DPA concept
+  - Respond to high correctable events with increasing the scrub rate? (POC)
+  - DPAs are not physical? ...but system-software pretends they're physical
 * Extended-linear memory-side-cache HMAT Proposal
   * Dan
 * CXL Error Isolation
