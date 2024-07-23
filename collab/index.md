@@ -13,6 +13,14 @@ layout: page
 * Do follow-up on linux-cxl@vger.kernel.org for longer questions / debug
 * https://pmem.io/ndctl/collab/
 
+#July 2024
+
+## cxl-cli / user tools
+* [ndctl PATCH v13 0/8] Support poison list retrieval
+  - Patches 1 & 3 need tags
+* ndctl v80 waits for poison list
+
+
 #June 2024
 * Opens
 * QEMU
