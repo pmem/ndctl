@@ -760,6 +760,7 @@ struct json_object *util_cxl_memdev_to_json(struct cxl_memdev *memdev,
 	const char *devname = cxl_memdev_get_devname(memdev);
 	struct json_object *jdev, *jobj;
 	unsigned long long serial, size;
+	const char *fw_version;
 	int numa_node;
 	int qos_class;
 
@@ -828,6 +829,13 @@ struct json_object *util_cxl_memdev_to_json(struct cxl_memdev *memdev,
 	jobj = json_object_new_string(cxl_memdev_get_host(memdev));
 	if (jobj)
 		json_object_object_add(jdev, "host", jobj);
+
+	fw_version = cxl_memdev_get_firmware_version(memdev);
+	if (fw_version) {
+		jobj = json_object_new_string(fw_version);
+		if (jobj)
+			json_object_object_add(jdev, "firmware_version", jobj);
+	}
 
 	if (!cxl_memdev_is_enabled(memdev)) {
 		jobj = json_object_new_string("disabled");
