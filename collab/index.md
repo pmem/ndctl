@@ -13,6 +13,60 @@ layout: page
 * Do follow-up on linux-cxl@vger.kernel.org for longer questions / debug
 * https://pmem.io/ndctl/collab/
 
+# August 2024
+* Opens
+
+* QEMU
+* v6.11 fixes
+* v6.12 queue
+* v6.12+
+
+## QEMU
+
+## cxl-cli / user tools
+
+## 6.11 fixes
+* cxl/region: Remove lock from memory notifier callback
+  - Maybe destined for 6.12 merge window?
+* Fixes for hdm decoder initialization from DVSEC ranges
+  - Need review tags
+
+## 6.12
+* cxl: Region bandwidth calculation for targets with shared upstream link
+  - Waiting on Dan's further review
+* cxl/port: Use _-free() to drop put_device() for cxl_port
+  - Need reviews
+* cxl: add Type2 device support
+  - Pending v3 from Alejandro, discussion on going
+* Address translation for HDM decoding
+  - Pending v3 from Robert
+* cxl/region: Remove soft reserve resource at region construction
+* acpi/ghes, cper, cxl: Trace FW-First CXL Protocol Errors
+  - Waiting on next rev from Smita. No activity since May. Is this still happening?  
+* DCD: Add support for Dynamic Capacity Devices (DCD)
+  - v3 is out, please review
+
+# 6.12+
+* Add RAS support for CXL root ports, CXL downstream switch ports, and CXL upstream switch ports
+  * Terry, new updates?
+  * Fan is testing
+* Scrub Subsystem via EDAC
+  * v11 posted
+  * Shiju/Jonathan, new updates?
+* Extended-linear memory-side-cache HMAT Proposal
+  * Approved?
+  * ACPICA pull request merged for new HMAT definition
+  * WIP
+* CXL Error Isolation
+  * awaiting a user, paused
+* CXL PMU support for switches
+  * Jonathan, updates?
+* cxl: avoid duplicating report from MCE & device
+  - Nothing new since last meeting
+* FWCTL CXL support
+  - Awaiting v2 and address Jason and Jonathan's comments
+
+
 # July 2024
 * Opens
   * invitation for tech topics for Plumbers uConf spillover
