@@ -108,7 +108,7 @@ char *ndctl_load_key_blob(const char *path, int *size, const char *postfix,
 	struct stat st;
 	ssize_t read_bytes = 0;
 	int rc, fd;
-	char *blob, *pl, *rdptr;
+	char *blob = NULL, *pl, *rdptr;
 	char prefix[] = "load ";
 	bool need_prefix = false;
 
@@ -125,16 +125,16 @@ char *ndctl_load_key_blob(const char *path, int *size, const char *postfix,
 	rc = fstat(fd, &st);
 	if (rc < 0) {
 		fprintf(stderr, "stat: %s\n", strerror(errno));
-		return NULL;
+		goto out_close;
 	}
 	if ((st.st_mode & S_IFMT) != S_IFREG) {
 		fprintf(stderr, "%s not a regular file\n", path);
-		return NULL;
+		goto out_close;
 	}
 
 	if (st.st_size == 0 || st.st_size > 4096) {
 		fprintf(stderr, "Invalid blob file size\n");
-		return NULL;
+		goto out_close;
 	}
 
 	*size = st.st_size;
@@ -166,14 +166,12 @@ char *ndctl_load_key_blob(const char *path, int *size, const char *postfix,
 			fprintf(stderr, "Failed to read from blob file: %s\n",
 					strerror(errno));
 			free(blob);
-			close(fd);
-			return NULL;
+			blob = NULL;
+			goto out_close;
 		}
 		read_bytes += rc;
 		rdptr += rc;
 	} while (read_bytes != st.st_size);
-
-	close(fd);
 
 	if (postfix) {
 		pl += read_bytes;
@@ -182,6 +180,8 @@ char *ndctl_load_key_blob(const char *path, int *size, const char *postfix,
 		rc = sprintf(pl, "keyhandle=%s", postfix);
 	}
 
+out_close:
+	close(fd);
 	return blob;
 }
 
