@@ -24,6 +24,12 @@ layout: page
 ## QEMU
 
 ## cxl-cli / user tools
+* ndctl v80 plans to include:
+  https://patchwork.kernel.org/bundle/alisonschofield/ndctl/
+* No patch review needed at the moment.
+* v2 in works for:
+  [ndctl] ndctl,cxl/test: Add a common unit test for creating pmem namespaces
+  [ndctl] cxl/test: add cxl_translate unit test
 
 ## 6.11 fixes
 * cxl/region: Remove lock from memory notifier callback
