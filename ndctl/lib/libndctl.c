@@ -710,11 +710,12 @@ NDCTL_EXPORT void ndctl_set_log_priority(struct ndctl_ctx *ctx, int priority)
 	daxctl_set_log_priority(ctx->daxctl_ctx, priority);
 }
 
-static char *__dev_path(char *type, int major, int minor, int parent)
+static char *__dev_path(char *type, unsigned int major, unsigned int minor,
+			int parent)
 {
 	char *path, *dev_path;
 
-	if (asprintf(&path, "/sys/dev/%s/%d:%d%s", type, major, minor,
+	if (asprintf(&path, "/sys/dev/%s/%u:%u%s", type, major, minor,
 				parent ? "/device" : "") < 0)
 		return NULL;
 
@@ -723,7 +724,7 @@ static char *__dev_path(char *type, int major, int minor, int parent)
 	return dev_path;
 }
 
-static char *parent_dev_path(char *type, int major, int minor)
+static char *parent_dev_path(char *type, unsigned int major, unsigned int minor)
 {
         return __dev_path(type, major, minor, 1);
 }
