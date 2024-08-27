@@ -7,6 +7,10 @@ rc=77
 
 trap 'cleanup $LINENO' ERR
 
+modprobe -r cxl_test
+modprobe cxl_test
+$CXL list
+
 cleanup()
 {
 	printf "Error at line %d\n" "$1"
@@ -18,18 +22,9 @@ find_testdev()
 {
 	local rc=77
 
-	# The hmem driver is needed to change the device mode, only
-	# kernels >= v5.6 might have it available. Skip if not.
-	if ! modinfo dax_hmem; then
-		# check if dax_hmem is builtin
-		if [ ! -d "/sys/module/device_hmem" ]; then
-			printf "Unable to find hmem module\n"
-			exit $rc
-		fi
-	fi
+	# find a victim region provided by cxl_test
+	region_id="$("$DAXCTL" list -R | jq -r ".[] | select(.path | contains(\"cxl_acpi.0\")) | .id")"
 
-	# find a victim region provided by dax_hmem
-	region_id="$("$DAXCTL" list -R | jq -r '.[] | select(.path | contains("hmem")) | .id')"
 	if [[ ! "$region_id" ]]; then
 		printf "Unable to find a victim region\n"
 		exit "$rc"
@@ -413,4 +408,5 @@ daxctl_test5
 daxctl_test6
 daxctl_test7
 reset_dev
+modprobe -r cxl_test
 exit 0
