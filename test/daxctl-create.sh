@@ -363,7 +363,7 @@ daxctl_test6()
 
 	# Use 2M by default or 1G if supported
 	align=2097152
-	if [[ $((available >= 1073741824 )) ]]; then
+	if (( available >= 1073741824 )); then
 		align=1073741824
 		size=$align
 	fi
