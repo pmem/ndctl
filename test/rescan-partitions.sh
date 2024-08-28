@@ -24,6 +24,7 @@ check_min_kver "4.16" || do_skip "may not contain fixes for partition rescanning
 
 check_prereq "parted"
 check_prereq "blockdev"
+check_prereq "jq"
 
 test_mode()
 {
@@ -46,7 +47,9 @@ test_mode()
 	sleep 1
 	blockdev --rereadpt /dev/$blockdev
 	sleep 1
-	partdev="$(grep -Eo "${blockdev}.+" /proc/partitions)"
+	partdev=$(lsblk -J -o NAME,SIZE /dev/$blockdev |
+		jq -r '.blockdevices[] | .children[0] | .name')
+
 	test -b /dev/$partdev
 
 	# cycle the namespace, and verify the partition is read
