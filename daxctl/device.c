@@ -2,6 +2,7 @@
 /* Copyright (C) 2019-2020 Intel Corporation. All rights reserved. */
 #include <stdio.h>
 #include <errno.h>
+#include <libgen.h>
 #include <stdlib.h>
 #include <syslog.h>
 #include <unistd.h>
