@@ -354,7 +354,6 @@ struct cxl_memdev_mapping *cxl_mapping_get_first(struct cxl_region *region);
 struct cxl_memdev_mapping *
 cxl_mapping_get_next(struct cxl_memdev_mapping *mapping);
 struct cxl_decoder *cxl_mapping_get_decoder(struct cxl_memdev_mapping *mapping);
-struct cxl_region *cxl_mapping_get_region(struct cxl_memdev_mapping *mapping);
 unsigned int cxl_mapping_get_position(struct cxl_memdev_mapping *mapping);
 
 #define cxl_mapping_foreach(region, mapping) \
