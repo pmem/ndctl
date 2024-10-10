@@ -42,6 +42,11 @@ unsigned long long __parse_size64(const char *str, unsigned long long *units)
 			val *= SZ_1T;
 			end++;
 			break;
+		case '%':
+			if (units)
+				*units = SZ_PCT;
+			end++;
+			break;
 		default:
 			if (units)
 				*units = 1;
