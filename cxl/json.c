@@ -9,7 +9,7 @@
 #include <json-c/json.h>
 #include <json-c/printbuf.h>
 #include <ccan/short_types/short_types.h>
-#include <tracefs/tracefs.h>
+#include <tracefs.h>
 
 #include "filter.h"
 #include "json.h"
