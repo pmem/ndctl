@@ -415,6 +415,59 @@ Append DAX information to region listings
 Specify CXL region device name(s), or device id(s), to filter the
 listing.
 
+`-L; --media-errors`  
+Include media-error information. The poison list is retrieved from the
+device(s) and media_error records are added to the listing. Apply this
+option to memdevs and regions where devices support the poison list
+capability. "offset:" is relative to the region resource when listing by
+region and is the absolute device DPA when listing by memdev. "source:"
+is one of: External, Internal, Injected, Vendor Specific, or Unknown, as
+defined in CXL Specification v3.1 Table 8-140.
+
+<!-- -->
+
+    # cxl list -m mem9 --media-errors -u
+    {
+      "memdev":"mem9",
+      "pmem_size":"1024.00 MiB (1073.74 MB)",
+      "pmem_qos_class":42,
+      "ram_size":"1024.00 MiB (1073.74 MB)",
+      "ram_qos_class":42,
+      "serial":"0x5",
+      "numa_node":1,
+      "host":"cxl_mem.5",
+      "media_errors":[
+        {
+          "offset":"0x40000000",
+          "length":64,
+          "source":"Injected"
+        }
+      ]
+    }
+
+    # cxl list -r region5 --media-errors -u
+    {
+      "region":"region5",
+      "resource":"0xf110000000",
+      "size":"2.00 GiB (2.15 GB)",
+      "type":"pmem",
+      "interleave_ways":2,
+      "interleave_granularity":4096,
+      "decode_state":"commit",
+      "media_errors":[
+        {
+          "offset":"0x1000",
+          "length":64,
+          "source":"Injected"
+        },
+        {
+          "offset":"0x2000",
+          "length":64,
+          "source":"Injected"
+        }
+      ]
+    }
+
 `-v; --verbose`  
 Increase verbosity of the output. This can be specified multiple times
 to be even more verbose on the informational and miscellaneous output,
@@ -428,8 +481,8 @@ list -vv.
 - **-vv** Everything **-v** provides, plus include disabled devices with
   --idle.
 
-- **-vvv** Everything **-vv** provides, plus enable --health and
-  --partition.
+- **-vvv** Everything **-vv** provides, plus enable --health,
+  --partition, and --media-errors.
 
 `--debug`  
 If the cxl tool was built with debug enabled, turn on debug messages.
