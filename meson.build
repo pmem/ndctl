@@ -172,7 +172,7 @@ keyutils = cc.find_library('keyutils', required : get_option('keyutils'))
 
 # iniparser lacks pkgconfig and its header files are either at '/usr/include' or '/usr/include/iniparser'
 # Use the path provided by user via meson configure -Diniparserdir=<somepath>
-# if thats not provided then try searching for 'iniparser.h' in default system include path
+# if that's not provided then try searching for 'iniparser.h' in default system include path
 # and if that not found then as a last resort try looking at '/usr/include/iniparser'
 iniparser_headers = ['iniparser.h', 'dictionary.h']
 

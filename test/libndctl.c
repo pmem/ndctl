@@ -1617,7 +1617,7 @@ static int check_namespaces(struct ndctl_region *region,
 			 * On the second time through this loop we skip
 			 * establishing btt|pfn since
 			 * check_{btt|pfn}_autodetect() destroyed the
-			 * inital instance.
+			 * initial instance.
 			 */
 			if (mode == BTT) {
 				btt_s = namespace->do_configure > 0
