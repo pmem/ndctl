@@ -220,6 +220,7 @@ else
 fi
 
 check_prereq "keyctl"
+check_prereq "jq"
 
 uid="$(keyctl show | grep -Eo "_uid.[0-9]+" | head -1 | cut -d. -f2-)"
 if [ "$uid" -ne 0 ]; then
