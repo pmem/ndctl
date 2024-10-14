@@ -16,6 +16,60 @@ layout: page
 # October 2024
 * Opens
 
+* cxl-cli
+* QEMU
+* v6.12 fixes
+* v6.13 queue
+* v6.13+
+* Vfio-cxl
+
+
+## cxl-cli / user tools
+* v80 released and working a build issue w CentOS Stream10
+* v81 open: expecting DCD, pmem_ns, and misc unit test patches
+
+## 6.12 fixes
+* v6.12 PR completed
+* Fix CXL device SBDF calculation (in RC3)
+  - https://lore.kernel.org/all/6701760b2e390_16041829420@iweiny-mobl.notmuch/
+* Fix Trace DRAM Event Record (
+  - https://lore.kernel.org/linux-cxl/05305df495904b9f99fcb52f67a66762@huawei.com/T/#t
+* Fix CXL port initialization order when the subsystem is built-in
+  - https://lore.kernel.org/linux-cxl/0c945d60-de62-06a5-c636-1cec3b5f516c@amd.com/T/#t
+ 
+* Other trees
+* Poll DOE Busy bit for up to 1 second in pci_doe_send_req
+  - https://lore.kernel.org/linux-cxl/20241013155834.GA607803@bhelgaas/T/#mfe07920c273fe28eb9acce1b2bb509a69860e6de
+* Support missing events in 3.1 spec
+  - https://lore.kernel.org/linux-cxl/20241014141551.GA17702@willie-the-truck/T/#t
+
+
+## 6.13 queue
+* EDAC scrub
+  - https://lore.kernel.org/linux-cxl/20241009124120.1124-1-shiju.jose@huawei.com/T/#m6f07b22ae7a00dd7ecf0095cff2683b88aa21ea7
+* Enable CXL PCIe port protocol error handling and logging
+  - https://lore.kernel.org/linux-cxl/d9d87f72-6273-4adc-934c-e25ee79bb8c7@amd.com/T/#mc0de8ae4187b55227201bae525596d49cad196ba
+* DCD: Add support for Dynamic Capacity Devices (DCD)
+  - v4 is out, v5 soonx
+  - https://lore.kernel.org/linux-cxl/6707f33c89730_4042929481@iweiny-mobl.notmuch/T/#m6267352b7ea3215257311a05cb058aaf7e12b522
+
+## 6.13+ queue
+* Type 2 patch sets
+  - (Alejandro) https://lore.kernel.org/linux-cxl/20240907081836.5801-1-alejandro.lucero-palau@amd.com/T/#mf3427aeb28f1eecc5df167cfd15af22aaec4a1d5
+  - (Ying) https://lore.kernel.org/linux-cxl/20240925024647.46735-1-ying.huang@intel.com/T/#mb2484ab566353dbf58bd905d7affb1549bb15fad
+* VFIO-type 2
+  - https://lore.kernel.org/linux-cxl/4230fba5-030c-49ef-799e-f4138b1c9f7d@amd.com/T/#mcac344899aacd07f98c4132d25d2ad29a6da9b09
+  - https://lore.kernel.org/linux-cxl/20240921071440.1915876-1-zhiw@nvidia.com/T/#m7e6f2b0ac88102095120a56d55341477b74a737a
+
+
+
+# September 2024
+Skipped due to LPC
+
+
+# August 2024
+* Opens
+
 * QEMU
 * v6.11 fixes
 * v6.12 queue
@@ -24,8 +78,6 @@ layout: page
 ## QEMU
 
 ## cxl-cli / user tools
-* v80 released and working a build issue w CentOS Stream10
-* v81 open: expecting DCD, pmem_ns, and misc unit test patches
 
 ## 6.11 fixes
 * cxl/region: Remove lock from memory notifier callback
