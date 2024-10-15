@@ -15,6 +15,8 @@ layout: page
 
 # October 2024
 * Opens
+  - Thanks for the LPC-MC organizers!!!
+  - <none>
 
 * cxl-cli
 * QEMU
@@ -28,6 +30,17 @@ layout: page
 * v80 released and working a build issue w CentOS Stream10
 * v81 open: expecting DCD, pmem_ns, and misc unit test patches
 
+## QEMU
+* 3 sets out for next
+  - generic ports
+  - speed control
+  - fixes
+* 3/6/12 interleave outstanding
+* MCTP payload sizes might get sliped in
+* NVME changes
+  - blocker was tests
+
+
 ## 6.12 fixes
 * v6.12 PR completed
 * Fix CXL device SBDF calculation (in RC3)
@@ -36,11 +49,16 @@ layout: page
   - https://lore.kernel.org/linux-cxl/05305df495904b9f99fcb52f67a66762@huawei.com/T/#t
 * Fix CXL port initialization order when the subsystem is built-in
   - https://lore.kernel.org/linux-cxl/0c945d60-de62-06a5-c636-1cec3b5f516c@amd.com/T/#t
+  - [Johnathan: Comments in the makefile]
+  - spelling fix -- will spin for now
+  - Ack from GregKH would be nice
+* Fix KASAN error in cxl-test
+  - 
  
 * Other trees
 * Poll DOE Busy bit for up to 1 second in pci_doe_send_req
   - https://lore.kernel.org/linux-cxl/20241013155834.GA607803@bhelgaas/T/#mfe07920c273fe28eb9acce1b2bb509a69860e6de
-* Support missing events in 3.1 spec
+* Support missing events in 3.1 spec - 6.13
   - https://lore.kernel.org/linux-cxl/20241014141551.GA17702@willie-the-truck/T/#t
 
 
@@ -49,9 +67,20 @@ layout: page
   - https://lore.kernel.org/linux-cxl/20241009124120.1124-1-shiju.jose@huawei.com/T/#m6f07b22ae7a00dd7ecf0095cff2683b88aa21ea7
 * Enable CXL PCIe port protocol error handling and logging
   - https://lore.kernel.org/linux-cxl/d9d87f72-6273-4adc-934c-e25ee79bb8c7@amd.com/T/#mc0de8ae4187b55227201bae525596d49cad196ba
+* Smita - CPER changes
 * DCD: Add support for Dynamic Capacity Devices (DCD)
-  - v4 is out, v5 soonx
+  - v4 is out, v5 soon
   - https://lore.kernel.org/linux-cxl/6707f33c89730_4042929481@iweiny-mobl.notmuch/T/#m6267352b7ea3215257311a05cb058aaf7e12b522
+
+## 6.13 order?  -- What should we focus on?
+1 DCD - dax review - if this is fine.
+  - remove printk stuff
+2 Port protocol error handling...
+  - Need community agreement
+3 Smita's patches
+4 RFC for soft reserved - dax again...
+4 (parallel) EDAC scrub not a lot more cxl review needed
+
 
 ## 6.13+ queue
 * Type 2 patch sets
@@ -60,7 +89,23 @@ layout: page
 * VFIO-type 2
   - https://lore.kernel.org/linux-cxl/4230fba5-030c-49ef-799e-f4138b1c9f7d@amd.com/T/#mcac344899aacd07f98c4132d25d2ad29a6da9b09
   - https://lore.kernel.org/linux-cxl/20240921071440.1915876-1-zhiw@nvidia.com/T/#m7e6f2b0ac88102095120a56d55341477b74a737a
+  - Dan: Trend is bare-metal sets up resources and hands them to the guest
+  - PCI BAR mapping does not change for the guest so why would this be different?
+  - Also have to consider the CXL.cache case for type-2.  This is more demanding.
+  - What kind of comunication between guest driver and VMM for CXL.cache?
+  - Alejandro working on a doc to share with the mailing list.
+  - Look at resizable BARs in VFIO.
 
+## Init order talks
+Nothing which stops an accelerator to skip the cxl_mem driver.  And there are reasons not to.
+
+## ARM stuff
+non-x86 how do we do cache flush (invalidate all)
+Every ARM implementation seems to do this differently
+Will need more infrastructure -- a subsystem to cache flush
+PRM spec?
+
+Dan's unicorn wish is for CXL spec to add this...
 
 
 # September 2024
