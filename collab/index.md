@@ -13,7 +13,7 @@ layout: page
 * Do follow-up on linux-cxl@vger.kernel.org for longer questions / debug
 * https://pmem.io/ndctl/collab/
 
-#November 2024
+# November 2024
 * Opens
 * cxl-cli
 * QEMU
