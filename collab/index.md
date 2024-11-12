@@ -23,6 +23,7 @@ layout: page
 ## Opens
 
 ## cxl-cli / user tools
+* v81 open: misc fixups and unit test updates, expect release w. kernel 6.13
 
 ## QEMU
 
@@ -50,6 +51,7 @@ layout: page
   - Waiting for v2?
 * Add device reporting poison handler (Shiyang)
   - Discussion still on going?
+* Update soft reserved resource handling (Nathan, Alison)
 
 # October 2024
 * Opens
