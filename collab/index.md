@@ -21,6 +21,8 @@ layout: page
 * v6.14 merge window
 
 ## Opens
+  * whats next?  How to support DCD in VMs?  Continue discussion from LPC.
+
 
 ## cxl-cli / user tools
 * v81 open: misc fixups and unit test updates, expect release w. kernel 6.13
@@ -28,6 +30,15 @@ layout: page
   - need review
 
 ## QEMU
+* merge window finished next week
+  * topology discovery
+    * lane details (speed/width)
+* payload checks missing which could attach the host
+  * fixed.
+
+# Next stuff
+* 3/6/12 interleave upstream
+
 
 ## 6.13 fixes
 * cxl/region: Fix region creation for greater than x2 switches (Huaisheng)
@@ -39,6 +50,8 @@ layout: page
 * Downgrade warning message to debug in cxl_probe_component_regs()
 * Add printf specifier '$pra' for 'struct range'
 * Add cleanup/prep code (first 6 patches) from DCD series
+* Cleanup add_port_attach_ep() "cleanup" confusion (Dan)
+  - v3 soon
 
 ## 6.14 and beyond
 * Rest of DCD series (Ira)
@@ -47,18 +60,45 @@ layout: page
   - Review needed
 * CXL PCIe port protocol error handling and logging (Terry)
   - Review on going?
+  - v2 posted -> v3 comming
+  - later patches need more looks
+  - pci does not look at upstream ports but Terry's patch set did
+    - Fix in pci and would make cxl easier? (AER info)
+    - Would be nice for the PCI folks to explain the current PCI behavior (ping Lukas?)
+  - CXL protocol errors are reported through AER
+    - AER driver determines CXL device and passes to CXL for further decode
+  - uncorrectable error (fatal or non-fatal) -> panic
+    - report info first (pci link still up so should still be able to use link)
+    - We don't know who is using it (acclerators [through specific driver] might be able to recover)
+    - Don't always panic but...  the details are use case specific
 * Type2 device support (Alejandro)
   - Waiting for v5?
-* Cleanup add_port_attach_ep() "cleanup" confusion (Dan)
+    - v5 soon
+    - later patches need more looks
+    - minor fixes and more testing
 * Trace FW-First CXL Protocol Errors (Smita)
-  - Waiting for v3?
+  - Waiting for v3? -> yes
+  - does call into the AER handler
+  - patch sets can't land independent for fatal error case
+    - Terry's lands first for Smita to use
 * Defer probe when memdev fails to find correct port (Gregory)
   - Waiting for v2?
+  - Obsoleted with Dan's patch set
+  - Dropping
 * Add device reporting poison handler (Shiyang)
   - Discussion still on going?
+  - Need to route to ras daemon?
+  - ras daemon deals with so many vendor specifics it is fine to let ras daemon deal with it.
 * Update soft reserved resource handling (Nathan, Alison)
+  - Alison testing has not been reproduced by Nathan
+  - Do we need to add checking or handling for DCD?
+  - Notifications of the dax driver still being looked into
+    - need to notify of soft reserved after region created? 
 * Introduce generic EDAC RAS control feature driver (Shiju)
   - Review needed for CXL bits
+  - Boris review for sysfs (has not said he likes it yet)
+  - memory repair stuff CXL spec a bit of a mess
+  - one device per feature kind of clean
 
 ## RFCs?
 * FWCTL CXL
@@ -66,6 +106,22 @@ layout: page
 * Extended Linear Cache support
   - v2 coming. Looking for ideas on properly detecting MMIO hole in kernel
 * vfio-cxl?
+  - new summary out
+  - planning to send a new patch set based on Alejandros v5
+  - white paper?
+  - Leverage device ACL registers if possible
+    - fall back to vendor driver
+
+## open discussion
+* Jonathan ACPI discussion
+* Hotplug CXL fixed memory window review -> going through mm tree
+  - Mike Rapaport review should be good
+  - not critical yet
+* DCD set up
+  - expose DCD in a VM
+    - long ago discussion from Jonathan
+  - Find device by Tag (VM and bare metal should work the same)
+  - John provide an on-list conversation
 
 # October 2024
 * Opens
