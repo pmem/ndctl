@@ -24,6 +24,8 @@ layout: page
 
 ## cxl-cli / user tools
 * v81 open: misc fixups and unit test updates, expect release w. kernel 6.13
+* DCD cxl cli series
+  - need review
 
 ## QEMU
 
@@ -52,6 +54,13 @@ layout: page
 * Add device reporting poison handler (Shiyang)
   - Discussion still on going?
 * Update soft reserved resource handling (Nathan, Alison)
+
+## RFCs?
+* FWCTL CXL
+  - v2 coming. Jason requested posting sooner than later.
+* Extended Linear Cache support
+  - v2 coming. Looking for ideas on properly detecting MMIO hole in kernel
+* vfio-cxl?
 
 # October 2024
 * Opens
