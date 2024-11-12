@@ -13,6 +13,44 @@ layout: page
 * Do follow-up on linux-cxl@vger.kernel.org for longer questions / debug
 * https://pmem.io/ndctl/collab/
 
+#November 2024
+* Opens
+* cxl-cli
+* QEMU
+* v6.13 fixes
+* v6.14 merge window
+
+## Opens
+
+## cxl-cli / user tools
+
+## QEMU
+
+## 6.13 fixes
+* cxl/region: Fix region creation for greater than x2 switches (Huaisheng)
+  - waiting for v2
+
+## 6.13 merge window (in next)
+* Constify range_contains() input params
+* Add CXL 1.1 device link status support for lspci
+* Downgrade warning message to debug in cxl_probe_component_regs()
+* Add printf specifier '$pra' for 'struct range'
+* Add cleanup/prep code (first 6 patches) from DCD series
+
+## 6.14 and beyond
+* Rest of DCD series (Ira)
+  - Pending review from Dan
+* Support background operation abort requests (Davidlohr)
+* Type2 device support (Alejandro)
+  - Waiting for v5?
+* Cleanup add_port_attach_ep() "cleanup" confusion (Dan)
+* Trace FW-First CXL Protocol Errors (Smita)
+  - Waiting for v3?
+* Defer probe when memdev fails to find correct port (Gregory)
+  - Waiting for v2?
+* Add device reporting poison handler (Shiyang)
+  - Discussion still on going?
+
 # October 2024
 * Opens
   - Thanks for the LPC-MC organizers!!!
