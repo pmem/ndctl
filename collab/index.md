@@ -44,6 +44,9 @@ layout: page
 * Rest of DCD series (Ira)
   - Pending review from Dan
 * Support background operation abort requests (Davidlohr)
+  - Review needed
+* CXL PCIe port protocol error handling and logging (Terry)
+  - Review on going?
 * Type2 device support (Alejandro)
   - Waiting for v5?
 * Cleanup add_port_attach_ep() "cleanup" confusion (Dan)
@@ -54,6 +57,8 @@ layout: page
 * Add device reporting poison handler (Shiyang)
   - Discussion still on going?
 * Update soft reserved resource handling (Nathan, Alison)
+* Introduce generic EDAC RAS control feature driver (Shiju)
+  - Review needed for CXL bits
 
 ## RFCs?
 * FWCTL CXL
