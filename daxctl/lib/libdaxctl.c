@@ -1310,6 +1310,37 @@ static int memblock_is_online(struct daxctl_memory *mem, char *memblock)
 	return 0;
 }
 
+static int memblock_is_removable(struct daxctl_memory *mem, char *memblock)
+{
+	struct daxctl_dev *dev = daxctl_memory_get_dev(mem);
+	const char *devname = daxctl_dev_get_devname(dev);
+	struct daxctl_ctx *ctx = daxctl_dev_get_ctx(dev);
+	int len = mem->buf_len, rc;
+	char buf[SYSFS_ATTR_SIZE];
+	char *path = mem->mem_buf;
+	const char *node_path;
+
+	node_path = daxctl_memory_get_node_path(mem);
+	if (!node_path)
+		return -ENXIO;
+
+	rc = snprintf(path, len, "%s/%s/removable", node_path, memblock);
+	if (rc < 0)
+		return -ENOMEM;
+
+	rc = sysfs_read_attr(ctx, path, buf);
+	if (rc) {
+		err(ctx, "%s: Failed to read %s: %s\n",
+			devname, path, strerror(-rc));
+		return rc;
+	}
+
+	if (strtoul(buf, NULL, 0) == 0)
+		return -EOPNOTSUPP;
+
+	return 0;
+}
+
 static int online_one_memblock(struct daxctl_memory *mem, char *memblock,
 		enum memory_zones zone, int *status)
 {
@@ -1362,6 +1393,20 @@ static int offline_one_memblock(struct daxctl_memory *mem, char *memblock)
 	char *path = mem->mem_buf;
 	const char *node_path;
 
+	/* if already offline, there is nothing to do */
+	rc = memblock_is_online(mem, memblock);
+	if (rc < 0)
+		return rc;
+	if (!rc)
+		return 1;
+
+	rc = memblock_is_removable(mem, memblock);
+	if (rc) {
+		if (rc == -EOPNOTSUPP)
+			err(ctx, "%s: %s is unremovable\n", devname, memblock);
+		return rc;
+	}
+
 	node_path = daxctl_memory_get_node_path(mem);
 	if (!node_path)
 		return -ENXIO;
@@ -1369,13 +1414,6 @@ static int offline_one_memblock(struct daxctl_memory *mem, char *memblock)
 	rc = snprintf(path, len, "%s/%s/state", node_path, memblock);
 	if (rc < 0)
 		return -ENOMEM;
-
-	/* if already offline, there is nothing to do */
-	rc = memblock_is_online(mem, memblock);
-	if (rc < 0)
-		return rc;
-	if (!rc)
-		return 1;
 
 	rc = sysfs_write_attr_quiet(ctx, path, mode);
 	if (rc) {
