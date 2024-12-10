@@ -24,8 +24,10 @@ layout: page
 
 ## cxl-cli / user tools
 * v81 open: misc fixups and unit test updates
-* DCD cxl cli series needs review
+* DCD cxl cli series needs review (Ira)
   - Ira update?
+* Sanitize memdev functionalities (DavidLorh)
+  - Need review
 
 ## QEMU
 
