@@ -50,10 +50,8 @@ layout: page
 * Add device reporting poison handler (Shiyang)
   - Waiting on v5?
 * Update soft reserved resource handling (Nathan, Alison)
-  - Alison testing has not been reproduced by Nathan
+  - v1 is posted (w RFC feedback) and needs review, esp DAX notifier
   - Do we need to add checking or handling for DCD?
-  - Notifications of the dax driver still being looked into
-    - need to notify of soft reserved after region created? 
 * Introduce generic EDAC RAS control feature driver (Shiju)
   - v17 posted. Review ongoing with Boris
   - Needs to sync "feature" calls with CXL fwctl
@@ -72,8 +70,6 @@ layout: page
   - v2 posted, need review?
 
 ## 6.15 and beyond
-* Update soft reserved resource handling (Nathan, Alison)
-  - v1 is posted (w RFC feedback) and needs review, esp DAX notifier - Alison
 * vfio-cxl?
   - Any new updates?
 
