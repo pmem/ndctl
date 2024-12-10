@@ -25,16 +25,57 @@ layout: page
 ## cxl-cli / user tools
 * v81 open: misc fixups and unit test updates
 * DCD cxl cli series needs review
+  - Ira update?
 
 ## QEMU
 
 ## 6.13 rc fixes
+* cxl/pci: Check dport->regs.rcd_pcie_cap availability before accessing
+  - Ready to queue
+* cxl/region: Fix region creation for greater than x2 switches
+  - Ready to queue
 
 ## 6.14 merge window
+* Rest of DCD series (Ira)
+  - Cleanup parts landed in 6.13.
+  - v7 posted. Pending review from Dan
+* Support background operation abort requests (Davidlohr)
+  - v1 review needed
+* CXL PCIe port protocol error handling and logging (Terry)
+  - v3 posted, review on going?
+* Type2 device support (Alejandro)
+  - v7 posted, need review
+* Trace FW-First CXL Protocol Errors (Smita)
+  - v3 posted, review on going?
+* Add device reporting poison handler (Shiyang)
+  - Waiting on v5?
+* Update soft reserved resource handling (Nathan, Alison)
+  - Alison testing has not been reproduced by Nathan
+  - Do we need to add checking or handling for DCD?
+  - Notifications of the dax driver still being looked into
+    - need to notify of soft reserved after region created? 
+* Introduce generic EDAC RAS control feature driver (Shiju)
+  - v17 posted. Review ongoing with Boris
+  - Needs to sync "feature" calls with CXL fwctl
+* FWCTL CXL (Dave)
+  - Create a features driver/device to handle all feature support. Driver/device needed to prevent FWCTL from being loaded by CXL core. Need to coordinate with Shiju. 
+  - Drop RFC and pending v1 to be posted upstream  
+* Add exclusive caching enumeration and RAS support (Dave)
+  - v1 posted, need review.
+* Enable Region creation on x86 with Low Mem Hole (Fabio)
+  - v1 posted, need review.
+* Update event records to CXL spec r3.1 (Shiju)
+  - v4 posted, need review
+* Rename ACPI_CEDT_CFMWS_RESTRICT_TYPE2/TYPE3 (Ying)
+  - Looks like needs a conclusion with the discussion
+* Cleanup add_port_attach_ep() "cleanup" confusion (Dan)
+  - v2 posted, need review?
 
 ## 6.15 and beyond
 * Update soft reserved resource handling (Nathan, Alison)
-  v1 is posted (w RFC feedback) and needs review, esp DAX notifier
+  - v1 is posted (w RFC feedback) and needs review, esp DAX notifier - Alison
+* vfio-cxl?
+  - Any new updates?
 
 
 # November 2024
