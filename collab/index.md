@@ -13,6 +13,30 @@ layout: page
 * Do follow-up on linux-cxl@vger.kernel.org for longer questions / debug
 * https://pmem.io/ndctl/collab/
 
+# December 2024
+* Opens
+* cxl-cli
+* QEMU
+* v6.13 rc fixes
+* v6.14 merge window
+
+## Opens
+
+## cxl-cli / user tools
+* v81 open: misc fixups and unit test updates
+* DCD cxl cli series needs review
+
+## QEMU
+
+## 6.13 rc fixes
+
+## 6.14 merge window
+
+## 6.15 and beyond
+* Update soft reserved resource handling (Nathan, Alison)
+  v1 is posted (w RFC feedback) and needs review, esp DAX notifier
+
+
 # November 2024
 * Opens
 * cxl-cli
