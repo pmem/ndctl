@@ -21,42 +21,72 @@ layout: page
 * v6.14 merge window
 
 ## Opens
+<none>
 
 ## cxl-cli / user tools
 * v81 open: misc fixups and unit test updates
 * DCD cxl cli series needs review (Ira)
   - Ira update?
+  - alter test to pass with known lockdep issue
 * Sanitize memdev functionalities (DavidLorh)
   - Need review
+  - sanitize and secure will be mutually exclusive
 
 ## QEMU
+* in stabalization phase, nothing now
+* some fixes for generic ports
+* future
+  - low hanging fruit - minor features
+  - 3,6,12 interleave
+  - CHMU feature
+    - no real hardware emulation due to IP issues
+    - probably better than real hardware
+
 
 ## 6.13 rc fixes
 * cxl/pci: Check dport->regs.rcd_pcie_cap availability before accessing
   - Ready to queue
 * cxl/region: Fix region creation for greater than x2 switches
   - Ready to queue
+* Fix potential bogus return value upon successful probing
+  - Davidlohr
+  - https://lore.kernel.org/all/20241115170032.108445-1-dave@stgolabs.net/
 
 ## 6.14 merge window
 * Rest of DCD series (Ira)
   - Cleanup parts landed in 6.13.
   - v7 posted. Pending review from Dan
+  - lockdep issue dev_uevent - uevent_show()
 * Support background operation abort requests (Davidlohr)
   - v1 review needed
 * CXL PCIe port protocol error handling and logging (Terry)
   - v3 posted, review on going?
+  - v4 1.1 test issues - defer 1.1 changes? (yes)
+    - PCIe core are all 2.0 changes
+    - no regressions on 1.1
+    - 1.1 could be made to use the same flow as VH (but more time is needed)
+    - would be easier for Bjorn to review as well
+    - Jonathan nervous about differences between PCIe/CXL iterators
 * Type2 device support (Alejandro)
   - v7 posted, need review
+  - please concentrate on patches without tags
+  - prelim patches for Dave to land first
+    - Reviewed by Jonathan
+    - https://patchwork.kernel.org/project/cxl/patch/20241203162112.5088-1-alucerop@amd.com/
 * Trace FW-First CXL Protocol Errors (Smita)
   - v3 posted, review on going?
 * Add device reporting poison handler (Shiyang)
   - Waiting on v5?
 * Update soft reserved resource handling (Nathan, Alison)
   - v1 is posted (w RFC feedback) and needs review, esp DAX notifier
+  - share notifier between dcd code and soft reserved
+    - clean up later if needed
   - Do we need to add checking or handling for DCD?
 * Introduce generic EDAC RAS control feature driver (Shiju)
   - v17 posted. Review ongoing with Boris
   - Needs to sync "feature" calls with CXL fwctl
+    - please don't block EDAC on fwctl (no)
+    - But will sync code paths
 * FWCTL CXL (Dave)
   - Create a features driver/device to handle all feature support. Driver/device needed to prevent FWCTL from being loaded by CXL core. Need to coordinate with Shiju. 
   - Drop RFC and pending v1 to be posted upstream  
@@ -64,16 +94,33 @@ layout: page
   - v1 posted, need review.
 * Enable Region creation on x86 with Low Mem Hole (Fabio)
   - v1 posted, need review.
+  - This is platform specific x86'ism
+  - there was at least one other memory hole example
+    - do we have that concrete example?
+    - will need to get approval for release
 * Update event records to CXL spec r3.1 (Shiju)
   - v4 posted, need review
+  - tracepoints are now too long for libtracept (> PAGESIZE)
+  - Working with Steven to determine correct fix
+  - uuid support to be added too
 * Rename ACPI_CEDT_CFMWS_RESTRICT_TYPE2/TYPE3 (Ying)
   - Looks like needs a conclusion with the discussion
 * Cleanup add_port_attach_ep() "cleanup" confusion (Dan)
   - v2 posted, need review?
 
 ## 6.15 and beyond
+* Hotness driver
+  - basic enablement - tracing driver
+  - send to userspace for user to decode
+  - in kernel use?
+  - convert PA to user app VA?
+  - DAEMON? - Jonathan thinks "no"
 * vfio-cxl?
   - Any new updates?
+
+## Admin issues
+* Should we make this 1.5 hour, 2?
+* Share the load of running meeting?
 
 
 # November 2024
