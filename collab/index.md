@@ -13,6 +13,77 @@ layout: page
 * Do follow-up on linux-cxl@vger.kernel.org for longer questions / debug
 * https://pmem.io/ndctl/collab/
 
+# January 2024
+* Opens
+* cxl-cli
+* QEMU
+* v6.14 merge window
+* v6.14 rc fixes
+* v6.15 merge window
+* v6.16 and beyond
+
+## Opens
+
+## cxl-cli / user tools
+
+## QEMU
+
+## In v6.14 merge window
+* ACPI/HMAT: Move HMAT messages to pr_debug()
+* cxl/pci: Add CXL Type 1/2 support to cxl_dvsec_rr_decode()
+* CXL events updates for spec r3.1 (series)
+
+cxl-next may still consider the following. Would like to close cxl-next by Wed/Thurs.
+* cxl/pci: Support Global Persistent Flush (GPF)
+  - Need review tags
+* DPA partition meta data cleanup
+  - Need v2 and review tags
+
+## v6.14 rc fixes
+* None so far
+
+## v6.15 merge window
+* Rest of DCD series (Ira)
+  - Pending v8?
+* Support background operation abort requests (Davidlohr)
+  - Pending v2
+* CXL PCIe port protocol error handling and logging (Terry)
+  - v5 posted, review on going?
+* Type2 device support (Alejandro)
+  - v9 posted, need review
+  - Also pending on DPA partition cleanups from Dan
+* Trace FW-First CXL Protocol Errors (Smita)
+  - v5 posted. Is linux-efi picking up the series?
+* cxl: Add address translation support and enable AMD Zen5 platforms
+  - Review on going
+* Add device reporting poison handler (Shiyang)
+  - Will there be v5? No movement since last September
+* Update soft reserved resource handling (Nathan, Alison)
+  - v2 is posted. Review on going?
+* Introduce generic EDAC RAS control feature driver (Shiju)
+  - v18 posted. Review ongoing?
+* FWCTL CXL (Dave)
+  - Almost done with cxl cli support and cxl unit test for using ioctls.
+    v1 will be posted once that is done.
+* Add exclusive caching enumeration and RAS support (Dave)
+  - v3 posted, minor changes requested from Ming. Need Dan's review
+* Enable Region creation on x86 with Low Mem Hole (Fabio)
+  - v2 posted, review ongoing.
+  - Need to sync with Robert's address translation series?
+* cxl: factor out cxl_await_range_active() and cxl_media_ready() (Zhi)
+  - v2 posted, Need more review tags
+* Cleanup add_port_attach_ep() "cleanup" confusion (Dan)
+  - pending v3?
+
+## 6.16 and beyond
+* Hotness driver (Jonathan)
+  - Updates?
+* vfio-cxl?
+  - Any new updates?
+
+## Admin Issues
+* Anyone want to host the next meeting?
+
 # December 2024
 * Opens
 * cxl-cli
