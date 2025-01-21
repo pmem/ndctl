@@ -13,7 +13,7 @@ layout: page
 * Do follow-up on linux-cxl@vger.kernel.org for longer questions / debug
 * https://pmem.io/ndctl/collab/
 
-# January 2024
+# January 2025
 * Opens
 * cxl-cli
 * QEMU
@@ -25,6 +25,14 @@ layout: page
 ## Opens
 
 ## cxl-cli / user tools
+* v81 is open with misc fixups and unit test updates at the moment
+* New features need review:
+  - DCD needs review (Ira)
+    https://lore.kernel.org/nvdimm/20241115-dcd-region2-v3-0-585d480ccdab@intel.com/
+  - Sanitize memdev needs review (Davidlohr)
+    https://lore.kernel.org/linux-cxl/20240928211643.140264-1-dave@stgolabs.net/
+  - Inject error (Ben)
+    https://lore.kernel.org/nvdimm/20250108215749.181852-1-Benjamin.Cheatham@amd.com/
 
 ## QEMU
 
