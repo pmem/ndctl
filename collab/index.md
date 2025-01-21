@@ -23,6 +23,51 @@ layout: page
 * v6.16 and beyond
 
 ## Opens
+* 1.5 hour meeting?
+* Feature velocity is slowing
+  * Upstream support needs to land well ahead of distro acceptance
+  * Some vendors may not release hardware without ecosystem support
+    * lack of hardware does not mean a feature is not important
+    * DCD is important but type 2 seems to be more important because devices are out and real
+      * The core had an issue which probably should have been cleaned up a while ago
+      * both DCD and type 2 were trying to not 'disrupt' the status quo
+    * Generally clean up first is good
+    * In this case there are other issues with both sets so it might be fine...  this time
+  * Cross-subsystem ties?
+  * Jonathan would like to see at least one of these features queued for cxl-next
+  * More reviews!
+    * CXL will now be 'leaking' out into the rest of the kernel.
+    * Use cases may need to make CXL core changes...  without redoing the entire thing.
+  * type 2 is higher prioity than error handling.  may folks are doing FW first.
+    * there are some FW first patches on the tail end of the port error handling series.
+      * Maybe those should come first or as a separate patch set?
+      * AFAWK they don't conflict with type 2
+  * DCD can go in with device dax.  memfd is a future question.  should device dax move toward memfd?
+    * famfs needs device dax.  without memfd changes it can't replace device dax.
+    * memfd is currently geared toward anonymous memory and device dax provides better super block support
+    * also tagging support in memfd would also be a bigger change
+    * memfd support may be growing some persistence so there may be conflicts in the support and a decision may need to be made.
+      * public?  guest memfd call is public
+      * Gowans is working on this
+    * CC can't consume device dax.  which also pushes toward memfd
+      * How would CC handle shared memory?  -- can't be anonymous
+      * shared confidential is down the road -- we are not ready for it
+* ratelimit AER
+  * https://lore.kernel.org/linux-pci/cover.1736341506.git.karolina.stolarek@oracle.com/
+  * https://lore.kernel.org/linux-pci/20250115074301.3514927-1-pandoh@google.com/
+  * Pradeep to check with Terry
+* CXL reset
+  * patch set should apply to all devices
+  * Don't the SBR patches already do this?
+    * This would destroy the regions
+    * We think so
+    * If this is adding a new reset to that then we should be ok
+  * CXL reset is different
+    * It does work through sysfs
+    * expected use case would be to go through type 2 driver and it could ensure memory flushes
+  * Does this need a new version?
+    * Still RFC
+  
 
 ## cxl-cli / user tools
 * v81 is open with misc fixups and unit test updates at the moment
@@ -35,6 +80,17 @@ layout: page
     https://lore.kernel.org/nvdimm/20250108215749.181852-1-Benjamin.Cheatham@amd.com/
 
 ## QEMU
+* one fix around MSI
+* clean up some error paths
+* new staging tree should be out in a day or 2
+  * hot miss -- HMU
+    * roughly speaking one can run a real work load and get real data
+    * 10% speed (4min to boot)
+    * infinate counters (no one will build this) -- could add knob to change counters
+    * framework is in place
+      * if other HW vendors like to upstream 'real' behavior
+      * would be nice to have a range of implementations
+
 
 ## In v6.14 merge window
 * ACPI/HMAT: Move HMAT messages to pr_debug()
@@ -52,32 +108,73 @@ cxl-next may still consider the following. Would like to close cxl-next by Wed/T
 
 ## v6.15 merge window
 * Rest of DCD series (Ira)
-  - Pending v8?
+  - Pending v8
+  - pending on DPA partition cleanups from Dan
+  - week?
 * Support background operation abort requests (Davidlohr)
   - Pending v2
+  - user space would abort previous operation
+  - v2 on the way
 * CXL PCIe port protocol error handling and logging (Terry)
   - v5 posted, review on going?
+  - yea
 * Type2 device support (Alejandro)
   - v9 posted, need review
   - Also pending on DPA partition cleanups from Dan
+  - is there a way to check if an allocation came from devm?
+    - xfc is a network driver
+    - put cxl side of the driver in drivers/cxl
+    - Alejandro believes he has a solution
+    - VFIO also has this problem
+      - export a new function so the VFIO can do the release
+    - convert some core calls to non-devm
+  - patch set has been tested with 2 different drivers and AMD
+    - should be very stable
+    - cxl-test has not been run though
+    - but also can't break the cxl-test build
+    - should also have a basic cxl-smoke test-test
+    - would love that every feature has a new cxl-test but not always required
 * Trace FW-First CXL Protocol Errors (Smita)
   - v5 posted. Is linux-efi picking up the series?
 * cxl: Add address translation support and enable AMD Zen5 platforms
   - Review on going
 * Add device reporting poison handler (Shiyang)
   - Will there be v5? No movement since last September
+  - rasdaemon folks are engaged
+  - rasdaemon will find the tracepoints
+  - what about corrected errors.  would need to soft offline
+    - who does that?  don't know yet.
 * Update soft reserved resource handling (Nathan, Alison)
   - v2 is posted. Review on going?
 * Introduce generic EDAC RAS control feature driver (Shiju)
   - v18 posted. Review ongoing?
+  - v19 comming
+  - complexity around the interface caught on merge
+    - specifically memory sparing -- because DPA is not stable
+    - add PoC in user space to show the usage of the API
+    - need vendors to step up to show this is not a single vendor solution
+    - does this just belong more on the CXL side vs EDAC
+      - but Boris wanted it in EDAC -- for unified interfaces
+    - maybe write a whitepaper to help explain -- it is in the documentation
+  - when is it safe to use the interfaces?  ie after a boot?
+    - safty rules vary a bit
+    - error record must corespond to the current boot
+    - can a device really do this...  'atomic swap'
+    - soft-hibernate idea
+    - just document it -- device is to take care of it
+    - feature query
+  - xarray will carry on forever ...  should not see that many errors
+  - PPR will have separate support
 * FWCTL CXL (Dave)
   - Almost done with cxl cli support and cxl unit test for using ioctls.
     v1 will be posted once that is done.
 * Add exclusive caching enumeration and RAS support (Dave)
   - v3 posted, minor changes requested from Ming. Need Dan's review
+  - all tags from Jonathan
 * Enable Region creation on x86 with Low Mem Hole (Fabio)
   - v2 posted, review ongoing.
   - Need to sync with Robert's address translation series?
+  - not sure how to do what Robert suggests
 * cxl: factor out cxl_await_range_active() and cxl_media_ready() (Zhi)
   - v2 posted, Need more review tags
 * Cleanup add_port_attach_ep() "cleanup" confusion (Dan)
