@@ -60,30 +60,6 @@ void strbuf_grow(struct strbuf *sb, size_t extra)
 	ALLOC_GROW(sb->buf, sb->len + extra + 1, sb->alloc);
 }
 
-static void strbuf_splice(struct strbuf *sb, size_t pos, size_t len,
-				   const void *data, size_t dlen)
-{
-	if (pos + len < pos)
-		die("you want to use way too much memory");
-	if (pos > sb->len)
-		die("`pos' is too far after the end of the buffer");
-	if (pos + len > sb->len)
-		die("`pos + len' is too far after the end of the buffer");
-
-	if (dlen >= len)
-		strbuf_grow(sb, dlen - len);
-	memmove(sb->buf + pos + dlen,
-			sb->buf + pos + len,
-			sb->len - pos - len);
-	memcpy(sb->buf + pos, data, dlen);
-	strbuf_setlen(sb, sb->len + dlen - len);
-}
-
-void strbuf_remove(struct strbuf *sb, size_t pos, size_t len)
-{
-	strbuf_splice(sb, pos, len, NULL, 0);
-}
-
 void strbuf_add(struct strbuf *sb, const void *data, size_t len)
 {
 	strbuf_grow(sb, len);
@@ -113,31 +89,4 @@ void strbuf_addf(struct strbuf *sb, const char *fmt, ...)
 		}
 	}
 	strbuf_setlen(sb, sb->len + len);
-}
-
-ssize_t strbuf_read(struct strbuf *sb, int fd, ssize_t hint)
-{
-	size_t oldlen = sb->len;
-	size_t oldalloc = sb->alloc;
-
-	strbuf_grow(sb, hint ? hint : 8192);
-	for (;;) {
-		ssize_t cnt;
-
-		cnt = read(fd, sb->buf + sb->len, sb->alloc - sb->len - 1);
-		if (cnt < 0) {
-			if (oldalloc == 0)
-				strbuf_release(sb);
-			else
-				strbuf_setlen(sb, oldlen);
-			return -1;
-		}
-		if (!cnt)
-			break;
-		sb->len += cnt;
-		strbuf_grow(sb, 8192);
-	}
-
-	sb->buf[sb->len] = '\0';
-	return sb->len - oldlen;
 }
