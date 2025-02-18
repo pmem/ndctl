@@ -22,6 +22,7 @@ layout: page
 * v6.16 and beyond
 
 ## Opens
+* Bueler?  <none>
 
 ## cxl-cli / user tools
 
@@ -38,6 +39,12 @@ layout: page
 	https://lore.kernel.org/nvdimm/20250108215749.181852-1-Benjamin.Cheatham@amd.com/
 
 ## QEMU
+* inside merge window
+* Fujitsu clean up
+* ARM virt support reposted
+* 2 samsung series'
+* Hotlist monitoring
+
 
 ## v6.14 rc fixes
 none
@@ -53,31 +60,74 @@ none
 ## 6.15 merge window
 * Rest of DCD series (Ira)
   - pending v9
+  - much discussion on actual use cases
+  - AI: Ira to schedule another call between Dan, John, Jonathan and Ira...
 * Support background operation abort requests (Davidlohr)
   - Pending v2
+  - will rebase and send soon
 * CXL PCIe port protocol error handling and logging (Terry)
   - v7 posted, review on going
+  - Some devices/drivers have been happily CXL-unaware (prtdrv)
+    - should PCI subsystem throw errors to 'cxl land'?
+    - CXL system must be loaded for processing these errors
+    - Alternate: make PCI system more cxl aware
+    - new file is ok
+    - 2 fifos CPER/OS first
+    - fifo overflows if cxl is not loaded (user 'asked for it')
+  - mapping between PCI/CXL device
+  - AER -> fifo -> wq -> pciaer -> aer src info???
+  - AER -> fifo -> cxl core?
+  - AER statistics (CXL counters?)
+    - Jonathan to post reference
 * Type2 device support (Alejandro)
   - v10 posted, review on going
+  - memdev state vs device state
+  - need to have Alejandro to discuss further
 * Trace FW-First CXL Protocol Errors (Smita)
-  - 1-4 in cxl/next. 4&5 needs more work
+  - 1-4 in cxl/next. 5&6 needs more work
+  - Q: looks like this needs to be in cxl core?
+    - yes it is not an endpoint but a port object
 * cxl: Add address translation support and enable AMD Zen5 platforms (Robert)
   - Part 1&2 v2 posted
   - Review on going
+  - Reference Low memory hole: was generic to 'some platform may do this'
+  - specific AMD file?  can this be more generic?
+    - has anyone else done this?  ...  no
+    - specification help?
 * Update soft reserved resource handling (Nathan, Alison)
   - v2 is posted. Review on going?
+  - Hildenbrand(sp?) had comments
 * Introduce generic EDAC RAS control feature driver (Shiju)
   - v19 posted. Review ongoing?
+  - v19 discussion : Boris is unconvinced about the API
+    - reverse engineer tracepoints?
+    - marshal into ioctl
+    - marshal into tracepoint (format different)
+    - use sysfs
+    - lockdown kernels disable debugfs
+    - Must be in EDAC - Boris
+  - v20 posted
+    - Dan to look at CXL bits
+      - online repair - must see an error 'this boot'
+    - call for memory device manf. to look at the API and weigh in
+    - can parameters just fine
 * FWCTL CXL (Dave)
   - pending v6
 * Add exclusive caching enumeration and RAS support (Dave)
   - v3 posted, minor changes requested from Ming. Need Dan's review
 * Enable Region creation on x86 with Low Mem Hole (Fabio)
   - v2 posted, review ongoing.
+  - some assertion this should wait for Roberts stuff?
+  - Can we apply this?
+  - this could affect Roberts patches with a small conflict - Gregory
 * cxl: factor out cxl_await_range_active() and cxl_media_ready() (Zhi)
   - pending v3?
+  - will respin
+* vfio-cxl type 2 (Zhi)
+  - will rebase on type 2 v10+
 * Use guard() instead of rwsem locking cleanup series (Ming)
   - v2 review on going
+  - should be simple; get reveiwng folks!
 * cxl/pmem: debug invalid serial number data (Yuquan)
   - v3 review on going
 * Add cxl reset support (Srirangan)
@@ -85,10 +135,13 @@ none
 * Dirty shutdown followups (Davidlohr)
 * Cleanup add_port_attach_ep() "cleanup" confusion (Dan)
   - pending v3?
+  - forgotten...  will be remembered...
 
 ## 6.16 and beyond
 * Hotness driver (Jonathan)
-* vfio-cxl?
+  - might need a sub-call on this; Jonathan to schedule
+* vfio-cxl? (Zhi)
+  - see above...
 
 
 # January 2025
