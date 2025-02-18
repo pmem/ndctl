@@ -80,6 +80,9 @@ none
   - v2 review on going
 * cxl/pmem: debug invalid serial number data (Yuquan)
   - v3 review on going
+* Add cxl reset support (Srirangan)
+  - review on going
+* Dirty shutdown followups (Davidlohr)
 * Cleanup add_port_attach_ep() "cleanup" confusion (Dan)
   - pending v3?
 
