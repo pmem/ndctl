@@ -13,6 +13,38 @@ layout: page
 * Do follow-up on linux-cxl@vger.kernel.org for longer questions / debug
 * https://pmem.io/ndctl/collab/
 
+# February 2025
+* Opens
+* cxl-cli
+* QEMU
+* v6.14 rc fixes
+* v6.15 merge window
+* v6.16 and beyond
+
+
+## Opens
+
+
+## cxl-cli / user tools
+* v81 is open with misc fixups
+* Need review on build and coverity fixups on list
+* New features in review:
+  * ndctl: Introduce sanitize-memdev functionality (Davidlohr)
+	https://lore.kernel.org/linux-cxl/20240928211643.140264-1-dave@stgolabs.net/
+  * ndctl: Dynamic Capacity additions for cxl-cli (Ira)
+	https://lore.kernel.org/nvdimm/20241214-dcd-region2-v4-0-36550a97f8e2@intel.com
+  * ndctl: Add support and test for CXL Features support (DaveJ)
+	https://lore.kernel.org/linux-cxl/20250207234718.2387622-1-dave.jiang@intel.com/
+  * ndctl: Add inject-error command (Ben)
+	https://lore.kernel.org/nvdimm/20250108215749.181852-1-Benjamin.Cheatham@amd.com/
+
+
+## QEMU
+## v6.14 rc fixes
+## v6.15 merge window
+## v6.16 and beyond
+
+
 # January 2025
 * Opens
 * cxl-cli
