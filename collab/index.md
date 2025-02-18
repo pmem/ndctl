@@ -21,11 +21,10 @@ layout: page
 * v6.15 merge window
 * v6.16 and beyond
 
-
 ## Opens
 
-
 ## cxl-cli / user tools
+
 * v81 is open with misc fixups
 * Need review on build and coverity fixups on list
 * New features in review:
@@ -38,11 +37,55 @@ layout: page
   * ndctl: Add inject-error command (Ben)
 	https://lore.kernel.org/nvdimm/20250108215749.181852-1-Benjamin.Cheatham@amd.com/
 
-
 ## QEMU
+
 ## v6.14 rc fixes
-## v6.15 merge window
-## v6.16 and beyond
+none
+
+## 6.15 in cxl/next
+* Add support for Global Persistent Flush (GPF)
+* Cleanup of DPA partition metadata handling
+* Removed unused CXL partition values
+* Refactor user ioctl command path from mds to cxl_mailbox
+* Add logging support for CXL CPER endpoint and port protocol errors
+* Remove redundant gp_port init
+
+## 6.15 merge window
+* Rest of DCD series (Ira)
+  - pending v9
+* Support background operation abort requests (Davidlohr)
+  - Pending v2
+* CXL PCIe port protocol error handling and logging (Terry)
+  - v7 posted, review on going
+* Type2 device support (Alejandro)
+  - v10 posted, review on going
+* Trace FW-First CXL Protocol Errors (Smita)
+  - 1-4 in cxl/next. 4&5 needs more work
+* cxl: Add address translation support and enable AMD Zen5 platforms (Robert)
+  - Part 1&2 v2 posted
+  - Review on going
+* Update soft reserved resource handling (Nathan, Alison)
+  - v2 is posted. Review on going?
+* Introduce generic EDAC RAS control feature driver (Shiju)
+  - v19 posted. Review ongoing?
+* FWCTL CXL (Dave)
+  - pending v6
+* Add exclusive caching enumeration and RAS support (Dave)
+  - v3 posted, minor changes requested from Ming. Need Dan's review
+* Enable Region creation on x86 with Low Mem Hole (Fabio)
+  - v2 posted, review ongoing.
+* cxl: factor out cxl_await_range_active() and cxl_media_ready() (Zhi)
+  - pending v3?
+* Use guard() instead of rwsem locking cleanup series (Ming)
+  - v2 review on going
+* cxl/pmem: debug invalid serial number data (Yuquan)
+  - v3 review on going
+* Cleanup add_port_attach_ep() "cleanup" confusion (Dan)
+  - pending v3?
+
+## 6.16 and beyond
+* Hotness driver (Jonathan)
+* vfio-cxl?
 
 
 # January 2025
