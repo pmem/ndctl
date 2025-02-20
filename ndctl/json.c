@@ -381,7 +381,7 @@ struct json_object *util_region_capabilities_to_json(struct ndctl_region *region
 	struct ndctl_pfn *pfn = ndctl_region_get_pfn_seed(region);
 	struct ndctl_dax *dax = ndctl_region_get_dax_seed(region);
 
-	if (!btt || !pfn || !dax)
+	if (!btt && !pfn && !dax)
 		return NULL;
 
 	jcaps = json_object_new_array();
