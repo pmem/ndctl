@@ -2134,7 +2134,7 @@ static int do_xaction_namespace(const char *namespace,
 				util_display_json_array(ri_ctx.f_out, ri_ctx.jblocks, 0);
 			if (rc >= 0)
 				(*processed)++;
-			return rc;
+			goto out_close;
 		}
 	}
 
@@ -2145,11 +2145,11 @@ static int do_xaction_namespace(const char *namespace,
 		rc = file_write_infoblock(param.outfile);
 		if (rc >= 0)
 			(*processed)++;
-		return rc;
+		goto out_close;
 	}
 
 	if (!namespace && action != ACTION_CREATE)
-		return rc;
+		goto out_close;
 
 	if (namespace && (strcmp(namespace, "all") == 0))
 		rc = 0;
@@ -2208,7 +2208,7 @@ static int do_xaction_namespace(const char *namespace,
 						saved_rc = rc;
 						continue;
 				}
-				return rc;
+				goto out_close;
 			}
 			ndctl_namespace_foreach_safe(region, ndns, _n) {
 				ndns_name = ndctl_namespace_get_devname(ndns);
@@ -2287,9 +2287,6 @@ static int do_xaction_namespace(const char *namespace,
 	if (ri_ctx.jblocks)
 		util_display_json_array(ri_ctx.f_out, ri_ctx.jblocks, 0);
 
-	if (ri_ctx.f_out && ri_ctx.f_out != stdout)
-		fclose(ri_ctx.f_out);
-
 	if (action == ACTION_CREATE && rc == -EAGAIN) {
 		/*
 		 * Namespace creation searched through all candidate
@@ -2304,6 +2301,10 @@ static int do_xaction_namespace(const char *namespace,
 		else
 			rc = -ENOSPC;
 	}
+
+out_close:
+	if (ri_ctx.f_out && ri_ctx.f_out != stdout)
+		fclose(ri_ctx.f_out);
 	if (saved_rc)
 		rc = saved_rc;
 
