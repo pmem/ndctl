@@ -97,7 +97,7 @@ static struct json_object *dump_label_json(struct ndctl_dimm *dimm,
 	struct json_object *jlabel = NULL;
 	struct namespace_label nslabel;
 	unsigned int nsindex_size;
-	unsigned int slot = -1;
+	unsigned int slot = 0;
 	ssize_t offset;
 
 	if (!jarray)
@@ -108,14 +108,13 @@ static struct json_object *dump_label_json(struct ndctl_dimm *dimm,
 		return NULL;
 
 	for (offset = nsindex_size * 2; offset < size;
-			offset += ndctl_dimm_sizeof_namespace_label(dimm)) {
+	     offset += ndctl_dimm_sizeof_namespace_label(dimm), slot++) {
 		ssize_t len = min_t(ssize_t,
 				ndctl_dimm_sizeof_namespace_label(dimm),
 				size - offset);
 		struct json_object *jobj;
 		char uuid[40];
 
-		slot++;
 		jlabel = json_object_new_object();
 		if (!jlabel)
 			break;
