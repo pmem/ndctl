@@ -1873,6 +1873,10 @@ static int write_pfn_sb(int fd, unsigned long long size, const char *sig,
 	int rc;
 
 	start = parse_size64(param.offset);
+	if (start == ULLONG_MAX) {
+		err("failed to parse offset option '%s'\n", param.offset);
+		return -EINVAL;
+	}
 	npfns = PHYS_PFN(size - SZ_8K);
 	pfn_align = parse_size64(param.align);
 	align = max(pfn_align, SUBSECTION_SIZE);
@@ -1914,6 +1918,10 @@ static int write_pfn_sb(int fd, unsigned long long size, const char *sig,
 		 * struct page size. But we also want to make sure we notice
 		 * when we end up adding new elements to struct page.
 		 */
+		if (start > ULLONG_MAX - (SZ_8K + MAX_STRUCT_PAGE_SIZE * npfns)) {
+			error("integer overflow in offset calculation\n");
+			return -EINVAL;
+		}
 		offset = ALIGN(start + SZ_8K + MAX_STRUCT_PAGE_SIZE * npfns, align)
 			- start;
 	} else
