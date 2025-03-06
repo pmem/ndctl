@@ -2087,7 +2087,11 @@ static int namespace_rw_infoblock(struct ndctl_namespace *ndns,
 			unsigned long long size = parse_size64(param.size);
 			align = parse_size64(param.align);
 
-			if (align < ULLONG_MAX && !IS_ALIGNED(size, align)) {
+			if (align == 0 || align == ULLONG_MAX) {
+				error("invalid alignment:%s\n", param.align);
+				rc = -EINVAL;
+			}
+			if (!IS_ALIGNED(size, align)) {
 				error("--size=%s not aligned to %s\n", param.size,
 					param.align);
 
