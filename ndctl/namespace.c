@@ -868,6 +868,13 @@ static int validate_namespace_options(struct ndctl_region *region,
 
 		p->size /= size_align;
 		p->size++;
+
+		if (p->size > ULLONG_MAX / size_align) {
+			err("size overflow: %llu * %llu exceeds ULLONG_MAX\n",
+			    p->size, size_align);
+			return -EINVAL;
+		}
+
 		p->size *= size_align;
 		p->size /= units;
 		err("'--size=' must align to interleave-width: %d and alignment: %ld\n"
