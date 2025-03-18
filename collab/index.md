@@ -13,6 +13,65 @@ layout: page
 * Do follow-up on linux-cxl@vger.kernel.org for longer questions / debug
 * https://pmem.io/ndctl/collab/
 
+
+# March 2025
+* Opens
+* cxl-cli
+* QEMU
+* v6.14 rc fixes
+* v6.15 merge window
+* v6.16 and beyond
+
+## Opens
+
+## cxl-cli / user tools
+* v81 is queued up with misc fixups.
+* New features on the list:
+  * ndctl: Introduce sanitize-memdev functionality (Davidlohr)
+	Pending an update from David
+  * ndctl: Dynamic Capacity additions for cxl-cli (Ira)
+	Simmering waiting for entry into cxl/next
+  * ndctl: Add support and test for CXL Features support (DaveJ)
+	Simmering waiting for all the pieces to come together for test and review
+  * ndctl: Add inject-error command (Ben)
+	Pending an update from Ben
+
+## QEMU
+
+## v6.14 rc fixes
+none
+
+## 6.15 in cxl/next
+a lot
+
+## 6.15 merge window
+* Intentionally blank. Pull things up that are likely for 6.15.
+
+## v6.16 and beyond
+* cxl: Add address translation support and enable AMD Zen5 platforms (Robert)
+* Update soft reserved resource handling - v3 pending (s/Nathan/Terry)
+* CXL PCIe port protocol error handling and logging (Terry)
+* Introduce generic EDAC RAS control feature driver (Shiju)
+* Support background operation abort requests (Davidlohr)
+* Enable Region creation on x86 with Low Mem Hole (Fabio)
+* Type2 device support (Alejandro)
+* Rest of DCD series (Ira)
+* FWCTL CXL (Dave)
+* Allow 6 & 12 way regions on 3-way HB interleaves (Alison)
+* Translate DPA->HPA in unaligned MOD3 regions (Alison)
+* Trace FW-First CXL Protocol Errors (Smita)
+  DONE ???
+* cxl: factor out cxl_await_range_active() and cxl_media_ready() (Zhi)
+* vfio-cxl type 2 (Zhi)
+* cxl/pmem: debug invalid serial number data (Yuquan)
+* Add cxl reset support (Srirangan)
+* Dirty shutdown followups (Davidlohr)
+* Cleanup add_port_attach_ep() "cleanup" confusion (Dan)
+* Hotness Driver (Jonathan)
+
+
+
+
 # February 2025
 * Opens
 * cxl-cli
