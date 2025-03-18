@@ -24,11 +24,31 @@ layout: page
 
 ## Opens
 - Mixed granularity in x3 regions (Alison)
+  - posted on the list 6&12 way regions
+  - fix is limited
+    - this is fine but could this be simpler by relaxing ordering constraints?
+    - perhaps this makes no difference at all?
+  - way back - mismatch - interleave was "backwards"
+    - course vs fine
+  - if there are other use cases of x3 - please review her patch
+- LSFmm -- Intel attendees?
+  - DCD?
+  - Dan should be there
+  - CXL specific session?
+    - 1 hour might be better than 1/2
+  - device specific stuff maybe in the hallway track?
+  - Gregory to focus on external to the driver
+  - General CXL discussions 80% on external with maybe 20% internal driver stuff
+  - chime in on the ML on what you would like to see
+
 
 ## cxl-cli / user tools
 * v81 is queued up with misc fixups.
 * New features on the list:
+  Davidlohr
   * ndctl: Introduce sanitize-memdev functionality (Davidlohr)
+  Dave J.
+  * fwctl changes?
   Pending an update from David
   * ndctl: Dynamic Capacity additions for cxl-cli (Ira)
 	Simmering waiting for entry into cxl/next
@@ -37,7 +57,23 @@ layout: page
   * ndctl: Add inject-error command (Ben)
 	Pending an update from Ben
 
+
 ## QEMU
+Missed Michael's merge window
+* queued up for next cycle
+* DCD FM api stuff
+  - interacts with Gregory FM stuff
+  - idealy would be connected eventually
+* Who is using DCD/qemu
+  * Jonathan has always tested DCD with qemu
+  * Terry, Adam, and John Groves all using qemu DCD
+  * Adam -- DCD would be nice for compression
+    - Yiannis -- some concerns due to lack of use case for DCD
+  * John G. allocations from 0 within same tag - similar to storage but not exactly the same
+* ARM support review needed
+  - got blocked way back for device tree support - relaxed
+* hotpage support
+  - please chime in if you are interested
 
 ## v6.14 rc fixes
 none
@@ -73,10 +109,14 @@ Newly added:
   - v3 of part2 pending?
 * Update soft reserved resource handling (Nathan -> Terry)
   - v3 pending
+  - next version this week
 * CXL PCIe port protocol error handling and logging (Terry)
   - v8 pending?
+  - tomorrow...
 * Support CXL memory RAS features - EDAC (Shiju)
-  - pending v2?
+  - pending v2?  (AKA v24 ...  ;-)
+  - core support landed
+    - yay!  can do this now
 * Support background operation abort requests (Davidlohr)
   - pending v2?
 * Enable Region creation on x86 with Low Mem Hole (Fabio)
@@ -87,20 +127,60 @@ Newly added:
     window.
 * Rest of DCD series (Ira)
   - Pending type2 acceptance
+  - look for another version after the merge window
+    - will be watered down from previous version
+  - need use cases beyond the spec
+  - The cost of not merging this is that nothing is being built above it
+  - Several CPU vendors talking about hot add/remove
+    - is DCD a way to get around this?
+  - flush cost limits things
+  - a motivation is to decouple decoder programming from on/off lining memory
+  - entire provisioning mechanism is DCD with CXL 3 - endpoint
+  - use case order is important as well
+  - Linus/mm folks won't care -- But Dan wants the folks shipping products to stand up.
 * Allow 6 & 12 way regions on 3-way HB interleaves (Alison)
   - Pending v3?
+  - already discussed above (in opens)
 * Translate DPA->HPA in unaligned MOD3 regions (Alison)
   - v1 needs review
 * cxl: factor out cxl_await_range_active() and cxl_media_ready() (Zhi)
   - Pending next rev?
 * Add cxl reset support (Srirangan)
   - Pending review
+  - PCIe folks looking at this...
 * Cleanup add_port_attach_ep() "cleanup" confusion (Dan)
+  - Dan needs to review
 
 ## RFC
 * vfio-cxl type 2 (Zhi)
   - Pending next rev
+  - Zhi could not make the call
 * Hotness Driver (Jonathan)
+  - lots to do here
+  - Combining all hotness features CXL and beyond - Discuss at LSFmm
+    - DAMON...  NO... ?
+      - one options on the table
+    - save it for LSFmm
+
+* boot to bash
+  - Gregory's documentation journey
+  - kernel docs?
+    - AI will pick it up from there.
+  - CEDT recipes?
+  - good feedback on this
+  - LSFmm session will focus on how Linux expects things to be configured
+    - memory blocks vs region alignment -> lose memory
+    - Theory vs how Linux really works
+  - All of the complication comes from BIOS and OS interactions after BIOS sets things up
+    - Need OS first!!!
+    - ACPI tables need to be correct.
+    - <sigh>  backwards compatibility...
+  - please tear the docs appart if you think it is wrong
+
+* FAMfs is running under FUSE!
+  - patch to libfuse
+  - may have a branch before LSF
+
 
 # February 2025
 * Opens
