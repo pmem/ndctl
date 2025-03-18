@@ -23,12 +23,13 @@ layout: page
 * v6.16 and beyond
 
 ## Opens
+- Mixed granularity in x3 regions (Alison)
 
 ## cxl-cli / user tools
 * v81 is queued up with misc fixups.
 * New features on the list:
   * ndctl: Introduce sanitize-memdev functionality (Davidlohr)
-	Pending an update from David
+  Pending an update from David
   * ndctl: Dynamic Capacity additions for cxl-cli (Ira)
 	Simmering waiting for entry into cxl/next
   * ndctl: Add support and test for CXL Features support (DaveJ)
@@ -42,35 +43,64 @@ layout: page
 none
 
 ## 6.15 in cxl/next
-a lot
+Already in from last meeting:
+* Add support for Global Persistent Flush (GPF)
+* Cleanup of DPA partition metadata handling
+* Removed unused CXL partition values
+* Refactor user ioctl command path from mds to cxl_mailbox
+* Add logging support for CXL CPER endpoint and port protocol errors
+* Remove redundant gp_port init
 
-## 6.15 merge window
-* Intentionally blank. Pull things up that are likely for 6.15.
+Newly added:
+* Cleanup of gotos using guard() series
+* Validation of CXL device serial number
+* CXL ABI documentation update/fixups
+* CXL Features support (First part of CXL FWCTL support)
+  - FWCTL specific CXL bits will be pushed by Jason G.
+* Additional support for dirty shutdowns
+* Extended Linear Cache enumeration and RAS support
+* Last 2 patches from Smita for firmware first error logging
+* cxl_test to support 3-way capable CFMWS
+* Documentation fix to remove "mixed mode"
+
+## 6.15 merge window considerations
+* 6.15 merge window closed for large series.
+* May still take small changes or fixes that are urgent.
 
 ## v6.16 and beyond
 * cxl: Add address translation support and enable AMD Zen5 platforms (Robert)
-* Update soft reserved resource handling - v3 pending (s/Nathan/Terry)
+  - v4 of part1 in review
+  - v3 of part2 pending?
+* Update soft reserved resource handling (Nathan -> Terry)
+  - v3 pending
 * CXL PCIe port protocol error handling and logging (Terry)
-* Introduce generic EDAC RAS control feature driver (Shiju)
+  - v8 pending?
+* Support CXL memory RAS features - EDAC (Shiju)
+  - pending v2?
 * Support background operation abort requests (Davidlohr)
+  - pending v2?
 * Enable Region creation on x86 with Low Mem Hole (Fabio)
+  - v3 posted, under review. Would like this queued for cxl/next after merge 
+    window.
 * Type2 device support (Alejandro)
+  - v11 posted. Under review. Would like this queued for cxl/next next merge 
+    window.
 * Rest of DCD series (Ira)
-* FWCTL CXL (Dave)
+  - Pending type2 acceptance
 * Allow 6 & 12 way regions on 3-way HB interleaves (Alison)
+  - Pending v3?
 * Translate DPA->HPA in unaligned MOD3 regions (Alison)
-* Trace FW-First CXL Protocol Errors (Smita)
-  DONE ???
+  - v1 needs review
 * cxl: factor out cxl_await_range_active() and cxl_media_ready() (Zhi)
-* vfio-cxl type 2 (Zhi)
-* cxl/pmem: debug invalid serial number data (Yuquan)
+  - Pending next rev?
 * Add cxl reset support (Srirangan)
-* Dirty shutdown followups (Davidlohr)
+  - Pending review
 * Cleanup add_port_attach_ep() "cleanup" confusion (Dan)
+
+## RFC
+* vfio-cxl type 2 (Zhi)
+  - Pending next rev
 * Hotness Driver (Jonathan)
-
-
-
 
 # February 2025
 * Opens
