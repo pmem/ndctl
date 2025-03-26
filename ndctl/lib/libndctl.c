@@ -50,7 +50,7 @@ NDCTL_EXPORT size_t ndctl_sizeof_namespace_index(void)
 }
 
 /**
- * ndctl_min_namespace_size - minimum namespace size that btt suports
+ * ndctl_min_namespace_size - minimum namespace size that btt supports
  */
 NDCTL_EXPORT size_t ndctl_min_namespace_size(void)
 {
@@ -3184,7 +3184,7 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_read(struct ndctl_cmd *cfg
 
 	if (cfg_size->type != ND_CMD_GET_CONFIG_SIZE
 			|| cfg_size->status != 0) {
-		dbg(ctx, "expected sucessfully completed cfg_size command\n");
+		dbg(ctx, "expected successfully completed cfg_size command\n");
 		return NULL;
 	}
 
@@ -3275,7 +3275,7 @@ NDCTL_EXPORT struct ndctl_cmd *ndctl_dimm_cmd_new_cfg_write(struct ndctl_cmd *cf
 	/* enforce rmw */
 	if (cfg_read->type != ND_CMD_GET_CONFIG_DATA
 		       || cfg_read->status != 0) {
-		dbg(ctx, "expected sucessfully completed cfg_read command\n");
+		dbg(ctx, "expected successfully completed cfg_read command\n");
 		return NULL;
 	}
 
@@ -4694,7 +4694,7 @@ NDCTL_EXPORT int ndctl_namespace_disable_safe(struct ndctl_namespace *ndns)
 			 * Yes, TOCTOU hole, but if you're racing namespace
 			 * creation you have other problems, and there's nothing
 			 * stopping the !bdev case from racing to mount an fs or
-			 * re-enabling the namepace.
+			 * re-enabling the namespace.
 			 */
 			dbg(ctx, "%s: %s failed exclusive open: %s\n",
 					devname, bdev, strerror(errno));

@@ -650,7 +650,7 @@ param_size_to_volatile_size(const char *devname, enum cxl_setpart_type type,
 }
 
 /*
- * Return the volatile_size to use in the CXL set paritition
+ * Return the volatile_size to use in the CXL set partition
  * command, or ULLONG_MAX if unable to validate the partition
  * request.
  */

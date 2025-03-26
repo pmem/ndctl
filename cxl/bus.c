@@ -100,7 +100,7 @@ static int bus_action(int argc, const char **argv, struct cxl_ctx *ctx,
 		if (sscanf(argv[i], "%lu", &id) == 1)
 			continue;
 
-		log_err(&bl, "'%s' is not a valid bus identifer\n", argv[i]);
+		log_err(&bl, "'%s' is not a valid bus identifier\n", argv[i]);
 		err++;
 	}
 

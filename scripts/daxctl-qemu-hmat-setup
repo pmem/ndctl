@@ -28,7 +28,7 @@ cat <<EOF > hmat.dsl
            Asl Compiler Revision : 20170929
                         Reserved : 00000000
 
-                  Structure Type : 0000 [Memory Subystem Address Range]
+                  Structure Type : 0000 [Memory Subsystem Address Range]
                         Reserved : 0000
                           Length : 00000028
            Flags (decoded below) : 0003
@@ -42,7 +42,7 @@ Processor Proximity Domain Valid : 1
      Physical Address Range Base : 0000000000000000
      Physical Address Range Size : 00000000000A0000
 
-                  Structure Type : 0000 [Memory Subystem Address Range]
+                  Structure Type : 0000 [Memory Subsystem Address Range]
                         Reserved : 0000
                           Length : 00000028
            Flags (decoded below) : 0003
@@ -61,7 +61,7 @@ for i in $(seq 1 $((TARGETS - 1))); do
   BASE=$(printf "%016x" $((0x8000000 * i)))
 cat <<EOF >> hmat.dsl
 
-                  Structure Type : 0000 [Memory Subystem Address Range]
+                  Structure Type : 0000 [Memory Subsystem Address Range]
                         Reserved : 0000
                           Length : 00000028
            Flags (decoded below) : 0003

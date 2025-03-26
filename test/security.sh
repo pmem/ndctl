@@ -250,7 +250,7 @@ echo "Test 5, freeze security"
 test_5_security_freeze
 
 # Load-keys is independent of actual nvdimm security and is part of key
-# mangement testing.
+# management testing.
 echo "Test 6, test load-keys"
 test_6_load_keys
 

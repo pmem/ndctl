@@ -1074,7 +1074,7 @@ static int action_sanitize_dimm(struct ndctl_dimm *dimm,
 	if (!param.crypto_erase && !param.overwrite) {
 		param.crypto_erase = true;
 		if (param.verbose)
-			fprintf(stderr, "No santize method passed in, default to crypto-erase\n");
+			fprintf(stderr, "No sanitize method passed in, default to crypto-erase\n");
 	}
 
 	if (param.crypto_erase) {
