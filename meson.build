@@ -158,9 +158,9 @@ if get_option('docs').enabled()
 endif
 
 if get_option('systemd').enabled()
-  systemd = dependency('systemd', required : true)
+  systemd = dependency('libsystemd', required : true)
   systemdunitdir = systemd.get_pkgconfig_variable('systemdsystemunitdir')
-  udev = dependency('udev', required : true)
+  udev = dependency('libudev', required : true)
   udevdir = udev.get_pkgconfig_variable('udevdir')
   udevrulesdir = udevdir / 'rules.d'
 endif
