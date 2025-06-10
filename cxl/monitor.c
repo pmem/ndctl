@@ -65,7 +65,7 @@ static int monitor_event(struct cxl_ctx *ctx)
 	inst = tracefs_instance_create("cxl_monitor");
 	if (!inst) {
 		rc = -errno;
-		err(&monitor, "tracefs_instance_create( failed: %d\n", rc);
+		err(&monitor, "tracefs_instance_create() failed: %d\n", rc);
 		goto inst_err;
 	}
 
