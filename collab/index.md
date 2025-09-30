@@ -7,10 +7,12 @@ layout: page
 * Do not share confidential information
 * Do not share confidential product details
 * Do not disclose CXL consortium confidential information
+
 * Do discuss any Linux questions about **released** CXL specifications:
   * [https://www.computeexpresslink.org/spec-landing](https://www.computeexpresslink.org/spec-landing)
 * Do use Discord as a supplement for this sync meeting for quick questions
 * Do follow-up on linux-cxl@vger.kernel.org for longer questions / debug
+
 * https://pmem.io/ndctl/collab/
 
 # October(ish) 2025
