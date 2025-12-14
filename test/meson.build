@@ -213,6 +213,7 @@ if get_option('destructive').enabled()
   device_dax_fio = find_program('device-dax-fio.sh')
   daxctl_devices = find_program('daxctl-devices.sh')
   daxctl_create = find_program('daxctl-create.sh')
+  daxctl_famfs = find_program('daxctl-famfs.sh')
   dm = find_program('dm.sh')
   mmap_test = find_program('mmap.sh')
 
@@ -230,6 +231,7 @@ if get_option('destructive').enabled()
     [ 'device-dax-fio.sh', device_dax_fio, 'dax'   ],
     [ 'daxctl-devices.sh', daxctl_devices, 'dax'   ],
     [ 'daxctl-create.sh',  daxctl_create,  'dax'   ],
+    [ 'daxctl-famfs.sh',   daxctl_famfs,   'dax'   ],
     [ 'dm.sh',             dm,		   'dax'   ],
     [ 'mmap.sh',           mmap_test,	   'dax'   ],
   ]

@@ -48,6 +48,8 @@ struct json_object *util_daxctl_dev_to_json(struct daxctl_dev *dev,
 
 	if (mem)
 		jobj = json_object_new_string("system-ram");
+	else if (daxctl_dev_is_famfs_capable(dev))
+		jobj = json_object_new_string("famfs");
 	else
 		jobj = json_object_new_string("devdax");
 	if (jobj)
