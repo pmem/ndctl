@@ -107,6 +107,11 @@ global:
 
 LIBDAXCTL_11 {
 global:
-	daxctl_dev_is_famfs_capable;
 	daxctl_dev_enable_famfs;
 } LIBDAXCTL_10;
+
+LIBDAXCTL_12 {
+global:
+	daxctl_dev_is_famfs_mode;
+	daxctl_dev_is_devdax_mode;
+} LIBDAXCTL_11;

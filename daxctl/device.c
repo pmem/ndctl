@@ -704,13 +704,15 @@ static int disable_devdax_device(struct daxctl_dev *dev)
 	int rc;
 
 	if (mem) {
-		fprintf(stderr, "%s is in system-ram mode\n",
-			devname);
+		fprintf(stderr, "%s is in system-ram mode\n", devname);
 		return 1;
 	}
-	if (daxctl_dev_is_famfs_capable(dev)) {
-		fprintf(stderr, "%s is in famfs mode\n",
-			devname);
+	if (daxctl_dev_is_famfs_mode(dev)) {
+		fprintf(stderr, "%s is in famfs mode\n", devname);
+		return 1;
+	}
+	if (!daxctl_dev_is_devdax_mode(dev)) {
+		fprintf(stderr, "%s is not in devdax mode\n", devname);
 		return 1;
 	}
 	rc = daxctl_dev_disable(dev);
@@ -729,13 +731,15 @@ static int disable_famfs_device(struct daxctl_dev *dev)
 	int rc;
 
 	if (mem) {
-		fprintf(stderr, "%s is in system-ram mode\n",
-			devname);
+		fprintf(stderr, "%s is in system-ram mode\n", devname);
 		return 1;
 	}
-	if (!daxctl_dev_is_famfs_capable(dev)) {
-		fprintf(stderr, "%s is in devdax mode\n",
-			devname);
+	if (daxctl_dev_is_devdax_mode(dev)) {
+		fprintf(stderr, "%s is in devdax mode\n", devname);
+		return 1;
+	}
+	if (!daxctl_dev_is_famfs_mode(dev)) {
+		fprintf(stderr, "%s is not in famfs mode\n", devname);
 		return 1;
 	}
 	rc = daxctl_dev_disable(dev);
@@ -766,14 +770,17 @@ static int reconfig_mode_system_ram(struct daxctl_dev *dev)
 		if (mem) {
 			/* already in system-ram mode */
 			skip_enable = 1;
-		} else if (daxctl_dev_is_famfs_capable(dev)) {
+		} else if (daxctl_dev_is_famfs_mode(dev)) {
 			rc = disable_famfs_device(dev);
 			if (rc)
 				return rc;
-		} else {
+		} else if (daxctl_dev_is_devdax_mode(dev)) {
 			rc = disable_devdax_device(dev);
 			if (rc)
 				return rc;
+		} else {
+			fprintf(stderr, "%s: unknown mode\n", devname);
+			return -EINVAL;
 		}
 	}
 
@@ -796,7 +803,7 @@ static int disable_system_ram_device(struct daxctl_dev *dev)
 	int rc;
 
 	if (!mem) {
-		fprintf(stderr, "%s was already in devdax mode\n", devname);
+		fprintf(stderr, "%s is not in system-ram mode\n", devname);
 		return 1;
 	}
 
@@ -833,6 +840,7 @@ static int disable_system_ram_device(struct daxctl_dev *dev)
 static int reconfig_mode_devdax(struct daxctl_dev *dev)
 {
 	struct daxctl_memory *mem = daxctl_dev_get_memory(dev);
+	const char *devname = daxctl_dev_get_devname(dev);
 	int rc;
 
 	if (daxctl_dev_is_enabled(dev)) {
@@ -840,15 +848,18 @@ static int reconfig_mode_devdax(struct daxctl_dev *dev)
 			rc = disable_system_ram_device(dev);
 			if (rc)
 				return rc;
-		} else if (daxctl_dev_is_famfs_capable(dev)) {
+		} else if (daxctl_dev_is_famfs_mode(dev)) {
 			rc = disable_famfs_device(dev);
 			if (rc)
 				return rc;
-		} else {
+		} else if (daxctl_dev_is_devdax_mode(dev)) {
 			/* already in devdax mode, just re-enable */
 			rc = daxctl_dev_disable(dev);
 			if (rc)
 				return rc;
+		} else {
+			fprintf(stderr, "%s: unknown mode\n", devname);
+			return -EINVAL;
 		}
 	}
 
@@ -871,15 +882,18 @@ static int reconfig_mode_famfs(struct daxctl_dev *dev)
 				"%s is in system-ram mode, must be in devdax mode to convert to famfs\n",
 				devname);
 			return -EINVAL;
-		} else if (daxctl_dev_is_famfs_capable(dev)) {
+		} else if (daxctl_dev_is_famfs_mode(dev)) {
 			/* already in famfs mode, just re-enable */
 			rc = daxctl_dev_disable(dev);
 			if (rc)
 				return rc;
-		} else {
+		} else if (daxctl_dev_is_devdax_mode(dev)) {
 			rc = disable_devdax_device(dev);
 			if (rc)
 				return rc;
+		} else {
+			fprintf(stderr, "%s: unknown mode\n", devname);
+			return -EINVAL;
 		}
 	}
 
