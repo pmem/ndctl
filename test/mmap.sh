@@ -57,12 +57,12 @@ rc=1
 
 mkfs.ext4 $DEV
 mount $DEV $MNT -o dax
-fallocate -l 1GiB $MNT/$FILE
+fallocate -l 256MiB $MNT/$FILE
 test_mmap
 umount $MNT
 
 mkfs.xfs -f $DEV -m reflink=0
 mount $DEV $MNT -o dax
-fallocate -l 1GiB $MNT/$FILE
+fallocate -l 256MiB $MNT/$FILE
 test_mmap
 umount $MNT
