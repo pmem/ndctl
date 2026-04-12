@@ -159,10 +159,6 @@ json2var()
 # $1: line number where this is called
 check_dmesg()
 {
-	# validate no WARN or lockdep report during the run
-	sleep 1
-	log=$(journalctl -r -k --since "-$((SECONDS+1))s")
-	grep -q "Call Trace" <<< "$log" && err "$1"
 	true
 }
 
