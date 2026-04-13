@@ -9,6 +9,16 @@ rc=77
 
 trap 'cleanup $LINENO' ERR
 
+# Use cxl-test module to get the DAX device of the CXL auto region,
+# which also makes this test NON destructive.
+#
+# The $CXL list below is a delay because find_daxdev() was not
+# finding the DAX region without it.
+#
+modprobe -r cxl-test
+modprobe cxl-test
+$CXL list
+
 daxdev=""
 original_mode=""
 
