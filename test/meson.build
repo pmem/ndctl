@@ -150,6 +150,7 @@ sector_mode = find_program('sector-mode.sh')
 inject_error = find_program('inject-error.sh')
 btt_errors = find_program('btt-errors.sh')
 btt_pad_compat = find_program('btt-pad-compat.sh')
+btt_stress = find_program('btt-stress.sh')
 firmware_update = find_program('firmware-update.sh')
 rescan_partitions = find_program('rescan-partitions.sh')
 inject_smart = find_program('inject-smart.sh')
@@ -185,6 +186,7 @@ tests = [
   [ 'sector-mode.sh',         sector_mode,        'ndctl' ],
   [ 'inject-error.sh',        inject_error,	  'ndctl' ],
   [ 'btt-errors.sh',          btt_errors,	  'ndctl' ],
+  [ 'btt-stress.sh',          btt_stress,	  'ndctl' ],
   [ 'hugetlb',                hugetlb,		  'ndctl' ],
   [ 'btt-pad-compat.sh',      btt_pad_compat,	  'ndctl' ],
   [ 'ack-shutdown-count-set', ack_shutdown_count, 'ndctl' ],
