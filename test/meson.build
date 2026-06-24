@@ -139,6 +139,11 @@ revoke_devmem = executable('revoke_devmem', testcore + [
 
 mmap = executable('mmap', 'mmap.c',)
 
+cxl_mbox = executable('cxl-mbox', 'cxl-mbox.c',
+  dependencies : libcxl_deps,
+  include_directories : root_inc,
+)
+
 create = find_program('create.sh')
 clear = find_program('clear.sh')
 pmem_errors = find_program('pmem-errors.sh')
@@ -173,6 +178,7 @@ cxl_elc = find_program('cxl-elc.sh')
 cxl_dax_hmem = find_program('cxl-dax-hmem.sh')
 cxl_region_replay = find_program('cxl-region-replay.sh')
 cxl_type2 = find_program('cxl-type2.sh')
+cxl_mbox_sh = find_program('cxl-mbox.sh')
 
 tests = [
   [ 'libndctl',               libndctl,		  'ndctl' ],
@@ -211,6 +217,7 @@ tests = [
   [ 'cxl-dax-hmem.sh',        cxl_dax_hmem,       'cxl'   ],
   [ 'cxl-region-replay.sh',   cxl_region_replay,  'cxl'   ],
   [ 'cxl-type2.sh',           cxl_type2,          'cxl'   ],
+  [ 'cxl-mbox.sh',            cxl_mbox_sh,        'cxl'   ],
 ]
 
 if get_option('destructive').enabled()
@@ -292,6 +299,7 @@ tests_deps = [
   daxdev_errors,
   dax_dev,
   mmap,
+  cxl_mbox,
 ]
 
 if get_option('fwctl').enabled()
