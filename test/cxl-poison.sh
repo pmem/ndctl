@@ -219,6 +219,45 @@ test_poison_by_region_offset_negative()
 	clear_poison "$region" "$large_offset" true
 }
 
+# Backstop a driver fix where a fully mapped partition prematurely
+# terminated the unmapped poison scan.
+test_poison_unmapped_later_partition()
+{
+	local decoder ram_size pmem_dpa region
+
+	check_min_kver "7.4" || return 0
+
+	# Free the auto region to use the ram capacity
+	$CXL destroy-region -f -b "$CXL_TEST_BUS" all
+
+	find_memdev
+
+	# Fully map the ram partition so it has a zero-length unmapped tail
+	decoder=$($CXL list -b "$CXL_TEST_BUS" -D -d root -m "$memdev" |
+		  jq -r ".[] |
+		  select(.volatile_capable == true) |
+		  select(.nr_targets == 1) |
+		  .decoder")
+	[[ -n "$decoder" && "$decoder" != "null" ]] ||
+		do_skip "no x1 volatile decoder found"
+
+	ram_size=$($CXL list -m "$memdev" | jq -r ".[0].ram_size")
+	[[ -n "$ram_size" && "$ram_size" != "null" ]] || err "$LINENO"
+
+	region=$($CXL create-region -t ram -d "$decoder" -m "$memdev" \
+		 -s "$ram_size" | jq -r ".region")
+	[[ -n "$region" && "$region" != "null" ]] || err "$LINENO"
+
+	# Poison the unmapped pmem tail
+	pmem_dpa=$ram_size
+	inject_poison "$memdev" "$pmem_dpa"
+	validate_poison_found "-m $memdev" 1
+	clear_poison "$memdev" "$pmem_dpa"
+	validate_poison_found "-m $memdev" 0
+
+	$CXL destroy-region -f -b "$CXL_TEST_BUS" "$region"
+}
+
 is_unaligned() {
 	local region=$1
 	local hbiw=$2
@@ -332,6 +371,7 @@ run_poison_test()
 		do_skip "test cases requires inject by region kernel support"
 	test_poison_by_region_offset
 	test_poison_by_region_offset_negative
+	test_poison_unmapped_later_partition
 }
 
 modprobe -r cxl_test
