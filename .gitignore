@@ -6,3 +6,4 @@ sles/ndctl.spec
 tags
 cscope.*
 scripts/docsurgeon_parser.sh
+contrib/fedora/config.local

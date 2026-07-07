@@ -1,0 +1,112 @@
+#!/bin/bash -eEx
+#
+# 02-do_build_local_checks <version>
+#
+# PURPOSE: Sanity-check the dist-git workspace state before committing or
+# pushing anything.  Verifies that ndctl.spec has been modified and that
+# the sources and .gitignore files have been staged by 'fedpkg new-sources'.
+#
+# RUN FROM: upstream ndctl repo root
+#
+# TESTABLE WITHOUT BUILDING: run with --check to verify setup only:
+#   ./contrib/fedora/02-do_build_local_checks --check vNN
+#
+# NOTE ON MOCK BUILDS: fedpkg mockbuild is intentionally skipped here.
+# Mock requires local environment setup (mock group membership, Fedora build
+# root configs) that is fragile and painful to maintain for a quarterly
+# workflow.  Script 04 runs a scratch build in Koji instead, which uses
+# Fedora's actual build infrastructure and is more reliable.  If the scratch
+# build fails, nothing will have been pushed to any stable branch yet, so
+# recovery is clean.  See README for details.
+#
+# If this script passes, the workspace is ready to commit and push.
+# If it fails, something went wrong in script 01 -- do not proceed.
+#
+# NEXT STEP: ./contrib/fedora/03-do_build_push <version>
+#
+
+SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=common.sh
+source "$SCRIPTS_DIR/common.sh"
+
+# --- Argument handling ---
+check_only=false
+if [[ "$1" == "--check" ]]; then
+	check_only=true
+	shift
+fi
+
+ver="$1"
+if [[ ! "$ver" ]]; then
+	printf "Usage: %s [--check] <version>  e.g. vNN\n" "$0"
+	printf "  --check: verify setup and paths without checking workspace state\n"
+	exit 1
+fi
+
+# --- Pre-flight checks ---
+load_config
+verify_upstream_repo
+verify_distgit_branch "main"
+preflight_check "$ver"
+
+if $check_only; then
+	printf "Pre-flight checks passed (--check mode, stopping here).\n"
+	exit 0
+fi
+
+# --- Workspace state checks ---
+# These verify that script 01 completed successfully and left dist-git in
+# the expected state before we commit anything.
+
+trap "unwind" ERR
+unwind()
+{
+	# If ndctl.spec was accidentally staged during a partial failure,
+	# unstage it so the workspace is back to a clean state
+	if git -C "$DISTGIT" ls-files --cached ndctl.spec | grep -q ndctl.spec; then
+		git -C "$DISTGIT" reset HEAD ndctl.spec
+	fi
+}
+
+# check_cached: verify a file is staged in the dist-git index.
+# sources and .gitignore are staged by 'fedpkg new-sources' in script 01.
+check_cached()
+{
+	local file="$1"
+	test -f "$DISTGIT/$file"
+	if [[ "$(git -C "$DISTGIT" ls-files --cached "$file")" == "$file" ]]; then
+		printf "  OK (staged):    %s\n" "$file"
+		return
+	else
+		printf "ERROR: Expected '%s' to be staged in dist-git but it is not.\n" "$file"
+		printf "Did 'fedpkg new-sources' run successfully in script 01?\n"
+		exit 1
+	fi
+}
+
+# check_modified: verify a file has unstaged modifications in dist-git.
+# ndctl.spec should be modified but not yet staged -- it gets staged in script 03.
+check_modified()
+{
+	local file="$1"
+	test -f "$DISTGIT/$file"
+	if [[ "$(git -C "$DISTGIT" ls-files --modified "$file")" == "$file" ]]; then
+		printf "  OK (modified):  %s\n" "$file"
+		return
+	else
+		printf "ERROR: Expected '%s' to be modified in dist-git but it is not.\n" "$file"
+		printf "Did script 01 run successfully and update the spec?\n"
+		exit 1
+	fi
+}
+
+printf "Checking dist-git workspace state in: %s\n" "$DISTGIT"
+check_modified "ndctl.spec"
+check_cached "sources"
+check_cached ".gitignore"
+
+# Uncomment to re-enable local build checks (see note above about mock):
+# (cd "$DISTGIT" && fedpkg mockbuild)   # full mock build -- slow but thorough
+# (cd "$DISTGIT" && fedpkg lint -i)     # RPM lint checks
+
+printf "\nAll checks passed. Proceed with:\n  ./contrib/fedora/03-do_build_push %s\n" "$ver"

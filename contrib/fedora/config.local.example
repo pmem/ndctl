@@ -1,0 +1,12 @@
+# contrib/fedora/config.local
+#
+# Local machine configuration for the ndctl Fedora packaging scripts.
+# This file is NOT committed to git (see .gitattributes).
+#
+# SETUP: Copy this file to config.local and fill in your paths.
+#   cp config.local.example config.local
+#
+
+# DISTGIT: path to your local clone of the Fedora dist-git repo
+# This is the repo you cloned with 'fedpkg clone ndctl'
+DISTGIT=~/fedora-pkgs/ndctl

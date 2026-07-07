@@ -1,0 +1,69 @@
+#!/bin/bash -eEx
+#
+# 03-do_build_push <version>
+#
+# PURPOSE: Commit the updated spec/sources in dist-git and push to the 'main'
+# branch on Fedora dist-git.  This is the single push that makes the new
+# version available for all stable branches to merge from.
+#
+# RUN FROM: upstream ndctl repo root
+#
+# TESTABLE WITHOUT BUILDING: run with --check to verify setup only:
+#   ./contrib/fedora/03-do_build_push --check vNN
+#
+# IMPORTANT: This script pushes to dist-git 'main' only.  Script 04 handles
+# merging and pushing to stable branches (f42, f43, f44).  Pushing to main
+# first is critical -- script 04 copies the release files *from main*, so if
+# this step is accidentally done on a stable branch, the other branches would
+# get the old version.
+# (Ask me how I know.  See README: "Script ran on the wrong branch".)
+#
+# NEXT STEP: ./contrib/fedora/04-do_build_branches <version>
+#
+
+SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=common.sh
+source "$SCRIPTS_DIR/common.sh"
+
+# --- Argument handling ---
+check_only=false
+if [[ "$1" == "--check" ]]; then
+	check_only=true
+	shift
+fi
+
+ver="$1"
+if [[ ! "$ver" ]]; then
+	printf "Usage: %s [--check] <version>  e.g. vNN\n" "$0"
+	printf "  --check: verify setup and paths without committing or pushing anything\n"
+	exit 1
+fi
+
+# --- Pre-flight checks ---
+load_config
+verify_upstream_repo
+verify_distgit_branch "main"
+preflight_check "$ver"
+
+if $check_only; then
+	printf "Pre-flight checks passed (--check mode, stopping here).\n"
+	exit 0
+fi
+
+# --- Commit and push to dist-git main ---
+
+# Stage the spec file. sources and .gitignore were already staged by
+# 'fedpkg new-sources' in script 01.
+git -C "$DISTGIT" add ndctl.spec
+
+# Commit using the top %changelog entry as the commit message.
+(cd "$DISTGIT" && fedpkg commit --clog)
+
+# Push to origin/main only.
+# Script 04 handles the stable branches.
+(cd "$DISTGIT" && fedpkg push)
+
+printf "\nPushed to dist-git main. Proceed with:\n"
+printf "  ./contrib/fedora/04-do_build_branches %s\n" "$ver"
+printf "which fires the Koji builds, then (once they are green):\n"
+printf "  ./contrib/fedora/05-do_submit_updates %s\n" "$ver"

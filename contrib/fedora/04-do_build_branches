@@ -1,0 +1,232 @@
+#!/bin/bash -eEx
+#
+# 04-do_build_branches <version>
+#
+# PURPOSE: Run a scratch build as a gate, then fire off real Koji builds for
+# main (rawhide) and each stable branch.  Builds run in parallel in Koji; this
+# script does NOT wait for them.  Watch them at the printed URLs, and when all
+# are green, run 05-do_submit_updates to submit the bodhi updates.
+#
+# RUN FROM: upstream ndctl repo root
+#
+# TESTABLE WITHOUT BUILDING: run with --check to verify setup only:
+#   ./contrib/fedora/04-do_build_branches --check vNN
+#
+# USAGE:
+#   ./contrib/fedora/04-do_build_branches vNN              # scratch gate + main + stable branches
+#   br=f44 ./contrib/fedora/04-do_build_branches vNN       # one branch only (skips scratch + main)
+#   num_stable=3 ./contrib/fedora/04-do_build_branches vNN # build 3 stable branches instead of 2
+#
+# ENVIRONMENT VARIABLES:
+#   br          - if set, only build this one branch (skips scratch build and main)
+#   num_stable  - number of stable branches to build, newest first (default: 2)
+#                 Check https://endoflife.date/fedora for the current stable set;
+#                 use 3 only during the transition window when a new Fedora is out
+#                 but the oldest release has not yet gone EOL.
+#
+# HOW BRANCHES GET THE NEW VERSION:
+#   For each stable branch, the release files (ndctl.spec, .gitignore, sources)
+#   are copied directly from dist-git main and committed.  This deliberately
+#   avoids 'git merge': stable branches can permanently diverge from main
+#   (e.g. after a Fedora mass rebuild lands on them independently, or after a
+#   past manual fix-up), which makes fast-forward merges impossible.  The file
+#   copy works identically whether or not the branch has diverged, and is a
+#   no-op if the branch already has the files (safe to re-run).
+#
+# IF THE SCRATCH BUILD FAILS:
+#   Fix the spec in dist-git main, commit and push, then re-run from the top.
+#   Nothing will have been pushed to any stable branch yet.
+#
+# IF A BRANCH BUILD FAILS:
+#   Check the Koji task URL printed in the output for the build log.
+#   Fix the issue, then retry just that branch: br=<branch> $0 <version>
+#
+# CHECK BUILD STATUS:
+#   Koji:  https://koji.fedoraproject.org/koji/packageinfo?packageID=ndctl
+#
+# NEXT STEP (after all builds are green in Koji):
+#   ./contrib/fedora/05-do_submit_updates <version>
+#
+
+SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=common.sh
+source "$SCRIPTS_DIR/common.sh"
+
+# --- Argument handling ---
+check_only=false
+if [[ "$1" == "--check" ]]; then
+	check_only=true
+	shift
+fi
+
+ver="$1"
+: "${num_stable:=2}"   # how many stable branches to build (newest first)
+: "${br:=""}"          # if set, build only this one branch
+
+if [[ ! "$ver" ]]; then
+	printf "Usage: %s [--check] <version>  e.g. vNN\n" "$0"
+	printf "  --check: verify setup and print branch list without building anything\n"
+	exit 1
+fi
+
+# --- Pre-flight checks ---
+load_config
+preflight_check "$ver"
+
+if $check_only; then
+	printf "Stable branches that would be built (num_stable=%s):\n" "$num_stable"
+	git -C "$DISTGIT" branch -r --list origin/f* | cut -d'/' -f2 | sort -Vr | head -"$num_stable"
+	printf "Pre-flight checks passed (--check mode, stopping here).\n"
+	exit 0
+fi
+
+# Collect "branch: task URL" lines for the final summary
+build_summary=()
+
+# --- fedpkg_build_wait ---
+# Submit a build and poll Koji every 30 seconds until it completes.
+# Used ONLY for the scratch build, which acts as a gate: it must pass before
+# anything is pushed to stable branches.
+# On failure: prints the Koji task URL and exits 1.
+fedpkg_build_wait()
+{
+	# Poll up to 20 times (20 x 30s = 10 minutes) before giving up
+	local timeout=20
+
+	(cd "$DISTGIT" && fedpkg build --nowait "$@") | tee /tmp/fedpkg-build-out
+	taskid="$(grep -E "^Created task: [0-9]*" /tmp/fedpkg-build-out | cut -d':' -f2 | tr -d ' ')"
+
+	printf "Waiting for Koji task %s...\n" "$taskid"
+	printf "  Task URL: https://koji.fedoraproject.org/koji/taskinfo?taskID=%s\n" "$taskid"
+
+	while true; do
+		sleep 30
+		koji taskinfo "$taskid" > /tmp/fedpkg-build-state || true
+		if [ -f /tmp/fedpkg-build-state ]; then
+			state="$(grep -E "^State: .*" /tmp/fedpkg-build-state | cut -d':' -f2 | tr -d ' ')"
+			if [ -z "$state" ]; then
+				timeout=$((timeout - 1))
+				if ((timeout == 0)); then
+					printf "ERROR: timed out waiting for Koji state after 10 minutes\n"
+					printf "Check manually: https://koji.fedoraproject.org/koji/taskinfo?taskID=%s\n" "$taskid"
+					exit 1
+				fi
+				continue
+			fi
+			case "$state" in
+			closed)
+				printf "Task %s completed successfully.\n" "$taskid"
+				break
+				;;
+			open)
+				continue
+				;;
+			failed)
+				printf "ERROR: Koji task %s failed.\n" "$taskid"
+				printf "Check: https://koji.fedoraproject.org/koji/taskinfo?taskID=%s\n" "$taskid"
+				exit 1
+				;;
+			esac
+		fi
+	done
+	rm -f /tmp/fedpkg-build-out /tmp/fedpkg-build-state
+}
+
+# --- fedpkg_build_nowait ---
+# Submit a build to Koji and return immediately.  Records the task URL in
+# build_summary for the final printout.  Builds run in parallel in Koji.
+fedpkg_build_nowait()
+{
+	local label="$1"
+
+	(cd "$DISTGIT" && fedpkg build --nowait) | tee /tmp/fedpkg-build-out
+	taskid="$(grep -E "^Created task: [0-9]*" /tmp/fedpkg-build-out | cut -d':' -f2 | tr -d ' ')"
+	build_summary+=("$label: https://koji.fedoraproject.org/koji/taskinfo?taskID=$taskid")
+	rm -f /tmp/fedpkg-build-out
+}
+
+# --- prepare_and_build_branch ---
+# Switch dist-git to a branch, copy the release files from main, commit,
+# push, and fire off the build (without waiting).
+#
+# The file copy replaces the old 'git merge main --ff-only' approach -- see
+# "HOW BRANCHES GET THE NEW VERSION" in the header for why.
+prepare_and_build_branch()
+{
+	local branch="$1"
+	(cd "$DISTGIT" && fedpkg switch-branch "$branch")
+
+	# Copy the release files directly from main.  Works whether or not the
+	# branch has diverged from main.
+	git -C "$DISTGIT" checkout main -- ndctl.spec .gitignore sources
+	git -C "$DISTGIT" add ndctl.spec .gitignore sources
+
+	# Commit only if the copy actually changed something.  Makes this
+	# idempotent: safe to re-run on a branch that was already prepared.
+	if git -C "$DISTGIT" diff --cached --quiet; then
+		printf "  %s already has the release files; nothing to commit\n" "$branch"
+	else
+		git -C "$DISTGIT" commit -m "release $ver"
+	fi
+
+	(cd "$DISTGIT" && fedpkg push)
+	fedpkg_build_nowait "$branch"
+}
+
+# print_summary: show all fired builds and the next step
+print_summary()
+{
+	printf "\n=== Builds submitted (running in parallel in Koji) ===\n"
+	local line
+	for line in "${build_summary[@]}"; do
+		printf "  %s\n" "$line"
+	done
+	printf "\nAll builds: https://koji.fedoraproject.org/koji/packageinfo?packageID=ndctl\n"
+	printf "\nWhen all builds show green (state 'complete'), submit the bodhi updates:\n"
+	printf "  ./contrib/fedora/05-do_submit_updates %s\n" "$ver"
+}
+
+# --- Single branch mode ---
+# If 'br' is set, prepare and build only that branch, then exit.
+# Skips the scratch build and main.  Useful for retrying a failed branch.
+if [[ $br ]]; then
+	if ! git -C "$DISTGIT" branch -l "$br" | grep -q "$br"; then
+		printf "ERROR: branch '%s' not found in dist-git\n" "$br"
+		printf "Available branches:\n"
+		git -C "$DISTGIT" branch -l
+		exit 1
+	fi
+	prepare_and_build_branch "$br"
+	(cd "$DISTGIT" && fedpkg switch-branch main)
+	print_summary
+	exit 0
+fi
+
+# --- Normal full build mode ---
+
+# Step 1: scratch build on main -- the gate.
+# Runs in Koji using Fedora's actual build infrastructure and WAITS for the
+# result.  If this fails, the spec has a problem: fix it on main, push, and
+# re-run.  Nothing has been pushed to any stable branch yet at this point.
+printf "Step 1: scratch build to verify spec builds cleanly (this one waits)...\n"
+(cd "$DISTGIT" && fedpkg switch-branch main)
+fedpkg_build_wait --scratch
+
+# Step 2: fire the real build on main (becomes rawhide / next Fedora).
+# No bodhi update needed for rawhide -- bodhi creates one automatically
+# when the build completes.
+printf "Step 2: submitting main (rawhide) build...\n"
+fedpkg_build_nowait "main (rawhide)"
+
+# Step 3: prepare and fire builds for the stable branches, newest first.
+printf "Step 3: submitting builds for %s stable branches...\n" "$num_stable"
+git -C "$DISTGIT" branch -r --list origin/f* | cut -d'/' -f2 | sort -Vr | head -"$num_stable" > /tmp/fedpkg-branches
+while read -r branch; do
+	printf "  Preparing and building %s...\n" "$branch"
+	prepare_and_build_branch "$branch"
+done < /tmp/fedpkg-branches
+rm -f /tmp/fedpkg-branches
+
+(cd "$DISTGIT" && fedpkg switch-branch main)
+
+print_summary

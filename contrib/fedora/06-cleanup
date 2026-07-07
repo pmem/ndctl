@@ -1,0 +1,38 @@
+#!/bin/bash -eEx
+#
+# 06-cleanup
+#
+# PURPOSE: Remove temporary files generated during the build process.
+# Safe to run at any time after script 01 has completed.
+#
+# RUN FROM: upstream ndctl repo root
+#
+# What gets removed:
+#   ndctl.spec.src        - upstream spec extracted by script 01 (meson output)
+#   $DISTGIT/ndctl.spec.orig  - backup of previous Fedora spec made by script 01
+#   $DISTGIT/*.src.rpm    - any local source RPMs from mock builds
+#   $DISTGIT/results_ndctl/   - mock build output directory
+#   $DISTGIT/copr-out/    - COPR build output directory
+#
+# NOTE: ndctl.spec itself is NOT removed -- it is the live Fedora spec file
+# tracked in dist-git.
+#
+
+SCRIPTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=common.sh
+source "$SCRIPTS_DIR/common.sh"
+load_config
+
+# Upstream repo root (two levels up from contrib/fedora/)
+UPSTREAM_ROOT="$(cd "$SCRIPTS_DIR/../.." && pwd)"
+
+# Remove temp spec files from upstream repo root
+rm -f "$UPSTREAM_ROOT/ndctl.spec.src"
+
+# Remove temp files from dist-git
+rm -f "$DISTGIT/ndctl.spec.orig"
+rm -f "$DISTGIT"/*.src.rpm
+rm -rf "$DISTGIT/results_ndctl"
+rm -rf "$DISTGIT/copr-out"
+
+printf "Cleanup complete.\n"
