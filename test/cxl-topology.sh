@@ -273,6 +273,47 @@ done
 # validate that the bus can be disabled without issue
 $CXL disable-bus $root -f
 
+test_zero_size_decoders() {
+
+	if ! modinfo cxl_test | grep -q '^parm:.*mock_zero_size_decoders'; then
+		return 0
+	fi
+
+	modprobe -r cxl_test
+	modprobe cxl_test mock_zero_size_decoders=1
+
+	# the auto-region maps 2 active endpoint decoders, one per memdev
+	region_json=$("$CXL" list -b cxl_test -R -T -u)
+	[ -n "$region_json" ] || err "$LINENO"
+	mapfile -t endpoint_decoders < <(
+		jq -r '.mappings[]?.decoder // empty' <<<"$region_json"
+	)
+	((${#endpoint_decoders[@]} == 2)) || err "$LINENO"
+
+	# per endpoint, decoder 0 is active and cxl_test hard codes ids 1
+	# and 2 as the committed, locked zero-sized decoders. Other ids may
+	# also report size 0 while unlocked, so match on locked to pick out
+	# the committed pair. If that model ever changes then the paired
+	# update must be made here. size and locked come from sysfs as there
+	# is no cxl list representation yet.
+	for decoder in "${endpoint_decoders[@]}"; do
+		[[ "$decoder" == *.0 ]] || err "$LINENO"
+
+		for id in 1 2; do
+			empty_decoder="${decoder%.*}.$id"
+			decoder_path="/sys/bus/cxl/devices/$empty_decoder"
+			[ -d "$decoder_path" ] || err "$LINENO"
+
+			size=$(cat "$decoder_path/size")
+			locked=$(cat "$decoder_path/locked")
+			((size == 0)) || err "$LINENO"
+			((locked == 1)) || err "$LINENO"
+		done
+	done
+}
+
+test_zero_size_decoders
+
 check_dmesg "$LINENO"
 
 modprobe -r cxl_test
