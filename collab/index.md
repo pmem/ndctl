@@ -166,6 +166,17 @@ layout: page
   - https://lore.kernel.org/linux-cxl/20260623062002.21447-1-icheng@nvidia.com/
   - Could use more reviews.
 
+- **cxl/test: Don't wrap cxl_core's own exported symbols**
+  -  Richard Cheng <icheng@nvidia.com>
+  -  https://lore.kernel.org/linux-cxl/20260721084009.38100-1-icheng@nvidia.com/
+  -  Review please
+
+- **cxl/region: Reject delete of a provider-locked region**
+  - Richard Cheng <icheng@nvidia.com>
+  - https://lore.kernel.org/linux-cxl/20260721055131.20935-1-icheng@nvidia.com/
+  - Need review. Pending v2 per Richard
+
+
 ## v7.4 and beyond (and others of interest)
 - **CXL PM Init support**
   - Fabio M. De Francesco <fabio.m.de.francesco@linux.intel.com>
