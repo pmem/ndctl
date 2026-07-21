@@ -5,10 +5,13 @@
 #include <stdio.h>
 #include <endian.h>
 #include <stdint.h>
+#include <stddef.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <syslog.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/utsname.h>
 #include <sys/ioctl.h>
 #include <cxl/libcxl.h>
 #include <linux/uuid.h>
@@ -19,6 +22,35 @@
 #include <cxl/fwctl/cxl.h>
 
 static const char provider[] = "cxl_test";
+
+/* Running kernel version parsed once in main(). */
+static unsigned int kver_major;
+static unsigned int kver_minor;
+
+/*
+ * kver_ge - Whether the running kernel at least major.minor
+ *
+ * Test cases for fixes tied to a specific kver gate here so that they quietly
+ * skip rather than fail on kernels that predate the fix.
+ */
+static bool kver_ge(unsigned int major, unsigned int minor)
+{
+	if (kver_major != major)
+		return kver_major > major;
+	return kver_minor >= minor;
+}
+
+static void parse_kver(void)
+{
+	struct utsname uts;
+
+	if (uname(&uts) == 0 &&
+	    sscanf(uts.release, "%u.%u", &kver_major, &kver_minor) == 2)
+		return;
+
+	kver_major = 0;
+	kver_minor = 0;
+}
 
 UUID_DEFINE(test_uuid,
 	    0xff, 0xff, 0xff, 0xff,
@@ -207,6 +239,45 @@ out:
 	return rc;
 }
 
+static int cxl_fwctl_rpc_get_feature_oob(int fd, struct test_feature *feat_ctx)
+{
+	struct cxl_mbox_get_feat_in *feat_in;
+	struct fwctl_rpc_cxl_out *out;
+	size_t out_size, in_size;
+	struct fwctl_rpc_cxl *in;
+	struct fwctl_rpc *rpc;
+	int rc;
+
+	in_size = sizeof(*in) + sizeof(*feat_in);
+	/* header only => zero payload room */
+	out_size = offsetof(struct fwctl_rpc_cxl_out, payload);
+
+	rpc = get_prepped_command(in_size, out_size,
+				  CXL_MBOX_OPCODE_GET_FEATURE);
+	if (!rpc)
+		return -ENXIO;
+
+	in = (struct fwctl_rpc_cxl *)rpc->in;
+	out = (struct fwctl_rpc_cxl_out *)rpc->out;
+
+	feat_in = &in->get_feat_in;
+	uuid_copy(feat_in->uuid, feat_ctx->uuid);
+	/* non-zero count that exceeds the zero payload room */
+	feat_in->count = feat_ctx->get_size;
+
+	rc = send_command(fd, rpc, out);
+	free_rpc(rpc);
+
+	if (rc == -EINVAL)
+		return 0;
+	if (rc == 0) {
+		fprintf(stderr, "Get Feature with undersized out_len was not rejected\n");
+		return -ENXIO;
+	}
+	fprintf(stderr, "Get Feature OOB rejection test: unexpected rc %d\n", rc);
+	return rc;
+}
+
 static int cxl_fwctl_rpc_set_test_feature(int fd, struct test_feature *feat_ctx)
 {
 	struct cxl_mbox_set_feat_in *feat_in;
@@ -246,6 +317,73 @@ static int cxl_fwctl_rpc_set_test_feature(int fd, struct test_feature *feat_ctx)
 
 out:
 	free_rpc(rpc);
+	return rc;
+}
+
+static int cxl_fwctl_rpc_set_feature_oob(int fd, struct test_feature *feat_ctx)
+{
+	struct cxl_mbox_set_feat_in *feat_in;
+	struct fwctl_rpc_cxl_out *out;
+	size_t in_size, out_size;
+	struct fwctl_rpc_cxl *in;
+	struct fwctl_rpc *rpc;
+	uint32_t val;
+	void *data;
+	int rc;
+
+	in_size = sizeof(*in) + sizeof(*feat_in) + sizeof(val);
+	out_size = sizeof(*out) + sizeof(val);
+	rpc = get_prepped_command(in_size, out_size,
+				  CXL_MBOX_OPCODE_SET_FEATURE);
+	if (!rpc)
+		return -ENXIO;
+
+	in = (struct fwctl_rpc_cxl *)rpc->in;
+	out = (struct fwctl_rpc_cxl_out *)rpc->out;
+	feat_in = &in->set_feat_in;
+	uuid_copy(feat_in->uuid, feat_ctx->uuid);
+	data = feat_in->feat_data;
+	val = DEFAULT_TEST_DATA2;
+	*(uint32_t *)data = htole32(val);
+	feat_in->flags = CXL_SET_FEAT_FLAG_FULL_DATA_TRANSFER;
+
+	/* A valid Set Feature request with no room for the output header */
+	rpc->out_len = 0;
+	rc = send_command(fd, rpc, out);
+	free_rpc(rpc);
+
+	if (rc == -EINVAL)
+		return 0;
+	if (rc == 0) {
+		fprintf(stderr,
+			"Set Feature with zero out_len was not rejected\n");
+		return -ENXIO;
+	}
+	fprintf(stderr,
+		"Set Feature OOB rejection test: unexpected rc %d\n", rc);
+	return rc;
+}
+
+static int cxl_fwctl_rpc_feature_oob_tests(int fd,
+					   struct test_feature *feat_ctx)
+{
+	int rc;
+
+	if (!kver_ge(7, 3)) {
+		fprintf(stderr,
+			"skip: Feature OOB rejection tests need kernel >= 7.3\n");
+		return 0;
+	}
+
+	rc = cxl_fwctl_rpc_get_feature_oob(fd, feat_ctx);
+	if (rc) {
+		fprintf(stderr, "Failed Get Feature OOB rejection test: %d\n", rc);
+		return rc;
+	}
+
+	rc = cxl_fwctl_rpc_set_feature_oob(fd, feat_ctx);
+	if (rc)
+		fprintf(stderr, "Failed Set Feature OOB rejection test: %d\n", rc);
 	return rc;
 }
 
@@ -393,6 +531,10 @@ static int test_fwctl_features(struct cxl_memdev *memdev)
 		goto out;
 	}
 
+	rc = cxl_fwctl_rpc_feature_oob_tests(fd, &feat_ctx);
+	if (rc)
+		goto out;
+
 out:
 	close(fd);
 	return rc;
@@ -416,6 +558,8 @@ int main(int argc, char *argv[])
 	struct cxl_ctx *ctx;
 	struct cxl_bus *bus;
 	int rc;
+
+	parse_kver();
 
 	rc = cxl_new(&ctx);
 	if (rc < 0)
