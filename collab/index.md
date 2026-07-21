@@ -27,7 +27,7 @@ layout: page
 * v7.4 and beyond
 
 ## Opens
-* Handling Sashiko pre-existing issue reports
+* Handling Sashiko pre-existing issue reports (Jonathan)
 * DAX extensions for private nodes (GregoryP)
 
 ## CXL CLI
@@ -129,7 +129,7 @@ layout: page
 - **Support zero-sized HDM decoders (v7)**
   - Richard Cheng <icheng@nvidia.com>
   - https://lore.kernel.org/linux-cxl/20260708104024.68029-1-icheng@nvidia.com/
-  - Review on going. Also expecting v8?
+  - Review on going. Close to be ready to apply to next?
 
 - **vfio/pci: Add CXL Type-2 device passthrough support (v3)**
   - Manish Honap <mhonap@nvidia.com>
