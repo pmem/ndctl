@@ -166,11 +166,15 @@ layout: page
   - https://lore.kernel.org/linux-cxl/20260623062002.21447-1-icheng@nvidia.com/
   - Could use more reviews.
 
-## v7.4 and beyond
+## v7.4 and beyond (and others of interest)
 - **CXL PM Init support**
-  - Fabio M. De Francesco" <fabio.m.de.francesco@linux.intel.com>
+  - Fabio M. De Francesco <fabio.m.de.francesco@linux.intel.com>
   - https://lore.kernel.org/linux-cxl/20260428182454.464655-1-fabio.m.de.francesco@linux.intel.com/T/#t
   - Pending v2
+
+- **Private Memory NUMA Nodes (v5)**
+  - Gregory Price <gourry@gourry.net>
+  - https://lore.kernel.org/linux-cxl/20260720193431.3841992-1-gourry@gourry.net/
 
 - **LSA 2.1 support for CXL**
   Neeraj
