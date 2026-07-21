@@ -27,8 +27,51 @@ layout: page
 * v7.4 and beyond
 
 ## Opens
+* Handling Sashiko pre-existing issue reports
+* DAX extensions for private nodes (GregoryP)
 
 ## CXL CLI
+
+## NDCTL v85 was released
+  https://github.com/pmem/ndctl/releases/tag/v85
+
+## NDCTL v86
+* Please test with the pending branch:
+  https://github.com/pmem/ndctl/tree/pending
+
+* v3 0/2 daxctl, util/sysfs: fix builtin-driver false failure on enable (ChenPei)
+  - Ready to merge
+
+* v7 0/5 ndctl: Dynamic Capacity additions for cxl-cli (AnisaS)
+  - Companion to CXL driver set. Nice to review together.
+  - Needs review.
+
+* cxl/region: allow mixed-granularity regions (AlisonS)
+  - Companion to CXL driver set. Nice to review together.
+  - Needs review
+
+* 0/3 ndctl: Add CXL region passthrough >16K gran test (AlisonS)
+  - Companion to CXL driver set. Nice to review together.
+  - Needs review
+
+* test/fwctl: Add Get Feature OOB rejection regression test (RichardC)
+  - Pending v2
+* test/cxl-topology.sh: test zero-sized decoders (RichardC)
+  - Needs review
+* test/test/cxl-poison.sh: test scanning past fully mapped partitions (AlisonS)
+  - Pending v2
+* test/cxl-security.sh: test dimm unlock with a large serial number (AlisonS)
+  - Maybe pending v2
+* test/cxl-mbox: Regression test for huge CXL_MEM_SEND_COMMAND out.size (RichardC)
+  - Needs review
+
+* cxl/cli: HPA-ordered destroy-region teardown (PawelM)
+  https://lore.kernel.org/linux-cxl/20260217082705.2475753-1-pawel.mielimonka@fujitsu.com/
+  - Pending revision
+
+* Enable CXL Protocol testing (TerryB)
+  - RFC posted. Can we access that through a unit test run?
+
 
 ## QEMU
 
@@ -37,9 +80,9 @@ layout: page
 
 ## v7.3 merge window
 ### Fixes
-- **Harden HDM decoder enumeration (v3)**
+- **Harden HDM decoder enumeration (v4)**
   - Alison Schofield <alison.schofield@intel.com>
-  - https://lore.kernel.org/linux-cxl/cover.1784322343.git.alison.schofield@intel.com/
+  - https://lore.kernel.org/linux-cxl/cover.1784595445.git.alison.schofield@intel.com/
   - Review needed, on going
 
 - **cxl: Sashiko bug fixes (v3)**
@@ -96,7 +139,7 @@ layout: page
 - **cxl: Support mixed-granularity region interleaves (v2)**
   - Alison Schofield <alison.schofield@intel.com>
   - https://lore.kernel.org/linux-cxl/cover.1781199122.git.alison.schofield@intel.com/
-  - Review on going. Will there be a v3?
+  - Pending v3 with changes based on RobertR, RichardC, Sashiko.
 
 - **cxl: Support Back-Invalidate (v5)**
   - Davidlohr Bueso <dave@stgolabs.net>
