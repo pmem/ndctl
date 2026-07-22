@@ -17,7 +17,7 @@ layout: page
 
 # START THE TRANSCRIPT
 
-# July 20, 2026
+# July 21, 2026
 ## Agenda
 * Opens
 * cxl-cli
@@ -27,8 +27,21 @@ layout: page
 * v7.4 and beyond
 
 ## Opens
+
+* Plumbers deadline for proposal July 24th (Davidlohr)
+
 * Handling Sashiko pre-existing issue reports (Jonathan)
+We'll keep revisiting this one.
+
 * DAX extensions for private nodes (GregoryP)
+How to get a private node.  Should we use a custom driver.
+Should mem be hot plugged to normal numa node or private
+numa node. I think Gregory will post code for folks to take
+a look at option.
+
+* FAMFS: the upstream push continues.
+  DAX patches (in at 7.2) and fix-ups (queued for 7.3)
+
 
 ## CXL CLI
 
@@ -74,6 +87,8 @@ layout: page
 
 
 ## QEMU
+- v2 of new risc5 support and a bunch of other updates
+- DaveJ asks status of 32 bit BAR issue w Fedora EDK, no update yet.
 
 ## v7.2 rc fixes
 * None. Going forward will only include issues from merge window or critical bugs
@@ -99,6 +114,7 @@ layout: page
   - Mayank Rana <mayank.rana@oss.qualcomm.com>
   - https://lore.kernel.org/linux-cxl/20260711003341.2602368-1-mayank.rana@oss.qualcomm.com/
   - Pending v3.
+  - Davidlohr - this may go away w BI support
 
 - **cxl: Format the device serial number as unsigned (v2)**
   - Alison Schofield <alison.schofield@intel.com>
@@ -110,16 +126,18 @@ layout: page
   - https://lore.kernel.org/linux-cxl/20260716181114.35962-1-alejandro.lucero-palau@amd.com/
   - Rafael can pick up for ACPI sub-system.
 
-- **cxl/region: Fix use-after-free in find_pos_and_ways() error path (v1)**
+- **cxl/region: Fix use-after-free in find_pos_and_ways() error path (v2)**
   - Alison Schofield <alison.schofield@intel.com>
   - https://lore.kernel.org/linux-cxl/20260711180755.1779002-1-alison.schofield@intel.com/
-  - Pending v2?
+  - Posted v2 adding a second patch to use cleanup helper, please review
 
 ### Changes
 - **DCD: Add support for Dynamic Capacity Devices (DCD) (v10)**
   - Anisa Su <anisa.su887@gmail.com>
   - https://lore.kernel.org/linux-cxl/cover.1779528761.git.anisa.su@samsung.com/
   - Looking for more reviews. Expecting v11.
+    Consider picking up first 11 patches, basic hw setup, in 7.3 merge window.
+    Expects to be adding tested by tags.
 
 - **PCI/CXL: Add CXL reset support for Type 2 devices (v9)**
   - Srirangan Madhavan <smadhavan@nvidia.com>
