@@ -12,6 +12,7 @@ Requires:	CXL_LNAME%{?_isa} = %{version}-%{release}
 BuildRequires:	autoconf
 %if 0%{?rhel} && 0%{?rhel} < 9
 BuildRequires:	asciidoc
+BuildRequires:	xmlto
 %define asciidoctor -Dasciidoctor=disabled
 %define libtracefs -Dlibtracefs=disabled
 %else
@@ -21,7 +22,6 @@ BuildRequires:	libtracefs-devel
 %define asciidoctor -Dasciidoctor=enabled
 %define libtracefs -Dlibtracefs=enabled
 %endif
-BuildRequires:	xmlto
 BuildRequires:	automake
 BuildRequires:	libtool
 BuildRequires:	pkgconfig
