@@ -873,6 +873,12 @@ struct json_object *util_cxl_decoder_to_json(struct cxl_decoder *decoder,
 			json_object_object_add(jdecoder, "state", jobj);
 	}
 
+	if (cxl_decoder_is_locked(decoder)) {
+		jobj = json_object_new_boolean(true);
+		if (jobj)
+			json_object_object_add(jdecoder, "locked", jobj);
+	}
+
 	if (cxl_port_is_endpoint(port)) {
 		enum cxl_decoder_mode mode = cxl_decoder_get_mode(decoder);
 
