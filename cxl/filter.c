@@ -847,7 +847,8 @@ static void walk_decoders(struct cxl_port *port, struct cxl_filter_params *p,
 		if (!util_cxl_decoder_filter_by_region(decoder,
 						       p->region_filter))
 			goto walk_children;
-		if (!p->idle && cxl_decoder_get_size(decoder) == 0)
+		if (!p->idle && cxl_decoder_get_size(decoder) == 0 &&
+		    !cxl_decoder_is_locked(decoder))
 			continue;
 		jdecoder = util_cxl_decoder_to_json(decoder, flags);
 		if (!decoder) {
