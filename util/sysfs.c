@@ -258,6 +258,11 @@ int __util_bind(const char *devname, struct kmod_module *module,
 			continue;
 		}
 
+		if (access(drv_path, F_OK) != 0) {
+			free(drv_path);
+			continue;
+		}
+
 		rc = __sysfs_write_attr_quiet(ctx, drv_path, devname);
 		free(drv_path);
 		if (rc == 0)
