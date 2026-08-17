@@ -17,6 +17,165 @@ layout: page
 
 # START THE TRANSCRIPT
 
+# Aug 18, 2026
+## Agenda
+* Opens
+* cxl-cli
+* QEMU
+* v7.3 rc fixes
+* v7.4 merge window
+* v7.5 and beyond
+
+## Opens
+* A few words about Dan Williams
+
+## CXL CLI
+
+## QEMU
+
+## v7.3 rc fixes
+* None. v7.3 PR sent 8/17
+
+## v7.4 merge window
+### Fixes
+- **Harden HDM decoder enumeration (v5)**
+  - Alison Schofield <alison.schofield@intel.com>
+  - https://lore.kernel.org/linux-cxl/cover.1786143520.git.alison.schofield@intel.com/
+  - Mostly ready. Need review tags.
+
+- **cxl: Sashiko bug fixes (v5)**
+  - Richard Cheng <icheng@nvidia.com>
+  - https://lore.kernel.org/linux-cxl/20260813034538.13189-1-icheng@nvidia.com/
+  - Mostly ready. Need review tags.
+
+- **cxl: Allow passthrough decoders with >16K granularity (v3)**
+  - Alison Schofield <alison.schofield@intel.com>
+  - https://lore.kernel.org/linux-cxl/cover.1784940306.git.alison.schofield@intel.com/
+  - Mostly ready. Need review tags.
+    
+- **cxl: Fix uninitialized access coordinates (v3)**
+  - Guixin Liu <kanie@linux.alibaba.com>
+  - https://lore.kernel.org/linux-cxl/20260812083035.372308-1-kanie@linux.alibaba.com/
+  - Needs review
+    
+- **cxl/core: Fix dport use-after-free via the einj_inject debugfs file (v2)**
+  - Guixin Liu <kanie@linux.alibaba.com>
+  - https://lore.kernel.org/linux-cxl/20260812060943.56246-1-kanie@linux.alibaba.com/
+  - Needs review
+    
+- **cxl/region: Unregister the pmem region bridge on setup failure (v2)**
+  - Guixin Liu <kanie@linux.alibaba.com>
+  - https://lore.kernel.org/linux-cxl/20260812061043.57319-1-kanie@linux.alibaba.com/
+  - Expecting v3.
+
+- **cxl/pci: Skip reset detection for DVSEC emulated decoders (v3)**
+  - Guixin Liu <kanie@linux.alibaba.com>
+  - https://lore.kernel.org/linux-cxl/20260812082347.354371-1-kanie@linux.alibaba.com/
+  - Needs review
+    
+- **PCI/CXL: Distinguish CXL capabilities in MCAP (v2)**
+  - Penn <engguopeng@buaa.edu.cn> (v1 posted from peng.guo@montage-tech.com)
+  - https://lore.kernel.org/linux-cxl/20260817075854.17207-1-engguopeng@buaa.edu.cn/
+  - 2 patches: generic PCI MCAP definitions in `pci_regs.h` plus a
+    `drivers/cxl/core/regs.c` filter so MMPT capabilities are not mistaken for CXL
+    register blocks. Tested on CXL 1.1, CXL 3.0 and an MMPT-enabled device.
+  - Needs review
+
+- **cxl/mce: Avoid alias page retirement for corrected errors (v2)**
+  - Shaikh Kamaluddin <shaikhkamal2012@gmail.com>
+  - https://lore.kernel.org/linux-cxl/20260812151759.14390-1-shaikhkamal2012@gmail.com/
+  - Single patch; extended-linear-cache MCE handling must not retire the alias page
+    for corrected errors.
+  - Pending v3.
+    
+- **cxl/test: Map mock device nodes to an online node (v1)**
+  - Davidlohr Bueso <dave@stgolabs.net>
+  - https://lore.kernel.org/linux-cxl/20260723180630.1302871-1-dave@stgolabs.net/
+  - Needs review.
+
+- **Fix hmat_adist_nb for CXL (v2)**
+  - Alejandro Lucero Palau <alejandro.lucero-palau@amd.com>
+  - https://lore.kernel.org/linux-cxl/20260716181114.35962-1-alejandro.lucero-palau@amd.com/
+  - Single patch dropping `__meminitdata` from `hmat_adist_nb` so the notifier
+    survives when CONFIG_MEMORY_HOTPLUG is off.
+  - Rafael needs to pick up this.
+ 
+### For next
+- **cxl: Support Back-Invalidate (v7)**
+  - Davidlohr Bueso <dave@stgolabs.net>
+  - https://lore.kernel.org/linux-cxl/20260728144136.709882-1-dave@stgolabs.net/
+  - v8 pending.
+
+- **DCD Prep Series (v12)**
+  - Anisa Su <anisa.su887@gmail.com>
+  - https://lore.kernel.org/linux-cxl/20260731084901.1512819-1-anisa.su@samsung.com/
+  - v13 pending. Will create a for-7.4 branch when ready.
+
+- **DCD: Add support for Dynamic Capacity Devices (DCD) (v11)**
+  - Anisa Su <anisa.su887@gmail.com>
+  - https://lore.kernel.org/linux-cxl/20260625112638.550691-1-anisa.su@samsung.com/
+  - Patches 1-8 split out.
+  - Pending v12?
+
+- **vfio/pci: Add CXL Type-2 device passthrough support (v4)**
+  - Manish Honap <mhonap@nvidia.com>
+  - https://lore.kernel.org/linux-cxl/20260813093631.2288172-1-mhonap@nvidia.com/
+  - Needs review
+
+- **PCI/CXL: Add CXL reset support for Type 2 devices (v10)**
+  - Srirangan Madhavan <smadhavan@nvidia.com>
+  - https://lore.kernel.org/linux-cxl/20260804192958.1823952-1-smadhavan@nvidia.com/
+  - Pending v11. Needs review.
+
+- **Support zero-sized HDM decoders (v9)**
+  - Richard Cheng <icheng@nvidia.com>
+  - https://lore.kernel.org/linux-cxl/20260805055524.22311-1-icheng@nvidia.com/
+  - Almost ready. Needs review tags.
+
+- **cxl: Support mixed-granularity region interleaves (v3)**
+  - Alison Schofield <alison.schofield@intel.com>
+  - https://lore.kernel.org/linux-cxl/cover.1785444498.git.alison.schofield@intel.com/
+  - Needs review.
+
+- **Enable CXL PCIe Port Protocol Error handling and logging (v19)**
+  - Terry Bowman <terry.bowman@amd.com>
+  - Patches 1-5 applied for 7.3.
+  - Rest needs Bjorn acks.
+  - v20 pending.
+    
+- **cxl/region: Add cxl_decoder_is_passthrough() helper (v2)**
+  - Richard Cheng <icheng@nvidia.com>
+  - https://lore.kernel.org/linux-cxl/20260805065935.27837-1-icheng@nvidia.com/
+  - Discussion on going. Pushed back by Robert.
+
+- **cxl/region: Reject delete of a provider-locked region (v1)**
+  - Richard Cheng <icheng@nvidia.com>
+  - https://lore.kernel.org/linux-cxl/20260721055131.20935-1-icheng@nvidia.com/
+  - Needs review.
+
+- **tools/testing/cxl: Don't wrap cxl_core's own exported symbols (v1)**
+  - Richard Cheng <icheng@nvidia.com>
+  - https://lore.kernel.org/linux-cxl/20260721084009.38100-1-icheng@nvidia.com/
+  - Single patch.
+  - Need review tags.
+    
+## v7.5 or later  
+- **[RFC] cxl: Device protocol AER injection**
+  - Terry Bowman <terry.bowman@amd.com>
+  - https://lore.kernel.org/linux-cxl/20260717225700.3543801-1-terry.bowman@amd.com/
+  - debugfs-based CXL protocol-error injection, written to provide a test procedure
+    for the port-error series.
+  - **Rework expected; no tags.** Dave Jiang asked for the definitions to move to
+    `core.h`; Jonathan Cameron asked for a cover letter explaining the RFC status, a
+    Documentation/ABI entry, and named constants instead of `sizeof(u32)`. Author
+    prefers a new `core/ras_einj.c`. Gated on the port-error series landing.
+
+- **cxl: Auto-create a region for Type-2 memdev attach (RFC v1)**
+  - Richard Cheng <icheng@nvidia.com>
+  - https://lore.kernel.org/linux-cxl/20260805074042.30173-1-icheng@nvidia.com/
+  - 3-patch RFC.
+  - Discord discussion trending towards need to deal with interleaved regions and act same as type 3.
+   
 # July 21, 2026
 ## Agenda
 * Opens
