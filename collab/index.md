@@ -31,6 +31,37 @@ layout: page
 
 ## CXL CLI
 
+## NDCTL v86 aiming for end of September
+* Please test with the pending branch:
+  https://github.com/pmem/ndctl/tree/pending
+
+* v7 0/5 ndctl: Dynamic Capacity additions for cxl-cli (AnisaS)
+  - Companion to CXL driver set. Nice to review together.
+  - On hold until we have kernel side to re-test against
+
+* cxl/region: allow mixed-granularity regions (AlisonS)
+  - Companion to CXL driver set. Nice to review together.
+  - Needs review
+
+* 0/3 ndctl: Add CXL region passthrough >16K gran test (AlisonS)
+  - Companion to CXL driver set. Nice to review together.
+  - Needs review
+
+* test/cxl-mbox: Regression test for huge CXL_MEM_SEND_COMMAND out.size (RichardC)
+  - Needs review
+
+* test/cxl-security.sh: test dimm unlock with a large serial number (AlisonS)
+  - Maybe pending v2
+
+* cxl/list: list locked zero-sized decoders (AlisonS)
+  - Maybe pending v2
+
+* cxl/cli: HPA-ordered destroy-region teardown (PawelM)
+  - Pending new revision
+
+* Enable CXL Protocol testing (TerryB)
+  - Watching
+
 ## QEMU
 
 ## v7.3 rc fixes
