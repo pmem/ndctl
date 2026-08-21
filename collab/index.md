@@ -29,6 +29,18 @@ layout: page
 ## Opens
 * A few words about Dan Williams
 
+* JGroves - how to get FAMFS upstreamed
+  Intent is for stand-alone, but the FUSE vs standalone debate not closed.
+  Needs review tags on latest stand-alone version.
+
+* GregP - private node patchset,  new rev on the way
+  CXL Type 2 compressed mem sample driver and a test interface driver to
+  demonstrate are available. Maybe add link in coverletter.
+
+* RobertR - v3 mixed granularity is too complex. Alison to review Roberts
+  v3 feedback and address that.
+
+
 ## CXL CLI
 
 ## NDCTL v86 aiming for end of September
