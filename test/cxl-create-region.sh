@@ -181,10 +181,12 @@ setup_x1()
 
 setup_x2()
 {
-	# Find an x2 decoder
+	# Find an x2 decoder. Pin to the 256 granularity root to avoid
+	# the 16K root used by the passthrough granularity test.
 	decoder=$($CXL list -b cxl_test -D -d root | jq -r ".[] |
 		select(.pmem_capable == true) |
 		select(.nr_targets == 2) |
+		select(.interleave_granularity == 256) |
 		.decoder")
 
 	mem0=$(find_memdev "$decoder" 0 0)
@@ -194,10 +196,12 @@ setup_x2()
 
 setup_x4()
 {
-	# find an x2 decoder
+	# find an x2 decoder. Pin to the 256 granularity root to avoid
+	# the 16K root used by the passthrough granularity test.
 	decoder=$($CXL list -b cxl_test -D -d root | jq -r ".[] |
 		select(.pmem_capable == true) |
 		select(.nr_targets == 2) |
+		select(.interleave_granularity == 256) |
 		.decoder")
 
 	mem0=$(find_memdev "$decoder" 0 0)
@@ -205,6 +209,31 @@ setup_x4()
 	mem2=$(find_memdev "$decoder" 0 1)
 	mem3=$(find_memdev "$decoder" 1 1)
 	memdevs="$mem0 $mem1 $mem2 $mem3"
+}
+
+setup_passthru_gran()
+{
+	# Find the 2-way 16K root. A region spanning both host bridges
+	# places one endpoint under each. The intermediate switch decoders
+	# are passthrough decoders with 32K granularity.
+	decoder=$($CXL list -b cxl_test -D -d root | jq -r ".[] |
+		select(.pmem_capable == true) |
+		select(.nr_targets == 2) |
+		select(.interleave_granularity == 16384) |
+		.decoder")
+
+	if [[ ! $decoder ]]; then
+		echo "no 16K root found"
+		if check_min_kver "7.5"; then
+			err "$LINENO"
+		fi
+		echo "skipping passthrough granularity test"
+		return
+	fi
+
+	mem0=$(find_memdev "$decoder" 0 0)
+	mem1=$(find_memdev "$decoder" 1 0)
+	memdevs="$mem0 $mem1"
 }
 
 setup_x3()
@@ -442,6 +471,10 @@ setup_x4
 create_and_destroy_region
 # x3 decoder may not be available in cxl/test topo yet
 setup_x3
+if [[ $decoder ]]; then
+	create_and_destroy_region
+fi
+setup_passthru_gran
 if [[ $decoder ]]; then
 	create_and_destroy_region
 fi
