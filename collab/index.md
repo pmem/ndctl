@@ -17,6 +17,129 @@ layout: page
 
 # START THE TRANSCRIPT
 
+# Sept 15, 2026
+## Agenda
+* Opens
+* cxl-cli
+* QEMU
+* v7.3 rc fixes
+* v7.4 fixes
+* v7.4 merge window
+* v7.5 and beyond
+
+## Opens
+
+## CXL CLI
+
+## QEMU
+
+## v7.3 rc fixes
+- None
+
+## v7.4 fixes
+- **Harden HDM decoder enumeration (v5, 4 patches)**
+  - Alison Schofield <alison.schofield@intel.com>
+  - https://lore.kernel.org/linux-cxl/cover.1786143520.git.alison.schofield@intel.com/
+  - needs review tags on 2 of 4?
+
+- **cxl: Sashiko bug fixes (v7, patches 2–6 of 7 still pending)**
+  - Richard Cheng <icheng@nvidia.com>
+  - https://lore.kernel.org/linux-cxl/20260902053839.25595-1-icheng@nvidia.com/
+  - **Patches 1 and 7 split out and were applied to cxl/next**
+  - Pending v8 for 2-6.
+
+- **cxl: Allow passthrough decoders with >16K granularity (v4, 2 patches)**
+  - Alison Schofield <alison.schofield@intel.com>
+  - https://lore.kernel.org/linux-cxl/cover.1788487020.git.alison.schofield@intel.com/
+  - Pending v5
+
+- **cxl/memdev: Fix poison debugfs vs unbind deadlock (v3, 2 patches)**
+  - Guixin Liu <kanie@linux.alibaba.com>
+  - https://lore.kernel.org/linux-cxl/20260910094017.4032170-1-kanie@linux.alibaba.com/
+  - **Needs GregKH ack for core device change**
+
+- **cxl/mbox: bound device supplied counts by the received payload (v1, 2 patches)**
+  - Gaobin Huang <huanggaobin23@semi.ac.cn>
+  - https://lore.kernel.org/linux-cxl/20260914125701.1160136-1-huanggaobin23@semi.ac.cn/
+  - Needs review.
+
+## v7.4 merge window
+
+- **Enable CXL PCIe Port Protocol Error handling and logging (v20, 9 patches)**
+  - Terry Bowman <terry.bowman@amd.com>
+  - https://lore.kernel.org/linux-cxl/20260902133933.2992457-1-terry.bowman@amd.com/
+  - **v21 expected**. Need Bjorn acks. Waiting on response from Lukas. Can use review
+    tags.
+
+- **PCI/CXL: Add CXL reset support for Type 2 devices (v12, 12 patches)**
+  - Srirangan Madhavan <smadhavan@nvidia.com>
+  - https://lore.kernel.org/linux-cxl/20260910070808.1444264-1-smadhavan@nvidia.com/
+  - Pending v13.
+
+- **DCD Prep Series (RESEND v13, 8 patches)**
+  - Anisa Su <anisa.su887@gmail.com>
+  - https://lore.kernel.org/linux-cxl/20260908102124.2231730-2-anisa.su@samsung.com/
+  - **Nearly ready; needs review tags on 3 of 8 (2, 3, 6).**
+
+- **cxl: Support Back-Invalidate (v8, 10 patches)**
+  - Davidlohr Bueso <dave@stgolabs.net>
+  - https://lore.kernel.org/linux-cxl/20260909170302.1550680-1-dave@stgolabs.net/
+  - Grown from 8 to 10 patches (BI register probing, topology enable/disable, HDM-DB
+    region creation, coherency-flag rename, split capability probe from setup,
+    auto-committed BI decoders, mock BI topology, maturity-map update).
+  - **Almost Ready — needs review tags on 3 of 10.**
+
+- **cxl: Support mixed-granularity region interleaves (v5, 7 patches)**
+  - Alison Schofield <alison.schofield@intel.com>
+  - https://lore.kernel.org/linux-cxl/cover.1788475206.git.alison.schofield@intel.com/
+  - **Almost Ready — needs review tags on patch 7.**
+
+- **vfio/pci: Add CXL Type-2 device passthrough support (v4, 27 patches)**
+  - Manish Honap <mhonap@nvidia.com>
+  - https://lore.kernel.org/linux-cxl/20260813093631.2288172-1-mhonap@nvidia.com/
+  - **v5 pending**
+
+- **Support zero-sized HDM decoders (v10, 3 patches)**
+  - Richard Cheng <icheng@nvidia.com>
+  - https://lore.kernel.org/linux-cxl/20260914090858.19181-1-icheng@nvidia.com/
+  - **Almost Ready — needs review tags on patch 1.**
+
+- **cxl/events: Return IRQ_NONE when no event is pending (v2)**
+  - Shaikh Kamaluddin <shaikhkamal2012@gmail.com>
+  - https://lore.kernel.org/linux-cxl/20260912093815.14455-1-shaikhkamal2012@gmail.com/
+  - Needs review
+
+- **[RFC] cxl: Device protocol AER injection**
+  - Terry Bowman <terry.bowman@amd.com>
+  - https://lore.kernel.org/linux-cxl/20260717225700.3543801-1-terry.bowman@amd.com/
+  - debugfs-based CXL protocol-error injection, written to provide a test procedure
+    for the port-error series above. Gated on that series landing.
+  - **Rework expected; now has independent test results.** Junjie Cao ran it on
+    7.2-rc3 under QEMU with a switch topology on 22 Aug and reported it works for all
+    four port classes with correct attribution (RP/USP/DSP/EP, one CE each with a
+    distinct RAS status bit), a UCE panics as intended, and six malformed inputs are
+    rejected — **Tested-by: Junjie Cao** (does not count toward readiness). He also
+    found a real Kconfig bug: a `bool` depending on a tristate lets `olddefconfig`
+    produce `PCIEAER_INJECT=m` with `CXL_BUS=y`, which fails to link with
+    `undefined reference to 'aer_inject'`; the symbol should be derived rather than
+    asked. He questions whether `aer_registers[]` is still needed at all, since it is
+    the only reference in the tree and the RCH path skips `cxl_rch_get_aer_info()`.
+    Earlier requests still open: Dave Jiang wants the definitions in `core.h`,
+    Jonathan Cameron wants a cover letter, a Documentation/ABI entry and named
+    constants instead of `sizeof(u32)`; the author prefers a new `core/ras_einj.c`.
+
+### v7.5 and beyond
+
+- **[RFC] Type2 multipf support (v1, 2 patches)**
+  - Alejandro Lucero Palau <alejandro.lucero-palau@amd.com>
+  - https://lore.kernel.org/linux-cxl/20260821155134.260053-1-alejandro.lucero-palau@amd.com/
+  - Under discusssion?
+
+- **cxl: Auto-create a region for Type-2 memdev attach (RFC v1, 3 patches)**
+  - Richard Cheng <icheng@nvidia.com>
+  - https://lore.kernel.org/linux-cxl/20260805074042.30173-1-icheng@nvidia.com/
+  - Under discussion?
+
 # Aug 18, 2026
 ## Agenda
 * Opens
