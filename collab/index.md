@@ -31,6 +31,37 @@ layout: page
 
 ## CXL CLI
 
+## NDCTL v86 aiming for end of September
+* Please test with the pending branch:
+  https://github.com/pmem/ndctl/tree/pending
+
+* ndctl: Dynamic Capacity additions for cxl-cli (AnisaS)
+  - Companion to CXL driver set.
+  - On hold until we have kernel side to test with.
+
+- v2 0/3 cxl: support mixed-granularity regions (AlisonS)
+  - https://lore.kernel.org/nvdimm/cover.1788469004.git.alison.schofield@intel.com/
+  - Companion to CXL driver set
+  - Needs review
+
+- v2 (0/3) Add CXL region passthrough <16K gran test (AlisonS)
+  - https://lore.kernel.org/nvdimm/cover.1788489571.git.alison.schofield@intel.com/
+  - Companion to CXL driver set
+  - Needs review
+
+* test/cxl-mbox: Regression test for huge CXL_MEM_SEND_COMMAND out.size (RichardC)
+  - https://lore.kernel.org/nvdimm/20260624150158.55264-1-icheng@nvidia.com/
+  - In review
+
+* test/cxl-security.sh: test dimm unlock with a large serial number (AlisonS)
+  - https://lore.kernel.org/nvdimm/20260702003407.1611731-1-alison.schofield@intel.com/
+  - Maybe pending v2
+
+* cxl/list: list locked zero-sized decoders (AlisonS)
+  - https://lore.kernel.org/nvdimm/e144468706798fc68df3be13d1e3321486aca901.1785462417.git.alison.schofield@intel.com/
+  - Maybe pending v2
+
+
 ## QEMU
 
 ## v7.3 rc fixes
