@@ -130,11 +130,6 @@ layout: page
   - https://lore.kernel.org/linux-cxl/20260813093631.2288172-1-mhonap@nvidia.com/
   - **v5 pending**
 
-- **Support zero-sized HDM decoders (v10, 3 patches)**
-  - Richard Cheng <icheng@nvidia.com>
-  - https://lore.kernel.org/linux-cxl/20260914090858.19181-1-icheng@nvidia.com/
-  - **Almost Ready — needs review tags on patch 1.**
-
 - **cxl/events: Return IRQ_NONE when no event is pending (v2)**
   - Shaikh Kamaluddin <shaikhkamal2012@gmail.com>
   - https://lore.kernel.org/linux-cxl/20260912093815.14455-1-shaikhkamal2012@gmail.com/
