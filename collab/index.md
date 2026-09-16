@@ -18,6 +18,10 @@ layout: page
 # START THE TRANSCRIPT
 
 # Sept 15, 2026
+
+Google Meet Notes:
+https://docs.google.com/document/d/15A1RKKkTHprNwh-nK8kSeQZeeNlenCE8qXcIrm9g8bg/edit?usp=meet_tnfm_email&tab=t.o8lnyum3lvjt
+
 ## Agenda
 * Opens
 * cxl-cli
@@ -28,6 +32,13 @@ layout: page
 * v7.5 and beyond
 
 ## Opens
+
+FAMFS update: Got more review tags, met w FUSE maintainer who 'agreed to relent'
+to the things John wanted and is also rewriting pieces. Will it be FUSE or
+stand-alone? Yes, it will be one of those.
+
+Private Node, GregP. Attempt to pull guest MFD policy ahead, got NAKd.
+Private nodes are now almost completely mem policy based.
 
 ## CXL CLI
 
@@ -63,6 +74,10 @@ layout: page
 
 
 ## QEMU
+Jonathan is setting up a new staging repo.
+New QEMU maintainer Junjie Cao
+Anisa will be a new QEMU reviewer too.
+RISC-V support landing soon. Expect to want more _DEP support added.
 
 ## v7.3 rc fixes
 - None
@@ -101,16 +116,21 @@ layout: page
   - https://lore.kernel.org/linux-cxl/20260902133933.2992457-1-terry.bowman@amd.com/
   - **v21 expected**. Need Bjorn acks. Waiting on response from Lukas. Can use review
     tags.
+  - DaveJ to ping Lukas about design concerns
 
 - **PCI/CXL: Add CXL reset support for Type 2 devices (v12, 12 patches)**
   - Srirangan Madhavan <smadhavan@nvidia.com>
   - https://lore.kernel.org/linux-cxl/20260910070808.1444264-1-smadhavan@nvidia.com/
   - Pending v13.
 
+  - DaveJ: Upcoming merge window, typically take new features up til rc6.
+  - Srirangan: wants to get Bjorn attn to design choices. We'll continue gathering
+
 - **DCD Prep Series (RESEND v13, 8 patches)**
   - Anisa Su <anisa.su887@gmail.com>
   - https://lore.kernel.org/linux-cxl/20260908102124.2231730-2-anisa.su@samsung.com/
   - **Nearly ready; needs review tags on 3 of 8 (2, 3, 6).**
+  - Prepping v14
 
 - **cxl: Support Back-Invalidate (v8, 10 patches)**
   - Davidlohr Bueso <dave@stgolabs.net>
@@ -119,6 +139,9 @@ layout: page
     region creation, coherency-flag rename, split capability probe from setup,
     auto-committed BI decoders, mock BI topology, maturity-map update).
   - **Almost Ready — needs review tags on 3 of 10.**
+
+  - Jonathan asking about need for spec clarification in this review feedback:
+  https://lore.kernel.org/linux-cxl/20260909222130.14387e8c@jic23-hlaptop/
 
 - **cxl: Support mixed-granularity region interleaves (v5, 7 patches)**
   - Alison Schofield <alison.schofield@intel.com>
@@ -159,7 +182,7 @@ layout: page
 - **[RFC] Type2 multipf support (v1, 2 patches)**
   - Alejandro Lucero Palau <alejandro.lucero-palau@amd.com>
   - https://lore.kernel.org/linux-cxl/20260821155134.260053-1-alejandro.lucero-palau@amd.com/
-  - Under discusssion?
+  - Alejandro prepping new revision.
 
 - **cxl: Auto-create a region for Type-2 memdev attach (RFC v1, 3 patches)**
   - Richard Cheng <icheng@nvidia.com>
