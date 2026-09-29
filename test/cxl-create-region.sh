@@ -297,6 +297,50 @@ create_csv_targets()
 	fi
 }
 
+list_regions()
+{
+	$CXL list -b cxl_test -R | jq -r ".[]? | .region" | sort | tr "\n" " "
+}
+
+# Verify failure occurs without creating a region and reports @expect.
+create_expect_fail()
+{
+	expect="$1"
+	shift
+
+	regions_before="$(list_regions)"
+
+	if out=$($CXL create-region -b cxl_test "$@" 2>&1); then
+		echo "create-region $*: expected failure, created a region"
+		err "$LINENO"
+	fi
+
+	if ! grep -Fq -- "$expect" <<< "$out"; then
+		echo "create-region $*: expected '$expect', got:"
+		echo "$out"
+		err "$LINENO"
+	fi
+
+	if [[ "$(list_regions)" != "$regions_before" ]]; then
+		echo "create-region $*: refused, but left a region behind"
+		err "$LINENO"
+	fi
+}
+
+refuse_bad_target_list()
+{
+	if ! setup_interleave_shape; then
+		echo "skipping bad target list refusals"
+		return
+	fi
+
+	create_expect_fail "$pos0 is named 2 times in the target list" \
+		-d "$x2_decoder" -m "$pos0,$pos0"
+
+	create_expect_fail "no active memdev matches target 'nomemdev'" \
+		-d "$x2_decoder" -m "$pos0,nomemdev"
+}
+
 # test region creation on devices behind a single-port host-bridge
 create_single
 
@@ -311,6 +355,7 @@ for mem in ${mems[@]}; do
 done
 
 create_csv_targets
+refuse_bad_target_list
 
 # Repeat x1/x2/x3/x4 region creation with XOR interleave arithmetic.
 load_cxl_test interleave_arithmetic=1

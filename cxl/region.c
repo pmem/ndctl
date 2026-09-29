@@ -222,6 +222,66 @@ static int memdev_sort(const void *a, const void *b)
 	return a_pos - b_pos;
 }
 
+/*
+ * Reject unmatched target names and overlapping target filters.
+ * A single filter may match multiple memdevs.
+ */
+static bool validate_target_list(struct json_object *jmemdevs, const char *csv)
+{
+	int i, nr_memdevs = json_object_array_length(jmemdevs);
+	const char *arg, *sep = which_sep(csv);
+	struct json_object *jobj;
+	struct cxl_memdev *memdev;
+	bool valid = true;
+	char *list, *save;
+	int *claims;
+
+	claims = calloc(nr_memdevs, sizeof(*claims));
+	if (!claims)
+		return false;
+
+	list = strdup(csv);
+	if (!list) {
+		free(claims);
+		return false;
+	}
+
+	for (arg = strtok_r(list, sep, &save); arg;
+	     arg = strtok_r(NULL, sep, &save)) {
+		int matched = 0;
+
+		for (i = 0; i < nr_memdevs; i++) {
+			jobj = json_object_array_get_idx(jmemdevs, i);
+			memdev = json_object_get_userdata(jobj);
+			if (!util_cxl_memdev_filter(memdev, arg, NULL))
+				continue;
+			claims[i]++;
+			matched++;
+		}
+
+		if (!matched) {
+			log_err(&rl, "no active memdev matches target '%s'\n",
+				arg);
+			valid = false;
+		}
+	}
+
+	for (i = 0; i < nr_memdevs; i++) {
+		if (claims[i] < 2)
+			continue;
+		jobj = json_object_array_get_idx(jmemdevs, i);
+		memdev = json_object_get_userdata(jobj);
+		log_err(&rl, "%s is named %d times in the target list\n",
+			cxl_memdev_get_devname(memdev), claims[i]);
+		valid = false;
+	}
+
+	free(list);
+	free(claims);
+
+	return valid;
+}
+
 static struct json_object *collect_memdevs(struct cxl_ctx *ctx,
 					   const char *decoder, int *count,
 					   const char **mems)
@@ -251,6 +311,11 @@ static struct json_object *collect_memdevs(struct cxl_ctx *ctx,
 	}
 
 	if (csv) {
+		if (!validate_target_list(jmemdevs, csv)) {
+			json_object_put(jmemdevs);
+			jmemdevs = NULL;
+			goto out;
+		}
 		sort_context.csv = csv,
 		json_object_array_sort(jmemdevs, memdev_sort);
 	}
