@@ -241,6 +241,12 @@ setup_interleave_shape()
 		return 1
 	fi
 
+	x2_granularity=$($CXL list -b cxl_test -D -d "$x2_decoder" |
+			 jq -r ".[0].interleave_granularity")
+
+	# A granularity coarser than the x2 root's is never valid.
+	coarser_granularity=$((x2_granularity * 2))
+
 	pos0=$(find_memdev "$x2_decoder" 0 0)
 	pos1=$(find_memdev "$x2_decoder" 1 0)
 	pos2=$(find_memdev "$x2_decoder" 0 1)
@@ -392,6 +398,21 @@ release_dpa_on_failure()
 	destroy_regions "$filler"
 }
 
+# Reject invalid encodings and granularities incompatible with the root.
+refuse_bad_granularity()
+{
+	if ! setup_interleave_shape; then
+		echo "skipping granularity refusals"
+		return
+	fi
+
+	create_expect_fail "Invalid interleave granularity: 1000" \
+		-d "$x2_decoder" -m "$pos0 $pos1" -g 1000
+
+	create_expect_fail "cannot exceed root decoder granularity ($x2_granularity)" \
+		-d "$x2_decoder" -m "$pos0 $pos1" -g "$coarser_granularity"
+}
+
 # test region creation on devices behind a single-port host-bridge
 create_single
 
@@ -408,6 +429,7 @@ done
 create_csv_targets
 refuse_bad_target_list
 release_dpa_on_failure
+refuse_bad_granularity
 
 # Repeat x1/x2/x3/x4 region creation with XOR interleave arithmetic.
 load_cxl_test interleave_arithmetic=1
