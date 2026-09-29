@@ -124,24 +124,25 @@ static const struct option destroy_options[] = {
 static const char *to_csv(int *count, const char **strings)
 {
 	ssize_t len = 0, cursor = 0;
+	int i, new_count = 0, emitted = 0;
 	char *csv, *list, *save;
-	int i, new_count = 0;
-	const char *arg;
+	const char *arg, *sep;
 
 	if (!*count)
 		return NULL;
 
 	for (i = 0; i < *count; i++) {
 		/*
-		 * An entry in strings may itself by a space or comma
-		 * separated list, so decompose that for the final csv
+		 * An entry may itself be space- or comma-separated. strtok_r()
+		 * modifies @list, so choose the separator before tokenizing.
 		 */
 		list = strdup(strings[i]);
 		if (!list)
 			return NULL;
 
-		for (arg = strtok_r(list, which_sep(list), &save); arg;
-		     arg = strtok_r(NULL, which_sep(list), &save)) {
+		sep = which_sep(list);
+		for (arg = strtok_r(list, sep, &save); arg;
+		     arg = strtok_r(NULL, sep, &save)) {
 			len += strlen(arg);
 			new_count++;
 		}
@@ -161,10 +162,12 @@ static const char *to_csv(int *count, const char **strings)
 			return NULL;
 		}
 
-		for (arg = strtok_r(list, which_sep(list), &save); arg;
-		     arg = strtok_r(NULL, which_sep(list), &save)) {
+		sep = which_sep(list);
+		for (arg = strtok_r(list, sep, &save); arg;
+		     arg = strtok_r(NULL, sep, &save)) {
 			cursor += snprintf(csv + cursor, len - cursor, "%s%s",
-					   arg, i + 1 < new_count ? "," : "");
+					   arg,
+					   ++emitted < new_count ? "," : "");
 			if (cursor >= len) {
 				csv[len - 1] = 0;
 				break;
