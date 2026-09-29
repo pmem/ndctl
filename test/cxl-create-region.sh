@@ -226,6 +226,77 @@ setup_x3()
 	memdevs="$mem0 $mem1 $mem2"
 }
 
+# Build a 4-way target list over the 4K x2 root in interleave position order.
+setup_interleave_shape()
+{
+	x2_decoder=$($CXL list -b cxl_test -D -d root |
+		     jq -r ".[] |
+		     select(.pmem_capable == true) |
+		     select(.nr_targets == 2) |
+		     select(.interleave_granularity == 4096) |
+		     .decoder")
+
+	if [[ ! $x2_decoder ]]; then
+		echo "no pmem capable 4K x2 root decoder found"
+		return 1
+	fi
+
+	pos0=$(find_memdev "$x2_decoder" 0 0)
+	pos1=$(find_memdev "$x2_decoder" 1 0)
+	pos2=$(find_memdev "$x2_decoder" 0 1)
+	pos3=$(find_memdev "$x2_decoder" 1 1)
+
+	if [[ ! $pos0 || ! $pos1 || ! $pos2 || ! $pos3 ]]; then
+		echo "$x2_decoder: no memdev pair for each interleave position"
+		return 1
+	fi
+}
+
+# A comma-separated target list must preserve its count and order.
+create_csv_targets()
+{
+	if ! setup_interleave_shape; then
+		echo "skipping comma separated target list"
+		return
+	fi
+
+	if ! json=$($CXL create-region -b cxl_test -d "$x2_decoder" \
+		    -m "$pos0,$pos1,$pos2,$pos3"); then
+		echo "$x2_decoder: refused $pos0,$pos1,$pos2,$pos3"
+		err "$LINENO"
+	fi
+
+	region=$(jq -r ".region" <<< "$json")
+	ways=$(jq -r ".interleave_ways" <<< "$json")
+	if [[ $ways -ne 4 ]]; then
+		echo "$region: interleaves $ways ways, expected 4"
+		err "$LINENO"
+	fi
+
+	targets=$(jq -r "[.mappings | sort_by(.position) | .[].memdev] |
+		  join(\" \")" <<< "$json")
+	if [[ "$targets" != "$pos0 $pos1 $pos2 $pos3" ]]; then
+		echo "$region: targets '$targets', expected '$pos0 $pos1 $pos2 $pos3'"
+		err "$LINENO"
+	fi
+
+	destroy_regions "$region"
+
+	# Also verify a rejected filter is echoed without a trailing comma.
+	if out=$($CXL create-region -b cxl_test -d "$x2_decoder" \
+		 -m nomemdev0,nomemdev1,nomemdev2 2>&1); then
+		echo "create-region accepted names that are not memdevs"
+		err "$LINENO"
+	fi
+
+	if ! grep -Fq -- "filter: nomemdev0,nomemdev1,nomemdev2" <<< "$out" ||
+	   grep -Fq -- "nomemdev2," <<< "$out"; then
+		echo "target list echoed back as:"
+		echo "$out"
+		err "$LINENO"
+	fi
+}
+
 # test region creation on devices behind a single-port host-bridge
 create_single
 
@@ -238,6 +309,8 @@ done
 for mem in ${mems[@]}; do
 	create_subregions "$mem"
 done
+
+create_csv_targets
 
 # Repeat x1/x2/x3/x4 region creation with XOR interleave arithmetic.
 load_cxl_test interleave_arithmetic=1
