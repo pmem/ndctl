@@ -112,9 +112,8 @@ include::bus-option.txt[]
 
 -d::
 --decoder=::
-	The root decoder that the region should be created under. If not
-	supplied, the first cross-host bridge (if available), decoder that
-	supports the largest interleave will be chosen.
+	The root decoder under which to create the region. This option is
+	required.
 
 -Q::
 --enforce-qos::
