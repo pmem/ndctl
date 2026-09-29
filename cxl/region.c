@@ -407,8 +407,11 @@ static int parse_create_options(struct cxl_ctx *ctx, int count,
 		p->ways = p->num_memdevs;
 
 	if (param.granularity < INT_MAX) {
-		if (param.granularity <= 0) {
-			log_err(&rl, "Invalid interleave granularity: %d\n",
+		/* HDM granularity is a power of two from 256B through 16KiB. */
+		if (param.granularity < 256 || param.granularity > 16384 ||
+		    !is_power_of_2(param.granularity)) {
+			log_err(&rl,
+				"Invalid interleave granularity: %d, expected a power of 2 from 256 to 16384\n",
 				param.granularity);
 			goto err;
 		}
@@ -670,10 +673,9 @@ do { \
 	} \
 } while (0)
 
-static int cxl_region_determine_granularity(struct cxl_region *region,
-					    struct parsed_params *p)
+static int cxl_region_determine_granularity(struct parsed_params *p)
 {
-	const char *devname = cxl_region_get_devname(region);
+	const char *devname = cxl_decoder_get_devname(p->root_decoder);
 	int granularity, ways;
 
 	/* Default granularity will be the root decoder's granularity */
@@ -687,18 +689,6 @@ static int cxl_region_determine_granularity(struct cxl_region *region,
 	/* If no user-supplied granularity, just use the default */
 	if (!p->granularity)
 		return granularity;
-
-	/*
-	 * The CXL specification defines interleave granularities of 256 through
-	 * 16K in powers of two. Reject anything else here, rather than leave the
-	 * user with a bare EINVAL from the kernel.
-	 */
-	if (p->granularity < 256 || !is_power_of_2(p->granularity)) {
-		log_err(&rl,
-			"%s: granularity (%d) must be a power of 2, 256 or greater\n",
-			devname, p->granularity);
-		return -EINVAL;
-	}
 
 	ways = cxl_decoder_get_interleave_ways(p->root_decoder);
 	if (ways == 0 || ways == -1) {
@@ -792,6 +782,11 @@ static int create_region(struct cxl_ctx *ctx, int *count,
 		}
 	}
 
+	rc = cxl_region_determine_granularity(p);
+	if (rc < 0)
+		return rc;
+	granularity = rc;
+
 	if (p->mode == CXL_DECODER_MODE_PMEM) {
 		region = cxl_decoder_create_pmem_region(p->root_decoder);
 		if (!region) {
@@ -819,11 +814,6 @@ static int create_region(struct cxl_ctx *ctx, int *count,
 		rc = -ENOMEM;
 		goto out;
 	}
-
-	rc = cxl_region_determine_granularity(region, p);
-	if (rc < 0)
-		goto out;
-	granularity = rc;
 
 	try(cxl_region, set_interleave_granularity, region, granularity);
 	try(cxl_region, set_interleave_ways, region, p->ways);
