@@ -341,6 +341,57 @@ refuse_bad_target_list()
 		-d "$x2_decoder" -m "$pos0,nomemdev"
 }
 
+# Snapshot endpoint DPA reservations.
+reserved_dpa()
+{
+	$CXL list -b cxl_test -D -d endpoint -i |
+	jq -r ".[] |
+	select((.dpa_size // 0) > 0) |
+	\"\(.decoder) \(.dpa_size)\"" | sort
+}
+
+# Fail after earlier targets reserve DPA and verify it is released.
+release_dpa_on_failure()
+{
+	if ! setup_interleave_shape; then
+		echo "skipping dpa release on failure"
+		return
+	fi
+
+	# an x1 window over position 2's host bridge, to fill it through
+	decoder=$(find_x1_decoder "$pos2")
+
+	if [[ ! $decoder ]]; then
+		echo "no x1 pmem decoder over $pos2, skipping dpa release"
+		return
+	fi
+
+	filler=$($CXL create-region -b cxl_test -d "$decoder" -m "$pos2" |
+		 jq -r ".region")
+	if [[ ! $filler ]]; then
+		echo "$decoder: unable to fill $pos2"
+		err "$LINENO"
+	fi
+
+	dpa_before="$(reserved_dpa)"
+
+	# Force the failure into endpoint DPA setup; default sizing would
+	# reject the request before reserving anything.
+	size=$((256 << 20))
+	create_expect_fail "set_dpa_size failed" \
+		-d "$x2_decoder" -m "$pos0 $pos1 $pos2 $pos3" \
+		-s $((size * 4))
+
+	dpa_after="$(reserved_dpa)"
+	if [[ "$dpa_after" != "$dpa_before" ]]; then
+		echo "dpa left reserved by the failed create:"
+		diff <(echo "$dpa_before") <(echo "$dpa_after") || true
+		err "$LINENO"
+	fi
+
+	destroy_regions "$filler"
+}
+
 # test region creation on devices behind a single-port host-bridge
 create_single
 
@@ -356,6 +407,7 @@ done
 
 create_csv_targets
 refuse_bad_target_list
+release_dpa_on_failure
 
 # Repeat x1/x2/x3/x4 region creation with XOR interleave arithmetic.
 load_cxl_test interleave_arithmetic=1
