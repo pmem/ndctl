@@ -725,14 +725,30 @@ static int cxl_region_determine_granularity(struct cxl_region *region,
 	return -EINVAL;
 }
 
+/* Delete the region before releasing its endpoint DPA. */
+static void unreserve_dpa(struct cxl_decoder **ep_decoders, int nr)
+{
+	int i, rc;
+
+	for (i = 0; i < nr; i++) {
+		rc = cxl_decoder_set_dpa_size(ep_decoders[i], 0);
+		if (rc)
+			log_err(&rl, "%s: failed to release dpa: %s\n",
+				cxl_decoder_get_devname(ep_decoders[i]),
+				strerror(abs(rc)));
+	}
+}
+
 static int create_region(struct cxl_ctx *ctx, int *count,
 			 struct parsed_params *p)
 {
 	unsigned long flags = UTIL_JSON_TARGETS;
+	struct cxl_decoder **ep_decoders;
 	struct json_object *jregion;
 	struct cxl_region *region;
 	bool default_size = true;
 	int i, rc, granularity;
+	int nr_reserved = 0;
 	u64 size, max_extent;
 	const char *devname;
 
@@ -798,6 +814,12 @@ static int create_region(struct cxl_ctx *ctx, int *count,
 
 	devname = cxl_region_get_devname(region);
 
+	ep_decoders = calloc(p->ways, sizeof(*ep_decoders));
+	if (!ep_decoders) {
+		rc = -ENOMEM;
+		goto out;
+	}
+
 	rc = cxl_region_determine_granularity(region, p);
 	if (rc < 0)
 		goto out;
@@ -833,6 +855,7 @@ static int create_region(struct cxl_ctx *ctx, int *count,
 			try(cxl_decoder, set_mode, ep_decoder, p->mode);
 		}
 		try(cxl_decoder, set_dpa_size, ep_decoder, size/p->ways);
+		ep_decoders[nr_reserved++] = ep_decoder;
 		rc = cxl_region_set_target(region, i, ep_decoder);
 		if (rc) {
 			log_err(&rl, "%s: failed to set target%d to %s\n",
@@ -865,8 +888,16 @@ static int create_region(struct cxl_ctx *ctx, int *count,
 
 out:
 	json_object_put(p->memdevs);
-	if (rc)
-		cxl_region_delete(region);
+	if (rc) {
+		int delete_rc = cxl_region_delete(region);
+
+		if (delete_rc)
+			log_err(&rl, "%s: failed to delete: %s\n", devname,
+				strerror(abs(delete_rc)));
+		else
+			unreserve_dpa(ep_decoders, nr_reserved);
+	}
+	free(ep_decoders);
 	return rc;
 }
 
