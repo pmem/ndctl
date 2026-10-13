@@ -179,6 +179,7 @@ cxl_dax_hmem = find_program('cxl-dax-hmem.sh')
 cxl_region_replay = find_program('cxl-region-replay.sh')
 cxl_type2 = find_program('cxl-type2.sh')
 cxl_mbox_sh = find_program('cxl-mbox.sh')
+cxl_kunit = find_program('cxl-kunit.sh')
 
 tests = [
   [ 'libndctl',               libndctl,		  'ndctl' ],
@@ -218,6 +219,7 @@ tests = [
   [ 'cxl-region-replay.sh',   cxl_region_replay,  'cxl'   ],
   [ 'cxl-type2.sh',           cxl_type2,          'cxl'   ],
   [ 'cxl-mbox.sh',            cxl_mbox_sh,        'cxl'   ],
+  [ 'cxl-kunit.sh',           cxl_kunit,          'cxl'   ],
 ]
 
 if get_option('destructive').enabled()

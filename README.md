@@ -130,6 +130,9 @@ loaded.  To build and install nfit_test.ko:
    CONFIG_NVDIMM_SECURITY_TEST=y
    CONFIG_ENCRYPTED_KEYS=y
    CONFIG_NVDIMM_KEYS=y
+   CONFIG_KUNIT=y
+   CONFIG_KUNIT_DEBUGFS=y
+   CONFIG_CXL_KUNIT_TEST=m
    ```
 1. Install cxl_test and related mock modules.
    ```
