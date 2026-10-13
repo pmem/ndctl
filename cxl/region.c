@@ -620,6 +620,18 @@ static int cxl_region_determine_granularity(struct cxl_region *region,
 	if (!p->granularity)
 		return granularity;
 
+	/*
+	 * The CXL specification defines interleave granularities of 256 through
+	 * 16K in powers of two. Reject anything else here, rather than leave the
+	 * user with a bare EINVAL from the kernel.
+	 */
+	if (p->granularity < 256 || !is_power_of_2(p->granularity)) {
+		log_err(&rl,
+			"%s: granularity (%d) must be a power of 2, 256 or greater\n",
+			devname, p->granularity);
+		return -EINVAL;
+	}
+
 	ways = cxl_decoder_get_interleave_ways(p->root_decoder);
 	if (ways == 0 || ways == -1) {
 		log_err(&rl, "%s: unable to determine root decoder ways\n",
@@ -632,15 +644,16 @@ static int cxl_region_determine_granularity(struct cxl_region *region,
 		return p->granularity;
 
 	/*
-	 * For ways > 1, only allow the same granularity as the selected
-	 * root decoder
+	 * For ways > 1, allow any region granularity up to and including the
+	 * root decoder granularity. The kernel validates a finer region
+	 * granularity, and a coarser one is always invalid.
 	 */
-	if (p->granularity == granularity)
-		return granularity;
+	if (p->granularity <= granularity)
+		return p->granularity;
 
 	log_err(&rl,
-		"%s: For an x%d root, only root decoder granularity (%d) permitted\n",
-		devname, ways, granularity);
+		"%s: region granularity (%d) cannot exceed root decoder granularity (%d)\n",
+		devname, p->granularity, granularity);
 	return -EINVAL;
 }
 

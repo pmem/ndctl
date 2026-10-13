@@ -93,11 +93,22 @@ include::bus-option.txt[]
 
 -g::
 --granularity=::
-	The interleave granularity for the new region. Must match the selected
-	root decoder's (if provided) granularity. If the root decoder is
-	interleaved across more than one host-bridge then this value must match
-	that granularity. Otherwise, for non-interleaved decode windows, any
-	granularity can be specified as long as all devices support that setting.
+	The interleave granularity for the new region. A granularity coarser
+	than the root decoder's is never legal. If the root decoder is
+	interleaved across more than one host bridge, then for a given number
+	of ways at most two granularities are legal:
+
+	  * "root_ways * root_granularity / ways", which creates a region
+	    finer than the root. The root interleaves at its own coarser
+	    granularity and the levels below it, host bridges and switches,
+	    refine monotonically toward the region granularity.
+	  * The root decoder granularity itself, which repeats the root
+	    interleave pattern across a wider region. This is available only
+	    when the root decoder ways are a power of two.
+
+	The two coincide when the region ways equal the root decoder ways. For
+	non-interleaved root decoders, any granularity can be specified as
+	long as all devices support that setting.
 
 -d::
 --decoder=::
