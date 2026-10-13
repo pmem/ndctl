@@ -682,8 +682,18 @@ static int create_region(struct cxl_ctx *ctx, int *count,
 		return -ENOSPC;
 	}
 
-	if (size > max_extent)
-		size = ALIGN_DOWN(max_extent, SZ_256M * p->ways);
+	if (size > max_extent) {
+		u64 min_size = (u64)SZ_256M * p->ways;
+
+		size = (max_extent / min_size) * min_size;
+		if (!size) {
+			log_err(&rl,
+				"%s: max available space (%#lx) is less than the minimum %d-way region size (%#lx)\n",
+				cxl_decoder_get_devname(p->root_decoder),
+				max_extent, p->ways, min_size);
+			return -ENOSPC;
+		}
+	}
 
 	if (p->mode == CXL_DECODER_MODE_PMEM) {
 		region = cxl_decoder_create_pmem_region(p->root_decoder);
