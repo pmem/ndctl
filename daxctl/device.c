@@ -510,10 +510,99 @@ static const char *parse_device_options(int argc, const char **argv,
 	return device;
 }
 
+static int dev_online_memory_atomic(struct daxctl_dev *dev,
+		struct daxctl_memory *mem, enum daxctl_kmem_state state)
+{
+	const char *devname = daxctl_dev_get_devname(dev);
+	enum daxctl_kmem_state target;
+	int num_sections, num_on, rc;
+
+	if (param.no_movable)
+		target = DAXCTL_KMEM_ONLINE;
+	else
+		target = DAXCTL_KMEM_ONLINE_MOVABLE;
+
+	if (state == DAXCTL_KMEM_OFFLINE) {
+		/*
+		 * Onlining requires 'unplugged'. Don't unplug memory another
+		 * agent onlined meanwhile (a small window remains).
+		 */
+		num_on = daxctl_memory_is_online(mem);
+		if (num_on < 0) {
+			fprintf(stderr, "%s: failed to determine online state: %s\n",
+				devname, strerror(-num_on));
+			return num_on;
+		}
+		if (num_on > 0)
+			return -EAGAIN;
+		rc = daxctl_dev_set_kmem_state(dev, DAXCTL_KMEM_UNPLUGGED);
+		if (rc < 0) {
+			/* unchanged (e.g. no hotremove support); go per-block */
+			if (param.verbose)
+				fprintf(stderr, "%s: unplug failed: %s\n",
+					devname, strerror(-rc));
+			return -EAGAIN;
+		}
+	}
+
+	rc = daxctl_dev_set_kmem_state(dev, target);
+	if (rc == -EBUSY) {
+		/* back off only if another writer onlined it */
+		switch (daxctl_dev_get_kmem_state(dev)) {
+		case DAXCTL_KMEM_ONLINE:
+		case DAXCTL_KMEM_ONLINE_KERNEL:
+		case DAXCTL_KMEM_ONLINE_MOVABLE:
+			return -EAGAIN;
+		default:
+			break;
+		}
+	}
+	if (rc < 0) {
+		fprintf(stderr, "%s: failed to online memory: %s\n",
+			devname, strerror(-rc));
+		if (state == DAXCTL_KMEM_OFFLINE)
+			fprintf(stderr,
+				"%s: device left unplugged; retry to recover\n",
+				devname);
+		return rc;
+	}
+
+	/* all sections should now be online */
+	num_sections = daxctl_memory_num_sections(mem);
+	if (num_sections < 0) {
+		fprintf(stderr, "%s: failed to get number of memory sections\n",
+			devname);
+		return num_sections;
+	}
+	if (num_sections == 0) {
+		fprintf(stderr, "%s: no memory sections present after online\n",
+			devname);
+		return -ENXIO;
+	}
+
+	num_on = daxctl_memory_is_online(mem);
+	if (num_on < 0) {
+		fprintf(stderr, "%s: failed to determine online state: %s\n",
+			devname, strerror(-num_on));
+		return num_on;
+	}
+	if (num_on < num_sections) {
+		fprintf(stderr, "%s: failed to online %d memory sections\n",
+			devname, num_sections - num_on);
+		return -ENXIO;
+	}
+	if (param.verbose)
+		fprintf(stderr, "%s: %d memory section%s onlined\n", devname,
+			num_on, num_on == 1 ? "" : "s");
+
+	return 0;
+}
+
 static int dev_online_memory(struct daxctl_dev *dev)
 {
 	struct daxctl_memory *mem = daxctl_dev_get_memory(dev);
 	const char *devname = daxctl_dev_get_devname(dev);
+	enum daxctl_kmem_state state;
 	int num_sections, num_on, rc;
 
 	if (!mem) {
@@ -522,12 +611,28 @@ static int dev_online_memory(struct daxctl_dev *dev)
 		return -ENXIO;
 	}
 
+	/*
+	 * Online a fully offline device atomically where supported.
+	 * -EAGAIN means another agent onlined memory, or the device
+	 * could not be unplugged first; go per-block.
+	 */
+	state = daxctl_dev_get_kmem_state(dev);
+	if (state == DAXCTL_KMEM_UNPLUGGED || state == DAXCTL_KMEM_OFFLINE) {
+		rc = dev_online_memory_atomic(dev, mem, state);
+		if (rc != -EAGAIN)
+			return rc;
+	}
+
 	/* get total number of sections and sections already online */
 	num_sections = daxctl_memory_num_sections(mem);
 	if (num_sections < 0) {
 		fprintf(stderr, "%s: failed to get number of memory sections\n",
 			devname);
 		return num_sections;
+	}
+	if (num_sections == 0) {
+		fprintf(stderr, "%s: no memory sections present\n", devname);
+		return -ENXIO;
 	}
 
 	num_on = daxctl_memory_is_online(mem);
