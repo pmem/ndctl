@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 // Copyright (C) 2015-2020 Intel Corporation. All rights reserved.
+#include <errno.h>
 #include <limits.h>
 #include <string.h>
 #include <util/json.h>
@@ -79,7 +80,10 @@ struct json_object *util_daxctl_dev_to_json(struct daxctl_dev *dev,
 		if (jobj)
 			json_object_object_add(jdev, "total_memblocks", jobj);
 
-		movable = daxctl_memory_is_movable(mem);
+		/* an unplugged device has no zone */
+		movable = -ENXIO;
+		if (num_sections > 0)
+			movable = daxctl_memory_is_movable(mem);
 		if (movable == 1)
 			jobj = json_object_new_boolean(true);
 		else if (movable == 0)

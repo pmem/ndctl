@@ -1644,8 +1644,16 @@ static int daxctl_memory_op(struct daxctl_memory *mem, enum memory_op op)
 	}
 
 	node_dir = opendir(node_path);
-	if (!node_dir)
-		return -errno;
+	if (!node_dir) {
+		rc = -errno;
+		/* unplugging a node's last memory removes its directory */
+		if (rc == -ENOENT &&
+		    daxctl_dev_get_kmem_state(dev) == DAXCTL_KMEM_UNPLUGGED) {
+			dbg(ctx, "%s: unplugged, no blocks to count\n", devname);
+			return 0;
+		}
+		return rc;
+	}
 
 	errno = 0;
 	while ((de = readdir(node_dir)) != NULL) {

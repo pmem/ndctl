@@ -694,7 +694,8 @@ static int dev_offline_memory(struct daxctl_dev *dev)
 {
 	struct daxctl_memory *mem = daxctl_dev_get_memory(dev);
 	const char *devname = daxctl_dev_get_devname(dev);
-	int num_sections, num_on, num_off, rc;
+	int num_sections, num_on, num_off, rc, unplug;
+	enum daxctl_kmem_state state;
 
 	if (!mem) {
 		fprintf(stderr, "%s: failed to get the memory object\n",
@@ -717,16 +718,60 @@ static int dev_offline_memory(struct daxctl_dev *dev)
 		return num_on;
 	}
 
+	/*
+	 * Unplug atomically where supported, even if already offline, so
+	 * no agent can online blocks before a later unbind.
+	 */
+	state = daxctl_dev_get_kmem_state(dev);
+	unplug = state != DAXCTL_KMEM_UNKNOWN && state != DAXCTL_KMEM_UNPLUGGED;
+
 	num_off = num_sections - num_on;
-	if (num_off == num_sections) {
+	if (num_off == num_sections && !unplug) {
 		fprintf(stderr, "%s: all memory sections (%d) already offline\n",
 			devname, num_off);
 		return 1;
 	}
-	if (num_off)
+	if (num_off && num_on)
 		fprintf(stderr, "%s: %d memory section%s already offline\n",
 			devname, num_off,
 			num_off == 1 ? "" : "s");
+
+	if (unplug) {
+		rc = daxctl_dev_set_kmem_state(dev, DAXCTL_KMEM_UNPLUGGED);
+		if (rc < 0 && num_on == 0) {
+			/* already offline, unplug is best effort */
+			if (param.verbose)
+				fprintf(stderr, "%s: unplug failed: %s\n",
+					devname, strerror(-rc));
+			fprintf(stderr, "%s: all memory sections (%d) already offline\n",
+				devname, num_off);
+			return 1;
+		}
+		if (rc < 0) {
+			fprintf(stderr, "%s: failed to offline memory: %s\n",
+				devname, strerror(-rc));
+			return rc;
+		}
+		if (param.verbose)
+			fprintf(stderr, "%s: %d memory section%s unplugged\n",
+				devname, num_sections,
+				num_sections == 1 ? "" : "s");
+
+		/* blocks are removed, none should remain online */
+		num_on = daxctl_memory_is_online(mem);
+		if (num_on < 0) {
+			fprintf(stderr, "%s: failed to determine online state: %s\n",
+				devname, strerror(-num_on));
+			return num_on;
+		}
+		if (num_on) {
+			fprintf(stderr, "%s: failed to offline %d memory sections\n",
+				devname, num_on);
+			return -ENXIO;
+		}
+
+		return 0;
+	}
 
 	/* offline the remaining sections */
 	rc = daxctl_memory_offline(mem);
