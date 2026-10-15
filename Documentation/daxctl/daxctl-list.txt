@@ -22,6 +22,11 @@ list' with no options is equivalent to:
 [verse]
 daxctl list --devices
 
+On kernels that support atomic whole-device hotplug, 'hotplug_state'
+reports /sys/bus/dax/devices/daxX.Y/state for system-ram devices, or
+'inconsistent' if the device's memory blocks disagree with it (e.g.
+after blocks were onlined or offlined individually).
+
 EXAMPLE
 -------
 ----

@@ -230,6 +230,8 @@ include::region-option.txt[]
 	By default, memory sections provided by system-ram devices will be
 	brought online automatically and immediately with the 'online_movable'
 	policy. Use this option to disable the automatic onlining behavior.
+	A device unplugged by 'daxctl-offline-memory' has no memory blocks
+	to online; use 'daxctl-online-memory' to restore them.
 
 -C::
 --check-config::
@@ -248,7 +250,8 @@ include::movable-options.txt[]
 	that all the memory sections are first made offline. By default,
 	daxctl won't touch online memory. However with this option, attempt
 	to offline the memory on the NUMA node associated with the dax device
-	before converting it back to "devdax" mode.
+	before converting it back to "devdax" mode. This uses
+	'daxctl-offline-memory', so the device is unplugged where supported.
 
 	- Additionally, if a kernel policy to auto-online blocks is detected,
 	reconfiguration to system-ram fails. With this option, the failure can
