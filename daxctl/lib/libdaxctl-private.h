@@ -58,6 +58,15 @@ static const char *state_strings[] = {
 	[MEM_ZONE_MOVABLE] = "online_movable",
 };
 
+/* dax_kmem daxX.Y/state strings */
+static const char *kmem_state_strings[] = {
+	[DAXCTL_KMEM_UNPLUGGED] = "unplugged",
+	[DAXCTL_KMEM_OFFLINE] = "offline",
+	[DAXCTL_KMEM_ONLINE] = "online",
+	[DAXCTL_KMEM_ONLINE_KERNEL] = "online_kernel",
+	[DAXCTL_KMEM_ONLINE_MOVABLE] = "online_movable",
+};
+
 /**
  * struct daxctl_region - container for dax_devices
  */
