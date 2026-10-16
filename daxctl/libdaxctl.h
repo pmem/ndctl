@@ -77,6 +77,24 @@ int daxctl_dev_get_target_node(struct daxctl_dev *dev);
 int daxctl_dev_will_auto_online_memory(struct daxctl_dev *dev);
 int daxctl_dev_has_online_memory(struct daxctl_dev *dev);
 
+/*
+ * dax_kmem whole-device hotplug state (daxX.Y/state). UNKNOWN means the
+ * attribute is absent (older kernel, or device not bound to kmem) or
+ * reports a state this library does not recognize.
+ */
+enum daxctl_kmem_state {
+	DAXCTL_KMEM_UNKNOWN = -1,
+	DAXCTL_KMEM_UNPLUGGED = 0,
+	DAXCTL_KMEM_OFFLINE,
+	DAXCTL_KMEM_ONLINE,
+	DAXCTL_KMEM_ONLINE_KERNEL,
+	DAXCTL_KMEM_ONLINE_MOVABLE,
+};
+
+enum daxctl_kmem_state daxctl_dev_get_kmem_state(struct daxctl_dev *dev);
+int daxctl_dev_set_kmem_state(struct daxctl_dev *dev,
+		enum daxctl_kmem_state state);
+
 struct daxctl_memory;
 
 enum daxctl_dev_mode {

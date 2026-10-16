@@ -1644,8 +1644,16 @@ static int daxctl_memory_op(struct daxctl_memory *mem, enum memory_op op)
 	}
 
 	node_dir = opendir(node_path);
-	if (!node_dir)
-		return -errno;
+	if (!node_dir) {
+		rc = -errno;
+		/* unplugging a node's last memory removes its directory */
+		if (rc == -ENOENT &&
+		    daxctl_dev_get_kmem_state(dev) == DAXCTL_KMEM_UNPLUGGED) {
+			dbg(ctx, "%s: unplugged, no blocks to count\n", devname);
+			return 0;
+		}
+		return rc;
+	}
 
 	errno = 0;
 	while ((de = readdir(node_dir)) != NULL) {
@@ -1793,4 +1801,63 @@ DAXCTL_EXPORT int daxctl_dev_has_online_memory(struct daxctl_dev *dev)
 		return daxctl_memory_is_online(mem);
 	else
 		return 0;
+}
+
+DAXCTL_EXPORT enum daxctl_kmem_state daxctl_dev_get_kmem_state(
+		struct daxctl_dev *dev)
+{
+	struct daxctl_ctx *ctx = daxctl_dev_get_ctx(dev);
+	char *path = dev->dev_buf;
+	int len = dev->buf_len;
+	char buf[SYSFS_ATTR_SIZE];
+	int i;
+
+	if (snprintf(path, len, "%s/state", dev->dev_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				daxctl_dev_get_devname(dev));
+		return DAXCTL_KMEM_UNKNOWN;
+	}
+
+	/* absent on older kernels */
+	if (sysfs_read_attr(ctx, path, buf) < 0)
+		return DAXCTL_KMEM_UNKNOWN;
+
+	for (i = DAXCTL_KMEM_UNPLUGGED; i <= DAXCTL_KMEM_ONLINE_MOVABLE; i++)
+		if (strcmp(buf, kmem_state_strings[i]) == 0)
+			return i;
+
+	dbg(ctx, "%s: unrecognized kmem state '%s'\n",
+			daxctl_dev_get_devname(dev), buf);
+	return DAXCTL_KMEM_UNKNOWN;
+}
+
+DAXCTL_EXPORT int daxctl_dev_set_kmem_state(struct daxctl_dev *dev,
+		enum daxctl_kmem_state state)
+{
+	struct daxctl_ctx *ctx = daxctl_dev_get_ctx(dev);
+	char *path = dev->dev_buf;
+	int len = dev->buf_len;
+
+	switch (state) {
+	case DAXCTL_KMEM_UNPLUGGED:
+	case DAXCTL_KMEM_ONLINE:
+	case DAXCTL_KMEM_ONLINE_KERNEL:
+	case DAXCTL_KMEM_ONLINE_MOVABLE:
+		break;
+	/* 'offline' is read-only */
+	case DAXCTL_KMEM_OFFLINE:
+	case DAXCTL_KMEM_UNKNOWN:
+	default:
+		dbg(ctx, "%s: invalid kmem state %d\n",
+				daxctl_dev_get_devname(dev), state);
+		return -EINVAL;
+	}
+
+	if (snprintf(path, len, "%s/state", dev->dev_path) >= len) {
+		err(ctx, "%s: buffer too small!\n",
+				daxctl_dev_get_devname(dev));
+		return -ENXIO;
+	}
+
+	return sysfs_write_attr(ctx, path, kmem_state_strings[state]);
 }

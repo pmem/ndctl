@@ -67,6 +67,40 @@ daxctl_get_mode()
 	"$DAXCTL" list -d "$1" | jq -er '.[].mode'
 }
 
+daxctl_get_online_blocks()
+{
+	"$DAXCTL" list -d "$1" | jq -er '.[].online_memblocks'
+}
+
+daxctl_get_total_blocks()
+{
+	"$DAXCTL" list -d "$1" | jq -er '.[].total_memblocks'
+}
+
+check_memory_online()
+{
+	local total
+
+	total=$(daxctl_get_total_blocks "$1")
+	(( total > 0 ))
+	[[ $(daxctl_get_online_blocks "$1") == "$total" ]]
+}
+
+check_memory_offline()
+{
+	[[ $(daxctl_get_online_blocks "$1") == "0" ]]
+}
+
+# skipped on kernels without daxX.Y/state
+check_kmem_state()
+{
+	local path="/sys/bus/dax/devices/$1/state"
+
+	[[ -f "$path" ]] || return 0
+	[[ $(cat "$path") == "$2" ]]
+	[[ $("$DAXCTL" list -d "$1" | jq -er '.[].hotplug_state') == "$2" ]]
+}
+
 set_online_policy()
 {
 	echo "online" > /sys/devices/system/memory/auto_online_blocks
@@ -100,7 +134,26 @@ daxctl_test()
 	"$DAXCTL" reconfigure-device -N -m system-ram "$daxdev"
 	[[ $(daxctl_get_mode "$daxdev") == "system-ram" ]]
 	"$DAXCTL" online-memory "$daxdev"
+	check_memory_online "$daxdev"
+	check_kmem_state "$daxdev" "online_movable"
 	"$DAXCTL" offline-memory "$daxdev"
+	check_memory_offline "$daxdev"
+	check_kmem_state "$daxdev" "unplugged"
+	# again, now from 'unplugged' where supported
+	"$DAXCTL" online-memory "$daxdev"
+	check_memory_online "$daxdev"
+	check_kmem_state "$daxdev" "online_movable"
+	"$DAXCTL" offline-memory "$daxdev"
+	check_memory_offline "$daxdev"
+	check_kmem_state "$daxdev" "unplugged"
+	# an already offline device is unplugged too, where supported
+	if [[ -f /sys/bus/dax/devices/$daxdev/state ]]; then
+		"$DAXCTL" reconfigure-device -m devdax "$daxdev"
+		"$DAXCTL" reconfigure-device -N -m system-ram "$daxdev"
+		check_kmem_state "$daxdev" "offline"
+		"$DAXCTL" offline-memory "$daxdev"
+		check_kmem_state "$daxdev" "unplugged"
+	fi
 	"$DAXCTL" reconfigure-device -m devdax "$daxdev"
 	[[ $(daxctl_get_mode "$daxdev") == "devdax" ]]
 	"$DAXCTL" reconfigure-device -m system-ram "$daxdev"

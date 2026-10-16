@@ -48,6 +48,11 @@ Online the memory sections associated with a device that has been converted
 to the system-ram mode. If one or more blocks are already online, print a
 message about them, and attempt to online the remaining blocks.
 
+If the kernel supports atomic whole-device hotplug
+(/sys/bus/dax/devices/daxX.Y/state), a fully offline device is onlined
+as a whole rather than block by block. An 'unplugged' device is re-added
+and onlined atomically; one with blocks present is unplugged first.
+
 This is complementary to the 'daxctl-reconfigure-device' command, when used with
 the '--no-online' option to skip onlining memory sections immediately after the
 reconfigure. In these scenarios, the memory can be onlined at a later time using

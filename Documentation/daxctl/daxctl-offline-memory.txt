@@ -41,6 +41,11 @@ to the system-ram mode. If one or more blocks are already offline, attempt to
 offline the remaining blocks. If all blocks were already offline, print a
 message and return success without actually doing anything.
 
+If the kernel supports atomic whole-device hotplug
+(/sys/bus/dax/devices/daxX.Y/state), the device is instead unplugged,
+even if its memory is already offline: the memory is offlined and
+removed in one atomic operation. 'daxctl-online-memory' restores it.
+
 This is complementary to the 'daxctl-online-memory' command, and may be used
 when it is wished to offline the memory sections, but not convert the device
 back to 'devdax' mode.
