@@ -12,6 +12,42 @@
 #include "filter.h"
 #include "json.h"
 
+/*
+ * daxX.Y/state only changes when written, so it goes stale if blocks are
+ * toggled individually. Report "inconsistent" if the blocks disagree.
+ */
+static const char *hotplug_state(enum daxctl_kmem_state state, int online,
+		int total, int movable)
+{
+	int all_online = total > 0 && online == total;
+
+	switch (state) {
+	case DAXCTL_KMEM_UNPLUGGED:
+		if (total == 0)
+			return "unplugged";
+		break;
+	case DAXCTL_KMEM_OFFLINE:
+		if (total > 0 && online == 0)
+			return "offline";
+		break;
+	case DAXCTL_KMEM_ONLINE:
+		if (all_online)
+			return "online";
+		break;
+	case DAXCTL_KMEM_ONLINE_KERNEL:
+		if (all_online && movable == 0)
+			return "online_kernel";
+		break;
+	case DAXCTL_KMEM_ONLINE_MOVABLE:
+		if (all_online && movable == 1)
+			return "online_movable";
+		break;
+	default:
+		break;
+	}
+	return "inconsistent";
+}
+
 struct json_object *util_daxctl_dev_to_json(struct daxctl_dev *dev,
 		unsigned long flags)
 {
@@ -19,6 +55,7 @@ struct json_object *util_daxctl_dev_to_json(struct daxctl_dev *dev,
 	const char *devname = daxctl_dev_get_devname(dev);
 	struct json_object *jdev, *jobj, *jmappings = NULL;
 	struct daxctl_mapping *mapping = NULL;
+	enum daxctl_kmem_state state;
 	int node, movable, align;
 
 	jdev = json_object_new_object();
@@ -92,6 +129,16 @@ struct json_object *util_daxctl_dev_to_json(struct daxctl_dev *dev,
 			jobj = NULL;
 		if (jobj)
 			json_object_object_add(jdev, "movable", jobj);
+
+		state = daxctl_dev_get_kmem_state(dev);
+		if (state != DAXCTL_KMEM_UNKNOWN && num_online >= 0 &&
+		    num_sections >= 0) {
+			jobj = json_object_new_string(hotplug_state(state,
+					num_online, num_sections, movable));
+			if (jobj)
+				json_object_object_add(jdev, "hotplug_state",
+						       jobj);
+		}
 	}
 
 	if (!daxctl_dev_is_enabled(dev)) {
