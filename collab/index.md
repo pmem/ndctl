@@ -18,6 +18,10 @@ layout: page
 # START THE TRANSCRIPT
 
 # Oct 20, 2026
+
+## Google Meet Notes:
+https://docs.google.com/document/d/13bxeTzNKA-IQhvsAO56hBXe4pkZIJOWZq2sDwMIZW-0/edit?usp=meet_tnfm_email&tab=t.wgiw4lf0ywzf
+
 ## Agenda
 * Opens
 * cxl-cli
@@ -30,7 +34,16 @@ layout: page
 ## Opens
 
 * vfio-cxl sizing (Alejandro, Jonathan)
-* Others?
+* Key outcomes of LPC
+  - C-RAM is real.  GregP's presentation.
+    David Hildenbrand asking for HBM in first support/patchset.
+  - Type2 and COCO
+    Jonathan/Ankit type2 and coco, getting real. CXL device probe now happens
+    too late for TSM bind. Need decoders programmed/locked down before TSM bind.
+    TerryB brought up wanting to align IDE implementation w Ankits work.
+  - Aaron Georges presentation on UIO un-ordered i/o. Jonathan suggests viewing.
+  - Hot Page IBS and DAX FS also mentioned worth a watch by Jonathan mention.
+  - QEMU needs work for new virt use cases.
 
 ## CXL-CLI
 * NDCTL v86 - is pending
@@ -65,6 +78,7 @@ layout: page
 
 
 ## QEMU
+- new staging tree available
 
 ## v7.4 rc fixes
 - **cxl: Repair poison enumeration regressions (v9, 4 patches)**
