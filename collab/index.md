@@ -67,10 +67,10 @@ layout: page
 ## QEMU
 
 ## v7.4 rc fixes
-- **cxl: Repair poison enumeration regressions (v8, 4 patches)**
+- **cxl: Repair poison enumeration regressions (v9, 4 patches)**
   - Richard Cheng <icheng@nvidia.com>
   - https://lore.kernel.org/linux-cxl/20260922101129.52794-1-icheng@nvidia.com/
-  - **Ready — rebase requested.**
+  - **Ready**
 
 ## v7.5 fixes
 - **cxl/region: Reject a repeat write of an endpoint decoder to targetN (2 patches)**
