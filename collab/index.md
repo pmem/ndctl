@@ -20,7 +20,8 @@ layout: page
 # Oct 20, 2026
 
 ## Google Meet Notes:
-https://docs.google.com/document/d/13bxeTzNKA-IQhvsAO56hBXe4pkZIJOWZq2sDwMIZW-0/edit?usp=meet_tnfm_email&tab=t.wgiw4lf0ywzf
+
+<https://docs.google.com/document/d/13bxeTzNKA-IQhvsAO56hBXe4pkZIJOWZq2sDwMIZW-0/edit?usp=meet_tnfm_email&tab=t.wgiw4lf0ywzf>
 
 ## Agenda
 * Opens
