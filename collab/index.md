@@ -33,6 +33,36 @@ layout: page
 * Others?
 
 ## CXL-CLI
+* NDCTL v86 - is pending
+  Please test with branch: https://github.com/pmem/ndctl/tree/pending
+
+## CXL-CLI need review:
+- **v1 0/7: cxl/region: create-region command and unit test fixups (AlisonS)**
+  - https://lore.kernel.org/r/cover.1790658549.git.alison.schofield@intel.com
+
+- **v3 0/3: cxl: support region granularities finer than the root  (AlisonS)**
+  - https://lore.kernel.org/r/cover.1791863817.git.alison.schofield@intel.com
+
+- **v1: test/cxl-region-sysfs.sh: test a repeat write of a region target  (AlisonS)**
+  - https://lore.kernel.org/r/20261001051546.126881-1-alison.schofield@intel.com
+
+- **v1: test/cxl-kunit.sh: enable running the CXL KUnit tests  (AlisonS)**
+  - https://lore.kernel.org/r/20261014043823.295243-1-alison.schofield@intel.com
+
+## CXL-CLI awaiting author (maybe revision pending):
+- **v1: test/cxl-security.sh: test dimm unlock with a large serial number  (AlisonS)**
+  - https://lore.kernel.org/r/20260702003407.1611731-1-alison.schofield@intel.com
+- **v1 1/2: cxl/list: emit decoder locked status  (AlisonS)**
+  - https://lore.kernel.org/r/e144468706798fc68df3be13d1e3321486aca901.1785462417.git.alison.schofield@intel.com
+- **v1 2/2: cxl/list: list locked zero-sized decoders  (AlisonS)**
+  - https://lore.kernel.org/r/018112d2f7890f3a3f38cc96aee5cf98cf5f3a9d.1785462417.git.alison.schofield@intel.com
+- **v2 0/3: Add CXL region passthrough >16K gran test  (AlisonS)**
+  - https://lore.kernel.org/r/cover.1788489571.git.alison.schofield@intel.com
+- **v1: cxl/test: Add ELC MCE alias retirement tests  (ShaikhK)**
+  - https://lore.kernel.org/r/20260906041844.13891-1-shaikhkamal2012@gmail.com
+- **v7 0/5: Dynamic Capacity additions for cxl-cli  (AnisaS)**
+  - https://lore.kernel.org/r/20260625121242.603807-1-anisa.su@samsung.com
+
 
 ## QEMU
 
