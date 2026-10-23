@@ -81,9 +81,8 @@ must be enabled. For more information, view the Linux kernel documentation on EI
 
 This command depends on the CXL debug filesystem (normally mounted at
 "/sys/kernel/debug/cxl") to inject protocol errors. If the CXL debugfs is not
-accessible the "protocol_injectable" attribute of dports will always be
-set to false, and the "injectable_protocol_errors" attribute of CXL busses
-will always be empty.
+accessible, the "protocol_injectable" attribute of dports and the
+"injectable_protocol_errors" attribute of CXL buses are omitted.
 
 OPTIONS
 -------

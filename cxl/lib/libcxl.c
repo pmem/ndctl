@@ -3589,6 +3589,9 @@ CXL_EXPORT char *cxl_dport_get_einj_path(struct cxl_dport *dport)
 	char *path;
 	int rc;
 
+	if (!ctx->cxl_debugfs)
+		return NULL;
+
 	path_len = strlen(ctx->cxl_debugfs) + 100;
 	path = calloc(path_len, sizeof(char));
 	if (!path)
