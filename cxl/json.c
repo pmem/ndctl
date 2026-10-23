@@ -746,12 +746,15 @@ void util_cxl_dports_append_json(struct json_object *jport,
 		if (jobj)
 			json_object_object_add(jdport, "id", jobj);
 
-		einj_path = cxl_dport_get_einj_path(dport);
-		jobj = json_object_new_boolean(einj_path != NULL);
-		if (jobj)
-			json_object_object_add(jdport, "protocol_injectable",
-					       jobj);
-		free(einj_path);
+		if (cxl_debugfs_exists(cxl_port_get_ctx(port))) {
+			einj_path = cxl_dport_get_einj_path(dport);
+			jobj = json_object_new_boolean(einj_path != NULL);
+			if (jobj)
+				json_object_object_add(jdport,
+						       "protocol_injectable",
+						       jobj);
+			free(einj_path);
+		}
 
 		json_object_array_add(jdports, jdport);
 		json_object_set_userdata(jdport, dport, NULL);
