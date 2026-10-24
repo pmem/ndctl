@@ -8,7 +8,7 @@
 
 /* Wraps a nd_cmd generic header with pdsm header */
 struct nd_pkg_papr {
-	struct nd_cmd_pkg gen;
+	struct nd_cmd_pkg_hdr gen;
 	struct nd_pkg_pdsm pdsm;
 };
 

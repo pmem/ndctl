@@ -321,7 +321,7 @@ union ndn_hpe1_cmd {
 };
 
 struct ndn_pkg_hpe1 {
-	struct nd_cmd_pkg gen;
+	struct nd_cmd_pkg_hdr gen;
 	union ndn_hpe1_cmd u;
 } __attribute__((packed));
 

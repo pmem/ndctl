@@ -15,6 +15,7 @@
 #include <ccan/array_size/array_size.h>
 
 #include <ndctl/ndctl.h>
+#include <ndctl/nd-cmd-pkg.h>
 #include <ndctl/libndctl.h>
 #include <ndctl/libndctl-nfit.h>
 #include <ccan/endian/endian.h>

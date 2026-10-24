@@ -48,7 +48,7 @@ static int bus_has_translate_spa(struct ndctl_bus *bus)
 static struct ndctl_cmd *ndctl_bus_cmd_new_translate_spa(struct ndctl_bus *bus)
 {
 	struct ndctl_cmd *cmd;
-	struct nd_cmd_pkg *pkg;
+	struct nd_cmd_pkg_hdr *pkg;
 	struct nd_cmd_translate_spa *translate_spa;
 	size_t size, spa_length;
 

@@ -6,6 +6,7 @@
 
 #include <linux/types.h>
 #include <ndctl/ndctl.h>
+#include <ndctl/nd-cmd-pkg.h>
 
 /*
  * libndctl-nfit.h : definitions for NFIT related commands/functions.
@@ -77,7 +78,7 @@ struct nd_cmd_ars_err_inj_stat {
 } __attribute__((packed));
 
 struct nd_cmd_bus {
-	struct nd_cmd_pkg gen;
+	struct nd_cmd_pkg_hdr gen;
 	union {
 		struct nd_cmd_ars_err_inj_stat err_inj_stat;
 		struct nd_cmd_ars_err_inj_clr err_inj_clr;

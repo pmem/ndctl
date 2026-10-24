@@ -31,7 +31,7 @@ union nd_hyperv_cmd {
 } __attribute__((packed));
 
 struct nd_pkg_hyperv {
-	struct nd_cmd_pkg	gen;
+	struct nd_cmd_pkg_hdr	gen;
 	union  nd_hyperv_cmd	u;
 } __attribute__((packed));
 

@@ -141,7 +141,7 @@ struct nd_intel_lss {
 } __attribute__((packed));
 
 struct nd_pkg_intel {
-	struct nd_cmd_pkg gen;
+	struct nd_cmd_pkg_hdr gen;
 	union {
 		struct nd_intel_smart smart;
 		struct nd_intel_smart_inject inject;

@@ -62,7 +62,7 @@ static int papr_xlat_firmware_status(struct ndctl_cmd *cmd)
 /* Verify if the given command is supported and valid */
 static bool cmd_is_valid(struct ndctl_cmd *cmd)
 {
-	const struct nd_cmd_pkg  *ncmd = NULL;
+	const struct nd_cmd_pkg_hdr *ncmd = NULL;
 
 	if (cmd == NULL)
 		return false;
@@ -111,8 +111,8 @@ static struct ndctl_cmd *allocate_cmd(struct ndctl_dimm *dimm,
 	cmd->status = 0;
 	cmd->get_firmware_status = &papr_get_firmware_status;
 
-	/* Populate the nd_cmd_pkg contained in nd_pkg_pdsm */
-	*to_ndcmd(cmd) =  (struct nd_cmd_pkg) {
+	/* Populate the generic command header */
+	*to_ndcmd(cmd) = (struct nd_cmd_pkg_hdr) {
 		.nd_family = NVDIMM_FAMILY_PAPR,
 		.nd_command = pdsm_cmd,
 		.nd_size_in = 0,

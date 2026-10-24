@@ -41,7 +41,7 @@ union ndn_msft_cmd {
 } __attribute__((packed));
 
 struct ndn_pkg_msft {
-	struct nd_cmd_pkg	gen;
+	struct nd_cmd_pkg_hdr	gen;
 	union ndn_msft_cmd	u;
 } __attribute__((packed));
 
