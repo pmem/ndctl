@@ -43,6 +43,102 @@ OPTIONS
 	then this option will override (but not overwrite) anything that is
 	in the file.
 
+CXL SERIAL NUMBER KEY MISMATCH
+------------------------------
+This section applies to passphrase-protected CXL NVDIMMs that fail to
+auto-unlock after reboot on kernels without commit 8a80d3d65cd0, or that
+fail to auto-unlock after upgrading to a kernel with that fix. It does
+not apply to NVDIMMs without a passphrase or devices that unlock
+normally.
+
+Kernels without the fix look up passphrase keys using hexadecimal serial
+numbers, while ndctl names them using decimal. The mismatch affects
+serial numbers of 10 or greater. The fix, included in Linux 7.3 and some
+stable kernels, uses unsigned decimal for both. Devices with serial
+number bit 63 set may need their saved keys migrated after upgrading.
+
+The examples below use nmem0 for the affected nvdimm and the default
+key path:
+[subs="attributes"]
+----
+# keydir={ndctl_keysdir}
+----
+
+=== Recovery on a kernel without the fix
+
+Confirm that the device is locked:
+----
+# ndctl list -i -d nmem0 | jq -r '.[].dimms[0].security'
+locked
+----
+
+If it reports 'disabled', the device has no passphrase enrolled and this
+is a different problem. If it reports 'unlocked', there is nothing to
+recover.
+
+Check whether the device is affected by the serial number mismatch.
+Show the decimal 'id' that ndctl uses to name the key, and the
+hexadecimal serial number of the CXL memdev that backs nmem0:
+----
+# id=$(cat /sys/bus/nd/devices/nmem0/cxl/id)
+# prov=$(cat /sys/bus/nd/devices/nmem0/cxl/provider)
+# serial=$(cat /sys/bus/cxl/devices/${prov}/../serial)
+# echo "$id $serial"
+----
+
+If the 'id' is 10 or greater, or is negative, the device is affected.
+Confirm that the key blob ndctl saved exists:
+----
+# ls "${keydir}/nvdimm_${id}_$(hostname).blob"
+----
+
+If the blob is missing, this recovery procedure does not apply. Check
+that the correct key directory and hostname are being used.
+
+Copy the blob to a name that uses the hexadecimal serial number,
+without its 0x prefix, so that 'load-keys' also installs the key the
+kernel requests:
+----
+# hexid=${serial#0x}
+# cp "${keydir}/nvdimm_${id}_$(hostname).blob" \
+     "${keydir}/nvdimm_${hexid}_$(hostname).blob"
+----
+
+Reload the keys and enable the dimm. 'load-keys' names each key after
+its blob file, so the copy is installed as the key the kernel requests:
+----
+# ndctl load-keys
+# ndctl enable-dimm nmem0
+# ndctl list -i -d nmem0 | jq -r '.[].dimms[0].security'
+unlocked
+----
+
+=== Migration after upgrading to a fixed kernel
+
+Only serial numbers with bit 63 set need to be migrated. Their blob is
+named by the negative 'id' that the previous kernel reported, while the
+fixed kernel requests the key by the unsigned decimal serial number.
+Other serial numbers require no migration. A hexadecimal copy made by
+the recovery procedure above is no longer used and may be removed.
+
+Copy the blob from the previous negative 'id' to the current 'id'.
+Shell arithmetic cannot portably represent these values, so compute the
+previous 'id' with bc(1), which must be installed:
+----
+# id=$(cat /sys/bus/nd/devices/nmem0/cxl/id)
+# oldid=$(echo "$id - 2^64" | bc)
+# cp "${keydir}/nvdimm_${oldid}_$(hostname).blob" \
+     "${keydir}/nvdimm_${id}_$(hostname).blob"
+----
+
+Reload the keys and enable the dimm:
+----
+# ndctl load-keys
+# ndctl enable-dimm nmem0
+# ndctl list -i -d nmem0 | jq -r '.[].dimms[0].security'
+unlocked
+----
+
 include::intel-nvdimm-security.txt[]
 
 include::../copyright.txt[]
