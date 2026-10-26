@@ -87,9 +87,22 @@ do
 						     select(.mode == \"pmem\") | .decoder")
 done
 
-# attach all endpoint decoders to the region
+# a repeat write of an attached endpoint decoder must succeed and leave
+# every decoder between it and the root attached
 pos=0
-for i in ${endpoint[@]}
+if check_min_kver "7.4-rc4"; then
+	echo "${endpoint[0]}" > "/sys/bus/cxl/devices/$region/target0"
+	nr_attached=$(cat /sys/bus/cxl/devices/decoder*/region | grep -cx "$region")
+	if ! echo "${endpoint[0]}" > "/sys/bus/cxl/devices/$region/target0"; then
+		err "$LINENO: repeat write of ${endpoint[0]} to target0 failed"
+	fi
+	nr=$(cat /sys/bus/cxl/devices/decoder*/region | grep -cx "$region")
+	[ "$nr" -ne "$nr_attached" ] && err "$LINENO: $nr of $nr_attached decoders still attached"
+	pos=1
+fi
+
+# attach the remaining endpoint decoders to the region
+for i in ${endpoint[@]:$pos}
 do
 	echo $i > /sys/bus/cxl/devices/$region/target$pos
 	pos=$((pos+1))
