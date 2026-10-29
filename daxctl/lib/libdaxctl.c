@@ -1615,6 +1615,7 @@ static int memblock_in_dev(struct daxctl_memory *mem, const char *memblock)
 	const char *devname = daxctl_dev_get_devname(dev);
 	struct daxctl_ctx *ctx = daxctl_dev_get_ctx(dev);
 	int rc, path_len = mem->buf_len;
+	struct daxctl_mapping *mapping;
 	unsigned long memblock_size;
 	char buf[SYSFS_ATTR_SIZE];
 	unsigned long phys_index;
@@ -1654,8 +1655,18 @@ static int memblock_in_dev(struct daxctl_memory *mem, const char *memblock)
 	}
 	memblock_res = phys_index * memblock_size;
 
-	if (memblock_res >= dev_start && memblock_res <= dev_end)
-		return 1;
+	rc = mappings_init(dev);
+	if (rc < 0)
+		return rc;
+
+	/* kernels without mappingN report a single range */
+	if (list_empty(&dev->mappings))
+		return memblock_res >= dev_start && memblock_res <= dev_end;
+
+	daxctl_mapping_foreach(dev, mapping)
+		if (memblock_res >= mapping->start &&
+		    memblock_res <= mapping->end)
+			return 1;
 
 	return 0;
 }
@@ -1716,8 +1727,8 @@ static int daxctl_memory_op(struct daxctl_memory *mem, enum memory_op op)
 	if (!node_dir)
 		return -errno;
 
-	errno = 0;
-	while ((de = readdir(node_dir)) != NULL) {
+	/* Helpers may leave errno set even when a block is skipped. */
+	for (errno = 0; (de = readdir(node_dir)) != NULL; errno = 0) {
 		if (strncmp(de->d_name, "memory", 6) == 0) {
 			if (strncmp(de->d_name, "memory_", 7) == 0)
 				continue;
@@ -1734,7 +1745,6 @@ static int daxctl_memory_op(struct daxctl_memory *mem, enum memory_op op)
 			if (rc == 0)
 				count++;
 		}
-		errno = 0;
 	}
 
 	if (status_flags & MEM_ST_ZONE_INCONSISTENT)
