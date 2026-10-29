@@ -241,6 +241,7 @@ static void free_dev(struct daxctl_dev *dev, struct list_head *head)
 	free(dev->dev_buf);
 	free(dev->dev_path);
 	free_mem(dev);
+	free_mappings(dev);
 	free(dev);
 }
 
@@ -593,14 +594,15 @@ static void *add_dax_dev(void *parent, int id, const char *daxdev_base)
 	else
 		dev->target_node = -1;
 
+	dev->num_mappings = -1;
+	list_head_init(&dev->mappings);
+
 	daxctl_dev_foreach(region, dev_dup)
 		if (dev_dup->id == dev->id) {
 			free_dev(dev, NULL);
 			free(path);
 			return dev_dup;
 		}
-	dev->num_mappings = -1;
-	list_head_init(&dev->mappings);
 	list_add(&region->devices, &dev->list);
 	free(path);
 	return dev;
@@ -1186,6 +1188,7 @@ DAXCTL_EXPORT int daxctl_dev_set_size(struct daxctl_dev *dev, unsigned long long
 	}
 
 	sprintf(buf, "%#llx\n", size);
+	free_mappings(dev);
 	if (sysfs_write_attr(ctx, path, buf) < 0) {
 		err(ctx, "%s: failed to set size\n",
 				daxctl_dev_get_devname(dev));
@@ -1242,6 +1245,7 @@ DAXCTL_EXPORT int daxctl_dev_set_mapping(struct daxctl_dev *dev,
 	}
 
 	sprintf(buf, "%#llx-%#llx\n", start, end);
+	free_mappings(dev);
 	if (sysfs_write_attr(ctx, path, buf) < 0) {
 		err(ctx, "%s: failed to set mapping\n",
 				daxctl_dev_get_devname(dev));
