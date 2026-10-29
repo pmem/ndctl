@@ -222,6 +222,17 @@ static void free_mem(struct daxctl_dev *dev)
 	}
 }
 
+static void free_mappings(struct daxctl_dev *dev)
+{
+	struct daxctl_mapping *mapping, *_m;
+
+	list_for_each_safe(&dev->mappings, mapping, _m, list) {
+		list_del_from(&dev->mappings, &mapping->list);
+		free(mapping);
+	}
+	dev->num_mappings = -1;
+}
+
 static void free_dev(struct daxctl_dev *dev, struct list_head *head)
 {
 	if (head)
@@ -1269,15 +1280,17 @@ DAXCTL_EXPORT unsigned long daxctl_memory_get_block_size(struct daxctl_memory *m
 	return mem->block_size;
 }
 
-static void mappings_init(struct daxctl_dev *dev)
+static int mappings_init(struct daxctl_dev *dev)
 {
+	const char *devname = daxctl_dev_get_devname(dev);
 	struct daxctl_ctx *ctx = daxctl_dev_get_ctx(dev);
+	unsigned long long size = 0;
 	char buf[SYSFS_ATTR_SIZE];
 	char *path = dev->dev_buf;
-	int i;
+	int i, rc;
 
 	if (dev->num_mappings != -1)
-		return;
+		return 0;
 
 	dev->num_mappings = 0;
 	for (;;) {
@@ -1285,31 +1298,43 @@ static void mappings_init(struct daxctl_dev *dev)
 		unsigned long long pgoff, start, end;
 
 		i = dev->num_mappings;
+		sprintf(path, "%s/mapping%d", dev->dev_path, i);
+		if (access(path, F_OK) < 0) {
+			if (errno == ENOENT)
+				break;
+			rc = -errno;
+			err(ctx, "%s: Unable to access mapping%d: %s\n",
+				devname, i, strerror(-rc));
+			goto out;
+		}
+
 		mapping = calloc(1, sizeof(*mapping));
 		if (!mapping) {
-			err(ctx, "%s: mapping%u allocation failure\n",
-				daxctl_dev_get_devname(dev), i);
-			continue;
+			rc = -ENOMEM;
+			goto err;
 		}
 
 		sprintf(path, "%s/mapping%d/start", dev->dev_path, i);
-		if (sysfs_read_attr(ctx, path, buf) < 0) {
+		rc = sysfs_read_attr(ctx, path, buf);
+		if (rc < 0) {
 			free(mapping);
-			break;
+			goto err;
 		}
 		start = strtoull(buf, NULL, 0);
 
 		sprintf(path, "%s/mapping%d/end", dev->dev_path, i);
-		if (sysfs_read_attr(ctx, path, buf) < 0) {
+		rc = sysfs_read_attr(ctx, path, buf);
+		if (rc < 0) {
 			free(mapping);
-			break;
+			goto err;
 		}
 		end = strtoull(buf, NULL, 0);
 
 		sprintf(path, "%s/mapping%d/page_offset", dev->dev_path, i);
-		if (sysfs_read_attr(ctx, path, buf) < 0) {
+		rc = sysfs_read_attr(ctx, path, buf);
+		if (rc < 0) {
 			free(mapping);
-			break;
+			goto err;
 		}
 		pgoff = strtoull(buf, NULL, 0);
 
@@ -1320,9 +1345,30 @@ static void mappings_init(struct daxctl_dev *dev)
 
 		dev->num_mappings++;
 		list_add(&dev->mappings, &mapping->list);
+		size += end - start + 1;
 	}
+
+	/* each of the device's ranges has a mappingN */
+	if (dev->num_mappings && size != dev->size) {
+		err(ctx, "%s: mappings total %#llx, device size %#llx\n",
+			devname, size, dev->size);
+		rc = -ENXIO;
+		goto out;
+	}
+
+	return 0;
+
+err:
+	/* sysfs_read_attr() already logged these */
+	if (rc != -EACCES && rc != -EPERM)
+		err(ctx, "%s: Unable to read mapping%d: %s\n", devname, i,
+			strerror(-rc));
+out:
+	free_mappings(dev);
+	return rc;
 }
 
+/* NULL means either no mappings or a failure to read them */
 DAXCTL_EXPORT struct daxctl_mapping *daxctl_mapping_get_first(struct daxctl_dev *dev)
 {
 	mappings_init(dev);
