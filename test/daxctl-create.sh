@@ -7,6 +7,9 @@ rc=77
 
 trap 'cleanup $LINENO' ERR
 
+policy=/sys/devices/system/memory/auto_online_blocks
+saved_policy=
+
 modprobe -r cxl_test
 modprobe cxl_test
 $CXL list
@@ -14,6 +17,7 @@ $CXL list
 cleanup()
 {
 	printf "Error at line %d\n" "$1"
+	[[ $saved_policy ]] && echo "$saved_policy" > "$policy"
 	[[ $testdev ]] && reset_dax
 	exit $rc
 }
@@ -396,6 +400,59 @@ daxctl_test7()
 	test_pass
 }
 
+# Test 8: multi-range system-ram
+# Successfully counts every memory block of a device whose two ranges
+# have a gap between them. The memory is never onlined: cxl_test memory
+# is not backed by RAM.
+daxctl_test8()
+{
+	local daxdev_1 daxdev_2 daxdev path m start end n nmaps=0 total=0
+	local bs size
+
+	bs=$((0x$(cat /sys/devices/system/memory/block_size_bytes)))
+	size=$((available / 4))
+	if (( size < bs || size % bs )); then
+		echo "test8: skipped, region too small for $bs byte memory blocks"
+		return 0
+	fi
+
+	# a devdax device in the gap between the two ranges, it has no
+	# memory blocks to be miscounted
+	daxdev_1=$("$DAXCTL" create-device -r "$region_id" -s $size | jq -er '.[].chardev')
+	daxdev_2=$("$DAXCTL" create-device -r "$region_id" -s $size | jq -er '.[].chardev')
+	test -n "$daxdev_2"
+	"$DAXCTL" disable-device "$daxdev_1" && "$DAXCTL" destroy-device "$daxdev_1"
+
+	daxdev=$("$DAXCTL" create-device -r "$region_id" -s $((size * 2)) | jq -er '.[].chardev')
+	test "$(daxctl_get_nr_mappings "$daxdev")" -eq 2
+
+	# memory blocks wholly inside each mapping
+	path=$(readlink -f /sys/bus/dax/devices/"$daxdev")
+	for m in "$path"/mapping[0-9]*; do
+		start=$(cat "$m"/start)
+		end=$(cat "$m"/end)
+		n=$(((end + 1) / bs - (start + bs - 1) / bs))
+		(( n > 0 ))
+		total=$((total + n))
+		nmaps=$((nmaps + 1))
+	done
+	test "$nmaps" -eq 2
+
+	saved_policy=$(cat "$policy")
+	echo offline > "$policy"
+	"$DAXCTL" reconfigure-device -N -m system-ram "$daxdev"
+	test "$("$DAXCTL" list -d "$daxdev" | jq -er '.[].total_memblocks')" -eq "$total"
+	"$DAXCTL" reconfigure-device -m devdax "$daxdev"
+	echo "$saved_policy" > "$policy"
+	saved_policy=
+
+	"$DAXCTL" disable-device -r "$region_id" all
+	"$DAXCTL" destroy-device -r "$region_id" all
+
+	clear_dev
+	test_pass
+}
+
 find_testdev
 rc=1
 setup_dev
@@ -407,6 +464,7 @@ daxctl_test4
 daxctl_test5
 daxctl_test6
 daxctl_test7
+daxctl_test8
 reset_dev
 modprobe -r cxl_test
 exit 0
