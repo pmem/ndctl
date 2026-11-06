@@ -60,7 +60,7 @@ check_destroy_ram()
 	mem=$1
 	decoder=$2
 
-	region="$("$CXL" create-region -d "$decoder" -m "$mem" | jq -r ".region")"
+	region="$("$CXL" create-region -t ram -d "$decoder" -m "$mem" | jq -r ".region")"
 	if [[ ! $region ]]; then
 		err "$LINENO"
 	fi
@@ -76,7 +76,7 @@ check_destroy_devdax()
 	mem=$1
 	decoder=$2
 
-	region="$("$CXL" create-region -d "$decoder" -m "$mem" | jq -r ".region")"
+	region="$("$CXL" create-region -t ram -d "$decoder" -m "$mem" | jq -r ".region")"
 	if [[ ! $region ]]; then
 		err "$LINENO"
 	fi
