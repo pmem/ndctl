@@ -31,8 +31,8 @@ struct ndctl_bus *util_bus_filter(struct ndctl_bus *bus, const char *__ident)
 		if (strcmp(name, "all") == 0)
 			break;
 
-		bus_id = strtoul(ident, &end, 0);
-		if (end == ident || end[0])
+		bus_id = strtoul(name, &end, 0);
+		if (end == name || end[0])
 			bus_id = ULONG_MAX;
 
 		provider = ndctl_bus_get_provider(bus);
@@ -72,8 +72,8 @@ struct ndctl_region *util_region_filter(struct ndctl_region *region,
 		if (strcmp(name, "all") == 0)
 			break;
 
-		region_id = strtoul(ident, &end, 0);
-		if (end == ident || end[0])
+		region_id = strtoul(name, &end, 0);
+		if (end == name || end[0])
 			region_id = ULONG_MAX;
 
 		region_name = ndctl_region_get_devname(region);
@@ -146,8 +146,8 @@ struct ndctl_dimm *util_dimm_filter(struct ndctl_dimm *dimm,
 		if (strcmp(name, "all") == 0)
 			break;
 
-		dimm_id = strtoul(ident, &end, 0);
-		if (end == ident || end[0])
+		dimm_id = strtoul(name, &end, 0);
+		if (end == name || end[0])
 			dimm_id = ULONG_MAX;
 
 		dimm_name = ndctl_dimm_get_devname(dimm);
