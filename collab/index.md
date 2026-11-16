@@ -17,6 +17,111 @@ layout: page
 
 # START THE TRANSCRIPT
 
+# Nov 17, 2026
+
+## Agenda
+* Opens
+* cxl-cli
+* QEMU
+* v7.4 rc fixes
+* v7.5 merge window
+* v7.6 and beyond
+
+## Opens
+
+## CXL CLI
+
+## QEMU
+
+## v7.4 rc fixes
+- **cxl: Repair poison enumeration regressions (v9, 4 patches)**
+  - Richard Cheng <icheng@nvidia.com>
+  - https://lore.kernel.org/linux-cxl/20261020051403.14186-1-icheng@nvidia.com/
+  - v9 has a sashiko issue needs to be addressed. Otherwise seems to be ready.
+
+- **cxl/region: Reject a repeat write of an endpoint decoder to targetN (v4, 2 patches)**
+  - Alison Schofield <alison.schofield@intel.com>
+  - https://lore.kernel.org/linux-cxl/e8235faea3d75dbfd45f197fe657c467b6259705.1793724885.git.alison.schofield@intel.com/
+  - 2/2 can use more review. Picking up 1/2.
+ 
+- **cxl/region: Carry the effective interleave state through target setup (3 patches)**
+  - Alison Schofield <alison.schofield@intel.com>
+  - https://lore.kernel.org/linux-cxl/cover.1794010889.git.alison.schofield@intel.com/
+  - Needs review
+
+- **cxl/core: Create EINJ debugfs files regardless of EINJ init order (v7)**
+  - Yongxin Yang <yangyongxin@kylinos.cn>
+  - https://lore.kernel.org/linux-cxl/20261104061256.1449275-1-yangyongxin@kylinos.cn/
+  - Needs review
+
+- **cxl/hdm: Account for locked decoders regardless of commit state**
+  - Davidlohr Bueso <dave@stgolabs.net>
+  - https://lore.kernel.org/linux-cxl/20261029201327.1119231-1-dave@stgolabs.net/
+  - Pending v2?
+
+- **cxl/edac: Fix event record lookups for memory repair (v5, 3 patches)**
+  - Jongwon Lee <ai@linux.com>
+  - https://lore.kernel.org/linux-cxl/20261108022022.3352-1-ai@linux.com/
+  - Needs more review
+ 
+- **PCI/CXL: Guard device accesses during reset recovery (v3, 2 patches)**
+  - Richard Cheng <icheng@nvidia.com>
+  - https://lore.kernel.org/linux-cxl/20261116065229.38194-1-icheng@nvidia.com/
+  - Needs review. Bjorn has objections.
+ 
+## v7.5 merge window
+- **PCI/CXL: Add CXL reset support for Type 2 devices (v17, 19 patches)**
+  - Srirangan Madhavan <smadhavan@nvidia.com>
+  - https://lore.kernel.org/linux-cxl/20261105185917.2667656-1-smadhavan@nvidia.com/
+  - Review on-going. Expecting a v18.
+
+- **DCD CXL Series: Dynamic Capacity extent handling (v1, 14 patches)**
+  - Anisa Su <anisa.su887@gmail.com>
+  - https://lore.kernel.org/linux-cxl/20261104230445.66625-1-anisa.su@samsung.com/
+  - Review on going. Expect v2.
+ 
+- **Enable CXL PCIe Port Protocol Error handling and logging (v20, 9 patches)**
+  - Terry Bowman <terry.bowman@amd.com>
+  - https://lore.kernel.org/linux-cxl/20260902133933.2992457-1-terry.bowman@amd.com/
+  - **v21 expected.** Need Bjorn tags for PCI subsystem
+
+- **vfio/pci: Add CXL Type-2 device passthrough support (v6, 31 patches)**
+  - Manish Honap <mhonap@nvidia.com>
+  - https://lore.kernel.org/linux-cxl/20261016161839.2765592-1-mhonap@nvidia.com/
+  - this series goes through VFIO. Please review the CXL bits. Pending v7?
+
+- **cxl/mbox: Return success for CXL_MBOX_CMD_RC_BACKGROUND (v3, 2 patches)**
+  - Li Ming <ming.li@zohomail.com>
+  - https://lore.kernel.org/linux-cxl/20261116070938.3675205-1-ming.li@zohomail.com/
+  - Please review.
+
+- **cxl/edac: Fail ECS threshold read for reserved encodings (v4)**
+  - Yili Zhang <zhangyili01@baidu.com>
+  - https://lore.kernel.org/linux-cxl/20261029131013.85983-1-zhangyili01@baidu.com/
+  - Please review.
+  - 
+- **cxl/region: Fix target accounting when detaching direct EP**
+  - Richard Cheng <icheng@nvidia.com>
+  - https://lore.kernel.org/linux-cxl/20261104092840.56715-1-icheng@nvidia.com/
+  - Please review.
+
+## 7.6 and beyond
+- **[RFC] cxl: Share media event DPA accessors**
+  - Richard Cheng <icheng@nvidia.com>
+  - https://lore.kernel.org/linux-cxl/20261102095853.56698-1-icheng@nvidia.com/
+  - Moves the DPA masks and flags into `include/cxl/event.h` with typed accessors.
+  - Needs review.
+
+- **[RFC] cxl: Provide explicit RAM region creation for Type-2 providers (v2, 3 patches)**
+  - Richard Cheng <icheng@nvidia.com>
+  - https://lore.kernel.org/linux-cxl/20261007090540.43817-1-icheng@nvidia.com/
+  - Pending v3.
+
+- **[RFC] cxl, mm: Keep device-reported poison out of the page allocator (5 patches)**
+  - Shaikh Kamaluddin <shaikhkamal2012@gmail.com>
+  - https://lore.kernel.org/linux-cxl/20261010162017.62506-1-shaikhkamal2012@gmail.com/
+  - David Hildenbrand pushed back.
+
 # Oct 20, 2026
 
 ## Google Meet Notes:
@@ -33,7 +138,6 @@ layout: page
 * v7.6 and beyond
 
 ## Opens
-
 * vfio-cxl sizing (Alejandro, Jonathan)
 * Key outcomes of LPC
   - C-RAM is real.  GregP's presentation.
