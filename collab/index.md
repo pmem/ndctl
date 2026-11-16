@@ -21,6 +21,71 @@ layout: page
 
 ## Google Meet Notes:
 
+## Agenda
+* Opens
+* cxl-cli
+* QEMU
+* v7.4 rc fixes
+* v7.5 fixes
+* v7.5 merge window
+* v7.6 and beyond
+
+## Opens
+
+## cxl-cli
+* NDCTL v86 - is pending. ATM, gating on Greg's daxctl hotplug support
+  Please test with branch: https://github.com/pmem/ndctl/tree/pending
+
+## cxl-cli need review:
+- **v1: test/cxl-security.sh: test dimm unlock with a large serial number  (AlisonS)**
+  - https://lore.kernel.org/r/20260702003407.1611731-1-alison.schofield@intel.com
+
+- **v1: Documentation/ndctl-load-keys: document CXL passphrase key recovery  (AlisonS)**
+  - https://lore.kernel.org/r/20261024011706.552346-1-alison.schofield@intel.com
+
+- **v1 0/7: cxl/region: create-region command and unit  (AlisonS)**
+  - https://lore.kernel.org/r/cover.1790658549.git.alison.schofield@intel.com
+
+- **v3 0/3: cxl: support region granularities finer than the root  (AlisonS)**
+  - https://lore.kernel.org/r/cover.1791863817.git.alison.schofield@intel.com
+
+- **v2: test/cxl-region-sysfs.sh: test a repeat write of a region target  (AlisonS)**
+  - https://lore.kernel.org/r/20261026162419.584201-1-alison.schofield@intel.com
+
+- **v2 0/3: Add CXL region passthrough >16K gran test  (AlisonS)**
+  - https://lore.kernel.org/r/cover.1788489571.git.alison.schofield@intel.com
+
+- **v1: ndctl/lib: embed a fixed-size nd_cmd_pkg header in command packages  (AlisonS)**
+  - https://lore.kernel.org/r/20261024043521.560745-1-alison.schofield@intel.com
+
+## NDCTL awaiting author (maybe revision pending):
+- **v1 0/6: daxctl: use dax kmem atomic whole-device hotplug  (GregoryP)**
+  - https://lore.kernel.org/r/20261016214248.443247-1-gourry@gourry.net
+
+- **v1: libdaxctl: check the zone of onlined memory blocks  (GregoryP)**
+  - https://lore.kernel.org/r/179322248318.3398847.13424413341337264007@gourry.net
+
+- **v7 0/5: Dynamic Capacity additions for cxl-cli  (AnisaS)**
+  - https://lore.kernel.org/r/20260625121242.603807-1-anisa.su@samsung.com
+
+- **v1: cxl/test: Add ELC MCE alias retirement tests  (ShaikhK)**
+  - https://lore.kernel.org/r/20260906041844.13891-1-shaikhkamal2012@gmail.com
+
+
+## QEMU
+## v7.4 rc fixes
+## v7.5 fixes
+## v7.5 merge window
+## v7.6 and beyond
+
+
+
+
+
+# Oct 20, 2026
+
+## Google Meet Notes:
+
 <https://docs.google.com/document/d/13bxeTzNKA-IQhvsAO56hBXe4pkZIJOWZq2sDwMIZW-0/edit?usp=meet_tnfm_email&tab=t.wgiw4lf0ywzf>
 
 ## Agenda
