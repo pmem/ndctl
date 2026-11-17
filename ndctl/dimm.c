@@ -1276,6 +1276,7 @@ static const struct option key_options[] = {
 	BASE_OPTIONS(),
 	KEY_OPTIONS(),
 	MASTER_OPTIONS(),
+	OPT_END(),
 };
 
 static const struct option sanitize_options[] = {
