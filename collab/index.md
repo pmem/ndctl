@@ -99,7 +99,7 @@ layout: page
 - **cxl/edac: Fix event record lookups for memory repair (v5, 3 patches)**
   - Jongwon Lee <ai@linux.com>
   - https://lore.kernel.org/linux-cxl/20261108022022.3352-1-ai@linux.com/
-  - Needs more review
+  - pending v6
  
 - **PCI/CXL: Guard device accesses during reset recovery (v3, 2 patches)**
   - Richard Cheng <icheng@nvidia.com>
@@ -126,11 +126,6 @@ layout: page
   - Manish Honap <mhonap@nvidia.com>
   - https://lore.kernel.org/linux-cxl/20261016161839.2765592-1-mhonap@nvidia.com/
   - this series goes through VFIO. Please review the CXL bits. Pending v7?
-
-- **cxl/mbox: Return success for CXL_MBOX_CMD_RC_BACKGROUND (v3, 2 patches)**
-  - Li Ming <ming.li@zohomail.com>
-  - https://lore.kernel.org/linux-cxl/20261116070938.3675205-1-ming.li@zohomail.com/
-  - Please review.
 
 - **cxl/edac: Fail ECS threshold read for reserved encodings (v4)**
   - Yili Zhang <zhangyili01@baidu.com>
