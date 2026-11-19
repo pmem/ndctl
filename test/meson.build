@@ -180,6 +180,7 @@ cxl_type2 = find_program('cxl-type2.sh')
 cxl_mbox_sh = find_program('cxl-mbox.sh')
 cxl_kunit = find_program('cxl-kunit.sh')
 cxl_region_finer_gran = find_program('cxl-region-finer-gran.sh')
+cxl_back_invalidate = find_program('cxl-back-invalidate.sh')
 
 tests = [
   [ 'libndctl',               libndctl,		  'ndctl' ],
@@ -220,6 +221,7 @@ tests = [
   [ 'cxl-mbox.sh',            cxl_mbox_sh,        'cxl'   ],
   [ 'cxl-kunit.sh',           cxl_kunit,          'cxl'   ],
   [ 'cxl-region-finer-gran.sh', cxl_region_finer_gran, 'cxl' ],
+  [ 'cxl-back-invalidate.sh', cxl_back_invalidate, 'cxl'   ],
 ]
 
 if get_option('destructive').enabled()
