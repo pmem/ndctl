@@ -265,6 +265,8 @@ bool cxl_decoder_is_pmem_capable(struct cxl_decoder *decoder);
 bool cxl_decoder_is_volatile_capable(struct cxl_decoder *decoder);
 bool cxl_decoder_is_mem_capable(struct cxl_decoder *decoder);
 bool cxl_decoder_is_accelmem_capable(struct cxl_decoder *decoder);
+bool cxl_decoder_is_back_invalidate_capable(struct cxl_decoder *decoder);
+bool cxl_decoder_is_back_invalidate(struct cxl_decoder *decoder);
 bool cxl_decoder_is_locked(struct cxl_decoder *decoder);
 unsigned int
 cxl_decoder_get_interleave_granularity(struct cxl_decoder *decoder);

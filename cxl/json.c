@@ -936,6 +936,22 @@ struct json_object *util_cxl_decoder_to_json(struct cxl_decoder *decoder,
 					       jobj);
 	}
 
+	if (cxl_port_is_root(port) &&
+	    cxl_decoder_is_back_invalidate_capable(decoder)) {
+		jobj = json_object_new_boolean(true);
+		if (jobj)
+			json_object_object_add(jdecoder,
+					       "back_invalidate_capable", jobj);
+	}
+
+	if (cxl_port_is_endpoint(port) &&
+	    cxl_decoder_is_back_invalidate(decoder)) {
+		jobj = json_object_new_boolean(true);
+		if (jobj)
+			json_object_object_add(jdecoder, "back_invalidate",
+					       jobj);
+	}
+
 	if (cxl_port_is_root(port)) {
 		int qos_class = cxl_root_decoder_get_qos_class(decoder);
 
