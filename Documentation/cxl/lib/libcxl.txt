@@ -461,6 +461,8 @@ bool cxl_decoder_is_pmem_capable(struct cxl_decoder *decoder);
 bool cxl_decoder_is_volatile_capable(struct cxl_decoder *decoder);
 bool cxl_decoder_is_mem_capable(struct cxl_decoder *decoder);
 bool cxl_decoder_is_accelmem_capable(struct cxl_decoder *decoder);
+bool cxl_decoder_is_back_invalidate_capable(struct cxl_decoder *decoder);
+bool cxl_decoder_is_back_invalidate(struct cxl_decoder *decoder);
 bool cxl_decoder_is_locked(struct cxl_decoder *decoder);
 ----
 The kernel protects the enumeration of the physical address layout of
@@ -482,6 +484,13 @@ mode.  The type ultimately depends on the endpoint. For example an
 accelerator requires all decoders in its ancestry to be set to
 CXL_DECODER_TTYPE_ACCELERATOR, and conversely plain memory expander
 devices require CXL_DECODER_TTYPE_EXPANDER.
+
+Back-Invalidate (BI) follows the same split. A root decoder reports
+cxl_decoder_is_back_invalidate_capable() when its CFMWS carries the
+Back-Invalidate restriction, meaning HDM-DB regions may be created
+behind it. cxl_decoder_is_back_invalidate() reports whether an endpoint
+decoder is attached to an HDM-DB region, and returns false for root and
+switch decoders.
 
 Platform firmware may setup the CXL decode hierarchy before the OS
 boots, and may additionally require that the OS not change the decode

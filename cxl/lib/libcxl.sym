@@ -320,3 +320,9 @@ LIBCXL_12 {
 global:
 	cxl_region_locked_state;
 } LIBCXL_11;
+
+LIBCXL_13 {
+global:
+	cxl_decoder_is_back_invalidate_capable;
+	cxl_decoder_is_back_invalidate;
+} LIBCXL_12;

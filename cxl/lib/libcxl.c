@@ -2490,6 +2490,9 @@ static void *add_cxl_decoder(void *parent, int id, const char *cxldecoder_base)
 
 	switch (port->type) {
 	case CXL_PORT_ENDPOINT:
+		sprintf(path, "%s/back_invalidate", cxldecoder_base);
+		if (sysfs_read_attr(ctx, path, buf) == 0)
+			decoder->back_invalidate = !!strtoul(buf, NULL, 0);
 		sprintf(path, "%s/dpa_resource", cxldecoder_base);
 		if (sysfs_read_attr(ctx, path, buf) < 0)
 			decoder->dpa_resource = ULLONG_MAX;
@@ -2528,6 +2531,8 @@ static void *add_cxl_decoder(void *parent, int id, const char *cxldecoder_base)
 			{ "cap_type3", &decoder->mem_capable },
 			{ "cap_ram", &decoder->volatile_capable },
 			{ "cap_pmem", &decoder->pmem_capable },
+			{ "cap_back_invalidate",
+			  &decoder->back_invalidate_capable },
 			{ "locked", &decoder->locked },
 		};
 
@@ -2837,6 +2842,16 @@ CXL_EXPORT bool cxl_decoder_is_mem_capable(struct cxl_decoder *decoder)
 CXL_EXPORT bool cxl_decoder_is_accelmem_capable(struct cxl_decoder *decoder)
 {
 	return decoder->accelmem_capable;
+}
+
+CXL_EXPORT bool cxl_decoder_is_back_invalidate_capable(struct cxl_decoder *decoder)
+{
+	return decoder->back_invalidate_capable;
+}
+
+CXL_EXPORT bool cxl_decoder_is_back_invalidate(struct cxl_decoder *decoder)
+{
+	return decoder->back_invalidate;
 }
 
 CXL_EXPORT bool cxl_decoder_is_locked(struct cxl_decoder *decoder)

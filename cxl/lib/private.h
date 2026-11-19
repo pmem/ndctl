@@ -161,6 +161,8 @@ struct cxl_decoder {
 	bool volatile_capable;
 	bool mem_capable;
 	bool accelmem_capable;
+	bool back_invalidate_capable;
+	bool back_invalidate;
 	bool locked;
 	enum cxl_decoder_target_type target_type;
 	int regions_init;
