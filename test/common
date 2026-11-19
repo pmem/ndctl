@@ -89,16 +89,48 @@ reset1()
 }
 
 
+# __kver_key
+# $1: Kernel version in X.Y[.Z][-rcN] format, trailing text is ignored
+# $2: RC number to use when $1 has no -rc suffix
+#
+# Print a fixed-width key with four digits per field and a missing Z
+# treated as 0. Reserve RC value 9999 for final releases so they sort
+# after their RCs. A minimum without -rcN uses 0 so it accepts every
+# RC of that version.
+#
+__kver_key()
+{
+	local re='^([0-9]+)\.([0-9]+)(\.([0-9]+))?(-rc([0-9]+))?'
+	local i
+
+	[[ "$1" =~ $re ]] || return 1
+	for i in 1 2 4 6; do
+		(( ${#BASH_REMATCH[i]} <= 4 )) || return 1
+	done
+	(( 10#${BASH_REMATCH[6]:-0} < 9999 )) || return 1
+	printf "%04d%04d%04d%04d" \
+		"$((10#${BASH_REMATCH[1]}))" "$((10#${BASH_REMATCH[2]}))" \
+		"$((10#${BASH_REMATCH[4]:-0}))" "$((10#${BASH_REMATCH[6]:-$2}))"
+}
+
 # check_min_kver
-# $1: Supported kernel version. format: X.Y
+# $1: Minimum kernel version in X.Y[.Z][-rcN] format
+#
+# X.Y passes from X.Y-rc1 on. Use X.Y-rcN to set a specific RC as
+# the minimum. The argument must match the full version format above.
 #
 check_min_kver()
 {
-	local ver="$1"
+	local want have
 	: "${KVER:=$(uname -r)}"
 
-	[ -n "$ver" ] || return 1
-	[[ "$ver" == "$(echo -e "$ver\n$KVER" | sort -V | head -1)" ]]
+	if [[ ! "$1" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?(-rc[0-9]+)?$ ]]; then
+		echo "test/$test_basename: invalid kernel version '$1'" >&2
+		return 1
+	fi
+	want=$(__kver_key "$1" 0) || return 1
+	have=$(__kver_key "$KVER" 9999) || return 1
+	(( 10#$have >= 10#$want ))
 }
 
 # check_eq_kver
